@@ -1,0 +1,40 @@
+/*******************************************************************************
+*   ___   publicplace
+*  ¦OUX¦  ‟Coux”
+*  ¦Inc¦  component
+*   ---   base
+*         (shared) memory pages
+* ©overcq                on ‟Gentoo Linux 13.0” “x86_64”              2015‒7‒2 *
+*******************************************************************************/
+int
+E_mem_Q_shared_M( N size
+){  return E_mem_Q_shared_M_key( IPC_PRIVATE, size );
+}
+int
+E_mem_Q_shared_M_key( key_t key
+, N size
+){  int shm_id;
+    V1( shm_id = shmget( key, E_simple_Z_n_I_align_up_to_v_2( size, E_base_S->E_mem_S_page_size ), 0600|IPC_CREAT|IPC_EXCL )){}
+    return shm_id;
+}
+int
+E_mem_Q_shared_R( key_t key
+){  int shm_id;
+    V1( shm_id = shmget( key, 0, 0600 )){}
+    return shm_id;
+}
+void
+E_mem_Q_shared_W( int uid
+){  V0_( shmctl( uid, IPC_RMID, 0 ));
+}
+P
+E_mem_Q_shared_Q_blk_M( int uid
+){  P p;
+    V1p_( p = shmat( uid, 0, 0 ));
+    return p;
+}
+void
+E_mem_Q_shared_Q_blk_W( P p
+){  V0_( shmdt(p) );
+}
+/******************************************************************************/

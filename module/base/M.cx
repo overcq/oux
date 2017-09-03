@@ -1,0 +1,435 @@
+/*******************************************************************************
+*   ___   publicplace
+*  ¦OUX¦  ‟Coux”
+*  ¦Inc¦  component
+*   ---   base
+*         tworzenie ‹modułu› przy rozpoczęciu programu
+* ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2016‒2‒28 N
+*******************************************************************************/
+///DFN globalnie: utworzenie ‹modułu› ([…]“_M”) może być wykonane w programie tylko raz.
+//==============================================================================
+struct E_base_Z
+{ Z_clock_time E_flow_Q_timer_S_last_real_time;
+  Z_clock_time E_flow_Q_timer_S_next_real_time;
+  Pc E_flow_S_system_name;
+  Pc E_flow_S_hostname;
+  Pc E_flow_S_exe_name;
+  struct E_flow_Z_args E_flow_S_exe_args;
+  Pc E_flow_S_cwd;
+    #ifdef C_to_libs_C_replace_c_alloc
+  E_mem_Q_blk_I_libc_realloc_Z E_mem_Q_blk_I_libc_realloc;
+  E_mem_Q_blk_I_libc_free_Z E_mem_Q_blk_I_libc_free;
+        #ifdef C_pthreads
+  pthread_mutex_t E_mem_Q_blk_S_threads_sync_mutex;
+        #endif
+    #endif
+  N E_mem_S_page_size;
+  struct E_mem_Q_blk_Z_allocated *E_mem_Q_blk_S_allocated;
+  N E_mem_Q_blk_S_table_allocated_id;
+  N E_flow_Z_task_stacks_S_n_pages;
+  N E_flow_Z_task_stacks_S_granulation_u, E_flow_Z_task_stacks_S_granulation_n, E_flow_Z_task_stacks_S_granulation_n_back;
+  struct E_mem_Q_tab_Z *E_flow_Q_task_S; ///ta tablica nie może mieć tworzonego “E_mem_Q_tab_Q_iter”.
+    #ifdef E_flow_C_thread_system_unblock_reports
+  struct E_mem_Q_tab_Z *E_flow_Q_task_S_uid_subid;
+    #endif
+  struct E_mem_Q_tab_Z *E_flow_Q_report_S;
+    #ifdef E_flow_C_itimer_system_unblock_report
+  ///w danym czasie może być zarejestrowany najwyżej jeden ‹systemowy raport odblokowujący› typu “itimer”; przez ustawienie procedur zastępujących funkcjonalność systemowych “setitimer” i “sigsuspend”, np. “getch” opakowanej dla uzgodnienia ‘intefejsu’. zmienne nie mogą być ustawiane w procedurze obsługi “sygnału” ‘uniksowego’.
+  B (* E_flow_Z_itimer_system_unblock_report_I_sigsuspend )( sigset_t * ); ///w wyniku jest to, czy wraca z ‹systemowym raportem odblokowującym›.
+  void (* E_flow_Z_itimer_system_unblock_report_I_setitimer )( Z_clock_time * ); ///jeśli nie jest ustawiona albo —bezwarunkowo— jeśli użyte są ‹zadania› “wątkowane”, to “SIGALRM” musi odblokowywać (zakańczać) procedurę opakowaną.
+    #endif
+  Z_clock_time E_flow_Q_process_call_S_ping_period;
+  struct E_mem_Q_tab_Z *E_flow_Q_timer_S;
+  struct E_mem_Q_tab_Z *E_flow_Q_process_call_srv_S;
+  struct E_mem_Q_tab_Z *E_flow_Q_process_call_cli_S;
+    #ifdef E_flow_Q_process_call_C_alt
+  Pc E_flow_Q_process_call_S_service_path_guid;
+    #endif
+  struct E_mem_Q_tab_Z *E_mem_Q_file_S;
+  Pc E_mem_Q_file_S_buffer;
+  N E_mem_Q_file_S_buffer_l;
+  struct E_mem_Q_tab_Z *E_io_Q_stream_out_S;
+    #ifdef C_middle_code
+#define _(sig) struct sigaction _sigaction_S_name(sig)
+  _(SIGPIPE);
+  _(SIGTSTP);
+  _(SIGTTIN);
+  _(SIGTTOU);
+  _(SIGHUP);
+  _(SIGINT);
+  _(SIGQUIT);
+  _(SIGTERM);
+  _(SIGCHLD);
+  _(SIGALRM);
+  _(SIGUSR1);
+  _(SIGUSR2);
+  _(SIGVTALRM);
+  _(SIGPROF);
+        #if defined( E_io_C_aio )
+  _(SIGPOLL);
+        #elif defined( E_io_Q_stream_out_C_sig )
+  _(SIGIO);
+        #endif
+  _(SIGSEGV);
+#undef _
+  sigset_t E_flow_Z_saved_initial_S_blocked_signals;
+    #endif
+  sigset_t E_flow_Z_sigset_S_process_exec, E_flow_Z_sigset_S_process_volatile, E_flow_Z_sigset_S_empty, E_flow_Z_sigset_S_process_call_pong, E_flow_Z_sigset_S_process_call_req, E_flow_Z_sigset_S_process_call_reply, E_flow_Z_sigset_S_process_call_reply_pong;
+  sigset_t E_flow_Z_task_table_S_sigset;
+    #if defined( E_io_C_aio ) || defined( E_io_Q_stream_out_C_sig )
+  sigset_t E_flow_Z_sigset_S_io_ready;
+    #endif
+  sigset_t E_flow_I_fork_S_sigset;
+    #ifdef E_flow_drv_C_timer_monotonic
+  timer_t E_flow_S_timer;
+    #endif
+  pid_t E_flow_S_exe_pid;
+    #ifdef E_flow_Q_process_call_C_alt
+  key_t E_flow_Q_process_call_S_shm_key;
+    #endif
+    #ifdef E_flow_C_errno_p
+  int *E_flow_S_errno;
+    #endif
+  I E_flow_Q_task_S_current;
+    #ifdef E_flow_C_itimer_system_unblock_report
+  I E_flow_Z_itimer_system_unblock_report_S_task_id;
+    #endif
+  unsigned U_R( E_flow_S_mode, Z_task_table_S_can_read ):1;
+  unsigned U_R( E_flow_S_signal, wake )                 :1;
+  unsigned U_R( E_flow_S_signal, exit )                 :1;
+  unsigned U_R( E_flow_S_signal, time )                 :1;
+  unsigned U_R( E_flow_S_signal, call_req )             :1;
+  unsigned U_R( E_flow_S_signal, io_ready )             :1;
+  unsigned U_R( E_flow_S_signal, exit_all )             :1;
+    #ifdef C_line_report
+  C E_flow_Z_line_report_N_n_S[ J_n_10_max_digits( sizeof(N) ) + 1 ];
+    #endif
+} *E_base_S;
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+extern Pc *environ;
+//==============================================================================
+_internal
+void
+E_mem_M_blk( void
+){  N page_size;
+    if( !~( page_size = sysconf( _SC_PAGESIZE )))
+    {   V();
+    }
+    N initial_size = E_simple_Z_n_I_align_up_to_v_2( sizeof( *E_base_S ) + sizeof( struct E_mem_Q_blk_Z_mapped ) + sizeof( struct E_mem_Q_blk_Z_free ) + 4 * sizeof( struct E_mem_Q_blk_Z_allocated ), page_size );
+        #if defined( __gnu_linux__ )
+    if( !~(N)( E_base_S = mmap( 0
+    , initial_size
+    , PROT_READ | PROT_WRITE
+    , MAP_PRIVATE
+    | MAP_ANONYMOUS | MAP_UNINITIALIZED
+    , -1
+    , 0
+    )))
+        #elif defined( __OpenBSD__ )
+    if( !~(N)( E_base_S = mmap( 0
+    , initial_size
+    , PROT_READ | PROT_WRITE
+    , MAP_PRIVATE
+    | MAP_ANON
+    , -1
+    , 0
+    )))
+        #else
+#error not implemented
+        #endif
+    {   V();
+    }
+    E_base_S->E_flow_S_system_name = "oux";
+    E_base_S->E_flow_S_exe_name = E_mem_Q_file_S_filename_separator_s;
+    E_base_S->E_mem_S_page_size = page_size;
+    E_base_S->E_flow_Q_task_S_current = 0;
+        #ifdef E_flow_Q_process_call_C_alt
+    E_base_S->E_flow_Q_process_call_S_service_path_guid = E_mem_Q_file_S_filename_separator_s;
+        #endif
+        #ifdef E_flow_C_itimer_system_unblock_report
+    E_base_S->E_flow_Z_itimer_system_unblock_report_I_sigsuspend = 0;
+    E_base_S->E_flow_Z_itimer_system_unblock_report_I_setitimer = 0;
+        #endif
+    E_base_S->E_flow_Q_timer_S_next_real_time = ( Z_clock_time )
+    { .tv_sec = LONG_MAX
+    , .Z_clock_time_minor_field = Z_clock_time_minor_field_S_max
+    };
+    E_base_S->E_flow_Q_process_call_S_ping_period = ( Z_clock_time )
+    { .tv_sec = 1
+    , .Z_clock_time_minor_field = 0
+    };
+    U_L( E_base_S->E_flow_S_mode, Z_task_table_S_can_read );
+    U_L( E_base_S->E_flow_S_signal, wake );
+    U_L( E_base_S->E_flow_S_signal, exit );
+    U_L( E_base_S->E_flow_S_signal, time );
+    U_L( E_base_S->E_flow_S_signal, call_req );
+    U_L( E_base_S->E_flow_S_signal, io_ready );
+    U_L( E_base_S->E_flow_S_signal, exit_all );
+        #ifdef E_flow_C_errno_p
+    E_base_S->E_flow_S_errno = &errno;
+        #endif
+    E_base_S->E_flow_S_exe_pid = getpid();
+    E_base_S->E_mem_Q_blk_S_table_allocated_id = 2;
+    E_base_S->E_mem_Q_blk_S_allocated = (P)( (Pc)E_base_S + sizeof( *E_base_S ) + sizeof( struct E_mem_Q_blk_Z_mapped ) + sizeof( struct E_mem_Q_blk_Z_free ));
+    E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_mapped_id ].p = (Pc)E_base_S + sizeof( *E_base_S );
+    E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_mapped_id ].u = sizeof( struct E_mem_Q_blk_Z_mapped );
+    E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_mapped_id ].n = 1;
+    E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_free_id ].p = (P)( (Pc)E_base_S + sizeof( *E_base_S ) + sizeof( struct E_mem_Q_blk_Z_mapped ));
+    E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_free_id ].u = sizeof( struct E_mem_Q_blk_Z_free );
+    E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_free_id ].n = 1;
+    E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].p = (P)E_base_S->E_mem_Q_blk_S_allocated;
+    E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].u = sizeof( struct E_mem_Q_blk_Z_allocated );
+    E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].n = 4;
+    E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id + 1 ].p = (P)E_base_S;
+    E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id + 1 ].u = 1;
+    E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id + 1 ].n = sizeof( *E_base_S );
+    struct E_mem_Q_blk_Z_mapped *mapped_p = (P)E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_mapped_id ].p;
+    mapped_p->p = (P)E_base_S;
+    mapped_p->l = initial_size;
+    struct E_mem_Q_blk_Z_free *free_p = (P)E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_free_id ].p;
+    free_p->p = (P)( (Pc)E_base_S->E_mem_Q_blk_S_allocated + E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].n * E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].u );
+    free_p->l = mapped_p->p + mapped_p->l - free_p->p;
+        #ifdef C_to_libs_C_replace_c_alloc
+            #ifdef C_pthreads
+    pthread_mutex_init( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex, 0 );
+            #endif
+    ///jeśli któraś użyta do tego miejsca procedura systemu operacyjnego używałaby menedżera pamięci z “libc”, to trzeba by zrobić specjalny sposób alokowania pamięci początkowej.
+    P libc;
+    if( !( libc = dlopen( C_to_libs_C_replace_c_alloc_S_libc_filename, RTLD_LAZY | RTLD_GLOBAL )))
+    {   Pc s = dlerror();
+        GV_(NA); Gs(s); V();
+    }
+    if( !( E_base_S->E_mem_Q_blk_I_libc_realloc = ( E_mem_Q_blk_I_libc_realloc_Z )dlsym( libc, "realloc" )))
+    {   Pc s = dlerror();
+        GV_(NA); Gs(s); V();
+    }
+    if( !( E_base_S->E_mem_Q_blk_I_libc_free = ( E_mem_Q_blk_I_libc_free_Z )dlsym( libc, "free" )))
+    {   Pc s = dlerror();
+        GV_(NA); Gs(s); V();
+    }
+        #endif
+    E_base_S->E_flow_Z_task_stacks_S_granulation_n = 0;
+    E_base_S->E_flow_Z_task_stacks_S_granulation_n_back = 0;
+}
+_internal
+void
+E_mem_M_file( void
+){  E_base_S->E_mem_Q_file_S = E_mem_Q_tab_M( sizeof( struct E_mem_Q_file_Z ), 0 );
+    E_base_S->E_mem_Q_file_S_buffer_l = E_base_S->E_mem_S_page_size; //CONF wartość optymalna, ale może być wymagana większa.
+        #if defined( __gnu_linux__ )
+    V1p_( E_base_S->E_mem_Q_file_S_buffer = mmap( 0
+    , E_base_S->E_mem_Q_file_S_buffer_l
+    , PROT_READ | PROT_WRITE
+    , MAP_PRIVATE
+    | MAP_ANONYMOUS | MAP_UNINITIALIZED
+    , -1
+    , 0
+    ));
+        #elif defined( __OpenBSD__ )
+    V1p_( E_base_S->E_mem_Q_file_S_buffer = mmap( 0
+    , E_base_S->E_mem_Q_file_S_buffer_l
+    , PROT_READ | PROT_WRITE
+    , MAP_PRIVATE
+    | MAP_ANONYMOUS
+    , -1
+    , 0
+    ));
+        #else
+#error not implemented
+        #endif
+}
+_internal
+void
+E_io_M_stream( void
+){  E_base_S->E_io_Q_stream_out_S = E_mem_Q_tab_M( sizeof( struct E_io_Q_stream_out_Z ), 0 );
+        #if defined( E_io_C_aio ) || defined( E_io_C_sig_has_fd )
+    E_mem_Q_tab_Q_iter_M( E_base_S->E_io_Q_stream_out_S, ~0 );
+        #endif
+        #ifdef C_line_report
+    E_io_Q_stream_out_M_fd( STDERR_FILENO );
+        #endif
+}
+void
+E_flow_M(
+  int argc
+, Pc *argv
+){  E_mem_M_blk();
+    ///włączenie “V”[…]“_”.
+    int fd_flags;
+    V1_( fd_flags = fcntl( STDERR_FILENO, F_GETFL ));
+    fd_flags |= O_NONBLOCK;
+    V0_( fcntl( STDERR_FILENO, F_SETFL, fd_flags ));
+    ///procedury wymagane lub zalecane w środowisku uruchamiania programu.
+    Vp_( setlocale( LC_ALL, "" ));
+        #ifdef C_pthreads
+    Vr_( pthread_setconcurrency(1) );
+        #endif
+    ///odblokowanie dostępu do tablicy ‹zadań›.
+    E_base_S->E_flow_Q_task_S = E_mem_Q_tab_M( sizeof( struct E_flow_Q_task_Z ), 1 );
+    _tasks_table_end;
+    struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, 0 );
+    *task = ( struct E_flow_Q_task_Z )
+    { .run_state = E_flow_Z_run_state_S_ready
+        #ifdef C_line_report
+    , .proc_name = "main"
+        #endif
+    };
+    ///wyłączenie niedozwolonych “sygnałów” ‘uniksowych’, przyblokowanie, ustawienie “masek”.
+    struct sigaction sa =
+    { .sa_handler = SIG_IGN
+    , .sa_flags = 0
+    };
+    V0_( sigfillset( &sa.sa_mask ));
+    _sigaction_M( SIGPIPE, &sa );
+    _sigaction_M( SIGTSTP, &sa );
+    _sigaction_M( SIGTTIN, &sa );
+    _sigaction_M( SIGTTOU, &sa );
+    V0_( sigemptyset( &E_base_S->E_flow_Z_sigset_S_empty ));
+    sigset_t sigset;
+    sigset = E_base_S->E_flow_Z_sigset_S_empty;
+    V0_( sigaddset( &sigset, SIGHUP ));
+    V0_( sigaddset( &sigset, SIGINT ));
+    V0_( sigaddset( &sigset, SIGQUIT ));
+    V0_( sigaddset( &sigset, SIGTERM ));
+    V0_( sigaddset( &sigset, SIGALRM ));
+    E_base_S->E_flow_Z_sigset_S_process_call_req = E_base_S->E_flow_Z_sigset_S_empty;
+    V0_( sigaddset( &E_base_S->E_flow_Z_sigset_S_process_call_req, SIGUSR1 ));
+    V0_( sigaddset( &sigset, SIGUSR1 ));
+    E_base_S->E_flow_Z_sigset_S_process_call_reply = E_base_S->E_flow_Z_sigset_S_empty;
+    V0_( sigaddset( &E_base_S->E_flow_Z_sigset_S_process_call_reply, SIGUSR2 ));
+    V0_( sigaddset( &sigset, SIGUSR2 ));
+    E_base_S->E_flow_Z_sigset_S_process_call_reply_pong = E_base_S->E_flow_Z_sigset_S_process_call_reply;
+    E_base_S->E_flow_Z_sigset_S_process_call_pong = E_base_S->E_flow_Z_sigset_S_empty;
+    V0_( sigaddset( &E_base_S->E_flow_Z_sigset_S_process_call_pong, SIGPROF ));
+    V0_( sigaddset( &E_base_S->E_flow_Z_sigset_S_process_call_reply_pong, SIGPROF ));
+    V0_( sigaddset( &sigset, SIGPROF ));
+        #if defined( E_io_C_aio ) || defined( E_io_Q_stream_out_C_sig )
+    E_base_S->E_flow_Z_sigset_S_io_ready = E_base_S->E_flow_Z_sigset_S_empty;
+            #ifdef E_io_C_aio
+    V0_( sigaddset( &sigset, SIGPOLL ));
+    V0_( sigaddset( &E_base_S->E_flow_Z_sigset_S_io_ready, SIGPOLL ));
+            #else
+    V0_( sigaddset( &sigset, SIGIO ));
+    V0_( sigaddset( &E_base_S->E_flow_Z_sigset_S_io_ready, SIGIO ));
+            #endif
+        #endif
+    E_base_S->E_flow_Z_sigset_S_process_volatile = sigset;
+    V0_( sigaddset( &sigset, SIGVTALRM ));
+    E_base_S->E_flow_Z_sigset_S_process_exec = sigset;
+        #ifndef C_middle_code
+    _sigprocmask( SIG_SETMASK, &sigset, 0 );
+        #else
+    _sigprocmask( SIG_SETMASK, &sigset, &E_base_S->E_flow_Z_saved_initial_S_blocked_signals );
+        #endif
+    ///ustawienie podstawowych zmiennych ‹modułu›.
+    if(argc) //NDFN dlaczego to sprawdzenie? czy standard nie gwarantuje “>= 1”?
+    {   Pc s = E_text_Z_s0_R_search_last_c( argv[0], E_mem_Q_file_S_filename_separator );
+        E_base_S->E_flow_S_exe_name = *s ? s + 1 : argv[0];
+    }
+    E_base_S->E_flow_S_exe_args.argc = argc;
+    E_base_S->E_flow_S_exe_args.argv = argv;
+    long l;
+        #if defined( __gnu_linux__ )
+    V1_( l = sysconf( _SC_HOST_NAME_MAX ));
+        #elif defined( __OpenBSD__ )
+    l = MAXHOSTNAMELEN;
+        #else
+#error not implemented
+        #endif
+    MV_( E_base_S->E_flow_S_hostname, V0, gethostname, 0, l );
+    MV_( E_base_S->E_flow_S_cwd, Vp, getcwd, ERANGE, 0 );
+    if( *E_base_S->E_flow_S_cwd != E_mem_Q_file_S_filename_separator )
+    {   W( E_base_S->E_flow_S_cwd );
+        E_base_S->E_flow_S_cwd = E_mem_Q_file_S_filename_separator_s;
+    }
+    ///ustawienie obsługi “sygnałów” ‘uniksowych’.
+    sa.sa_handler = E_flow_Z_signal_V_term;
+    _sigaction_M( SIGHUP, &sa );
+    _sigaction_M( SIGINT, &sa );
+    _sigaction_M( SIGQUIT, &sa );
+    _sigaction_M( SIGTERM, &sa );
+    sa.sa_handler = E_flow_Z_signal_V_chld;
+    _sigaction_M( SIGCHLD, &sa );
+    sa.sa_flags = SA_SIGINFO;
+    sa.sa_sigaction = E_flow_Z_signal_V_alrm;
+    _sigaction_M( SIGALRM, &sa );
+    sa.sa_sigaction = E_flow_Z_signal_V_process_call_req;
+    _sigaction_M( SIGUSR1, &sa );
+    sa.sa_sigaction = E_flow_Z_signal_V_process_call_reply;
+    _sigaction_M( SIGUSR2, &sa );
+    sa.sa_sigaction = E_flow_Z_signal_V_process_call_ping;
+    _sigaction_M( SIGVTALRM, &sa );
+    sa.sa_sigaction = E_flow_Z_signal_V_process_call_pong;
+    _sigaction_M( SIGPROF, &sa );
+        #if defined( E_io_C_aio )
+    sa.sa_sigaction = E_flow_Z_signal_V_io_ready;
+    _sigaction_M( SIGPOLL, &sa );
+        #elif defined( E_io_Q_stream_out_C_sig )
+            #ifndef E_io_C_sig_has_fd
+    sa.sa_flags = 0;
+            #endif
+    sa.sa_sigaction = E_flow_Z_signal_V_io_ready;
+    _sigaction_M( SIGIO, &sa );
+        #endif
+    ///ustawienie procedury “sygnału” “SEGV”— do obsługi pamięci stosów ‹zadań›.
+    stack_t alt_stack =
+    { .ss_flags = 0
+    , .ss_size = 2 * E_base_S->E_mem_S_page_size //CONF
+    };
+        #if defined( __gnu_linux__ )
+    V1p_( alt_stack.ss_sp = mmap( 0
+    , alt_stack.ss_size
+    , PROT_READ | PROT_WRITE
+    , MAP_PRIVATE
+    | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_UNINITIALIZED
+    , -1
+    , 0
+    ));
+        #elif defined( __OpenBSD__ )
+    V1p_( alt_stack.ss_sp = mmap( 0
+    , alt_stack.ss_size
+    , PROT_READ | PROT_WRITE
+    , MAP_PRIVATE
+    | MAP_ANON
+    , -1
+    , 0
+    ));
+        #else
+#error not implemented
+        #endif
+    V0_( sigaltstack( &alt_stack, 0 ));
+    sa.sa_sigaction = E_flow_Z_signal_V_segv;
+    sa.sa_flags = SA_ONSTACK | SA_SIGINFO;
+    _sigaction_M( SIGSEGV, &sa );
+    ///odblokowanie “sygnałów” ‘uniksowych’.
+    _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_Z_sigset_S_empty, 0 );
+    ///uruchomienie funkcjonalności ‹modułu›.
+    V1_( E_base_S->E_flow_Z_task_stacks_S_n_pages = sysconf( _SC_AVPHYS_PAGES ) / 2 ); //NDFN ma być ilość pamięci teoretycznie dostępnej do alokacji. i brakuje uwzględniania pamięci na dynamiczne alokacje.
+    E_base_S->E_flow_Z_task_stacks_S_granulation_u = E_base_S->E_flow_Z_task_stacks_S_n_pages * E_base_S->E_mem_S_page_size;
+        #ifdef E_flow_C_thread_system_unblock_reports
+    E_base_S->E_flow_Q_task_S_uid_subid = E_mem_Q_tab_M( sizeof( struct E_mem_Q_tab_Z * ), 0 );
+        #endif
+    E_base_S->E_flow_Q_report_S = E_mem_Q_tab_M( sizeof( struct E_flow_Q_report_Z ), 0 );
+    E_base_S->E_flow_Q_timer_S = E_mem_Q_tab_M( sizeof( struct E_flow_Q_timer_Z ), 0 );
+    E_base_S->E_flow_Q_process_call_srv_S = E_mem_Q_tab_M( sizeof( struct E_flow_Q_process_call_srv_Z ), 0 );
+    E_base_S->E_flow_Q_process_call_cli_S = E_mem_Q_tab_M( sizeof( struct E_flow_Q_process_call_cli_Z ), 0 );
+        #ifdef E_flow_Q_process_call_C_alt
+    E_base_S->E_flow_Q_process_call_S_shm_key = ftok( E_base_S->E_flow_Q_process_call_S_service_path_guid, E_base_S->E_flow_S_exe_pid );
+        #endif
+        #ifdef E_flow_drv_C_timer_monotonic
+    V0_( timer_create( CLOCK_MONOTONIC, 0, &E_base_S->E_flow_S_timer )); //NDFN funkcjonalność na ‟Linuksach”. “CLOCK_REALTIME” przy stosowanym we “flow_drv” ustawianiu wartości względnych (domyślnych) ma zapisane w dokumentacji (“man”), że “adjtime” nie zmienia jego czasu odliczania, co jest oczekiwane przy “E_flow_drv_C_clock_monotonic”, ale nigdzie nie ma napisane, którego typu zegara można używać dla zgodności z “CLOCK_BOOTTIME” od “clock_gettime”, by był zaliczony czas trwania “suspend”: “CLOCK_REALTIME” czy “CLOCK_MONOTONIC”. z testu wynika, że oba zegary są natychmiast zakańczane po zakończeniu “suspend” komputera…
+        #endif
+    E_mem_M_file();
+    E_io_M_stream();
+    D_M( flow, call_srv );
+    D_M( io, stream_write );
+    Pc *e = environ;
+    while( *e )
+    {   if( E_text_Z_s0_T_starts( *e, "LD_PRELOAD=" ))
+        {   *e = "";
+            break;
+        }
+        e++;
+    }
+}
+/******************************************************************************/

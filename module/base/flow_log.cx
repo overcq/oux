@@ -1,0 +1,182 @@
+/*******************************************************************************
+*   ___   publicplace
+*  ¦OUX¦  ‟Coux”
+*  ¦Inc¦  component
+*   ---   base
+*         flow line reports
+* ©overcq                on ‟Gentoo Linux 13.0” “x86_64”              2016‒1‒7 *
+*******************************************************************************/
+///gdy ‹raporty linii› są włączone, zarezerwowany jest ‘uid’ “strumienia” “E_io”: “0”.
+//==============================================================================
+    #ifdef C_line_report
+_internal
+void
+E_flow_Z_line_report_I_write_Z_s( Pc s
+, N l
+){  O{  _errno = 0;
+        N l_ = write( STDERR_FILENO, s, l );
+        if( ~l_ )
+        {   s += l_;
+            if( !( l -= l_ ))
+                break;
+        }else if( _errno != EINTR )
+            break;
+    }
+}
+_internal
+void
+E_flow_Z_line_report_I_write_Z_c( C c
+){  O{  _errno = 0;
+        N l = write( STDERR_FILENO, &c, 1 );
+        if( ~l )
+            break;
+        if( _errno != EINTR )
+            break;
+    }
+}
+//------------------------------------------------------------------------------
+void
+E_flow_Z_line_report_Z_s_I_sync( Pc s
+, N l
+){  E_flow_Z_line_report_I_write_Z_c( '|' );
+    if( !l )
+        l = E_text_Z_s0_R_0_l(s);
+    E_flow_Z_line_report_I_write_Z_s( s, l );
+}
+void
+E_flow_Z_line_report_Z_s_I( Pc s
+, N l
+){  E_io_Q_stream_out_P_c( 0, '|' );
+    E_io_Q_stream_out_P( 0, s, l );
+}
+_internal
+void
+E_flow_Z_line_report_Z_c_I_sync( C c
+){  Pc s = ( C[] ){ '|', c };
+    E_flow_Z_line_report_I_write_Z_s( s, 2 );
+}
+_internal
+void
+E_flow_Z_line_report_Z_c_I( C c
+){  C c_[2] = { '|', c };
+    E_io_Q_stream_out_P( 0, c_, 2 );
+}
+_internal
+void
+E_flow_Z_line_report_Z_n_I_sync( N n
+, N l
+, N base
+){  E_flow_Z_line_report_Z_s_I_sync( E_flow_Z_line_report_N_n( n, l, base ), 0 );
+}
+_internal
+void
+E_flow_Z_line_report_Z_n_I( N n
+, N l
+, N base
+){  E_flow_Z_line_report_Z_s_I( E_flow_Z_line_report_N_n( n, l, base ), 0 );
+}
+//------------------------------------------------------------------------------
+_internal
+Pc
+E_flow_Z_line_report_N_n( N n
+, N l
+, N base
+){  Pc s_end = &E_base_S->E_flow_Z_line_report_N_n_S[0] + E_text_Z_n_N_s_G( n, l, base );
+    *s_end = '\0';
+    return E_text_Z_n_N_s( s_end, n, l, base );
+}
+//------------------------------------------------------------------------------
+void
+E_flow_Z_line_report_Z_text_s_I_sync( Pc s
+, Pc s_
+, N l
+){  E_flow_Z_line_report_Z_s_I_sync( s, 0 );
+    E_flow_Z_line_report_Z_s_I_sync( s_, l );
+}
+void
+E_flow_Z_line_report_Z_text_s_I( Pc s
+, Pc s_
+, N l
+){  E_flow_Z_line_report_Z_s_I( s, 0 );
+    E_flow_Z_line_report_Z_s_I( s_, l );
+}
+void
+E_flow_Z_line_report_Z_text_c_I_sync( Pc s
+, C c
+){  E_flow_Z_line_report_Z_s_I_sync( s, 0 );
+    E_flow_Z_line_report_Z_c_I_sync(c);
+}
+void
+E_flow_Z_line_report_Z_text_c_I( Pc s
+, C c
+){  E_flow_Z_line_report_Z_s_I( s, 0 );
+    E_flow_Z_line_report_Z_c_I(c);
+}
+void
+E_flow_Z_line_report_Z_text_n_I_sync( Pc s
+, N n
+, N l
+, N base
+){  E_flow_Z_line_report_Z_s_I_sync( s, 0 );
+    E_flow_Z_line_report_Z_n_I_sync( n, l, base );
+}
+void
+E_flow_Z_line_report_Z_text_n_I( Pc s
+, N n
+, N l
+, N base
+){  E_flow_Z_line_report_Z_s_I( s, 0 );
+    E_flow_Z_line_report_Z_n_I( n, l, base );
+}
+//------------------------------------------------------------------------------
+void
+E_flow_Z_line_report_Z_line_I_sync( Pc file
+, N line
+, Pc s
+){  E_flow_Z_line_report_I_write_Z_c( '\n' );
+    E_flow_Z_line_report_Z_s_I_sync( E_base_S->E_flow_S_exe_name, 0 );
+    E_flow_Z_line_report_Z_n_I_sync( E_base_S->E_flow_S_exe_pid, sizeof( E_base_S->E_flow_S_exe_pid ), 10 );
+    E_flow_Z_line_report_Z_s_I_sync( file, 0 );
+    E_flow_Z_line_report_Z_n_I_sync( line, sizeof(line), 10 );
+    if( U_R( E_base_S->E_flow_S_mode, Z_task_table_S_can_read ))
+    {   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+        E_flow_Z_line_report_Z_s_I_sync( task->proc_name, 0 );
+    }
+    E_flow_Z_line_report_Z_n_I_sync( E_base_S->E_flow_Q_task_S_current, sizeof( E_base_S->E_flow_Q_task_S_current ), 10 );
+    if(s)
+        E_flow_Z_line_report_Z_s_I_sync( s, 0 );
+}
+void
+E_flow_Z_line_report_Z_line_I( Pc file
+, N line
+, Pc s
+){  E_io_Q_stream_out_P_c( 0, '\n' );
+    E_flow_Z_line_report_Z_s_I( E_base_S->E_flow_S_exe_name, 0 );
+    E_flow_Z_line_report_Z_n_I( E_base_S->E_flow_S_exe_pid, sizeof( E_base_S->E_flow_S_exe_pid ), 10 );
+    E_flow_Z_line_report_Z_s_I( file, 0 );
+    E_flow_Z_line_report_Z_n_I( line, sizeof(line), 10 );
+    struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+    E_flow_Z_line_report_Z_s_I( task->proc_name, 0 );
+    E_flow_Z_line_report_Z_n_I( E_base_S->E_flow_Q_task_S_current, sizeof( E_base_S->E_flow_Q_task_S_current ), 10 );
+    if(s)
+        E_flow_Z_line_report_Z_s_I( s, 0 );
+}
+void
+E_flow_Z_line_report_Z_line_I_error( Pc file
+, N line
+){  int errno_ = _errno;
+    E_flow_Z_line_report_Z_line_I_sync( file, line, "NA" );
+    E_flow_Z_line_report_Z_text_n_I_sync( "errno", errno_, sizeof( errno_ ), 10 );
+    E_flow_Z_line_report_Z_s_I_sync( strerror( errno_ ), 0 );
+        #ifdef C_line_report
+    if( E_base_S->E_io_Q_stream_out_S )
+    {   struct E_io_Q_stream_out_Z *stream = E_mem_Q_tab_R( E_base_S->E_io_Q_stream_out_S, 0 );
+        if( stream->aiocb->aio_nbytes
+        || stream->data_l
+        )
+            E_flow_Z_line_report_I_write_Z_c( '\n' );
+    }
+        #endif
+}
+    #endif
+/******************************************************************************/

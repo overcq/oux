@@ -1,0 +1,759 @@
+/*******************************************************************************
+*   ___   publicplace
+*  ¦OUX¦  ‟Coux”
+*  ¦Inc¦  component
+*   ---   base
+*         text
+* ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2015‒4‒28 *
+*******************************************************************************/
+//NKN większość tych funkcji powinna być tak zadeklarowana, by ‘kompilator’ podejmował decyzję, czy użyje ‘inline’ czy użyje procedury z ‘dll’, ale zawsze widział implementację— w celu scalania z miejscem wywołania funkcji.
+B
+E_text_Z_c_T_alpha( C c
+){  return ( c >= '0' && c <= '9' )
+    || ( c >= 'A' && c <= 'Z' )
+    || ( c >= 'a' && c <= 'z' );
+}
+B
+E_text_Z_c_T_quote( C c
+){  if( E_text_Z_c_T_alpha(c) )
+        return no;
+    return c < 43 || c > 122
+    || c == ';'
+    || c == '<'
+    || c == '>'
+    || c == '?'
+    || c == '\\'
+    || c == '`';
+}
+//==============================================================================
+///szkic standardu:
+///adres wynikowy procedur obiektów “s”:
+///•na początku znalezionych albo
+///•po wszystkich danych.
+//------------------------------------------------------------------------------
+B
+E_text_Z_s0_T_eq( Pc s
+, Pc t
+){  while( *s
+    && *t
+    && *s == *t
+    )
+    {   s++;
+        t++;
+    }
+    return !*s && !*t;
+}
+B
+E_text_Z_s0_T_starts( Pc s
+, Pc t
+){  while( *s
+    && *t
+    && *s == *t
+    )
+    {   s++;
+        t++;
+    }
+    return !*t;
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Pc
+E_text_Z_s0_R_0_end( Pc s
+){  while( *s )
+        s++;
+    return s;
+}
+N
+E_text_Z_s0_R_0_l( Pc s
+){  return E_text_Z_s0_R_0_end(s) - s;
+}
+//------------------------------------------------------------------------------
+Pc
+E_text_Z_s0_R_end_le( Pc s
+, N l /// > 0
+){  while( *s )
+    {   if( !--l )
+            break;
+        s++;
+    }
+    return s;
+}
+B
+E_text_Z_s0_T_l_le( Pc s
+, N l /// > 0
+){  while( *s )
+    {   if( !--l )
+            break;
+        s++;
+    }
+    return *s == 0;
+}
+//------------------------------------------------------------------------------
+Pc
+E_text_Z_s0_R_end( Pc s
+){  return E_text_Z_s0_R_0_end(s) + 1;
+}
+N
+E_text_Z_s0_R_l( Pc s
+){  return E_text_Z_s0_R_end(s) - s;
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Pc
+E_text_Z_s_R_search_0( Pc s
+, Pc s_end
+){  while( s != s_end )
+    {   if( !*s )
+            break;
+        s++;
+    }
+    return s;
+}
+Pc
+E_text_Z_s_R_search_c_( Pc s
+, C c
+){  while( *s != c )
+        s++;
+    return s;
+}
+Pc
+E_text_Z_s0_R_search_c( Pc s
+, C c
+){  while( *s )
+    {   if( *s == c )
+            break;
+        s++;
+    }
+    return s;
+}
+Pc
+E_text_Z_s_R_search_last_c( Pc s
+, Pc s_end
+, C c
+){  while( s_end > s )
+    {   if( *s_end == c )
+            break;
+        s_end--;
+    }
+    return s_end;
+}
+Pc
+E_text_Z_s0_R_search_last_c( Pc s
+, C c
+){  return E_text_Z_s_R_search_last_c( s, E_text_Z_s0_R_end(s), c );
+}
+Pc
+E_text_Z_s0_R_search_last_c_( Pc s_end
+, C c
+){  while( *s_end != c )
+        s_end--;
+    return s_end;
+}
+//------------------------------------------------------------------------------
+Pc
+E_text_Z_s_R_search_s( Pc s
+, Pc s_end
+, Pc t
+, Pc t_end
+){  if( t == t_end )
+        return s;
+    if( t_end - t <= s_end - s )
+    {   Pc r = s, t_ = t;
+        while( s < s_end )
+        {   if( *s == *t_ )
+            {   if( t_ == t )
+                    r = s;
+                if( ++t_ == t_end )
+                    return r;
+            }else
+            {   if( s >= s_end - ( t_end - t ))
+                    break;
+                if( t_ != t )
+                    t_ = t;
+            }
+            s++;
+        }
+    }
+    return s_end;
+}
+Pc
+E_text_Z_s_R_search_s0( Pc s
+, Pc s_end
+, Pc t
+){  if( !*t )
+        return s;
+    Pc r = s, t_ = t;
+    while( s < s_end )
+    {   if( *s == *t_ )
+        {   if( t_ == t )
+                r = s;
+            if( !*++t_ )
+                return r;
+        }else if( t_ != t )
+            t_ = t;
+        s++;
+    }
+    return s;
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+N
+E_text_Z_s_R_n( Pc s
+, Pc s_end
+, Pc *ret_s
+, N base ///do 36; wynikającej z “( '9' - '0' + 1 ) + ( 'Z' - 'A' + 1 )”.
+){  N n = 0;
+    while( s < s_end )
+    {   n *= base;
+        if( *s >= '0' && *s <= '9' )
+            n += *s - '0';
+        else if( *s >= 'A' && *s < 'A' + base - 10 )
+            n += 10 + *s - 'A';
+        else if( *s >= 'a' && *s < 'a' + base - 10 )
+            n += 10 + *s - 'a';
+        else
+            break;
+        s++;
+    }
+    *ret_s = s;
+    return n;
+}
+N
+E_text_Z_s0_R_n( Pc s
+, Pc *ret_s
+, N base ///do 36; wynikającej z “( '9' - '0' + 1 ) + ( 'Z' - 'A' + 1 )”.
+){  N n = 0;
+    while( *s )
+    {   n *= base;
+        if( *s >= '0' && *s <= '9' )
+            n += *s - '0';
+        else if( *s >= 'A' && *s < 'A' + base - 10 )
+            n += 10 + *s - 'A';
+        else if( *s >= 'a' && *s < 'a' + base - 10 )
+            n += 10 + *s - 'a';
+        else
+            break;
+        s++;
+    }
+    *ret_s = s;
+    return n;
+}
+//------------------------------------------------------------------------------
+N
+E_text_Z_s_R_n10( Pc s
+, Pc s_end
+, Pc *ret_s
+){  N n = 0;
+    while( s < s_end )
+    {   n *= 10;
+        if( *s >= '0' && *s <= '9' )
+            n += *s - '0';
+        else
+            break;
+        s++;
+    }
+    *ret_s = s;
+    return n;
+}
+N
+E_text_Z_s0_R_n10( Pc s
+, Pc *ret_s
+){  N n = 0;
+    while( *s )
+    {   n *= 10;
+        if( *s >= '0' && *s <= '9' )
+            n += *s - '0';
+        else
+            break;
+        s++;
+    }
+    *ret_s = s;
+    return n;
+}
+//------------------------------------------------------------------------------
+Pc
+E_text_Z_n_N_s( Pc s_end
+, N n
+, N l
+, N base
+){  n = E_simple_Z_n_I_mod_i_2( n, l * 8 );
+    do
+    {   N k = n % base;
+        *--s_end = k < 10
+        ? '0' + k
+        : 'A' + k - 10;
+    }while( n /= base );
+    return s_end;
+}
+N
+E_text_Z_n_N_s_G( N n
+, N l
+, N base
+){  N i = 0;
+    n = E_simple_Z_n_I_mod_i_2( n, l * 8 );
+    do
+    {   i++;
+    }while( n /= base );
+    return i;
+}
+//------------------------------------------------------------------------------
+Pc
+E_text_Z_i_N_s( Pc s_end
+, S n
+, N l
+, N base
+){  s_end = E_text_Z_n_N_s( s_end, J_abs(n), l, base );
+    if( n < 0 )
+        *--s_end = '-';
+    return s_end;
+}
+N
+E_text_Z_i_N_s_G( S n
+, N l
+, N base
+){  return E_text_Z_n_N_s_G( J_abs(n), l, base ) + ( n < 0 ? 1 : 0 );
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Pc
+E_text_Z_s_P_0( Pc s
+){  *s++ = '\0';
+    return s;
+}
+Pc
+E_text_Z_s_P_fill_c( Pc s
+, Pc s_end
+, C c
+){  while( s < s_end )
+        *s++ = c;
+    return s;
+}
+//------------------------------------------------------------------------------
+Pc
+E_text_Z_s_P_copy( Pc s
+, Pc s_end
+, Pc t
+, Pc t_end
+){  while( s != s_end
+    && t != t_end
+    ){  *s = *t;
+        s++;
+        t++;
+    }
+    return s;
+}
+Pc
+E_text_Z_s_P_copy_( Pc s
+, Pc t
+, Pc t_end
+){  while( t != t_end )
+    {   *s = *t;
+        s++;
+        t++;
+    }
+    return s;
+}
+Pc
+E_text_Z_s_P_copy_0_( Pc s
+, Pc t
+, Pc t_end
+){  return E_text_Z_s_P_0( E_text_Z_s_P_copy_( s, t, t_end ));
+}
+//------------------------------------------------------------------------------
+Pc
+E_text_Z_s_P_copy_l( Pc s
+, Pc t
+, N l
+){  while( l-- )
+    {   *s = *t;
+        s++;
+        t++;
+    }
+    return s;
+}
+Pc
+E_text_Z_s_P_copy_l_0( Pc s
+, Pc t
+, N l
+){  return E_text_Z_s_P_0( E_text_Z_s_P_copy_l( s, t, l ));
+}
+//------------------------------------------------------------------------------
+Pc
+E_text_Z_s0_P_copy( Pc s
+, Pc t
+){  while( *t )
+    {   *s = *t;
+        s++;
+        t++;
+    }
+    return s;
+}
+Pc
+E_text_Z_s0_P_copy_0( Pc s
+, Pc t
+){  return E_text_Z_s_P_0( E_text_Z_s0_P_copy( s, t ));
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Pc
+E_text_Z_s_Z_cmdline_T_quote_n( Pc s
+, Pc s_end
+){  while( s < s_end )
+        if( E_text_Z_c_T_quote( *s++ ))
+            break;
+    return s;
+}
+Pc
+E_text_Z_s0_Z_cmdline_T_quote( Pc s
+){  while( *s )
+    {   if( E_text_Z_c_T_quote( *s ))
+            break;
+        s++;
+    }
+    return s;
+}
+//------------------------------------------------------------------------------
+_internal
+void
+E_text_Z_s_Z_cmdline_Z_arg_I_mode( S *cmd_mode
+, Pc arg
+){  switch( *cmd_mode )
+    { case 0:
+          if( E_text_Z_s0_T_eq( arg, "gnome-terminal" ))
+              *cmd_mode = 1;
+          else if( E_text_Z_s0_T_eq( arg, "su" ))
+              *cmd_mode = 2;
+          else if( E_text_Z_s0_T_eq( arg, "sg" ))
+              *cmd_mode = 3;
+          else
+              *cmd_mode = 0;
+          break;
+      case 1:
+          if( E_text_Z_s0_T_eq( arg, "-e" ))
+              *cmd_mode = -*cmd_mode;
+          break;
+      case 2:
+          if( E_text_Z_s0_T_eq( arg, "-c" ))
+              *cmd_mode = -*cmd_mode;
+          break;
+      case 3:
+          if( !E_text_Z_s0_T_eq( arg, "-" ))
+              *cmd_mode = -*cmd_mode;
+          break;
+    }
+}
+//------------------------------------------------------------------------------
+_internal
+void
+E_text_Z_s_Z_cmdline_N_quote_I_open( Pc cmdline
+, N *l
+, B *inside
+, N level
+){  for_n_rev( i, level )
+    {   E_mem_Q_blk_P_fill_c( cmdline + *l, ( 1 << i ) - 1, '\\' );
+        *l += ( 1 << i ) - 1;
+        *( cmdline + *l ) = '\'';
+        ++*l;
+    }
+    *inside = yes;
+}
+_internal
+void
+E_text_Z_s_Z_cmdline_N_quote_I_close( Pc cmdline
+, N *l
+, B *inside
+, N level
+){  for_n( i, level )
+    {   E_mem_Q_blk_P_fill_c( cmdline + *l, ( 1 << i ) - 1, '\\' );
+        *l += ( 1 << i ) - 1;
+        *( cmdline + *l ) = '\'';
+        ++*l;
+    }
+    *inside = no;
+}
+N
+E_text_Z_s_Z_cmdline_N_quote( Pc cmdline
+, N level
+, struct E_flow_Z_args *args
+, N args_n
+){  N l = 0;
+    S cmd_mode = 0;
+    B inside = no;
+    for_n( args_i, args_n )
+    {   for_n( i, args->argc )
+        {   Pc arg = args->argv[i];
+            if( !*arg )
+                continue;
+            if(l)
+            {   if( !inside )
+                    E_text_Z_s_Z_cmdline_N_quote_I_open( cmdline, &l, &inside, level );
+                *( cmdline + l ) = ' ';
+                l++;
+            }
+            if( cmd_mode < 0 )
+            {   if(inside)
+                    E_text_Z_s_Z_cmdline_N_quote_I_close( cmdline, &l, &inside, level );
+                cmd_mode = 0;
+                level++;
+            }
+            E_text_Z_s_Z_cmdline_Z_arg_I_mode( &cmd_mode, arg );
+            Pc arg_;
+            if( *( arg_ = E_text_Z_s0_R_search_c( arg, '\'' )))
+            {   if( arg_ != arg )
+                {   N arg_quote = 0;
+                    if( *E_text_Z_s_Z_cmdline_T_quote_n( arg, arg_ ) != '\'' )
+                    {   if(inside)
+                            E_text_Z_s_Z_cmdline_N_quote_I_close( cmdline, &l, &inside, level );
+                        arg_quote = 1;
+                        E_text_Z_s_Z_cmdline_N_quote_I_open( cmdline, &l, &inside, level + arg_quote );
+                    }else if( !inside )
+                        E_text_Z_s_Z_cmdline_N_quote_I_open( cmdline, &l, &inside, level );
+                    E_mem_Q_blk_I_copy( cmdline + l, arg, arg_ - arg );
+                    l += arg_ - arg;
+                    E_text_Z_s_Z_cmdline_N_quote_I_close( cmdline, &l, &inside, level + arg_quote );
+                }else if( inside )
+                    E_text_Z_s_Z_cmdline_N_quote_I_close( cmdline, &l, &inside, level );
+                E_mem_Q_blk_P_fill_c( cmdline + l, ( 2 << level ) - 1, '\\' );
+                l += ( 2 << level ) - 1;
+                *( cmdline + l ) = '\'';
+                l++;
+                arg = arg_ + 1;
+            }
+            if( *arg_ )
+                for( ; *( arg_ = E_text_Z_s0_R_search_c( arg, '\'' )); arg = arg_ + 1 )
+                {   if( arg_ != arg )
+                    {   N arg_quote = 0;
+                        if( *E_text_Z_s_Z_cmdline_T_quote_n( arg, arg_ ) != '\'' )
+                        {   arg_quote = 1;
+                            E_text_Z_s_Z_cmdline_N_quote_I_open( cmdline, &l, &inside, level + arg_quote );
+                        }
+                        E_mem_Q_blk_I_copy( cmdline + l, arg, arg_ - arg );
+                        l += arg_ - arg;
+                        if( arg_quote )
+                            E_text_Z_s_Z_cmdline_N_quote_I_close( cmdline, &l, &inside, level + arg_quote );
+                    }
+                    E_mem_Q_blk_P_fill_c( cmdline + l, ( 2 << level ) - 1, '\\' );
+                    l += ( 2 << level ) - 1;
+                    *( cmdline + l ) = '\'';
+                    l++;
+                }
+            if( arg == args->argv[i] ) ///nie znalazł żadnego cudzysłowu.
+            {   if( arg == args->argv[i] )
+                    arg_ = E_text_Z_s0_R_0_end( args->argv[i] );
+                N arg_quote = 0;
+                if( *E_text_Z_s_Z_cmdline_T_quote_n( arg, arg_ ))
+                {   if(inside)
+                        E_text_Z_s_Z_cmdline_N_quote_I_close( cmdline, &l, &inside, level );
+                    arg_quote = 1;
+                    E_text_Z_s_Z_cmdline_N_quote_I_open( cmdline, &l, &inside, level + arg_quote );
+                }else if( !inside )
+                    E_text_Z_s_Z_cmdline_N_quote_I_open( cmdline, &l, &inside, level );
+                E_mem_Q_blk_I_copy( cmdline + l, arg, arg_ - arg );
+                l += arg_ - arg;
+                if( arg_quote )
+                    E_text_Z_s_Z_cmdline_N_quote_I_close( cmdline, &l, &inside, level + arg_quote );
+            }else if( *arg ) ///znalazł i na końcu jest jeszcze coś oprócz zastąpionego cudzysłowu.
+            {   if( arg == args->argv[i] )
+                    arg_ = E_text_Z_s0_R_0_end( args->argv[i] );
+                N arg_quote = 0;
+                if( *E_text_Z_s_Z_cmdline_T_quote_n( arg, arg_ ))
+                {   arg_quote = 1;
+                    E_text_Z_s_Z_cmdline_N_quote_I_open( cmdline, &l, &inside, level + arg_quote );
+                }
+                E_mem_Q_blk_I_copy( cmdline + l, arg, arg_ - arg );
+                l += arg_ - arg;
+                if( arg_quote )
+                    E_text_Z_s_Z_cmdline_N_quote_I_close( cmdline, &l, &inside, level + arg_quote );
+            }
+        }
+        args++;
+    }
+    if(inside)
+        E_text_Z_s_Z_cmdline_N_quote_I_close( cmdline, &l, &inside, level );
+    return l;
+}
+//------------------------------------------------------------------------------
+_internal
+void
+E_text_Z_s_Z_cmdline_N_quote_G_open(
+  N *l
+, B *inside
+, N level
+){  for_n_rev( i, level )
+        *l += 1 << i;
+    *inside = yes;
+}
+_internal
+void
+E_text_Z_s_Z_cmdline_N_quote_G_close(
+  N *l
+, B *inside
+, N level
+){  for_n( i, level )
+        *l += 1 << i;
+    *inside = no;
+}
+N
+E_text_Z_s_Z_cmdline_N_quote_G(
+  N level
+, struct E_flow_Z_args *args
+, N args_n
+){  N l = 0;
+    S cmd_mode = 0;
+    B inside = no;
+    for_n( args_i, args_n )
+    {   for_n( i, args->argc )
+        {   Pc arg = args->argv[i];
+            if( !*arg )
+                continue;
+            if(l)
+            {   if( !inside )
+                    E_text_Z_s_Z_cmdline_N_quote_G_open( &l, &inside, level );
+                l++;
+            }
+            if( cmd_mode < 0 )
+            {   if(inside)
+                    E_text_Z_s_Z_cmdline_N_quote_G_close( &l, &inside, level );
+                cmd_mode = 0;
+                level++;
+            }
+            E_text_Z_s_Z_cmdline_Z_arg_I_mode( &cmd_mode, arg );
+            Pc arg_;
+            if( *( arg_ = E_text_Z_s0_R_search_c( arg, '\'' )))
+            {   if( arg_ != arg )
+                {   N arg_quote = 0;
+                    if( *E_text_Z_s_Z_cmdline_T_quote_n( arg, arg_ ) != '\'' )
+                    {   if(inside)
+                            E_text_Z_s_Z_cmdline_N_quote_G_close( &l, &inside, level );
+                        arg_quote = 1;
+                        E_text_Z_s_Z_cmdline_N_quote_G_open( &l, &inside, level + arg_quote );
+                    }else if( !inside )
+                        E_text_Z_s_Z_cmdline_N_quote_G_open( &l, &inside, level );
+                    l += arg_ - arg;
+                    E_text_Z_s_Z_cmdline_N_quote_G_close( &l, &inside, level + arg_quote );
+                }else if( inside )
+                    E_text_Z_s_Z_cmdline_N_quote_G_close( &l, &inside, level );
+                l += 2 << level;
+                arg = arg_ + 1;
+            }
+            if( *arg_ )
+                for( ; *( arg_ = E_text_Z_s0_R_search_c( arg, '\'' )); arg = arg_ + 1 )
+                {   if( arg_ != arg )
+                    {   N arg_quote = 0;
+                        if( *E_text_Z_s_Z_cmdline_T_quote_n( arg, arg_ ) != '\'' )
+                        {   arg_quote = 1;
+                            E_text_Z_s_Z_cmdline_N_quote_G_open( &l, &inside, level + arg_quote );
+                        }
+                        l += arg_ - arg;
+                        if( arg_quote )
+                            E_text_Z_s_Z_cmdline_N_quote_G_close( &l, &inside, level + arg_quote );
+                    }
+                    l += 2 << level;
+                }
+            if( arg == args->argv[i] )
+            {   if( arg == args->argv[i] )
+                    arg_ = E_text_Z_s0_R_0_end( args->argv[i] );
+                N arg_quote = 0;
+                if( *E_text_Z_s_Z_cmdline_T_quote_n( arg, arg_ ))
+                {   if(inside)
+                        E_text_Z_s_Z_cmdline_N_quote_G_close( &l, &inside, level );
+                    arg_quote = 1;
+                    E_text_Z_s_Z_cmdline_N_quote_G_open( &l, &inside, level + arg_quote );
+                }else if( !inside )
+                    E_text_Z_s_Z_cmdline_N_quote_G_open( &l, &inside, level );
+                l += arg_ - arg;
+                if( arg_quote )
+                    E_text_Z_s_Z_cmdline_N_quote_G_close( &l, &inside, level + arg_quote );
+            }else if( *arg )
+            {   if( arg == args->argv[i] )
+                    arg_ = E_text_Z_s0_R_0_end( args->argv[i] );
+                N arg_quote = 0;
+                if( *E_text_Z_s_Z_cmdline_T_quote_n( arg, arg_ ))
+                {   arg_quote = 1;
+                    E_text_Z_s_Z_cmdline_N_quote_G_open( &l, &inside, level + arg_quote );
+                }
+                l += arg_ - arg;
+                if( arg_quote )
+                    E_text_Z_s_Z_cmdline_N_quote_G_close( &l, &inside, level + arg_quote );
+            }
+        }
+        args++;
+    }
+    if(inside)
+        E_text_Z_s_Z_cmdline_N_quote_G_close( &l, &inside, level );
+    return l;
+}
+//==============================================================================
+Pc
+E_text_Z_s_Z_utf8_R_u( Pc s
+, U *u
+){  if(( signed char )*s > 0 )
+    {   *u = *s;
+        return s + 1;
+    }
+    *u = ~0;
+    U v = ~( signed char )*s;
+    U n;
+        #if defined( __i386__ ) || defined( __x86_64__ )
+    __asm__ volatile (
+    "\n" "xor   %%eax,%%eax"
+    "\n" "bsr   %1,%0"
+    "\n" "cmove %%eax,%0"
+    : "=r" (n)
+    : "g" (v)
+    : "cc", "eax"
+    );
+        #else
+#error not implemented
+        #endif
+    if( n == 0
+    || n == 6
+    )
+        return s;
+    if( n != 7 )
+    {   v = *s & ( _v( v, 1 ) << n ) - 1;
+        for_n( i, 6 - n )
+        {   if(( *++s & 0xc0 ) != 0x80 )
+                return s;
+            v <<= 6;
+            v |= *s & 0x37;
+        }
+    }
+    *u = v;
+    return s + 1;
+}
+N
+E_text_Z_getter_Z_c_R_u( N (*getter)(void)
+){  N c = getter();
+    if( !~c
+    || c == ~1 ///‘eof’
+    )
+        return c;
+    if(( signed char )c > 0 )
+        return c;
+    U v = ~( signed char )c;
+    U n;
+        #if defined( __i386__ ) || defined( __x86_64__ )
+    __asm__ volatile (
+    "\n" "xor   %%eax,%%eax"
+    "\n" "bsr   %1,%0"
+    "\n" "cmove %%eax,%0"
+    : "=r" (n)
+    : "g" (v)
+    : "cc", "eax"
+    );
+        #else
+#error not implemented
+        #endif
+    if( n == 0
+    || n == 6
+    )
+        return ~0;
+    if( n != 7 )
+    {   v = c & ( _v( v, 1 ) << n ) - 1;
+        for_n( i, 6 - n )
+        {   c = getter();
+            if(( c & 0xc0 ) != 0x80 )
+                return ~0;
+            v <<= 6;
+            v |= c & 0x37;
+        }
+    }
+    return v;
+}
+/******************************************************************************/

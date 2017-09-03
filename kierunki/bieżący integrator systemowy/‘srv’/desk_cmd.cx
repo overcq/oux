@@ -1,0 +1,186 @@
+/*******************************************************************************
+*   ___   workplace
+*  ¦OUX¦  ‟Coux”
+*  ¦Inc¦  bieżący integrator systemowy
+*   ---   server
+*         desktop commands
+* ©overcq                on ‟Gentoo Linux 13.0” “x86_64”              2015‒7‒4 *
+*******************************************************************************/
+#define E_const_P_group_name "inc"
+//==============================================================================
+struct E_desk_cmd_Z_func
+{ Pc name;
+  Pc *argv; ///“0” oznacza “(Pc){ 0 }”.
+  Pc *argv_no_cmd; ///“0” oznacza, że to samo co “argv”, a “~0”, że to samo, ale bez ostatniego argumentu.
+  E_cmd_Z_argv_Z_proc *argv_proc;
+}*E_desk_cmd_S_func;
+Pc E_desk_cmd_Z_argv_0[1] = { 0 };
+//==============================================================================
+void
+E_desk_cmd_M( void
+){  struct E_desk_cmd_Z_func *E_desk_cmd_S_func_ = ( struct E_desk_cmd_Z_func [] )
+    { { "term"
+      , 0
+      , 0
+      , E_cmd_Z_argv_I_exec_I_terminal
+      }
+    , { "term-args"
+      , 0
+      , 0
+      , E_cmd_Z_argv_I_exec_I_terminal_args
+      }
+    , { "dir"
+      , ( Pc [] ){ E_const_P_home_dir "/moje/programy/odgałęzione/rox-filer-master/ROX-Filer/AppRun", "-d", 0 }
+      , (P)~0
+      , E_cmd_Z_argv_I_exec_I_0
+      }
+    , { "file"
+      , ( Pc [] ){ E_const_P_home_dir "/moje/programy/odgałęzione/rox-filer-master/ROX-Filer/AppRun", "-s", 0 }
+      , (P)~0
+      , E_cmd_Z_argv_I_exec_I_0
+      }
+    , { "dir-2"
+      , ( Pc [] ){ "xfe", "-m", 0 }
+      , 0
+      , E_cmd_Z_argv_I_exec_I_0
+      }
+    , { "text"
+      , ( Pc [] ){ "sh", "-c", "geany -s --socket-file=/tmp/${USER}/geany-socket-$( xprop -root _NET_CURRENT_DESKTOP | cut -d \\  -f 3 )${1:+ -- }\"$1\"", "/bin/sh", 0 }
+      , (P)0
+      , E_cmd_Z_argv_I_exec_I_0
+      }
+    , { "www"
+      , ( Pc [] )
+        { "sg"
+        , E_const_P_group_name
+        , "ulimit"
+        , "-m"
+        , "2097152;"
+        , "exec"
+        , "chromium-browser"
+        , "--disable-bundled-ppapi-flash"
+        , "--enable-nacl"
+        , "--enable-pnacl-subzero"
+        , "--ignore-gpu-blacklist"
+        , "--enable-zero-copy"
+        , "--enable-threaded-compositing"
+        , "--enable-impl-side-painting"
+        , "--enable-layer-squashing"
+        , "--enable-hardware-overlays"
+        , "--enable-deferred-image-decoding"
+        , "--enable-lcd-text"
+        , "--enable-harfbuzz-rendertext"
+        , "--disable-logging"
+        , "--disable-restore-background-contents"
+        , "--disable-restore-session-state"
+        , "--use-simple-cache-backend=on"
+        , "--disable-geolocation"
+        , "--disable-device-discovery"
+        , "--disable-async-dns"
+        , "--disable-quic"
+        , "--proxy-pac-url=file:/" "/" E_const_P_home_dir "/lib/proxy.pac"
+        , "--new-window"
+        , "--start-maximized"
+        , "--"
+        , 0
+        }
+      , (P)~0
+      , E_cmd_Z_argv_I_exec_I_0
+      }
+    , { 0, 0, 0, 0 }
+    };
+    N l = 0;
+    for( struct E_desk_cmd_Z_func *p = E_desk_cmd_S_func_; p->name; p++ )
+        l++;
+    E_desk_cmd_S_func = E_mem_Q_blk_M_tab( sizeof( struct E_desk_cmd_Z_func ), l + 1 );
+    for_n( i, l )
+    {   E_desk_cmd_S_func[i].name = E_mem_Q_blk_M( E_text_Z_s0_R_l( E_desk_cmd_S_func_[i].name ));
+        E_text_Z_s0_P_copy_0( E_desk_cmd_S_func[i].name, E_desk_cmd_S_func_[i].name );
+        N l_ = 0;
+        if( E_desk_cmd_S_func_[i].argv )
+        {   for( Pc *p = E_desk_cmd_S_func_[i].argv; *p; p++ )
+                l_++;
+            E_desk_cmd_S_func[i].argv = E_mem_Q_blk_M_tab( sizeof(P), l_ + 1 );
+            for( N i_ = 0; i_ < l_; i_++ )
+            {   E_desk_cmd_S_func[i].argv[ i_ ] = E_mem_Q_blk_M( E_text_Z_s0_R_l( E_desk_cmd_S_func_[i].argv[ i_ ] ));
+                E_text_Z_s0_P_copy_0( E_desk_cmd_S_func[i].argv[ i_ ], E_desk_cmd_S_func_[i].argv[ i_ ] );
+            }
+            E_desk_cmd_S_func[i].argv[ l_ ] = E_desk_cmd_S_func_[i].argv[ l_ ];
+        }else
+            E_desk_cmd_S_func[i].argv = E_desk_cmd_Z_argv_0;
+        if( !~(N)E_desk_cmd_S_func_[i].argv_no_cmd )
+            E_desk_cmd_S_func[i].argv_no_cmd = E_desk_cmd_S_func_[i].argv_no_cmd;
+        else if( E_desk_cmd_S_func_[i].argv_no_cmd )
+        {   l_ = 0;
+            for( Pc *p = E_desk_cmd_S_func_[i].argv_no_cmd; *p; p++ )
+                l_++;
+            E_desk_cmd_S_func[i].argv_no_cmd = E_mem_Q_blk_M_tab( sizeof(P), l_ + 1 );
+            for( N i_ = 0; i_ < l_; i_++ )
+            {   E_desk_cmd_S_func[i].argv_no_cmd[ i_ ] = E_mem_Q_blk_M( E_text_Z_s0_R_l( E_desk_cmd_S_func_[i].argv_no_cmd[ i_ ] ));
+                E_text_Z_s0_P_copy_0( E_desk_cmd_S_func[i].argv_no_cmd[ i_ ], E_desk_cmd_S_func_[i].argv_no_cmd[ i_ ] );
+            }
+            E_desk_cmd_S_func[i].argv_no_cmd[ l_ ] = E_desk_cmd_S_func_[i].argv_no_cmd[ l_ ];
+        }else
+            E_desk_cmd_S_func[i].argv_no_cmd = E_desk_cmd_S_func[i].argv;
+        E_desk_cmd_S_func[i].argv_proc = E_desk_cmd_S_func_[i].argv_proc;
+    }
+    E_desk_cmd_S_func[l] = E_desk_cmd_S_func_[l];
+}
+void
+E_desk_cmd_W( void
+){  if( !E_desk_cmd_S_func )
+        return;
+    for( struct E_desk_cmd_Z_func *p_0 = E_desk_cmd_S_func; p_0->name; p_0++ )
+    {   E_mem_Q_blk_W( p_0->name );
+        if( p_0->argv != E_desk_cmd_Z_argv_0 )
+        {   for( Pc *p_1 = p_0->argv; *p_1; p_1++ )
+                E_mem_Q_blk_W( *p_1 );
+            E_mem_Q_blk_W( p_0->argv );
+        }
+        if( ~(N)p_0->argv_no_cmd
+        && p_0->argv_no_cmd != p_0->argv
+        ){  for( Pc *p_1 = p_0->argv_no_cmd; *p_1; p_1++ )
+                E_mem_Q_blk_W( *p_1 );
+            E_mem_Q_blk_W( p_0->argv_no_cmd );
+        }
+    }
+    E_mem_Q_blk_W( E_desk_cmd_S_func );
+}
+//==============================================================================
+N
+E_desk_cmd_I_func(
+  N argc
+, P data
+){  Pc cwd = data;
+    data = E_text_Z_s0_R_end(data);
+    for( struct E_desk_cmd_Z_func *p = E_desk_cmd_S_func; p->name; p++ )
+        if( E_text_Z_s0_T_eq( data, p->name ))
+        {   pid_t pid = E_flow_I_fork_I_begin();
+            if( !pid )
+            {   E_flow_I_fork_I_start();
+                if( argc-- > 1 )
+                {   Pc *argv = E_mem_Q_blk_M_tab( sizeof(P), argc + 1 ); ///“null”.
+                    Pc data_c = data;
+                    for_n( i, argc )
+                    {   data_c += E_text_Z_s0_R_l( data_c );
+                        argv[i] = data_c;
+                    }
+                    argv[i] = 0;
+                    p->argv_proc( cwd, p->argv, argv, argc );
+                }else if( ~(N)p->argv_no_cmd )
+                    p->argv_proc( cwd, p->argv_no_cmd, 0, 0 );
+                else
+                {   Pc *mime_argv = p->argv;
+                    while( *mime_argv )
+                        mime_argv++;
+                    if( mime_argv != p->argv )
+                        *( mime_argv - 1 ) = 0;
+                    p->argv_proc( cwd, p->argv, 0, 0 );
+                }
+            }
+            E_flow_I_fork_I_end(pid);
+            return ~pid ? no : yes;
+        }
+    return yes;
+}
+/******************************************************************************/

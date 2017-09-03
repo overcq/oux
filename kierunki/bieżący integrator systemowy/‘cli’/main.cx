@@ -1,0 +1,120 @@
+/*******************************************************************************
+*   ___   workplace
+*  ¦OUX¦  ‟Coux”
+*  ¦Inc¦  bieżący integrator systemowy
+*   ---   client
+*         entry and raw labels
+* ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2015‒6‒27 *
+*******************************************************************************/
+int
+main(
+  int argc
+, Pc argv[]
+){  if( argc < 2
+    || *argv[1] == '\0'
+    )
+        return 1;
+    E_flow_M( argc, argv );
+    pid_t server = -1;
+    DIR *dir = opendir( "/proc" );
+    Pc cnt = M( E_base_S->E_mem_S_page_size );
+    O{  _errno = 0;
+        struct dirent *entry = readdir(dir);
+        if( !entry )
+        {   if(_errno)
+            {   GV_(); V();
+            }
+            break;
+        }
+        Pc s = &entry->d_name[0];
+        while( *s )
+        {   if( *s < '0'
+            || *s > '9'
+            )
+                break;
+            s++;
+        }
+        if( *s )
+            continue;
+        N len = s - &entry->d_name[0];
+        Pc path = M( 6 + len + 8 + 1 );
+        E_text_Z_s0_P_copy_0( E_text_Z_s0_P_copy( E_text_Z_s0_P_copy( path
+        , "/proc/" ), &entry->d_name[0] ), "/cmdline" );
+        int file = open( path, O_RDONLY );
+        W(path);
+        if( file == -1 )
+            continue;
+        Pc cnt_ = cnt;
+        O{  N cnt_size = read( file, cnt_, E_base_S->E_mem_S_page_size - ( cnt_ - cnt ));
+            if( cnt_size == -1
+            || !cnt_size
+            )
+                break;
+            Pc s = E_text_Z_s_R_search_0( cnt_, cnt_ + cnt_size );
+            if( !*s )
+            {   cnt_ = s;
+                break;
+            }
+            cnt_ += cnt_size;
+            if( cnt_ - cnt == E_base_S->E_mem_S_page_size )
+                break;
+        }
+        close(file);
+        s = "ocq-bis";
+        if( E_text_Z_s_R_search_s0( cnt, cnt_, s ) != cnt_ )
+        {   Pc s;
+            server = E_text_Z_s0_R_n10( &entry->d_name[0], &s );
+            if( server != E_base_S->E_flow_S_exe_pid )
+                break;
+        }
+    }
+    W(cnt);
+    closedir(dir);
+    if( server == -1 )
+    {   GV_(); V();
+    }
+    N i = 1;
+    N *Mt_( ls, argc - i );
+    N l = 2 * sizeof(N);
+    l += E_text_Z_s0_R_l( E_base_S->E_flow_S_cwd );
+    for( ; i < argc; i++ )
+        l += ls[ i - 1 ] = E_text_Z_s0_R_end( argv[i] ) - argv[i];
+    N r;
+    P data;
+    I call_id = E_flow_Q_process_call_M( l, &data );
+    if( ~call_id )
+    {   i = 1;
+        Pc s;
+        N func = E_text_Z_s0_R_n10( argv[i], &s );
+        if( *s ) ///jeśli nie można zinterpretować czysto podanego numeru funkcji, to wtedy uznaje, że nie podano numeru funkcji, a oczekiwana jest domyślna ‛0’.
+            func = 0;
+        else
+            i++;
+        *(Pn)data = func;
+        *( (Pn)data + 1 ) = argc - i;
+        l = 2 * sizeof(N);
+        s = (Pc)data + l;
+        s = E_text_Z_s0_P_copy_0( s, E_base_S->E_flow_S_cwd );
+        for( ; i < argc; i++ )
+        {   s = E_text_Z_s0_P_copy_0( s, argv[i] );
+            l += ls[ i - 1 ];
+        }
+        W(ls);
+        B successful;
+        E_flow_Q_process_call_I( call_id, server, &successful );
+        if(successful)
+            r = *( N * )data;
+        else
+            r = 1;
+        E_flow_Q_process_call_W( call_id );
+    }else
+        r = 1;
+    E_flow_W();
+    return r;
+}
+//==============================================================================
+void
+E_flow_Q_process_call_I_func( P data
+){
+}
+/******************************************************************************/

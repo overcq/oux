@@ -1,0 +1,3 @@
+.PHONY: $(MAKECMDGOALS)
+$(MAKECMDGOALS):
+	$(MAKE) -C kierunki/‘gui’ $(MAKECMDGOALS)

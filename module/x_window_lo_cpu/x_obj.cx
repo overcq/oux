@@ -1,0 +1,433 @@
+/*******************************************************************************
+*   ___   publicplace
+*  ¦OUX¦  ‟Coux”
+*  ¦Inc¦  component
+*   ---   ‟X window”
+*         window objects manager
+* ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2015‒4‒28 *
+*******************************************************************************/
+///są to obiekty wizualne.
+//każdy obiekt okna jest jednokrotny w konkretnym oknie i jest tylko wizualny. typy obiektów w celu przypisania referencyjnego funkcji obiektu ewentualnie do zrobienia później, jeśli to rozwiązanie okaże się potrzebne zamiast zwykłego ustawiania wskaźników do procedur.
+//==============================================================================
+typedef
+void
+(*draw_object_proc)(
+  struct E_x_Q_display_Z *
+, struct E_x_Q_screen_Z *
+, struct E_x_Q_window_Z *
+, struct E_x_Q_object_Z *
+);
+struct E_x_Q_object_Z
+{   void ///ale obiekt zawiera punkty, które narysuje ta funkcja w czasie wywołania.
+    (*draw)(
+      struct E_x_Q_display_Z *
+    , struct E_x_Q_screen_Z *
+    , struct E_x_Q_window_Z *
+    , struct E_x_Q_object_Z *
+    );
+    N child_n;
+    I *child;
+    S16 x, y;
+    N16 width, height; ///prostokąt oczekiwanej widoczności obiektu.
+    unsigned U_R( mode, lay_height ):1;
+    unsigned U_R( mode, drag_src )  :1;
+};
+//==============================================================================
+S16 E_x_Q_object_S_layout_dx = 4, E_x_Q_object_S_layout_dy = 4;
+//==============================================================================
+I
+E_x_Q_object_M(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_window_Z *window
+, N child_n
+, N x
+, N y
+, N width
+, N height
+, void
+  (*draw)(
+    struct E_x_Q_display_Z *
+  , struct E_x_Q_screen_Z *
+  , struct E_x_Q_window_Z *
+  , struct E_x_Q_object_Z *
+  )
+){  I object_id = E_mem_Q_tab_I_add( window->object );
+    E_x_Q_object_M_( display, window, object_id, child_n, x, y, width, height, draw );
+    return object_id;
+}
+I
+E_x_Q_object_M_(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_window_Z *window
+, I object_id
+, N child_n
+, S16 x
+, S16 y
+, N16 width
+, N16 height
+, void
+  (*draw)(
+    struct E_x_Q_display_Z *
+  , struct E_x_Q_screen_Z *
+  , struct E_x_Q_window_Z *
+  , struct E_x_Q_object_Z *
+  )
+){  struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
+    object->draw = draw;
+    object->child_n = child_n;
+    if( child_n )
+        object->child = Mt( sizeof(I), child_n );
+    object->x = x;
+    object->y = y;
+    object->width = child_n ? 0 : width;
+    object->height = child_n ? 0 : height;
+    U_L( object->mode, lay_height );
+    U_L( object->mode, drag_src );
+    U_F( window->req, draw );
+    U_F( display->req, draw );
+    return object_id;
+}
+void
+E_x_Q_object_W(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_window_Z *window
+, N object_id
+){  struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
+    if( object->child_n )
+        W( object->child );
+    E_mem_Q_tab_I_rem( window->object, object_id );
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void
+E_x_Q_object_I_draw_P_color(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_screen_Z *screen
+, struct E_x_Q_object_Z *object
+, N32 color
+){  if( !U_R( object->mode, drag_src ))
+        E_x_Q_window_I_draw_P_color( display, screen, color );
+}
+//------------------------------------------------------------------------------
+void
+E_x_Q_object_I_draw_Z_points(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_screen_Z *screen
+, struct E_x_Q_window_Z *window
+, struct E_x_Q_object_Z *object
+, N32 n
+, xcb_point_t *points
+){  for_n( i, n )
+    {   points[i].x += object->x;
+        points[i].y += object->y;
+    }
+    E_x_Q_window_I_draw_Z_points( display, screen, window, n, points );
+}
+void
+E_x_Q_object_I_draw_Z_segments(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_screen_Z *screen
+, struct E_x_Q_window_Z *window
+, struct E_x_Q_object_Z *object
+, N32 n
+, xcb_segment_t *segments
+){  for_n( i, n )
+    {   segments[i].x1 += object->x;
+        segments[i].y1 += object->y;
+        segments[i].x2 += object->x;
+        segments[i].y2 += object->y;
+    }
+    E_x_Q_window_I_draw_Z_segments( display, screen, window, n, segments );
+}
+void
+E_x_Q_object_I_draw_Z_line(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_screen_Z *screen
+, struct E_x_Q_window_Z *window
+, struct E_x_Q_object_Z *object
+, N32 n
+, xcb_point_t *points
+){  for_n( i, n )
+    {   points[i].x += object->x;
+        points[i].y += object->y;
+    }
+    E_x_Q_window_I_draw_Z_line( display, screen, window, n, points );
+}
+void
+E_x_Q_object_I_draw_Z_rectangles(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_screen_Z *screen
+, struct E_x_Q_window_Z *window
+, struct E_x_Q_object_Z *object
+, N32 n
+, xcb_rectangle_t *rectangles
+){  for_n( i, n )
+    {   rectangles[i].x += object->x;
+        rectangles[i].y += object->y;
+    }
+    E_x_Q_window_I_draw_Z_rectangles( display, screen, window, n, rectangles );
+}
+void
+E_x_Q_object_I_draw_Z_arcs(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_screen_Z *screen
+, struct E_x_Q_window_Z *window
+, struct E_x_Q_object_Z *object
+, N32 n
+, xcb_arc_t *arcs
+){  for_n( i, n )
+    {   arcs[i].x += object->x;
+        arcs[i].y += object->y;
+    }
+    E_x_Q_window_I_draw_Z_arcs( display, screen, window, n, arcs );
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+struct E_x_Q_object_I_lay_Z_stack
+{ struct E_x_Q_object_Z *object;
+  N i;
+  S16 x, y;
+  N16 width, height;
+  B lay_height;
+} *E_x_Q_object_I_lay_S_stack;
+_internal
+void
+E_x_Q_object_I_lay_I_object(
+  struct E_x_Q_window_Z *window
+, N stack_i
+)
+{   static N stack_n;
+    struct E_x_Q_object_I_lay_Z_stack *stack = E_x_Q_object_I_lay_S_stack;
+    if( stack[ stack_i ].object->child_n )
+    {   E_mem_Q_blk_I_append( &stack, 1 );
+        E_x_Q_object_I_lay_S_stack = stack;
+        stack_n = ++stack_i;
+        stack[ stack_i ].i = 0;
+        stack[ stack_i ].x = stack[ stack_i - 1 ].x;
+        stack[ stack_i ].y = stack[ stack_i - 1 ].y;
+        do
+        {   stack[ stack_i ].object = E_mem_Q_tab_R( window->object, stack[ stack_i - 1 ].object->child[ stack[ stack_i ].i ] );
+            E_x_Q_object_I_lay_I_object( window, stack_i );
+            if( ++stack[ stack_i ].i < stack[ stack_i ].object->child_n
+            && stack_n - stack_i
+            )
+            {   for_n( i, stack_n - stack_i )
+                {   stack[ stack_n - i - 1 ].x = stack[ stack_n - i ].x;
+                    stack[ stack_n - i - 1 ].y = stack[ stack_n - i ].y;
+                    if( stack[ stack_n - i - 1 ].object->width < stack[ stack_n - i ].object->width )
+                        stack[ stack_n - i - 1 ].object->width = stack[ stack_n - i ].object->width;
+                    if( stack[ stack_n - i - 1 ].object->height < stack[ stack_n - i ].object->height )
+                        stack[ stack_n - i - 1 ].object->height = stack[ stack_n - i ].object->height;
+                }
+                E_mem_Q_blk_I_rem( &stack, stack_i + 1, stack_n - stack_i );
+                E_x_Q_object_I_lay_S_stack = stack;
+                stack_n = stack_i;
+            }
+        }while( stack[ stack_i ].i < stack[ stack_i ].object->child_n );
+        E_mem_Q_blk_I_rem( &stack, stack_i, stack_n - stack_i + 1 );
+        E_x_Q_object_I_lay_S_stack = stack;
+        stack_n = --stack_i;
+    }else
+    {   stack[ stack_i ].lay_height = U_R( stack[ stack_i ].object->mode, lay_height ) = stack_i ? stack[ stack_i ].x + stack[ stack_i ].object->width >= window->width : no;
+        if( U_R( stack[ stack_i ].object->mode, lay_height ))
+        {   stack[ stack_i ].x = stack[ stack_i - 1 ].x + stack[ stack_i ].object->width + E_x_Q_object_S_layout_dx;
+            stack[ stack_i ].y = stack[ stack_i - 1 ].y + stack[ stack_i ].height + E_x_Q_object_S_layout_dy;
+            stack[ stack_i ].object->x = stack[ stack_i - 1 ].x;
+            stack[ stack_i ].object->y = stack[ stack_i ].y;
+            if( stack[ stack_i ].i )
+                stack[ stack_i ].height += E_x_Q_object_S_layout_dy + stack[ stack_i ].object->height;
+        }else
+        {   stack[ stack_i ].object->x = stack[ stack_i ].x;
+            stack[ stack_i ].object->y = stack[ stack_i ].y;
+            stack[ stack_i ].x += stack[ stack_i ].object->width;
+            if( stack[ stack_i ].i
+            && stack[ stack_i ].width < stack[ stack_i ].x - stack[ stack_i - 1 ].x
+            )
+                stack[ stack_i ].width = stack[ stack_i ].x - stack[ stack_i - 1 ].x;
+            stack[ stack_i ].x += E_x_Q_object_S_layout_dx;
+        }
+    }
+}
+void
+E_x_Q_object_I_lay2(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_window_Z *window
+){  if( !E_mem_Q_tab_R_n( window->object ))
+        return;
+    struct E_x_Q_object_I_lay_Z_stack *stack = Mt( sizeof( struct E_x_Q_object_I_lay_Z_stack ), 1 );
+    stack[0].object = E_mem_Q_tab_R( window->object, 0 );
+    stack[0].i = 0;
+    stack[0].x = E_x_Q_object_S_layout_dx;
+    stack[0].y = E_x_Q_object_S_layout_dy;
+    stack[0].width = stack[0].object->width;
+    stack[0].height = stack[0].object->height;
+    stack[0].lay_height = no;
+    E_x_Q_object_I_lay_S_stack = stack;
+    E_x_Q_object_I_lay_I_object( window, 0 );
+    W( E_x_Q_object_I_lay_S_stack );
+    U_F( window->req, draw );
+    U_F( display->req, draw );
+}
+void
+E_x_Q_object_I_lay(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_window_Z *window
+){  if( !E_mem_Q_tab_R_n( window->object ))
+        return;
+    struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, 0 );
+    struct Z_stack
+    { struct E_x_Q_object_Z *object;
+      N i;
+      S16 x, y;
+      N16 width, height;
+      B lay_height;
+    };
+    struct Z_stack *stack = Mt( sizeof( struct Z_stack ), 1 );
+    N stack_i = 0;
+    stack[0].object = object;
+    stack[0].i = 0;
+    stack[0].x = E_x_Q_object_S_layout_dx;
+    stack[0].y = E_x_Q_object_S_layout_dy;
+    stack[0].width = object->width;
+    stack[0].height = object->height;
+    stack[0].lay_height = no;
+    goto Start;
+    do
+    {   if( stack[ stack_i ].i < stack[ stack_i ].object->child_n )
+        {   object = E_mem_Q_tab_R( window->object, stack[ stack_i ].object->child[ stack[ stack_i ].i ] );
+Start:      if( !stack[ stack_i ].i )
+            {   stack[ stack_i ].width = object->width;
+                stack[ stack_i ].height = object->height;
+            }
+            stack[ stack_i ].lay_height = U_R( object->mode, lay_height ) = stack_i ? stack[ stack_i ].x + object->width >= window->width : no;
+            if( U_R( object->mode, lay_height ))
+            {   stack[ stack_i ].x = stack[ stack_i - 1 ].x;
+                if( !object->child_n )
+                    stack[ stack_i ].x += object->width + E_x_Q_object_S_layout_dx;
+                stack[ stack_i ].y = stack[ stack_i - 1 ].y + stack[ stack_i ].height + E_x_Q_object_S_layout_dy;
+                object->x = stack[ stack_i - 1 ].x;
+                object->y = stack[ stack_i ].y;
+                if( stack[ stack_i ].i )
+                    stack[ stack_i ].height += E_x_Q_object_S_layout_dy + object->height;
+            }else
+            {   object->x = stack[ stack_i ].x;
+                object->y = stack[ stack_i ].y;
+                if( !object->child_n )
+                    stack[ stack_i ].x += object->width;
+                if( stack[ stack_i ].i
+                && stack[ stack_i ].width < stack[ stack_i ].x - stack[ stack_i - 1 ].x
+                )
+                    stack[ stack_i ].width = stack[ stack_i ].x - stack[ stack_i - 1 ].x;
+                G(); Gd( stack[ stack_i ].width ); Gd( stack[ stack_i ].x ); Gd( stack[ stack_i - 1 ].x );
+                if( !object->child_n )
+                    stack[ stack_i ].x += E_x_Q_object_S_layout_dx;
+            }
+            G(); Gd( object->x ); Gd( object->y );
+            if( object->child_n )
+            {   E_mem_Q_blk_I_append( &stack, 1 );
+                stack_i++;
+                stack[ stack_i ].object = object;
+                stack[ stack_i ].i = 0;
+                stack[ stack_i ].x = stack[ stack_i - 1 ].x;
+                stack[ stack_i ].y = stack[ stack_i - 1 ].y;
+            }else
+                stack[ stack_i ].i++;
+        }else
+        {   N stack_i_ = stack_i;
+            struct Z_stack *stack_ = stack;
+            do
+            {   stack--;
+                stack_i--;
+            }while( stack_i
+            && stack[ stack_i ].object->child_n
+            && stack[ stack_i ].i + 1 >= stack[ stack_i ].object->child_n
+            );
+            stack = stack_;
+            stack_i = stack_i_;
+            S16 x = stack[ stack_i ].x;
+            S16 y = stack[ stack_i ].y;
+            do
+            {   B lay_height;
+                N16 width = 0, height = 0;
+                if( stack_i )
+                {   lay_height = stack[ stack_i ].lay_height;
+                    width = stack[ stack_i ].width;
+                    height = stack[ stack_i ].height;
+                    E_mem_Q_blk_I_rem( &stack, stack_i--, 1 );
+                }
+                stack[ stack_i ].i++;
+                object = stack[ stack_i ].object;
+                if( object->width < width )
+                    object->width = width;
+                if( object->height < height )
+                    object->height = height;
+                //if( stack_i
+                //&& stack[ stack_i ].i < object->child_n
+                //)
+                //{   //stack[ stack_i ].x = x;
+                    //if( lay_height )
+                        //stack[ stack_i ].y += height + E_x_Q_object_S_layout_dy;
+                //}
+                if( stack_i )
+                {   stack[ stack_i ].x = x;
+                    stack[ stack_i ].y = y;
+                    if( stack[ stack_i ].height < height )
+                        stack[ stack_i ].height = height;
+                    if( stack[ stack_i ].width < width )
+                        stack[ stack_i ].width = width;
+                }
+                object->x = stack[ stack_i ].x;
+                object->y = stack[ stack_i ].y;
+                //G(); Gd( object->x ); Gd( object->y ); Gd( object->width ); Gd( object->height );
+            }while( stack_i
+            && stack[ stack_i ].object->child_n
+            && stack[ stack_i ].i >= stack[ stack_i ].object->child_n
+            );
+        }
+    }while( stack_i );
+    W(stack);
+    U_F( window->req, draw );
+    U_F( display->req, draw );
+}
+//------------------------------------------------------------------------------
+I
+E_x_Q_object_Z_text_field_M(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_window_Z *window
+, N child_n
+){  I object_id = E_mem_Q_tab_I_add( window->object );
+    E_x_Q_object_Z_text_field_M_( display, window, object_id, child_n );
+    return object_id;
+}
+void
+E_x_Q_object_Z_text_field_M_(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_window_Z *window
+, I object_id
+, N child_n
+){  E_x_Q_object_M_( display, window
+    , object_id
+    , child_n
+    , 0
+    , 0
+    , 40
+    , 30
+    , E_x_Q_object_Z_text_field_I_draw
+    );
+}
+void
+E_x_Q_object_Z_text_field_I_draw(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_screen_Z *screen
+, struct E_x_Q_window_Z *window
+, struct E_x_Q_object_Z *object
+){  E_x_Q_object_I_draw_P_color_( E_x_Z_color_M( 0xff, 0, 0 ));
+    E_x_Q_object_I_draw_Z_rectangles_((
+      ( xcb_rectangle_t[] )
+      { { .x = 0
+        , .y = 0
+        , .width = object->width
+        , .height = object->height
+        }
+      }
+    ));
+}
+/******************************************************************************/

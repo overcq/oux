@@ -1,0 +1,174 @@
+/*******************************************************************************
+*   ___   publicplace
+*  ¦OUX¦  ‟Coux”
+*  ¦Inc¦  component
+*   ---   base
+*         wyrzucanie ‹modułu› przy zakończeniu programu
+* ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2016‒2‒28 M
+*******************************************************************************/
+///DFN globalnie: usunięcie ‹modułu› ([…]“_W”) może być wykonane w programie tylko raz.
+//==============================================================================
+    #ifdef C_middle_code
+_internal
+void
+E_io_W_stream( void
+){  for_each( i, E_base_S->E_io_Q_stream_out_S, E_mem_Q_tab )
+    {   struct E_io_Q_stream_out_Z *stream = E_mem_Q_tab_R( E_base_S->E_io_Q_stream_out_S, i );
+            #ifdef E_io_C_aio
+        if( stream->aiocb->aio_nbytes )
+        {   if( !U_R( stream->state, closeing ))
+            {   if( !U_R( stream->state, io_ready ))
+                {   int result;
+                    V1_( result = aio_cancel( stream->aiocb->aio_fildes, stream->aiocb ));
+                    if( result == AIO_NOTCANCELED )
+                    {   VO0_( aio_suspend( &stream->aiocb, 1, 0 ));
+                    }
+                }
+                int errno_;
+                Vr((( errno_ = aio_error( stream->aiocb )) && errno_ == ECANCELED && ( errno_ = 0 ), errno_ )){}
+                V1_( aio_return( stream->aiocb ));
+            }
+        }
+            #else
+                #ifdef E_io_C_sig_has_fd
+        if( !U_R( stream->state, closeing ))
+                #endif
+        {   int fd_flags;
+            V1_( fd_flags = fcntl( stream->aiocb->aio_fildes, F_GETFL ));
+            fd_flags &= ~O_NONBLOCK;
+                #ifdef E_io_Q_stream_out_C_sig
+            fd_flags &= ~O_ASYNC;
+                #endif
+            V0_( fcntl( stream->aiocb->aio_fildes, F_SETFL, fd_flags ));
+        }
+            #endif
+        if( U_R( stream->type, opened ))
+        {   V0( close( stream->aiocb->aio_fildes )){}
+        }
+    }
+        #if defined( E_io_C_aio ) || defined( E_io_C_sig_has_fd )
+    struct timespec ts = { 0, E_io_Q_stream_out_S_delay * 1000 };
+    VO0_( nanosleep( &ts, &ts ));
+        #endif
+}
+_internal
+void
+E_mem_W_file( void
+){  for_each( id, E_base_S->E_mem_Q_file_S, E_mem_Q_tab )
+    {   struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
+        //TODO zapis.
+        V0_( close( file->fd ));
+    }
+    V0_( munmap( E_base_S->E_mem_Q_file_S_buffer, E_base_S->E_mem_Q_file_S_buffer_l ));
+}
+_internal
+void
+E_mem_W_blk( void
+){  struct E_mem_Q_blk_Z_mapped *mapped_p = (P)E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_mapped_id ].p, *mapped_p_end = mapped_p + E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_mapped_id ].n, *mapped_p_self;
+    ///‘odmapowanie’ pamięci “menedżera pamięci”.
+    while( (Pc)mapped_p < mapped_p->p
+    || (Pc)mapped_p >= mapped_p->p + mapped_p->l
+    )
+    {   if( munmap( mapped_p->p, mapped_p->l ))
+        {   GV_(NA); V();
+        }
+        mapped_p++;
+    }
+    mapped_p_self = mapped_p;
+    while( ++mapped_p != mapped_p_end )
+    {   if( munmap( mapped_p->p, mapped_p->l ))
+        {   GV_(NA); V();
+        }
+    }
+    if( munmap( mapped_p_self->p, mapped_p_self->l ))
+    {   GV_(NA); V();
+    }
+}
+    #endif
+//TODO procedura do ułożenia.
+//DED jeśli program zapisany w technologii ‟oux” miałby być dopisany na początku “main” innego programu w języku ‟C” lub ‘skompilowanego’— to wtedy usuwa swoje zasoby i próbuje przywrócić stan procesu do domyślnego. dopisanie programu nie na początku też byłoby możliwe po uzupełnieniu o zapisywanie stanu do przywrócenia (zamiast domyślnego), ale mogłoby być ryzykowne, jeśli program zmieniany używałby jakichkolwiek stanów ulotnych względem czasu wykonania; tak jak ten używa. pozostało do zrobienia w całości przywracanie stanu zastanego, a nie domyślnego.
+void
+E_flow_W( void
+){  D_W( flow, call_srv ); ///przedostatnie ‹zadanie›.
+    ///dopóki wypisywanie “G”[…] jest do tego samego “strumienia” jak “G”[…]“_”, to jeśli ‹raporty linii› są włączone, to znak nowej linii jest dorzucany synchronicznie, na końcu tej procedury usuwania ‹modułu›.
+        //#ifdef C_line_report
+    //E_io_Q_stream_out_P_c( 0, '\n' );
+        //#endif
+    struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, 0 );
+    task->run_state = E_flow_Z_run_state_S_ready;
+    I_B(); ///może przełączyć do ostatniego ‹zadania›.
+    D_W( io, stream_write );
+        #ifdef C_middle_code
+            #ifdef E_flow_drv_C_timer_monotonic
+    V0_( timer_delete( E_base_S->E_flow_S_timer ));
+            #endif
+    struct sigaction sa =
+    { .sa_handler = SIG_DFL
+    , .sa_flags = 0
+    };
+    _sigaction_W( SIGSEGV, &sa );
+    stack_t alt_stack;
+    V0_( sigaltstack( 0, &alt_stack ));
+    V0_( munmap( alt_stack.ss_sp, alt_stack.ss_size ));
+    E_mem_W_file();
+        #endif
+    _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_Z_sigset_S_process_exec, 0 );
+        #ifdef C_middle_code
+    for_each( id, E_base_S->E_flow_Q_process_call_srv_S, E_mem_Q_tab )
+    {   struct E_flow_Q_process_call_srv_Z *call = E_mem_Q_tab_R( E_base_S->E_flow_Q_process_call_srv_S, id );
+        E_mem_Q_shared_Q_blk_W( call->shm );
+    }
+        #endif
+    for_each( call_id, E_base_S->E_flow_Q_process_call_cli_S, E_mem_Q_tab )
+    {   struct E_flow_Q_process_call_cli_Z *call = E_mem_Q_tab_R( E_base_S->E_flow_Q_process_call_cli_S, call_id );
+        E_mem_Q_shared_W( call->shm_id );
+    }
+        #ifdef C_middle_code
+    E_io_W_stream();
+            #if defined( E_io_C_aio )
+    _sigaction_W( SIGPOLL, &sa );
+            #elif defined( E_io_Q_stream_out_C_sig )
+    _sigaction_W( SIGIO, &sa );
+            #endif
+    _sigaction_W( SIGUSR1, &sa );
+    _sigaction_W( SIGUSR2, &sa );
+    _sigaction_W( SIGPROF, &sa );
+    _sigaction_W( SIGVTALRM, &sa );
+    _sigaction_W( SIGCHLD, &sa );
+    _sigaction_W( SIGALRM, &sa );
+    _sigaction_W( SIGTERM, &sa );
+    _sigaction_W( SIGQUIT, &sa );
+    _sigaction_W( SIGINT, &sa );
+    _sigaction_W( SIGHUP, &sa );
+    _sigaction_W( SIGTTOU, &sa );
+    _sigaction_W( SIGTTIN, &sa );
+    _sigaction_W( SIGTSTP, &sa );
+    _sigaction_W( SIGPIPE, &sa );
+        #endif
+        #ifdef C_line_report
+    E_flow_Z_line_report_I_write_Z_c( '\n' );
+    if( isatty( STDERR_FILENO ))
+    {   VO0_( tcdrain( STDERR_FILENO ));
+    }
+        #endif
+        #ifdef C_middle_code
+    O{
+            #ifndef __OpenBSD__
+        int errno_ = 0;
+        VOp_(( ~sigtimedwait( &E_base_S->E_flow_Z_sigset_S_process_exec, 0, &( struct timespec ){ 0, 0 } ) || !_errno || ( _errno == EAGAIN && ( errno_ = _errno ))));
+        if( errno_ )
+            break;
+            #else
+        sigset_t sigset;
+        V0_( sigpending( &sigset ));
+        if( sigset == E_base_S->E_flow_Z_sigset_S_empty )
+            break;
+        int signum;
+        Vr_( sigwait( &E_base_S->E_flow_Z_sigset_S_process_exec, &signum ));
+            #endif
+    }
+    _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_Z_saved_initial_S_blocked_signals, 0 );
+    E_mem_W_blk(); ///DFN pamięć alokowana dynamicznie (‘zmapowana’ przez tego ‹menedżera›) nie potrzebuje być poszczególnie zwalniana.
+        #endif
+}
+/******************************************************************************/

@@ -1,0 +1,304 @@
+/*******************************************************************************
+*   ___   laboratory
+*  ¦OUX¦  ‟Coux”
+*  ¦Inc¦  ‘gui’ sample
+*   ---   ‟X window”
+*         entry and raw labels
+* ©overcq                on ‟Gentoo Linux 13.0” “x86_64”              2015‒1‒6 *
+*******************************************************************************/
+N E_main_Q_timer_S_hour;
+N E_main_Q_timer_S_minute;
+N E_main_Q_timer_S_second;
+//=============================================================================
+int
+main(
+  int argc
+, Pc argv[]
+){  E_flow_M( argc, argv );
+    E_x_M();
+#ifndef C_line_report
+    I out = E_io_Q_stream_out_M_fd( STDERR_FILENO );
+#else
+    I out = E_io_Q_stream_out_M_fd( STDOUT_FILENO );
+#endif
+    E_io_Q_stream_out_P( out
+    , "\nACTUAL DESCRIPTION:\n"
+      "\"OUX 2\" test sample (c)2017 overcq\n"
+      "==\n"
+      "ORIGINAL DESCRIPTION (updated):\n"
+      "(c)Kamyk. All rights reserved. 2012.\n"
+      "program: OUX \'gui\' sample. demo of X module.\n"
+      "homepage: http:/""/gj3d.1apps.com/index4.html .\n"
+      "experimental edition:\n"
+      "  this program may contain UNDEFINED functionalities which the USER is ABLE to STEP in.\n"
+      "  this program probably contains mis-configurations of CRITICAL human interaction PARAMETERS. the parameters are user-specific and they will be configurable in the future.\n"
+      "use: your clicks will be ignored if outside defined scheme (many parameters; time will be configurable in the future).\n"
+      "try drag&drop on shape graphical objects (exact point over line, no help). drop is disabled currently.\n"
+      "left or right mouse button press.\n"
+      "(opposite button of the used for drag) left or right click during drag.\n"
+      "middle click not during drag.\n"
+      "click doesn\'t work? don\'t try to force- you will get nothing, find the scheme: single user operation of the kind in the time.\n"
+      "try responsiveness on heavy conditions against X window manager.\n"
+    , 0
+    );
+    I_B();
+    E_io_Q_stream_out_W_(out);
+    I_V()
+        goto End;
+    X_M( x_window, close_window );
+    for_n( i, 1 )
+    {   D_M( main, timer_draw );
+        N display_id = E_x_Q_display_M();
+        struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
+        for_each( screen_id, display->screen, E_mem_Q_tab )
+        {   for_n( i, 2 )
+            {   N window_id = E_x_Q_window_M( display_id, screen_id
+                , 254, 254
+                );
+                struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
+                I object_id = E_x_Q_object_Z_text_field_M( display, window
+                , 11
+                );
+                for_n( i, 11 )
+                {   I id = E_x_Q_object_Z_text_field_M( display, window
+                    , 2
+                    );
+                    struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
+                    object->child[i] = id;
+                    for_n( i, 2 )
+                    {   I id_2 = E_x_Q_object_Z_text_field_M( display, window
+                        , 0
+                        );
+                        object = E_mem_Q_tab_R( window->object, id );
+                        object->child[i] = id_2;
+                    }
+                }
+                E_x_Q_object_I_lay2( display, window );
+                E_x_Q_object_M( display, window
+                , 0
+                , 5, 5
+                , 61, 61
+                , E_main_Q_timer_I_draw
+                );
+                E_x_Q_object_M( display, window
+                , 0
+                , 55, 53
+                , 171, 191
+                , E_main_Q_timer_I_draw
+                );
+                E_x_Q_object_M( display, window
+                , 0
+                , 151, 191
+                , 21, 21
+                , E_main_Q_timer_I_draw
+                );
+            }
+        }
+        //D_M( main, cursor );
+        X_B( x_window, close_window, 0 )
+            U_F( E_base_S->E_flow_S_signal, exit_all );
+        //D_W( main, cursor );
+        E_x_Q_display_W( display_id );
+        D_W( main, timer_draw );
+        if( U_R( E_base_S->E_flow_S_signal, exit_all ))
+            break;
+    }
+End:E_x_W();
+    E_flow_W();
+    return 0;
+}
+//D( main, cursor )
+//{   X_A( x_window, flush );
+    //N cursor_no = 0;
+    //N timer = Y_M(1500000);
+    //I_D
+    //{   Y_B( timer, 0 )
+            //break;
+        //if( cursor_no == XC_num_glyphs )
+            //cursor_no = 0;
+        //G(); Gd( cursor_no );
+        //for_each( display_id, E_x_Q_display_S, E_mem_Q_tab )
+        //{   struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
+            //Cursor cursor = XCreateFontCursor( display->x_display, cursor_no );
+            //for_each( window_id, display->window, E_mem_Q_tab )
+            //{   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
+                //if( U_R( window->state, visible ))
+                    //XDefineCursor( display->x_display, window->x_window, cursor );
+            //}
+            //XFreeCursor( display->x_display, cursor );
+            //U_F( display->req, flush );
+        //}
+        //cursor_no += 2;
+        //X_U( x_window, flush );
+    //}
+    //Y_W(timer);
+//}
+D( main, timer_draw )
+{   X_A( x_window, draw );
+    time_t time_u = time(0);
+    struct tm *time_s = localtime( &time_u );
+    E_main_Q_timer_S_hour = time_s->tm_hour % 12;
+    E_main_Q_timer_S_minute = time_s->tm_min;
+    E_main_Q_timer_S_second = time_s->tm_sec;
+    N timer = Y_M(1000000);
+    I_D
+    {   N timer_lost_count;
+        Y_B( timer, &timer_lost_count )
+            break;
+        E_main_Q_timer_S_second += 1 + timer_lost_count;
+        E_main_Q_timer_S_hour += E_main_Q_timer_S_second / 3600;
+        E_main_Q_timer_S_second %= 3600;
+        E_main_Q_timer_S_minute += E_main_Q_timer_S_second / 60;
+        E_main_Q_timer_S_second %= 60;
+        E_main_Q_timer_S_hour += E_main_Q_timer_S_minute / 60;
+        E_main_Q_timer_S_minute %= 60;
+        E_main_Q_timer_S_hour %= 12;
+        //NDFN poniższe pętle implementowane nie tutaj, ale we właściwym menedżerze.
+        //NDFN tylko te okna, na których jest obiekt.
+        for_each( display_id, E_x_Q_display_S, E_mem_Q_tab )
+        {   struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
+            for_each( window_id, display->window, E_mem_Q_tab )
+            {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
+                U_F( window->req, draw );
+            }
+            if( U_R( display->mode, drag ))
+            {   struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, display->drag_S_dnd_window_screen_id );
+                struct E_x_Q_window_Z *window = &screen->dnd_window;
+                U_F( window->req, draw );
+            }
+            U_F( display->req, draw );
+        }
+        X_F( x_window, draw );
+    }
+    Y_W(timer);
+}
+//TODO “gc” przetestowane: wrócić do własnego rysowania, tym razem już z wygładzaniem i gwarancją każdego “pixela”.
+#define E_main_I_draw_Z_angle_line_(arc_i,arc_n,line_length_i,line_length_n)    E_main_I_draw_Z_angle_line( display, screen, window, object, arc_i, arc_n, line_length_i, line_length_n )
+void
+E_main_I_draw_Z_angle_line(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_screen_Z *screen
+, struct E_x_Q_window_Z *window
+, struct E_x_Q_object_Z *object
+, N arc_i
+, N arc_n
+, N line_length_i
+, N line_length_n
+){  N x = line_length_i * ( object->width / 2 - 1 ) / line_length_n;
+    N y = line_length_i * ( object->height / 2 - 1 ) / line_length_n;
+    N l = 2 * ( object->width + object->height );
+    N d = arc_i * l / arc_n;
+    N a = d % ( l / 8 ) - 1;
+    switch( d / ( l / 8 ))
+    { case 0:
+            x = a;
+            y = -y;
+            break;
+      case 1:
+            y = a - y;
+            break;
+      case 2:
+            y = a;
+            break;
+      case 3:
+            x = x - a;
+            break;
+      case 4:
+            x = -a;
+            break;
+      case 5:
+            x = -x;
+            y -= a;
+            break;
+      case 6:
+            x = -x;
+            y = -a;
+            break;
+      case 7:
+            x = a - x;
+            y = -y;
+            break;
+    }
+    E_x_Q_object_I_draw_Z_line_((
+      ( xcb_point_t[] )
+      { object->width / 2
+      , object->height / 2
+      , object->width / 2 + x
+      , object->height / 2 + y
+      }
+    ));
+}
+//NDFN konkretne stany wyglądu obiektów mające konkretne znaczenia.
+//NDFN rysowanie uproszczone, gdy brak czasu.
+void
+E_main_Q_timer_I_draw(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_screen_Z *screen
+, struct E_x_Q_window_Z *window
+, struct E_x_Q_object_Z *object
+){  E_x_Q_object_I_draw_P_color_( E_x_Z_color_M( 0xff, 0xff, 0xff ));
+    E_x_Q_object_I_draw_Z_rectangles_(
+      (( xcb_rectangle_t[] )
+      { 0
+      , 0
+      , object->width - 1
+      , object->height - 1
+      })
+    );
+    struct Z_font_item
+    { N8 l;
+      S8 delta;
+      C s[14];
+    };
+    xcb_poly_text_8( display->x_display
+    , window->drawable
+    , screen->drawable_gc
+    , object->x + 1
+    , object->y + 7
+    , sizeof( struct Z_font_item )
+    , ( N8 * )( struct Z_font_item[] ){ 14, 0, "czas, czasy..." }
+    );
+    xcb_poly_text_8( display->x_display
+    , window->object_mask
+    , screen->object_mask_gc
+    , object->x + 1
+    , object->y + 7
+    , sizeof( struct Z_font_item )
+    , ( N8 * )( struct Z_font_item[] ){ 14, 0, "czas, czasy..." }
+    );
+    xcb_poly_text_8( display->x_display
+    , window->drawable_mask
+    , screen->bitmask_1_gc
+    , object->x + 1
+    , object->y + 7
+    , sizeof( struct Z_font_item )
+    , ( N8 * )( struct Z_font_item[] ){ 14, 0, "czas, czasy..." }
+    );
+    E_x_Q_object_I_draw_P_color_( E_x_Z_color_M( 0, 0, 0x9f ));
+    E_main_I_draw_Z_angle_line_(
+      E_main_Q_timer_S_hour
+    , 12
+    , 1
+    , 2
+    );
+    E_x_Q_object_I_draw_P_color_( E_x_Z_color_M( 0, 0xbf, 0 ));
+    E_main_I_draw_Z_angle_line_(
+      E_main_Q_timer_S_minute
+    , 60
+    , 3
+    , 4
+    );
+    E_x_Q_object_I_draw_P_color_( E_x_Z_color_M( 0, 0, 0 ));
+    E_main_I_draw_Z_angle_line_(
+      E_main_Q_timer_S_second
+    , 60
+    , 1
+    , 1
+    );
+}
+//==============================================================================
+void
+E_flow_Q_process_call_I_func( P data
+){
+}
+/******************************************************************************/

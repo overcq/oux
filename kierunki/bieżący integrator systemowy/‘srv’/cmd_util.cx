@@ -1,0 +1,68 @@
+/*******************************************************************************
+*   ___   workplace
+*  ¦OUX¦  ‟Coux”
+*  ¦Inc¦  bieżący integrator systemowy
+*   ---   server
+*         command utilites
+* ©overcq                on ‟Gentoo Linux 13.0” “x86_64”              2015‒7‒4 *
+*******************************************************************************/
+void
+E_cmd_Z_argv_I_exec( Pc cwd
+, Pc *pre_argv
+, N pre_argc
+, Pc *mime_argv
+, Pc *cmd_argv
+, N cmd_argc
+){  N mime_argc = 0;
+    for( Pc *arg = mime_argv; *arg; arg++ )
+        mime_argc++;
+    E_flow_I_fork_I_exec( cwd, ( struct E_flow_Z_args [] ){ pre_argc, pre_argv, mime_argc, mime_argv, cmd_argc, cmd_argv }, 3 );
+}
+//------------------------------------------------------------------------------
+void
+E_cmd_Z_argv_I_exec_I_0( Pc cwd
+, Pc *mime_argv
+, Pc *cmd_argv
+, N cmd_argc
+){  E_cmd_Z_argv_I_exec( cwd, 0, 0, mime_argv, cmd_argv, cmd_argc );
+}
+void
+E_cmd_Z_argv_I_exec_I_terminal_args( Pc cwd
+, Pc *mime_argv
+, Pc *cmd_argv
+, N cmd_argc
+){  N pre_argc = 4;
+    static Pc pre_argv[] = { "urxvtc", "-e" , "bash", "-c" };
+    if( !*mime_argv
+    && !cmd_argc
+    )
+        E_cmd_Z_argv_I_exec_I_terminal( cwd, mime_argv, cmd_argv, cmd_argc );
+    E_cmd_Z_argv_I_exec( cwd, pre_argv, pre_argc, mime_argv, cmd_argv, cmd_argc );
+}
+void
+E_cmd_Z_argv_I_exec_I_terminal( Pc cwd
+, Pc *mime_argv
+, Pc *cmd_argv
+, N cmd_argc
+){  N pre_argc = 2;
+    static Pc pre_argv[] = { "urxvtc", "-e" };
+    if( !*mime_argv
+    && !cmd_argc
+    )
+        pre_argv[ --pre_argc ] = 0;
+    E_cmd_Z_argv_I_exec( cwd, pre_argv, pre_argc, mime_argv, cmd_argv, cmd_argc );
+}
+void
+E_cmd_Z_argv_I_exec_I_terminal_mplayer( Pc cwd
+, Pc *mime_argv
+, Pc *cmd_argv
+, N cmd_argc
+){  for_n( i, cmd_argc )
+        if( *cmd_argv[i] == '/' )
+        {   Pc s = M( 7 + E_text_Z_s0_R_l( cmd_argv[i] ));
+            E_text_Z_s0_P_copy_0( E_text_Z_s0_P_copy( s, "file:/""/" ), cmd_argv[i] );
+            cmd_argv[i] = s;
+        }
+    E_cmd_Z_argv_I_exec_I_terminal( cwd, mime_argv, cmd_argv, cmd_argc );
+}
+/******************************************************************************/

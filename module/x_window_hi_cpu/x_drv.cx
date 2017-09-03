@@ -1,0 +1,1450 @@
+/*******************************************************************************
+*   ___   publicplace
+*  ¦OUX¦  ‟Coux”
+*  ¦Inc¦  component
+*   ---   ‟X window” —low ‘cpu’
+*         window driver
+* ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2015‒4‒28 *
+*******************************************************************************/
+//zewnętrzne trwałe “XGrabServer” blokuje system; na przykład używane przez różnych “menedżerów okien” ‟X” podczas przeciągania okna.
+//w przyszłości, gdy jakiekolwiek pozostałe “NDFN” zostaną zrobione, to w celu sprawdzenia poprawności działania tego sterownika nie wystarczy jego użytkowanie w różnych warunkach, lecz będzie konieczne celowe przetestowanie przez podawanie wszystkich możliwych sekwencji “zdarzeń” odsuniętych o losowe minimalne odległości czasowe i punktowe: ⁃w forsowaniu użytkowania, ⁃na wewnętrznie obciążonym podsystemie ‟X”. by wyszukiwać błędne przełączenie przy którymś ekstremum integralności i wtedy dezintegrację sterownika rozpoznawaną po błędnym pojedynczym stanie, podczas gdy nienadążanie nie jest błędem.
+//------------------------------------------------------------------------------
+//okno ‘dnd’ potrzebuje być ustawione dla “menedżera okien” na wierzchu wszystkich możliwych. typ okna “dnd” to robi, jeśli “menedżer okien” go obsługuje.
+//rozważyć jeszcze ·dodatkowo· blok usuniętego “grab_server”.
+//uzupełnić o deterministyczny czas opóźnienia przerysowania po ponownym pokazaniu się okna ‹operatorowi›.
+//czy działa przeciąganie pomiędzy przyległymi wyświetlaczami bez “Xinerama”.
+//⁃uzupełnić o upuszczanie obiektu. podczas “drag” (‘grabnięcia’) “configure_notify” raportuje pozycję względem okna “root” z błędnym, pozostawionym z ostatnich operacji— “above_sibling”, ale i tak jest bezużyteczne dla ‘drop’, a tylko służy do przyszłej zmiany rozmiaru okna ‘dnd’ (np. przez dodawanie obiektów).
+//⁃zuniwersalizować synchronizację do zwizualizowania kliknięcia ( “U_X( display->req, draw_click )” ).
+//kiedyś można zrobić tak, by uchwycenie animowanego elementu obiektu utrzymywało okno ‘dnd’ względem bieżącego położenia tego punktu elementu w obiekcie.
+//==============================================================================
+void
+E_x_window_D_events_I_unblock( void
+){  struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, 0 ); //NDFN “0”
+    struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, 0 ); //NDFN może nie być żadnego okna.
+    xcb_client_message_event_t x_client =
+    { .response_type = XCB_CLIENT_MESSAGE
+    , .format = 32
+    , .window = XCB_NONE
+    , .type = ~0
+    };
+    xcb_send_event( display->x_display
+    , no
+    , window->x_window
+    , XCB_EVENT_MASK_STRUCTURE_NOTIFY
+    , (P)&x_client
+    );
+    xcb_flush( display->x_display );
+}
+D( x_window, events_pointer_button_check )
+{
+#ifdef E_flow_C_threads_for_system_unblock_reports
+    Yh_M( x_window, events_pointer_button_check );
+    I_D
+    {   Yh_B( x_window, events_pointer_button_check )
+            break;
+        E_x_window_D_events_I_unblock();
+    }
+    Yh_W( x_window, events_pointer_button_check );
+#endif
+}
+D( x_window, events )
+{   Xh_A( E_x_window_D_events_I_unblock );
+    X_A( x_window, draw );
+    X_A( x_window, close_window );
+    X_A( x_window, flush );
+/**
+częstotliwość wspomagającej wizualizacji ręcznego skokowego przesuwania lub rozmiarowania obiektu przestrzeni, niezależnie od animowanych w czasie zmian zawartości.
+męczący w odbiorze test dokonywany przez człowieka: szukać największej częstotliwości przerysowywania obiektów, przy której każde przerysowanie jest już zauważone bez umysłowego błysku pre‐mobilizacji adekwatnego do stanu umysłu podczas zauważenia jakiegoś krótkiego mignięcia ruchu przez rzadkie ale liczebne zarośla w dżungli. jednak w tym teście szuka się płynności takich mignięć podczas powolnego ciągłego przesuwania lub rozmiarowania obiektu albo ramki okna, nie dopuszczając do zdążenia przerysowania do punktu uchwycenia w rutynie wyćwiczenia, a nie reagując impulsowo. po przekroczeniu —zmniejszając— częstotliwości szukanej przerysowanie zaczyna sprawiać wrażenie ‚trupiego’. tym charakteryzują się częstotliwości odległe od szukanej w okresie o mikrosekundy, bardziej odległe częstotliwości zamęczają układ interpretacji bez informacji możliwych do zinterpretowania w czasie odbioru; jakkolwiek te informacje są, tylko niszczą układ interpretacji człowieka. dobrze znaleziona częstotliwość pozwala widzieć komponentowo (całościowo) przesuwane lub rozmiarowane obiekty. przypuszczalnie jest wiele pochodnych częstotliwości, które wydają się optymalne, ale tylko jedna przechodzi końcowy test widzenia komponentowego podczas wizualizacji.
+nie uwzględnia błędu czasu podawanego podczas testu przez “gettimeofday”.
+‣w testowej metodzie rysowania— przez “XImage”: 193605; 5,16515±<≈0,000026679 Hz.
+‣po zmianie postaci na wektorową— “Pixmap” z “clip-mask”: 193609; 5,16505±<≈0,000026678 Hz.
+‣po uzupełnieniu o obiekty i poprawieniu na kompletny (z tłem) bufor okna: 199992; 5,000200±≈0,000025 Hz.
+po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianach:
+‣podniesiona częstotliwość pochodna: 128244; 7,79763576±≈0,00006080 Hz.
+‣nieaktualny tymczasowy stan bieżący: 199646; 5,0088656923±<≈0,000025089 Hz. do korekty przy wyłączonym “ntpd”.
+*/
+#ifndef E_flow_C_threads_for_system_unblock_reports
+    I timer = Y_M(199646);
+#else
+    Yh_A( x_window, events_pointer_button_check );
+    D_M( x_window, events_pointer_button_check );
+#endif
+    I_D
+    {
+#ifdef E_flow_C_threads_for_system_unblock_reports
+        I display_id = 0; //NDFN
+#else
+        for_each( display_id, E_x_Q_display_S, E_mem_Q_tab )
+        {   
+#endif
+            struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
+#ifdef E_flow_C_threads_for_system_unblock_reports
+            xcb_connection_t *x_display = display->x_display;
+            Xh_B_();
+            xcb_generic_event_t *x_event = xcb_wait_for_event( x_display );
+            Xh_B()
+            {   if( x_event )
+                    __real_free( x_event );
+                break;
+            }
+            if( !x_event )
+            {   GV_(NA); V(); //NDFN
+            }
+            display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
+#else
+            xcb_generic_event_t *x_event = xcb_poll_for_event( display->x_display );
+            if( xcb_connection_has_error( display->x_display ))
+            {   GV_(NA); V(); //NDFN
+            }
+#endif
+            B U_L( drag, motion );
+            B U_L( window, postproc );
+            xcb_window_t drag_S_motion_x_root_window;
+            S16 drag_S_motion_root_x, drag_S_motion_root_y;
+            B U_L( drag_S_motion, oth_screen );
+#ifndef E_flow_C_threads_for_system_unblock_reports
+            if( x_event )
+#endif
+                do
+                {   if( !x_event->response_type )
+                    {   xcb_generic_error_t *x_error = (P)x_event;
+                        GV_(NA); Gd( x_error->sequence ); Gd( x_error->major_code ); Gd( x_error->minor_code ); Gd( x_error->error_code ); Gd( x_error->resource_id ); V(); //NDFN nienaprawialny błąd zbiorczy ‟X.org”.
+                    }
+                    xcb_window_t x_event_window;
+                    //każde “zdarzenie” ‘x’ mające być dołączone do interpretacji wymaga sprawdzenia osadzenia znaczenia zmiennych dostarczanych z tym “zdarzeniem”; np. “window”. a na końcu usunąć niepotrzebne dla interpretacji “zdarzenia” z obu “switch” i zmienić, by błędne “zdarzenia” były ignorowane.
+                    switch( x_event->response_type )
+                    { case XCB_KEY_PRESS:
+                      case XCB_KEY_RELEASE:
+                      {   xcb_key_press_event_t *x_key = (P)x_event;
+                          x_event_window = x_key->event;
+                          break;
+                      }
+                      case XCB_BUTTON_PRESS:
+                      case XCB_BUTTON_RELEASE:
+                      {   xcb_button_press_event_t *x_button = (P)x_event;
+                          x_event_window = x_button->event;
+                          break;
+                      }
+                      case XCB_ENTER_NOTIFY:
+                      case XCB_LEAVE_NOTIFY:
+                      {   xcb_enter_notify_event_t *x_enter = (P)x_event;
+                          x_event_window = x_enter->event;
+                          break;
+                      }
+                      case XCB_MOTION_NOTIFY:
+                      {   xcb_motion_notify_event_t *x_motion = (P)x_event;
+                          x_event_window = x_motion->event;
+                          break;
+                      }
+                      case XCB_FOCUS_IN:
+                      case XCB_FOCUS_OUT:
+                      {   xcb_focus_in_event_t *x_focus = (P)x_event;
+                          x_event_window = x_focus->event;
+                          break;
+                      }
+                      case XCB_GRAPHICS_EXPOSURE:
+                      {   xcb_graphics_exposure_event_t *x_exposure = (P)x_event;
+                          x_event_window = x_exposure->drawable;
+                          break;
+                      }
+                      case XCB_NO_EXPOSURE:
+                      {   xcb_no_exposure_event_t *x_exposure = (P)x_event;
+                          x_event_window = x_exposure->drawable;
+                          break;
+                      }
+                      case XCB_VISIBILITY_NOTIFY:
+                      {   xcb_visibility_notify_event_t *x_visibility = (P)x_event;
+                          x_event_window = x_visibility->window;
+                          break;
+                      }
+                      case XCB_DESTROY_NOTIFY:
+                      {   xcb_destroy_notify_event_t *x_destroy = (P)x_event;
+                          x_event_window = x_destroy->window;
+                          break;
+                      }
+                      case XCB_UNMAP_NOTIFY:
+                      {   xcb_unmap_notify_event_t *x_unmap = (P)x_event;
+                          x_event_window = x_unmap->window;
+                          break;
+                      }
+                      case XCB_MAP_NOTIFY:
+                      {   xcb_map_notify_event_t *x_map = (P)x_event;
+                          x_event_window = x_map->window;
+                          break;
+                      }
+                      case XCB_REPARENT_NOTIFY:
+                      {   xcb_reparent_notify_event_t *x_reparent = (P)x_event;
+                          x_event_window = x_reparent->window;
+                          break;
+                      }
+                      case XCB_RESIZE_REQUEST:
+                      {   xcb_resize_request_event_t *x_resize_req = (P)x_event;
+                          x_event_window = x_resize_req->window;
+                          break;
+                      }
+                      case XCB_GRAVITY_NOTIFY:
+                      {   xcb_gravity_notify_event_t *x_gravity = (P)x_event;
+                          x_event_window = x_gravity->window;
+                          break;
+                      }
+                      default:
+                      {   switch( XCB_EVENT_RESPONSE_TYPE( x_event ))
+                          { case XCB_CONFIGURE_NOTIFY:
+                            {   xcb_configure_notify_event_t *x_configure = (P)x_event;
+                                x_event_window = x_configure->window;
+                                break;
+                            }
+                            case XCB_CLIENT_MESSAGE:
+                            {   xcb_client_message_event_t *x_client = (P)x_event;
+                                x_event_window = x_client->window;
+                                break;
+                            }
+                            default:
+                            {   GV(NKN); Gd( XCB_EVENT_RESPONSE_TYPE( x_event ));
+                                goto Loop;
+                            }
+                          }
+                          break;
+                      }
+                    }
+                    I window_id = ~0;
+                    struct E_x_Q_window_Z *window = 0;
+                    if( U_R( display->mode, drag )
+                    || U_R( display->mode, drag_stop )
+                    )
+                    {   struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, display->drag_S_dnd_window_screen_id );
+                        if( x_event_window == screen->dnd_window.x_window )
+                            window = &screen->dnd_window;
+                    }
+                    if( !window )
+                    {   for_each_( window_id, display->window, E_mem_Q_tab )
+                        {   window = E_mem_Q_tab_R( display->window, window_id );
+                            if( x_event_window == window->x_window )
+                                break;
+                        }
+                        if( !~window_id )
+                        {   GV(NXP); Gd( XCB_EVENT_RESPONSE_TYPE( x_event )); Gd( x_event_window ); ///unknown window.
+                            goto Loop;
+                        }
+                    }
+                    switch( x_event->response_type )
+                    { case XCB_KEY_PRESS:
+                      {   G(); Gs( "key press" );
+                          xcb_key_press_event_t *x_key = (P)x_event;
+                          window->user_activity_time = x_key->time;
+                          U_F( window, postproc );
+                          break;
+                      }
+                      case XCB_KEY_RELEASE:
+                      {   G(); Gs( "key release" );
+                          break;
+                      }
+                      case XCB_BUTTON_PRESS:
+                      {   xcb_button_press_event_t *x_button = (P)x_event;
+                          G(); Gs( "button press" ); Gd( x_button->detail );
+                          window->user_activity_time = x_button->time;
+                          U_F( window, postproc );
+                          xcb_timestamp_t xbutton_time = display->pointer_button_S_time;
+                          display->pointer_button_S_time = x_button->time;
+                          U_F( display->state, pointer_button_S_pressing );
+                          if( display->pointer_button_S_seq_i & 1 ) ///podczas sekwencji klikania naciśnięto kolejny przycisk bez zwolnienia poprzedniego (z wyjątkiem obsłużonego wcześniej przycisku przeciągania będącego w stanie wciśniętym).
+                          {   display->pointer_button_S_seq_i = 0; ///skasuj starą sekwencję klikania.
+                              break;
+                          }
+                          if( !display->pointer_button_S_seq_i ) ///przed rozpoczęciem nowej sekwencji…
+                          {   unsigned button_mask = 0;
+                              if( U_R( display->mode, drag ))
+                                  switch( display->drag_S_pointer_button ) ///ten blok mógłby być dla dowolnego trybu z naciśniętym jednym przyciskiem.
+                                  { case XCB_BUTTON_INDEX_1:
+                                        button_mask = XCB_BUTTON_MASK_1;
+                                        break;
+                                    case XCB_BUTTON_INDEX_2:
+                                        button_mask = XCB_BUTTON_MASK_2;
+                                        break;
+                                    case XCB_BUTTON_INDEX_3:
+                                        button_mask = XCB_BUTTON_MASK_3;
+                                        break;
+                                    case XCB_BUTTON_INDEX_4:
+                                        button_mask = XCB_BUTTON_MASK_4;
+                                        break;
+                                    case XCB_BUTTON_INDEX_5:
+                                        button_mask = XCB_BUTTON_MASK_5;
+                                        break;
+                                  }
+                              if(( x_button->state & ( XCB_BUTTON_MASK_1 | XCB_BUTTON_MASK_2 | XCB_BUTTON_MASK_3 | XCB_BUTTON_MASK_4 | XCB_BUTTON_MASK_5 )) != button_mask ) ///…jest naciśnięty (po wymuszonym programowo ‘resecie’ “count”, czekając na ‘reset’ przycisków) przycisk z tych, które jest w stanie wykryć jako będące naciśnięte.
+                                  break;
+                          }else if( x_button->detail != display->pointer_button ) ///podczas sekwencji klikania naciśnięto inny przycisk zamiast tego samego.
+                              display->pointer_button_S_seq_i = 0;
+                          if( display->pointer_button_S_seq_i
+                          && x_button->time - xbutton_time > display->pointer_button_C_seq_timeout
+                          )
+                              display->pointer_button_S_seq_i = 0;
+                          if( !display->pointer_button_S_seq_i
+                          && x_button->time - xbutton_time < display->pointer_button_C_restart_delay
+                          )
+                              break;
+                          if( !display->pointer_button_S_seq_i )
+                          {   display->pointer_button_S_start_time = display->pointer_button_S_time;
+                              display->pointer_button = x_button->detail;
+                              display->pointer_button_S_root_x = x_button->root_x;
+                              display->pointer_button_S_root_y = x_button->root_y;
+                              display->pointer_button_S_window_id = window_id;
+                              display->pointer_button_S_x = x_button->event_x;
+                              display->pointer_button_S_y = x_button->event_y;
+                          }
+                          display->pointer_button_S_seq_i++;
+                          break;
+                      }
+                      case XCB_BUTTON_RELEASE:
+                      {   xcb_button_press_event_t *x_button = (P)x_event;
+                          G(); Gs( "button release" ); Gd( x_button->detail );
+                          xcb_timestamp_t xbutton_time = display->pointer_button_S_time;
+                          display->pointer_button_S_time = x_button->time;
+                          unsigned button_mask = 0;
+                          switch( x_button->detail )
+                          { case XCB_BUTTON_INDEX_1:
+                                button_mask = XCB_BUTTON_MASK_1;
+                                break;
+                            case XCB_BUTTON_INDEX_2:
+                                button_mask = XCB_BUTTON_MASK_2;
+                                break;
+                            case XCB_BUTTON_INDEX_3:
+                                button_mask = XCB_BUTTON_MASK_3;
+                                break;
+                            case XCB_BUTTON_INDEX_4:
+                                button_mask = XCB_BUTTON_MASK_4;
+                                break;
+                            case XCB_BUTTON_INDEX_5:
+                                button_mask = XCB_BUTTON_MASK_5;
+                                break;
+                          }
+                          U_R( display->state, pointer_button_S_pressing ) = ( x_button->state & ( XCB_BUTTON_MASK_1 | XCB_BUTTON_MASK_2 | XCB_BUTTON_MASK_3 | XCB_BUTTON_MASK_4 | XCB_BUTTON_MASK_5 )) != button_mask ? yes : no;
+                          if( x_button->detail != display->pointer_button ) ///zwolniono przycisk, który nie był ostatnio naciśnięty; jeśli trwała sekwencja do uznania n‐kliknięcia, to ją ‘resetuje’.
+                              display->pointer_button_S_seq_i = 0;
+                          if( U_R( display->mode, drag )
+                          && !U_R( display->mode, drag_stop )
+                          && x_button->detail == display->drag_S_pointer_button
+                          )
+                          {   U_F( display->mode, drag_stop );
+                              U_L( display->mode_ex, drag_stop_S_cancel );
+                              display->drag_S_stop_root_x = display->pointer_button_S_root_x;
+                              display->drag_S_stop_root_y = display->pointer_button_S_root_y;
+                              break;
+                          }
+                          if( display->pointer_button_S_seq_i )
+                          {   if( x_button->time - xbutton_time > display->pointer_button_C_release_timeout )
+                                  display->pointer_button_S_seq_i = 0;
+                              else
+                                  display->pointer_button_S_seq_i++;
+                          }
+                          break;
+                      }
+                      case XCB_ENTER_NOTIFY:
+                      {   xcb_enter_notify_event_t *x_enter_notify = (P)x_event;
+                          G(); Gs( "enter" ); Gd( x_enter_notify->mode ); Gd( x_enter_notify->detail );
+                          //w ‟X.org” naciśnięcie 1. przycisku powoduje ‘leave➪grab’ i ‘enter➪ungrab’, więc obejście następną linią warunku sprawdzającą posiadanie wskaźnika przez okno.
+                          if( x_enter_notify->mode == XCB_NOTIFY_MODE_UNGRAB )
+                          {   U_L( display->req, pointer_S_ungrab );
+                              if( !U_R( display->state, pointer_S_in_window ))
+                                  display->pointer_button_S_seq_i = 0;
+                          }else if( !U_R( display->mode, drag ))
+                              display->pointer_button_S_seq_i = 0;
+                          U_F( display->state, pointer_S_in_window );
+                          U_R( display->state, pointer_button_S_pressing ) = x_enter_notify->state & ( XCB_BUTTON_MASK_1 | XCB_BUTTON_MASK_2 | XCB_BUTTON_MASK_3 | XCB_BUTTON_MASK_4 | XCB_BUTTON_MASK_5 ) ? yes : no;
+                          break;
+                      }
+                      case XCB_LEAVE_NOTIFY:
+                      {   xcb_leave_notify_event_t *x_leave_notify = (P)x_event;
+                          G(); Gs( "leave" ); Gd( x_leave_notify->mode ); Gd( x_leave_notify->detail );
+                          if( x_leave_notify->mode == XCB_NOTIFY_MODE_NORMAL )
+                          {   U_L( display->state, pointer_S_in_window );
+                              if( !U_R( display->mode, drag ))
+                                  display->pointer_button_S_seq_i = 0;
+                          }else if( x_leave_notify->mode == XCB_NOTIFY_MODE_UNGRAB )
+                          {   U_L( display->req, pointer_S_ungrab );
+                              if( U_R( display->mode, drag ))
+                                  U_F( display->mode, drag_stop );
+#ifdef E_flow_C_threads_for_system_unblock_reports
+                              Yh_L( x_window, events_pointer_button_check );
+#endif
+                              display->pointer_button_S_seq_i = 0;
+                          }
+                          break;
+                      }
+                      case XCB_MOTION_NOTIFY:
+                      {   xcb_motion_notify_event_t *x_motion = (P)x_event;
+                          drag_S_motion_x_root_window = x_motion->root;
+                          drag_S_motion_root_x = x_motion->root_x;
+                          drag_S_motion_root_y = x_motion->root_y;
+                          if( x_motion->same_screen == 0 )
+                              U_F( drag_S_motion, oth_screen );
+                          U_F( drag, motion );
+                          break;
+                      }
+                      case XCB_FOCUS_IN:
+                      {   G(); Gs( "focus in" );
+                          break;
+                      }
+                      case XCB_FOCUS_OUT:
+                      {   G(); Gs( "focus out" );
+                          break;
+                      }
+                      case XCB_GRAPHICS_EXPOSURE:
+                      {   G(); Gs( "graphics expose" );
+                          break;
+                      }
+                      case XCB_NO_EXPOSURE:
+                      {   G(); Gs( "no expose" );
+                          break;
+                      }
+                      case XCB_VISIBILITY_NOTIFY:
+                      {   xcb_visibility_notify_event_t *x_visibility = (P)x_event;
+                          G(); Gs( "visibility" ); Gd( x_visibility->state );
+                          if( !U_R( window->state, visible ))
+                          {   if( x_visibility->state != XCB_VISIBILITY_FULLY_OBSCURED )
+                              {   U_F( window->state, visible );
+                                  if( U_R( window->req, resize ))
+                                      U_F( window, postproc );
+                                  else if( U_R( window->req, draw ))
+                                      U_F( display->req, draw );
+                              }
+                          }else if( x_visibility->state == XCB_VISIBILITY_FULLY_OBSCURED )
+                              U_L( window->state, visible );
+                          break;
+                      }
+                      case XCB_DESTROY_NOTIFY:
+                      {   G(); Gs( "destroy" );
+                          break;
+                      }
+                      case XCB_UNMAP_NOTIFY:
+                      {   G(); Gs( "unmap" );
+                          U_L( window->state, visible );
+                          break;
+                      }
+                      case XCB_MAP_NOTIFY:
+                      {   G(); Gs( "map" );
+                          break;
+                      }
+                      case XCB_REPARENT_NOTIFY:
+                      {   G(); Gs( "reparent" );
+                          break;
+                      }
+                      case XCB_RESIZE_REQUEST: ///to “zdarzenie” ‘x’ jest używane po to, by ‘server’ ‟X” nie wypełniał wstępnie okna niepowtarzalną zawartością okna w poprzednim, mniejszym rozmiarze; jest wyłączana “pixmapa” okna.
+                      {   xcb_resize_request_event_t *x_resize_req = (P)x_event;
+                          G(); Gs( "resize request" ); Gd( x_resize_req->width ); Gd( x_resize_req->height );
+                          if( window->width_new != x_resize_req->width
+                          || window->height_new != x_resize_req->height
+                          )
+                          {   if( !U_R( window->mode, resize ))
+                              {   U_F( window->mode, resize );
+                                  xcb_change_window_attributes( display->x_display
+                                  , window->x_window
+                                  , XCB_CW_BACK_PIXMAP
+                                  , ( N32[] )
+                                    { XCB_BACK_PIXMAP_NONE
+                                    }
+                                  );
+                              }
+                              xcb_change_window_attributes( display->x_display
+                              , window->x_window
+                              , XCB_CW_OVERRIDE_REDIRECT
+                              , ( N32[] )
+                                { yes
+                                }
+                              );
+                              xcb_configure_window( display->x_display
+                              , window->x_window
+                              , XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT
+                              , ( N32[] )
+                                { x_resize_req->width
+                                , x_resize_req->height
+                                }
+                              );
+                              xcb_change_window_attributes( display->x_display
+                              , window->x_window
+                              , XCB_CW_OVERRIDE_REDIRECT
+                              , ( N32[] )
+                                { no
+                                }
+                              );
+                              U_F( display->req, flush );
+                          }
+                          break;
+                      }
+                      case XCB_GRAVITY_NOTIFY:
+                      {   G(); Gs( "gravity notify" );
+                          break;
+                      }
+                      default:
+                          //czy da się zrobić uproszczone zabezpieczenie przed “zdarzeniami” ‘x’ przychodzącymi nie z ‘servera’ ‟X”— przez rozpoznawanie tych od “menedżera okien” ‟X”?
+                          switch( XCB_EVENT_RESPONSE_TYPE( x_event ))
+                          { case XCB_CONFIGURE_NOTIFY:
+                            {   xcb_configure_notify_event_t *x_configure = (P)x_event;
+                                G(); Gs( "configure notify" ); Gd( x_configure->above_sibling ); Gd( x_configure->x ); Gd( x_configure->y ); Gd( x_configure->width ); Gd( x_configure->height );
+                                //NDFN nie wiadomo co robić z obiektami, jeśli nie mieszczą się w nowym rozmiarze okna.
+                                window->width_new = x_configure->width;
+                                window->height_new = x_configure->height;
+                                U_L( window->mode, resize );
+                                if( U_R( display->mode, drag_stop ))
+                                {   struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, display->drag_S_dnd_window_screen_id );
+                                    if( window == &screen->dnd_window )
+                                        break;
+                                }
+                                U_F( window->req, resize );
+                                U_F( window, postproc );
+                                if( !U_R( display->mode, drag )
+                                && !x_configure->above_sibling
+                                && ( x_configure->x != window->x
+                                  || x_configure->y != window->y
+                                ))
+                                {   window->x = x_configure->x;
+                                    window->y = x_configure->y;
+                                    if( window_id == display->pointer_button_S_window_id )
+                                        display->pointer_button_S_seq_i = 0;
+                                }
+                                break;
+                            }
+                            case XCB_CLIENT_MESSAGE:
+                            {   G(); Gs( "client" );
+                                xcb_client_message_event_t *x_client = (P)x_event;
+                                if( x_client->type != E_x_Z_atom_R( display, WM_PROTOCOLS ))
+                                {   xcb_get_atom_name_cookie_t ret_id = xcb_get_atom_name_unchecked( display->x_display, x_client->type );
+                                    xcb_get_atom_name_reply_t *ret = xcb_get_atom_name_reply( display->x_display, ret_id, 0 );
+                                    char *message_type = xcb_get_atom_name_name(ret);
+                                    __real_free(ret);
+                                    GV(NKN); Gs( message_type ); ///unhandled client message.
+                                    break;
+                                }
+                                xcb_atom_t name = x_client->data.data32[0];
+                                if( name == E_x_Z_atom_R( display, _NET_WM_PING ))
+                                {   struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, window->screen_id );
+                                    x_client->window = screen->x_root_window;
+                                    xcb_send_event( display->x_display
+                                    , no
+                                    , x_client->window
+                                    , XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT
+                                    , (P)x_client
+                                    );
+                                    U_F( display->req, flush );
+                                }else if( name == E_x_Z_atom_R( display, WM_DELETE_WINDOW ))
+                                {   if( U_R( display->mode, drag ))
+                                        U_F( display->mode, drag_stop );
+                                    U_F( window->req, close );
+                                    U_F( x_window, close_window );
+                                }else
+                                {   xcb_get_atom_name_cookie_t ret_id = xcb_get_atom_name_unchecked( display->x_display, x_client->data.data8[0] );
+                                    xcb_get_atom_name_reply_t *ret = xcb_get_atom_name_reply( display->x_display, ret_id, 0 );
+                                    char *message_type = xcb_get_atom_name_name(ret);
+                                    __real_free(ret);
+                                    GV(NKN); Gs( message_type ); ///unhandled client message subtype.
+                                }
+                                break;
+                            }
+                          }
+                          break;
+                    }
+Loop:               __real_free( x_event );
+                }while( x_event = xcb_poll_for_queued_event( display->x_display ));
+            ///poniżej jest punkt przełączenia tymczasowego trybu “drag && drag_stop” na “drag_stop”, więc tylko w powyższym “switch” może być ten pierwszy (złożony), ale już nic nie mający aktywować.
+            if( U_R( display->mode, drag_stop )
+            && U_E( display->mode, drag )
+            )
+            {   if( !U_R( display->mode_ex, drag_stop_S_cancel ))
+                {   //TODO sprawdź miejsce ‘drop’.
+                    if( U_R( display->mode_ex, drag_S_copy ))
+                    {   for_n( i, display->drag_S_object_src_n )
+                        {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->drag_S_object_src[i].window_id );
+                            U_F( window->req, draw );
+                            struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->drag_S_object_src[i].object_id );
+                            U_L( object->mode, drag_src );
+                            //TODO join object into destination window.
+                        }
+                    }else
+                    {   for_n( i, display->drag_S_object_src_n )
+                        {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->drag_S_object_src[i].window_id );
+                            U_F( window->req, draw );
+                            //TODO join object into destination window.
+                            E_mem_Q_tab_I_rem( window->object, display->drag_S_object_src[i].object_id );
+                        }
+                    }
+                }
+                E_mem_Q_blk_W( display->drag_S_object_src );
+                struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, display->drag_S_dnd_window_screen_id );
+                struct E_x_Q_window_Z *dnd_window = &screen->dnd_window;
+                E_mem_Q_tab_W( dnd_window->object );
+                xcb_change_window_attributes( display->x_display
+                , dnd_window->x_window
+                , XCB_CW_OVERRIDE_REDIRECT
+                , ( N32[] )
+                  { yes
+                  }
+                );
+                xcb_configure_window( display->x_display
+                , dnd_window->x_window
+                , XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT
+                , ( N32[] )
+                  { E_x_Q_window_S_hidden_x
+                  , E_x_Q_window_S_hidden_y
+                  , 1
+                  , 1
+                  }
+                );
+                xcb_change_window_attributes( display->x_display
+                , dnd_window->x_window
+                , XCB_CW_BACK_PIXMAP | XCB_CW_OVERRIDE_REDIRECT
+                , ( N32[] )
+                  { XCB_BACK_PIXMAP_NONE
+                  , no
+                  }
+                );
+                xcb_free_pixmap( display->x_display, dnd_window->object_mask );
+                xcb_free_pixmap( display->x_display, dnd_window->drawable_mask_2 );
+                xcb_free_pixmap( display->x_display, dnd_window->drawable_mask );
+                xcb_free_pixmap( display->x_display, dnd_window->drawable );
+                U_L( dnd_window->req, draw );
+                if( U_R( display->req, pointer_S_ungrab ))
+                {   if( !U_R( display->state, pointer_button_S_pressing ))
+                    {   U_L( display->mode, drag_stop );
+                        U_L( display->req, pointer_S_ungrab );
+                        xcb_ungrab_pointer( display->x_display, display->pointer_button_S_grab_time );
+                        display->pointer_button_S_seq_i = 0;
+                    }
+                }else
+                    U_L( display->mode, drag_stop );
+                U_F( display->req, draw );
+                U_F( display->req, flush );
+            }else if( !U_R( display->mode, drag_stop ) ///‘drag’ jest wyjątkowym trybem dla interpretacji “pointer_button”, bo ‘grabnięcie’ jest względem okna ‘dnd’— i poniższy blok nie może do czasu ‘odgrabnięcia’ czytać danych z tego okna, ponieważ jest ukryte, zasoby wyrzucone.
+            && display->pointer_button_S_seq_i
+            )
+            {   struct E_x_Q_window_Z *window;
+                if( U_R( display->mode, drag ))
+                {   struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, display->drag_S_dnd_window_screen_id );
+                    window = &screen->dnd_window;
+                }else
+                    window = E_mem_Q_tab_R( display->window, display->pointer_button_S_window_id );;
+                unsigned event_mask = !U_R( display->mode, drag )
+                  ? XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE
+                  : XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION;
+                xcb_cursor_t cursor = !U_R( display->mode, drag )
+                  ? XCB_CURSOR_NONE
+                  : !U_R( display->mode_ex, drag_S_copy ) ? display->drag_S_cursor : display->drag_S_copy_cursor;
+                if( !U_R( display->mode, drag ))
+                    display->pointer_button_S_grab_time = display->pointer_button_S_start_time;
+                xcb_grab_pointer_cookie_t ret_id = xcb_grab_pointer_unchecked( display->x_display
+                , yes
+                , window->x_window
+                , event_mask
+                , XCB_GRAB_MODE_ASYNC
+                , XCB_GRAB_MODE_ASYNC
+                , XCB_NONE
+                , cursor
+                , display->pointer_button_S_grab_time
+                );
+                xcb_grab_pointer_reply_t *ret = xcb_grab_pointer_reply( display->x_display, ret_id, 0 );
+                if( ret->status == XCB_GRAB_STATUS_SUCCESS ) ///czy aktualny stan od pierwszego kliknięcia serii.
+                {   __real_free(ret);
+                    U_F( display->req, pointer_S_ungrab );
+                    xcb_timestamp_t grab_time = display->pointer_button_S_time + ( display->pointer_button_S_seq_i & 1 ? display->pointer_button_C_release_timeout : display->pointer_button_C_seq_timeout );
+                    ret_id = xcb_grab_pointer_unchecked( display->x_display
+                    , yes
+                    , window->x_window
+                    , event_mask
+                    , XCB_GRAB_MODE_ASYNC
+                    , XCB_GRAB_MODE_ASYNC
+                    , XCB_NONE
+                    , cursor
+                    , grab_time
+                    );
+                    xcb_grab_pointer_reply_t *ret = xcb_grab_pointer_reply( display->x_display, ret_id, 0 );
+                    if( ret->status == XCB_GRAB_STATUS_SUCCESS ) ///czy upłynął czas akceptacji serii.
+                    {   __real_free(ret);
+                        display->pointer_button_S_grab_time = grab_time;
+                        G(); Gs( "click" ); Gd( display->pointer_button ); Gd( display->pointer_button_S_seq_i );
+                        if( !U_R( display->mode, drag ))
+                        {   N xbutton_object_id;
+                            if( display->pointer_button_S_x >= 0
+                            && display->pointer_button_S_x < window->width
+                            && display->pointer_button_S_y >= 0
+                            && display->pointer_button_S_y < window->height
+                            )
+                            {   xcb_get_image_cookie_t ret_id = xcb_get_image_unchecked( display->x_display
+                                , XCB_IMAGE_FORMAT_Z_PIXMAP
+                                , window->object_mask
+                                , display->pointer_button_S_x, display->pointer_button_S_y
+                                , 1, 1
+                                , ~0 //NDFN
+                                );
+                                xcb_get_image_reply_t *ret = xcb_get_image_reply( display->x_display, ret_id, 0 );
+                                xbutton_object_id = *( N32 * )xcb_get_image_data(ret);
+                                __real_free(ret);
+                                if( xbutton_object_id == ~( v( xbutton_object_id, ~0 ) << E_x_Q_obj_C_id_bits ))
+                                    xbutton_object_id = ~0;
+                            }else
+                                xbutton_object_id = ~0;
+                            if( ~xbutton_object_id )
+                            {   if( display->pointer_button_S_seq_i == 1 )
+                                {   if( display->pointer_button == 1 || display->pointer_button == 3 )
+                                    {   U_F( window->req, draw );
+                                        struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, window->screen_id );
+                                        struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, xbutton_object_id );
+                                        display->drag_S_pointer_button = display->pointer_button;
+                                        display->drag_S_dnd_window_screen_id = window->screen_id;
+                                        display->drag_S_object_src = E_mem_Q_blk_M_tab( sizeof( struct E_x_Z_drag_object_src ), display->drag_S_object_src_n = 1 );
+                                        display->drag_S_object_src[0].window_id = display->pointer_button_S_window_id;
+                                        display->drag_S_object_src[0].object_id = xbutton_object_id;
+                                        display->drag_S_grab_x = display->pointer_button_S_x - object->x;
+                                        display->drag_S_grab_y = display->pointer_button_S_y - object->y;
+                                        U_F( object->mode, drag_src );
+                                        struct E_x_Q_window_Z *dnd_window = &screen->dnd_window;
+                                        dnd_window->width_new = dnd_window->width = object->width;
+                                        dnd_window->height_new = dnd_window->height = object->height;
+                                        dnd_window->object = E_mem_Q_tab_M( sizeof( struct E_x_Q_object_Z ), display->drag_S_object_src_n );
+                                        E_mem_Q_tab_Q_iter_M( dnd_window->object, ~0 );
+                                        E_x_Q_object_M_( display, dnd_window, 0, 0, 0, object->width, object->height, object->draw );
+                                        xcb_grab_pointer_cookie_t ret_id = xcb_grab_pointer_unchecked( display->x_display
+                                        , yes
+                                        , dnd_window->x_window
+                                        , XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION
+                                        , XCB_GRAB_MODE_ASYNC
+                                        , XCB_GRAB_MODE_ASYNC
+                                        , XCB_NONE
+                                        , display->drag_S_cursor
+                                        , display->pointer_button_S_grab_time
+                                        );
+                                        xcb_discard_reply( display->x_display, ret_id.sequence );
+                                        dnd_window->drawable = xcb_generate_id( display->x_display );
+                                        xcb_create_pixmap( display->x_display
+                                        , screen->depth
+                                        , dnd_window->drawable
+                                        , dnd_window->x_window
+                                        , dnd_window->width
+                                        , dnd_window->height
+                                        );
+                                        dnd_window->drawable_mask = xcb_generate_id( display->x_display );
+                                        xcb_create_pixmap( display->x_display
+                                        , 1
+                                        , dnd_window->drawable_mask
+                                        , dnd_window->x_window
+                                        , dnd_window->width
+                                        , dnd_window->height
+                                        );
+                                        dnd_window->drawable_mask_2 = xcb_generate_id( display->x_display );
+                                        xcb_create_pixmap( display->x_display
+                                        , 1
+                                        , dnd_window->drawable_mask_2
+                                        , dnd_window->x_window
+                                        , dnd_window->width
+                                        , dnd_window->height
+                                        );
+                                        xcb_poly_fill_rectangle( display->x_display
+                                        , dnd_window->drawable_mask_2
+                                        , screen->bitmask_1_gc
+                                        , 1
+                                        , ( xcb_rectangle_t[] )
+                                          { 0, 0
+                                          , dnd_window->width
+                                          , dnd_window->height
+                                          }
+                                        );
+                                        dnd_window->object_mask = xcb_generate_id( display->x_display );
+                                        xcb_create_pixmap( display->x_display
+                                        , E_x_Q_obj_C_id_bits
+                                        , dnd_window->object_mask
+                                        , dnd_window->x_window
+                                        , 1, 1
+                                        );
+                                        xcb_change_window_attributes( display->x_display
+                                        , dnd_window->x_window
+                                        , XCB_CW_OVERRIDE_REDIRECT
+                                        , ( N32[] )
+                                          { yes
+                                          }
+                                        );
+                                        xcb_configure_window( display->x_display
+                                        , dnd_window->x_window
+                                        , XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT | XCB_CONFIG_WINDOW_STACK_MODE
+                                        , ( N32[] )
+                                          { display->pointer_button_S_root_x - display->drag_S_grab_x
+                                          , display->pointer_button_S_root_y - display->drag_S_grab_y
+                                          , dnd_window->width
+                                          , dnd_window->height
+                                          , XCB_STACK_MODE_TOP_IF
+                                          }
+                                        );
+                                        xcb_change_window_attributes( display->x_display
+                                        , dnd_window->x_window
+                                        , XCB_CW_OVERRIDE_REDIRECT
+                                        , ( N32[] )
+                                          { no
+                                          }
+                                        );
+                                        U_L( dnd_window->mode, resize );
+                                        U_L( dnd_window->req, resize );
+                                        U_F( dnd_window->req, draw );
+                                        U_F( dnd_window->req_ex, draw_S_set_background_pixmap );
+                                        U_F( display->req, draw );
+                                        U_F( display->req, flush );
+                                        U_F( display->mode, drag );
+                                        U_L( display->mode_ex, drag_S_copy );
+                                        U_F( display->mode_ex, drag_stop_S_cancel );
+                                    }
+                                }else
+                                {   if( display->pointer_button == 2
+                                    && display->pointer_button_S_seq_i == 2
+                                    )
+                                    {   E_mem_Q_tab_I_rem( window->object, xbutton_object_id );
+                                        U_F( window->req, draw );
+                                        U_F( display->req, draw );
+                                    }
+                                }
+                            }
+                        }else
+                        {   if( display->pointer_button_S_seq_i == 2
+                            && ( display->pointer_button == 1 || display->pointer_button == 3 )
+                            )
+                            {   xcb_change_active_pointer_grab( display->x_display
+                                , ( U_R( display->mode_ex, drag_S_copy ) = !U_R( display->mode_ex, drag_S_copy )) ? display->drag_S_copy_cursor : display->drag_S_cursor
+                                , display->pointer_button_S_grab_time
+                                , event_mask
+                                );
+                                U_F( display->req, flush );
+                            }
+                        }
+                        if( !U_R( display->mode, drag )
+                        && !U_R( display->state, pointer_button_S_pressing )
+                        )
+                        {   U_L( display->req, pointer_S_ungrab );
+                            U_F( display->req, flush );
+                            xcb_ungrab_pointer( display->x_display, display->pointer_button_S_grab_time );
+                        }
+                        display->pointer_button_S_seq_i = 0;
+                    }else
+                    {   __real_free(ret);
+#ifdef E_flow_C_threads_for_system_unblock_reports
+                        if( display->pointer_button_S_impulser_time != grab_time )
+                        {   display->pointer_button_S_impulser_time = grab_time;
+                            Yh_F( x_window, events_pointer_button_check, ( display->pointer_button_S_seq_i & 1 ? display->pointer_button_C_release_timeout : display->pointer_button_C_seq_timeout ) * 1000 );
+                        }
+#endif
+                    }
+                }else
+                {   __real_free(ret);
+#ifdef E_flow_C_threads_for_system_unblock_reports
+                    Yh_L( x_window, events_pointer_button_check );
+#endif
+                    if( U_R( display->mode, drag ))
+                        U_F( display->mode, drag_stop );
+                    display->pointer_button_S_seq_i = 0;
+                }
+            }else if( !U_R( display->mode, drag )
+            && !U_R( display->state, pointer_button_S_pressing )
+            && U_E( display->req, pointer_S_ungrab )
+            )
+            {   U_L( display->mode, drag_stop );
+                U_F( display->req, flush );
+                xcb_ungrab_pointer( display->x_display, display->pointer_button_S_grab_time ); //NDFN niedoskonałość zachowania: w określonych zestawieniach czasowych (opóźnień) wskaźnik zostanie ‘odgrabnięty’ nad cudzym oknem przy dowolnym zestawie przycisków naciśniętych pomiędzy kolejnymi otrzymanymi pakietami “zdarzeń” ‘x’ (co spowoduje reakcję tamtego okna na “ButtonRelease” lub już “MotionNotify” —np. uchwycenie ramki okna w menedżerze okien ‟Fluxbox”). można usunąć przez zagwarantowanie, że ta instrukcja zostanie wykonana przez zdalny serwer ‟X.org” tylko wtedy, gdy wszystkie przyciski są zwolnione, albo używając tylko aplikacji interpretujacych w pełni “ButtonClick” jako odpowiednie “ButtonPress” i “ButtonRelease”.
+            }
+            if( U_R( display->mode, drag )
+            && U_R( drag, motion )
+            )
+            {   //TODO sprawdź i wizualizuj możliwość ‘drop’ w tym miejscu.
+                struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, display->drag_S_dnd_window_screen_id );
+                if( !U_R( drag_S_motion, oth_screen )
+                || drag_S_motion_x_root_window == screen->x_root_window
+                )
+                {   xcb_configure_window( display->x_display
+                    , screen->dnd_window.x_window
+                    , XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y
+                    , ( N32[] )
+                      { drag_S_motion_root_x - display->drag_S_grab_x
+                      , drag_S_motion_root_y - display->drag_S_grab_y
+                      }
+                    );
+                    U_F( display->req, flush );
+                }else
+                {   struct E_x_Q_screen_Z *screen_last = screen;
+                    for_each( screen_id, display->screen, E_mem_Q_tab )
+                    {   screen = E_mem_Q_tab_R( display->screen, screen_id );
+                        if( drag_S_motion_x_root_window == screen->x_root_window )
+                            break;
+                    }
+                    display->drag_S_dnd_window_screen_id = screen_id;
+                    struct E_x_Q_window_Z *dnd_window = &screen_last->dnd_window;
+                    //zmienić tak, by okna ‘dnd’ były jednocześnie widoczne do czasu utraty widoczności na jednym z wyświetlaczy.
+                    xcb_configure_window( display->x_display
+                    , dnd_window->x_window
+                    , XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT
+                    , ( N32[] )
+                      { E_x_Q_window_S_hidden_x
+                      , E_x_Q_window_S_hidden_y
+                      , 1
+                      , 1
+                      }
+                    );
+                    xcb_change_window_attributes( display->x_display
+                    , dnd_window->x_window
+                    , XCB_CW_BACK_PIXMAP
+                    , ( N32[] )
+                      { XCB_BACK_PIXMAP_NONE
+                      }
+                    );
+                    xcb_free_pixmap( display->x_display, dnd_window->drawable );
+                    xcb_free_pixmap( display->x_display, dnd_window->drawable_mask_2 );
+                    xcb_free_pixmap( display->x_display, dnd_window->drawable_mask );
+                    xcb_free_pixmap( display->x_display, dnd_window->object_mask );
+                    dnd_window = &screen->dnd_window;
+                    dnd_window->drawable = xcb_generate_id( display->x_display );
+                    xcb_create_pixmap( display->x_display
+                    , screen->depth
+                    , dnd_window->drawable
+                    , dnd_window->x_window
+                    , dnd_window->width
+                    , dnd_window->height
+                    );
+                    dnd_window->drawable_mask = xcb_generate_id( display->x_display );
+                    xcb_create_pixmap( display->x_display
+                    , 1
+                    , dnd_window->drawable_mask
+                    , dnd_window->x_window
+                    , dnd_window->width
+                    , dnd_window->height
+                    );
+                    dnd_window->drawable_mask_2 = xcb_generate_id( display->x_display );
+                    xcb_create_pixmap( display->x_display
+                    , 1
+                    , dnd_window->drawable_mask_2
+                    , dnd_window->x_window
+                    , dnd_window->width
+                    , dnd_window->height
+                    );
+                    xcb_poly_fill_rectangle( display->x_display
+                    , dnd_window->drawable_mask_2
+                    , screen->bitmask_1_gc
+                    , 1
+                    , ( xcb_rectangle_t[] )
+                      { 0
+                      , 0
+                      , dnd_window->width
+                      , dnd_window->height
+                      }
+                    );
+                    dnd_window->object_mask = xcb_generate_id( display->x_display );
+                    xcb_create_pixmap( display->x_display
+                    , E_x_Q_obj_C_id_bits
+                    , dnd_window->object_mask
+                    , dnd_window->x_window
+                    , 1, 1
+                    );
+                    xcb_configure_window( display->x_display
+                    , dnd_window->x_window
+                    , XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT | XCB_CONFIG_WINDOW_STACK_MODE
+                    , ( N32[] )
+                      { drag_S_motion_root_x - display->drag_S_grab_x
+                      , drag_S_motion_root_y - display->drag_S_grab_y
+                      , dnd_window->width
+                      , dnd_window->height
+                      , XCB_STACK_MODE_TOP_IF
+                      }
+                    );
+                    xcb_grab_pointer_cookie_t ret_id = xcb_grab_pointer_unchecked( display->x_display
+                    , yes
+                    , dnd_window->x_window
+                    , XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION
+                    , XCB_GRAB_MODE_ASYNC
+                    , XCB_GRAB_MODE_ASYNC
+                    , XCB_NONE
+                    , U_R( display->mode_ex, drag_S_copy ) ? display->drag_S_copy_cursor : display->drag_S_cursor
+                    , display->pointer_button_S_grab_time
+                    );
+                    xcb_discard_reply( display->x_display, ret_id.sequence );
+                    U_F( dnd_window->req, draw );
+                    U_F( dnd_window->req_ex, draw_S_set_background_pixmap );
+                    U_F( display->req, draw );
+                    U_F( display->req, flush );
+                }
+            }
+            if( U_R( window, postproc ))
+            {   if( U_R( display->mode, drag ))
+                {   struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, display->drag_S_dnd_window_screen_id );
+                    struct E_x_Q_window_Z *window = &screen->dnd_window;
+                    if( U_E( window->req, resize )
+                    && ( window->width != window->width_new
+                      || window->height != window->height_new
+                    ))
+                    {   window->width = window->width_new;
+                        window->height = window->height_new;
+                        xcb_change_window_attributes( display->x_display
+                        , window->x_window
+                        , XCB_CW_BACK_PIXMAP
+                        , ( N32[] )
+                          { XCB_BACK_PIXMAP_NONE
+                          }
+                        );
+                        xcb_free_pixmap( display->x_display, window->object_mask );
+                        xcb_free_pixmap( display->x_display, window->drawable_mask_2 );
+                        xcb_free_pixmap( display->x_display, window->drawable_mask );
+                        xcb_free_pixmap( display->x_display, window->drawable );
+                        window->drawable = xcb_generate_id( display->x_display );
+                        xcb_create_pixmap( display->x_display
+                        , screen->depth
+                        , window->drawable
+                        , window->x_window
+                        , window->width, window->height
+                        );
+                        window->drawable_mask = xcb_generate_id( display->x_display );
+                        xcb_create_pixmap( display->x_display
+                        , 1
+                        , window->drawable_mask
+                        , window->x_window
+                        , window->width, window->height
+                        );
+                        window->drawable_mask_2 = xcb_generate_id( display->x_display );
+                        xcb_create_pixmap( display->x_display
+                        , 1
+                        , window->drawable_mask_2
+                        , window->x_window
+                        , window->width, window->height
+                        );
+                        xcb_poly_fill_rectangle( display->x_display
+                        , window->drawable_mask_2
+                        , screen->bitmask_1_gc
+                        , 1
+                        , ( xcb_rectangle_t[] )
+                          { 0
+                          , 0
+                          , window->width
+                          , window->height
+                          }
+                        );
+                        window->object_mask = xcb_generate_id( display->x_display );
+                        xcb_create_pixmap( display->x_display
+                        , E_x_Q_obj_C_id_bits
+                        , window->object_mask
+                        , window->x_window
+                        , window->width, window->height
+                        );
+                        U_F( window->req, draw );
+                        U_F( window->req_ex, draw_S_set_background_pixmap );
+                        U_F( display->req, draw );
+                    }
+                    if( window->user_activity_time > window->last_user_activity_time )
+                    {   E_x_Z_property_P_v( display, window, _NET_WM_USER_TIME
+                        , CARDINAL
+                        , window->user_activity_time
+                        );
+                        window->last_user_activity_time = window->user_activity_time;
+                        U_F( display->req, flush );
+                    }
+                }
+                for_each( window_id, display->window, E_mem_Q_tab )
+                {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
+                    struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, window->screen_id );
+                    if( U_R( window->state, visible )
+                    && U_E( window->req, resize )
+                    && ( window->width != window->width_new
+                      || window->height != window->height_new
+                    ))
+                    {   window->width = window->width_new;
+                        window->height = window->height_new;
+                        xcb_change_window_attributes( display->x_display
+                        , window->x_window
+                        , XCB_CW_BACK_PIXMAP
+                        , ( N32[] )
+                          { XCB_BACK_PIXMAP_NONE
+                          }
+                        );
+                        xcb_free_pixmap( display->x_display, window->object_mask );
+                        xcb_free_pixmap( display->x_display, window->drawable_mask_2 );
+                        xcb_free_pixmap( display->x_display, window->drawable_mask );
+                        xcb_free_pixmap( display->x_display, window->drawable );
+                        window->drawable = xcb_generate_id( display->x_display );
+                        xcb_create_pixmap( display->x_display
+                        , screen->depth
+                        , window->drawable
+                        , window->x_window
+                        , window->width, window->height
+                        );
+                        window->drawable_mask = xcb_generate_id( display->x_display );
+                        xcb_create_pixmap( display->x_display
+                        , 1
+                        , window->drawable_mask
+                        , window->x_window
+                        , window->width, window->height
+                        );
+                        window->drawable_mask_2 = xcb_generate_id( display->x_display );
+                        xcb_create_pixmap( display->x_display
+                        , 1
+                        , window->drawable_mask_2
+                        , window->x_window
+                        , window->width, window->height
+                        );
+                        xcb_poly_fill_rectangle( display->x_display
+                        , window->drawable_mask_2
+                        , screen->bitmask_1_gc
+                        , 1
+                        , ( xcb_rectangle_t[] )
+                          { 0
+                          , 0
+                          , window->width
+                          , window->height
+                          }
+                        );
+                        window->object_mask = xcb_generate_id( display->x_display );
+                        xcb_create_pixmap( display->x_display
+                        , E_x_Q_obj_C_id_bits
+                        , window->object_mask
+                        , window->x_window
+                        , window->width, window->height
+                        );
+                        U_F( window->req, draw );
+                        U_F( window->req_ex, draw_S_set_background_pixmap );
+                        U_F( display->req, draw );
+                    }
+                    if( window->user_activity_time > window->last_user_activity_time )
+                    {   E_x_Z_property_P_v( display, window, _NET_WM_USER_TIME
+                        , CARDINAL
+                        , window->user_activity_time
+                        );
+                        window->last_user_activity_time = window->user_activity_time;
+                        U_F( display->req, flush );
+                    }
+                }
+            }
+            if( U_R( display->req, draw ))
+                U_F( x_window, draw );
+            if( U_R( display->req, flush ))
+                U_F( x_window, flush );
+#ifndef E_flow_C_threads_for_system_unblock_reports
+        }
+#endif
+        X_U( x_window, close_window );
+        X_U( x_window, draw );
+        X_U( x_window, flush );
+#ifndef E_flow_C_threads_for_system_unblock_reports
+        Y_B( timer, 0 )
+            break;
+#endif
+    }
+#ifndef E_flow_C_threads_for_system_unblock_reports
+    Y_W(timer);
+#else
+    D_W( x_window, events_pointer_button_check );
+#endif
+}
+D( x_window, draw )
+{   X_M( x_window, draw );
+    X_A( x_window, flush );
+    I_D
+    {   X_B( x_window, draw, 0 )
+            break;
+        for_each( display_id, E_x_Q_display_S, E_mem_Q_tab )
+        {   struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
+            if( U_E( display->req, draw ))
+            {   for_each( window_id, display->window, E_mem_Q_tab )
+                {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
+                    if( U_R( window->state, visible )
+                    && !U_R( window->mode, resize )
+                    && U_E( window->req, draw )
+                    )
+                    {   ///algorytm uaktualniania zmieniającego się obrazu już zinterpretowanego jest taki sam jak w umysłach biologicznych (jeśli nic innego podczas rysowania nie wymusi “exposure”, które powoduje, że pokaże chwilowo to, co już zdążył narysować): 1• wypełnienie tłem (bez obiektów) po już nieobecnych obiektach, 2• narysowanie obiektów. tylko nie ma takiego zaawansowania (rekurencyjnego?) przy rysowaniu obiektów; które i tak nie są jeszcze wystarczająco zdefiniowane.
+                        struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, window->screen_id );
+                        ///przed rysowaniem czyści maskę punktów okna, które zostaną narysowane.
+                        xcb_poly_fill_rectangle( display->x_display
+                        , window->drawable_mask
+                        , screen->bitmask_0_gc
+                        , 1
+                        , ( xcb_rectangle_t[] )
+                          { 0
+                          , 0
+                          , window->width
+                          , window->height
+                          }
+                        );
+                        for_each_q( object_id, window->object, 0, E_mem_Q_tab ) //NDFN zakładana kolejność od na spodzie do na wierzchu.
+                        {   struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
+                            xcb_change_gc( display->x_display
+                            , screen->object_mask_gc
+                            , XCB_GC_FOREGROUND
+                            , ( N32[] )
+                              { object_id
+                              }
+                            ); //NDFN niepotrzebnie rysuje dwa razy tę maskę dla obiektu w poniższym trybie.
+                            if( U_R( object->mode, drag_src ))
+                            {   xcb_change_gc( display->x_display
+                                , screen->drawable_gc
+                                , XCB_GC_FILL_STYLE
+                                , ( N32[] )
+                                  { XCB_FILL_STYLE_TILED
+                                  }
+                                );
+                                object->draw( display, screen, window, object );
+                                N32 color = E_x_Z_color_M_gray( 0x3f );
+                                screen->draw_color = color;
+                                xcb_change_gc( display->x_display
+                                , screen->drawable_gc
+                                , XCB_GC_FUNCTION | XCB_GC_FOREGROUND | XCB_GC_FILL_STYLE
+                                , ( N32[] )
+                                  { XCB_GX_OR
+                                  , color
+                                  , XCB_FILL_STYLE_SOLID
+                                  }
+                                );
+                            }
+                            object->draw( display, screen, window, object ); //NDFN nieprzerysowywanie wszystkich obiektów dla każdej klatki animacji zrobić ewentualnie przy pomocy definiowania obiektów w karcie graficznej i ustawienia im wymiaru “z” w trybie 2‐wymiarowym.
+                            if( U_R( object->mode, drag_src ))
+                                xcb_change_gc( display->x_display
+                                , screen->drawable_gc
+                                , XCB_GC_FUNCTION
+                                , ( N32[] )
+                                  { XCB_GX_COPY
+                                  }
+                                );
+                        }
+                        ///oblicza maskę punktów zmienionych podczas rysowania z obiektów na tło.
+                        xcb_copy_area( display->x_display
+                        , window->drawable_mask
+                        , window->drawable_mask_2 ///było to, co jest narysowane (narysował poprzednio) jako obiekty.
+                        , screen->bitmask_not_and_gc
+                        , 0, 0
+                        , 0, 0
+                        , window->width, window->height
+                        );
+                        xcb_change_gc( display->x_display
+                        , screen->drawable_background_gc
+                        , XCB_GC_CLIP_MASK
+                        , ( N32[] )
+                          { window->drawable_mask_2
+                          }
+                        );
+                        ///rysuje punkty zmienione na tło.
+                        xcb_poly_fill_rectangle( display->x_display
+                        , window->drawable
+                        , screen->drawable_background_gc
+                        , 1
+                        , ( xcb_rectangle_t[] )
+                          { 0
+                          , 0
+                          , window->width
+                          , window->height
+                          }
+                        );
+                        xcb_change_gc( display->x_display
+                        , screen->object_mask_gc
+                        , XCB_GC_FOREGROUND | XCB_GC_CLIP_MASK
+                        , ( N32[] )
+                          { ~0
+                          , window->drawable_mask_2
+                          }
+                        );
+                        ///ustawia brak obiektu w tych punktach.
+                        xcb_poly_fill_rectangle( display->x_display
+                        , window->object_mask
+                        , screen->object_mask_gc
+                        , 1
+                        , ( xcb_rectangle_t[] )
+                          { 0
+                          , 0
+                          , window->width
+                          , window->height
+                          }
+                        );
+                        xcb_change_gc( display->x_display
+                        , screen->object_mask_gc
+                        , XCB_GC_CLIP_MASK
+                        , ( N32[] )
+                          { XCB_NONE
+                          }
+                        );
+                        if( U_E( window->req_ex, draw_S_set_background_pixmap ))
+                            xcb_change_window_attributes( display->x_display
+                            , window->x_window
+                            , XCB_CW_BACK_PIXMAP
+                            , ( N32[] )
+                              { window->drawable
+                              }
+                            );
+                        ///rysuje zmienione punkty okna, które później mogą być automatycznie przerysowywane z ustawionej “pixmapy” tła okna.
+                        xcb_copy_area( display->x_display
+                        , window->drawable_mask
+                        , window->drawable_mask_2 ///było to, co zostało narysowane jako tło.
+                        , screen->bitmask_or_gc
+                        , 0, 0
+                        , 0, 0
+                        , window->width, window->height
+                        );
+                        xcb_change_gc( display->x_display
+                        , screen->drawable_gc
+                        , XCB_GC_CLIP_MASK
+                        , ( N32[] )
+                          { window->drawable_mask_2
+                          }
+                        );
+                        xcb_copy_area( display->x_display
+                        , window->drawable
+                        , window->x_window
+                        , screen->drawable_gc
+                        , 0, 0
+                        , 0, 0
+                        , window->width, window->height
+                        );
+                        xcb_change_gc( display->x_display
+                        , screen->drawable_gc
+                        , XCB_GC_CLIP_MASK
+                        , ( N32[] )
+                          { XCB_NONE
+                          }
+                        );
+                        J_swap( xcb_pixmap_t
+                        , window->drawable_mask_2
+                        , window->drawable_mask
+                        );
+                        U_F( display->req, flush );
+                    }
+                }
+            }
+            if( U_R( display->mode, drag ))
+            {   struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, display->drag_S_dnd_window_screen_id );
+                struct E_x_Q_window_Z *window = &screen->dnd_window;
+                if( !U_R( window->mode, resize )
+                && U_E( window->req, draw )
+                )
+                {   xcb_poly_fill_rectangle( display->x_display
+                    , window->drawable_mask
+                    , screen->bitmask_0_gc
+                    , 1
+                    , ( xcb_rectangle_t[] )
+                      { 0
+                      , 0
+                      , window->width
+                      , window->height
+                      }
+                    );
+                    for_each_q( object_id, window->object, 0, E_mem_Q_tab )
+                    {   struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
+                        xcb_change_gc( display->x_display
+                        , screen->object_mask_gc
+                        , XCB_GC_FOREGROUND
+                        , ( N32[] )
+                          { object_id
+                          }
+                        );
+                        object->draw( display, screen, window, object );
+                    }
+                    xcb_copy_area( display->x_display
+                    , window->drawable_mask
+                    , window->drawable_mask_2
+                    , screen->bitmask_not_and_gc
+                    , 0, 0
+                    , 0, 0
+                    , window->width
+                    , window->height
+                    );
+#ifndef C_xcb_shape
+                    xcb_change_gc( display->x_display
+                    , screen->drawable_background_gc
+                    , XCB_GC_CLIP_MASK
+                    , ( N32[] )
+                      { window->drawable_mask_2
+                      }
+                    );
+                    xcb_poly_fill_rectangle( display->x_display
+                    , window->drawable
+                    , screen->drawable_background_gc
+                    , 1
+                    , ( xcb_rectangle_t[] )
+                      { 0
+                      , 0
+                      , window->width
+                      , window->height
+                      }
+                    );
+#endif
+                    if( U_E( window->req_ex, draw_S_set_background_pixmap ))
+                        xcb_change_window_attributes( display->x_display
+                        , window->x_window
+                        , XCB_CW_BACK_PIXMAP
+                        , ( N32[] )
+                          { window->drawable
+                          }
+                        );
+                    else
+#ifndef C_xcb_shape
+                    {   xcb_copy_area( display->x_display
+                        , window->drawable_mask
+                        , window->drawable_mask_2
+                        , screen->bitmask_or_gc
+                        , 0, 0
+                        , 0, 0
+                        , window->width
+                        , window->height
+                        );
+                        xcb_change_gc( display->x_display
+                        , screen->drawable_gc
+                        , XCB_GC_CLIP_MASK
+                        , ( N32[] )
+                          { window->drawable_mask_2
+                          }
+                        );
+                    }
+#else
+                    xcb_change_gc( display->x_display
+                    , screen->drawable_gc
+                    , XCB_GC_CLIP_MASK
+                    , ( N32[] )
+                      { window->drawable_mask
+                      }
+                    );
+#endif
+                    xcb_copy_area( display->x_display
+                    , window->drawable
+                    , window->x_window
+                    , screen->drawable_gc
+                    , 0, 0
+                    , 0, 0
+                    , window->width
+                    , window->height
+                    );
+                    xcb_change_gc( display->x_display
+                    , screen->drawable_gc
+                    , XCB_GC_CLIP_MASK
+                    , ( N32[] )
+                      { XCB_NONE
+                      }
+                    );
+#ifdef C_xcb_shape
+                    xcb_shape_mask( display->x_display
+                    , XCB_SHAPE_SK_BOUNDING
+                    , XCB_SHAPE_SO_SET
+                    , window->x_window
+                    , 0, 0
+                    , window->drawable_mask
+                    );
+#endif
+                    J_swap( xcb_pixmap_t
+                    , window->drawable_mask_2
+                    , window->drawable_mask
+                    );
+                    U_F( display->req, flush );
+                }
+            }
+            if( U_R( display->req, flush ))
+                U_F( x_window, flush );
+        }
+        X_U( x_window, flush );
+    }
+    X_W( x_window, draw );
+}
+D( x_window, flush )
+{   X_M( x_window, flush );
+    I_D
+    {   X_B( x_window, flush, 0 )
+            break;
+        for_each( display_id, E_x_Q_display_S, E_mem_Q_tab )
+        {   struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
+            if( U_E( display->req, flush ))
+                xcb_flush( display->x_display );
+        }
+    }
+    X_W( x_window, flush );
+}
+/******************************************************************************/

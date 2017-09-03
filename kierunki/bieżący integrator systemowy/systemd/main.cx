@@ -1,0 +1,67 @@
+/*******************************************************************************
+*   ___   workplace
+*  ¦OUX¦  ‟Coux”
+*  ¦Inc¦  bieżący integrator systemowy
+*   ---   “systemd” listener
+*         entry and raw labels
+* ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2015‒12‒6 *
+*******************************************************************************/
+sd_journal *E_main_S_journal;
+//==============================================================================
+int
+main(
+  int argc
+, char *argv[]
+){  E_flow_M( argc, argv );
+    X_M( main, _ );
+    Dh_M( main, journal, 0, 0 );
+    X_B( main, _, 0 );
+    Dh_W( main, journal, 0 );
+    E_flow_W();
+    return 0;
+}
+void
+E_main_D_journal_I_unblock( P task_arg
+){  sd_journal_print( LOG_DEBUG, "%s", "Xh unblock" );
+}
+D( main, journal )
+{   Xh_A( E_main_D_journal_I_unblock );
+    Vr_1( sd_journal_open( &E_main_S_journal, 0 ));
+    Vr_1( sd_journal_seek_tail( E_main_S_journal ));
+    I_D
+    {   int ret;
+        O{  Vr_1( ret = sd_journal_next( E_main_S_journal ));
+            if( !ret )
+                break;
+            Pc s;
+            N l;
+            //if(( ret = sd_journal_get_data( E_main_S_journal, "MESSAGE", &s, &l )) != -ENOENT )
+            //{   if( ret < 0 )
+                //{   G_(); V();
+                //}
+                //G(); Gs_l( s, l );
+            //}
+            sd_journal_restart_data( E_main_S_journal );
+            O{  Vr_1_( ret = sd_journal_enumerate_data( E_main_S_journal, ( P * )&s, &l ));
+                if( !ret )
+                    break;
+                G(); Gs_l( s, l );
+            }
+        }
+        O{  Xh_B_();
+            Vr_1_( ret = sd_journal_wait( E_main_S_journal, -1 ));
+            Xh_B()
+                goto End;
+            G(); Gd(ret);
+            if( ret != SD_JOURNAL_NOP )
+                break;
+        }
+    }
+End:sd_journal_close( E_main_S_journal );
+}
+//==============================================================================
+void
+E_flow_Q_process_call_I_func( P data
+){
+}
+/******************************************************************************/

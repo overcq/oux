@@ -1,0 +1,1654 @@
+/*******************************************************************************
+*   ___   publicplace
+*  ¦OUX¦  ‟Coux”
+*  ¦Inc¦  component
+*   ---   base
+*         flow driver
+* ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2015‒1‒26 
+*******************************************************************************/
+///programista ‟oux” rozumie następujące zagadnienia podstawowe:
+///‣przełączanie ‹zadań› wykonywane w pętli dla kolejnych obudzonych jako ograniczoną liniowym czasem aktywację kolejnych warstw wykonawczej sieci informacyjnej (jak biologicznej sieci neuronowo‐biochemicznej, inaczej elektryczno‐molekularnej, inaczej synaptyczno‐organicznej).
+///‣informacyjno‐wykonawczą nienazywającą stwórczość bytową (molekularną) w postaci bezwarunkowej pętli programowej odpowiednio użytej.
+///‣pełną dynamiczność systemu ‘uidów’ ‹raportów›/‹impulsatorów›, która jest odrębna od używanego systemu zapewniania unikalności ‘idów’ zarejestrowanych ‹raportów›/‹impulsatorów› używanych pomiędzy ‹zadaniami›— jak rzeczywistość wykonawcza nie jest zależna od nazw, ale została oparta na statycznych nazwach, bo tutaj program jest kompilowany całościowo, więc nie potrzeba uzgadniać ‘uidu’ ‹raportu›/‹impulsatora›.
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+///przeprojektowywane pod rzeczywiste potrzeby.
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+///[ta linia– do aktualizacji.] instrukcje mogące przełączyć ‹zadanie›: “X_B”, [“X_E”], “Y_B”, “I_B”. “I_M” i “I_W” zawsze przełączają jakby proceduralnie do ‹zadania› uruchamianego/zwalnianego, wykonują blok startowy/końcowy i wracają, więc nie zaliczają się do tego zbioru.
+///bloki startowe i końcowe ‹zadań› służą obowiązkowo do rejestracji (np. ‹raportów›) i zwalniania zasobów ‘interfejsu’ bytu ‹zadania› ·bezwarunkowo· widzianych przez inne. w blokach tych nie wolno przełączać (tzn. jawnie, nie przez normalne wykonywanie się “D_W”) ani wykonywać celu ‹zadania›. (jeśli w bloku startowym zostanie użyta jedna z instrukcji przełączenia, to ‹zadanie› pozostanie zablokowane dla ‘schedulera’ w nie wznawialnym (nie obsługiwanym) stanie oczekiwania (“E_flow_Z_run_state_S_starting_by_task”). jeśli zostanie użyta w bloku końcowym, to ‹zadanie› zostanie zablokowane (“E_flow_Z_run_state_S_stopping_by_task”) i usunięte przez ‹zadanie› usuwające, po przełączeniu do niego przez ‘schedulera’— bez wykonania reszty programu ‹zadania› usuwanego.)
+///adresy danych dostępnych przez identyfikatory (adresy ‹okien wglądu›) muszą być ponownie odczytane przed użyciem po możliwym przełączeniu ‹zadania›.
+//------------------------------------------------------------------------------
+///zasadą jest, że instrukcje oczekiwania na coś przez ‹zadanie› odblokowują je dokładnie po zaistnieniu tego czegoś, bez zależności raportowania zaistnienia czegokolwiek, co ‹zadanie› ma zarejestrowane, ale czeka na to inną instrukcją przełączającą ‹zadanie›. więc oczekiwanie sekwencyjne na różne rzeczy przez ‹zadanie› jest sytuacją obsługiwaną (tak jak powyżej napisane), aczkolwiek nie polecaną.
+///właścicielem ‹raportu›/‹impulsatora› jest ‹zadanie›, które na niego czeka (rejestracja oczekiwania– “X_M”/“Yi_M”), i tylko to ‹zadanie› może czekać na ten ‹raport›/‹impulsator› (w dowolnej liczbie miejsc wewnątrz własnej procedury); ale w ‘kompilacji’ ‹modułów› do “bibliotek” ‹zadanie› w ‹module› “main” —czyli w głównym pliku wykonywalnym programu— nie jest generatorem ‘uidu’ ‹raportu›/‹impulsatora›, który emituje któryś ‹moduł› “biblioteczny”. właścicielem ‚raportów znacznikowych’ —statycznych, nierejestrowanych, pochodzących z “sygnałów” ‘uniksowych’— jest ‹zadanie› “main” (a procedura), ponieważ tylko to ‹zadanie› może obsługiwać stany programu uruchomionego przez nie w składnikach, a niektórych ‚raportów znacznikowych’– ‚scheduler’, ponieważ tylko on może zarządzać systemowym przepływem wykonania i go przełączać.
+//------------------------------------------------------------------------------
+///“process_call”– synchroniczne w przepływie pojedynczego ‹zadania›— funkcje żądane przy użyciu ‘uniksowego’ “sygnału”:
+///tylko jedno ‹zadanie› w programie (‹sterownik› funkcji programu zewnętrznego) może implementować żądania funkcji konkretnego (jednego) programu ‟oux” uruchomionego w systemie operacyjnym. obecnie w programie ‟bis” rozróżnianie programów jest realizowane przez rozróżnianie nazw procesów, tzn. nie jest uwzględniony przypadek, gdy program ‟oux” posiada procesy podrzędne. [to zdanie sprawdzić, bo coś już było zrobione.] ponadto nie zostało (dla optymalizacji) zaimplementowane rozpoznawanie programu typu ‟oux” (uzupełnić o autoryzację potwierdzaną chwilowo?) oraz własnego (wykluczać u źródła), a wykonanie żądania funkcji do takiego programu nie jest dozwolone.
+//==============================================================================
+//TODO (dla “middle code”) przenieść zmienne globalne do struktur ‹modułów›, które będą alokowane i ustawiane podczas tworzenia ‹modułów›, oraz wyeliminować ustawianie zmiennych globalnych w przestrzeni globalnej. to wyeliminuje konieczność jakichkolwiek “sekcji” w plikach wykonywalnych, w przygotowaniu dla “middle code”, a dla zwykłych programów odstatyczni lokalizacje zmiennych globalnych. narazie pozostaną zmienne globalne ‹zadań›. usunąć z “prekompilatora” część “regex” odpowiadającą za wartości początkowe zmiennych globalnych.
+//NDFN lokalizacja do zmiany z przestrzeni globalnej.
+_internal
+I _X_var( flow, call_req );
+_internal
+I _X_var( io, stream_write );
+//==============================================================================
+enum E_flow_Z_run_state
+{ E_flow_Z_run_state_S_ready
+//, E_flow_Z_run_state_S_emiting_report
+, E_flow_Z_run_state_S_waiting_for_report
+, E_flow_Z_run_state_S_waiting_for_timer
+, E_flow_Z_run_state_S_waiting_for_call_reply
+    #ifdef E_flow_C_itimer_system_unblock_report
+, E_flow_Z_run_state_S_waiting_for_system_unblock_report
+    #endif
+, E_flow_Z_run_state_S_starting_by_task
+, E_flow_Z_run_state_S_stopping_by_task
+};
+struct E_flow_Q_task_Z
+{ Pc exe_stack;
+  Z_clock_time run_state_time;
+  Pc stack;
+  Pc touched_stack;
+    #ifdef C_line_report
+  Pc proc_name;
+    #endif
+  N run_state_object;
+  N stack_size;
+    #ifdef E_flow_C_thread_system_unblock_reports
+  pthread_mutex_t *thread_flow_mutex;
+  B *thread_switch_back;
+  P thread_proc_arg;
+  void ( *thread_unblock_proc )(P);
+  pthread_t thread;
+    #endif
+  enum E_flow_Z_run_state run_state;
+    #ifdef E_flow_C_thread_system_unblock_reports
+  unsigned U_R( type, system_unblock_report )   :1;
+    #endif
+};
+    #ifdef E_flow_C_thread_system_unblock_reports
+struct E_flow_Q_task_in_thread_I_thread_proc_Z_args
+{ stack_t alt_stack;
+  void (*proc)(P);
+};
+    #endif
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+struct E_flow_Q_report_Z
+{ N uid;
+  N reported_count;
+};
+struct E_flow_Q_timer_Z
+{ Z_clock_time left;
+  Z_clock_time period;
+  N lost_count;
+  N uid;
+  I task_to;
+};
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+struct E_flow_Q_process_call_srv_Z
+{ P shm;
+  pid_t process_id;
+};
+struct E_flow_Q_process_call_cli_Z
+{ P shm;
+  pid_t process_id;
+  int shm_id;
+  I task_id;
+  unsigned U_R( state, active )         :1;
+  unsigned U_R( state, ping )           :1;
+  unsigned U_R( state, reply )          :1;
+};
+//==============================================================================
+I
+E_flow_Q_task_M( void (*task_proc)(P)
+    #ifdef E_flow_C_thread_system_unblock_reports
+, P thread_proc_arg
+, B task_in_thread_kind
+    #endif
+    #ifdef C_line_report
+, Pc task_proc_name
+    #endif
+){  if( E_base_S->E_flow_Z_task_stacks_S_granulation_n_back )
+    {
+            #ifdef E_flow_C_thread_system_unblock_reports
+        if( task_in_thread_kind
+        && E_base_S->E_flow_Z_task_stacks_S_granulation_u < PTHREAD_STACK_MIN
+        )
+        {   GV_(NA); ///late instrumentation error: granulation unit too small because too many tasks in available memory.
+            if( thread_proc_arg )
+                W( thread_proc_arg );
+            return ~0;
+        }
+            #endif
+        E_base_S->E_flow_Z_task_stacks_S_granulation_n_back--;
+    }else
+    {   if( E_simple_Z_n_T_power_2( E_base_S->E_flow_Z_task_stacks_S_granulation_n ))
+        {   N v = E_base_S->E_flow_Z_task_stacks_S_granulation_u;
+            E_base_S->E_flow_Z_task_stacks_S_granulation_u /= 2;
+                #ifdef E_flow_C_thread_system_unblock_reports
+            if( task_in_thread_kind
+            && E_base_S->E_flow_Z_task_stacks_S_granulation_u < PTHREAD_STACK_MIN
+            )
+            {   E_base_S->E_flow_Z_task_stacks_S_granulation_n_back++;
+                GV_(NA); ///late instrumentation error: granulation unit too small because too many tasks in available memory.
+                if( thread_proc_arg )
+                    W( thread_proc_arg );
+                return ~0;
+            }
+                #endif
+            if( E_base_S->E_flow_Z_task_stacks_S_granulation_u < 2 * E_base_S->E_mem_S_page_size )
+            {   E_base_S->E_flow_Z_task_stacks_S_granulation_u = v;
+                GV_(NA); ///late instrumentation error: granulation unit too small because too many tasks in available memory.
+                    #ifdef E_flow_C_thread_system_unblock_reports
+                if( thread_proc_arg )
+                    W( thread_proc_arg );
+                    #endif
+                return ~0;
+            }
+            E_base_S->E_flow_Z_task_stacks_S_granulation_u = E_simple_Z_n_I_align_down_to_v_2( E_base_S->E_flow_Z_task_stacks_S_granulation_u, E_base_S->E_mem_S_page_size );
+            E_base_S->E_flow_Z_task_stacks_S_granulation_n *= 2;
+            for_each_out( 0, task_id, E_base_S->E_flow_Q_task_S, E_mem_Q_tab )
+            {   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id );
+                N unaligned_size = task->stack_size - E_simple_Z_n_I_align_down_to_v( task->stack_size, E_base_S->E_flow_Z_task_stacks_S_granulation_u );
+                if( task->stack + unaligned_size + E_base_S->E_flow_Z_task_stacks_S_granulation_u <= task->touched_stack )
+                {   E_base_S->E_flow_Z_task_stacks_S_granulation_n--;
+                    V0_( munmap( task->stack - E_base_S->E_mem_S_page_size, unaligned_size + E_base_S->E_flow_Z_task_stacks_S_granulation_u ));
+                    task->stack += unaligned_size + E_base_S->E_flow_Z_task_stacks_S_granulation_u;
+                    task->stack_size -= unaligned_size + E_base_S->E_flow_Z_task_stacks_S_granulation_u;
+                }else
+                {   GV_(NDFN); ///late instrumentation error: task stack larger than granulation unit
+                    if( unaligned_size
+                    && task->stack + unaligned_size <= task->touched_stack
+                    ){  V0_( munmap( task->stack - E_base_S->E_mem_S_page_size, unaligned_size ));
+                        task->stack += unaligned_size;
+                        task->stack_size -= unaligned_size;
+                    }
+                }
+            }
+        }
+            #ifdef E_flow_C_thread_system_unblock_reports
+        else if( task_in_thread_kind
+        && E_base_S->E_flow_Z_task_stacks_S_granulation_u < PTHREAD_STACK_MIN
+        )
+        {   GV_(NA); ///late instrumentation error: granulation unit too small because too many tasks in available memory.
+            if( thread_proc_arg )
+                W( thread_proc_arg );
+            return ~0;
+        }
+            #endif
+        E_base_S->E_flow_Z_task_stacks_S_granulation_n++;
+    }
+    Pc stack;
+        #if defined( __gnu_linux__ )
+    V1p( stack = mmap( 0
+    , E_base_S->E_flow_Z_task_stacks_S_granulation_u
+    , PROT_NONE
+    , MAP_PRIVATE
+    | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_UNINITIALIZED
+    , -1
+    , 0
+    ))
+        #elif defined( __OpenBSD__ )
+    V1p( stack = mmap( 0
+    , E_base_S->E_flow_Z_task_stacks_S_granulation_u
+    , PROT_NONE
+    , MAP_PRIVATE
+    | MAP_ANON
+    , -1
+    , 0
+    ))
+        #else
+#error not implemented
+        #endif
+    {   E_base_S->E_flow_Z_task_stacks_S_granulation_n_back++;
+            #ifdef E_flow_C_thread_system_unblock_reports
+        if( thread_proc_arg )
+            W( thread_proc_arg );
+            #endif
+        return ~0;
+    }
+    Pc exe_stack = stack + E_base_S->E_flow_Z_task_stacks_S_granulation_u;
+        #ifndef E_flow_C_thread_system_unblock_reports
+    N touched_size = E_base_S->E_mem_S_page_size;
+    Pc touched_stack = exe_stack - E_base_S->E_mem_S_page_size;
+        #else
+    N touched_size = task_in_thread_kind ? E_simple_Z_n_I_align_up_to_v_2( PTHREAD_STACK_MIN, E_base_S->E_mem_S_page_size ) : E_base_S->E_mem_S_page_size;
+    Pc touched_stack = exe_stack - touched_size;
+        #endif
+    V0( mprotect( touched_stack
+    , touched_size
+    , PROT_READ | PROT_WRITE
+    ))
+    {   V0_( munmap( stack, E_base_S->E_flow_Z_task_stacks_S_granulation_u ));
+        E_base_S->E_flow_Z_task_stacks_S_granulation_n_back++;
+            #ifdef E_flow_C_thread_system_unblock_reports
+        if( thread_proc_arg )
+            W( thread_proc_arg );
+            #endif
+        return ~0;
+    }
+    struct E_flow_Q_task_Z *task;
+    I task_id = E_mem_Q_tab_I_segv_add_begin( E_base_S->E_flow_Q_task_S, &task );
+    task->stack = stack + E_base_S->E_mem_S_page_size;
+    task->touched_stack = touched_stack;
+        #ifdef C_line_report
+    task->proc_name = task_proc_name;
+        #endif
+    E_mem_Q_tab_I_segv_add_end( E_base_S->E_flow_Q_task_S, task_id, task );
+    task->run_state = E_flow_Z_run_state_S_starting_by_task;
+    task->stack_size = E_base_S->E_flow_Z_task_stacks_S_granulation_u;
+        #ifdef E_flow_C_thread_system_unblock_reports
+    U_R( task->type, system_unblock_report ) = task_in_thread_kind;
+    if( !task_in_thread_kind )
+        #endif
+    {   task->exe_stack = 0;
+        task->run_state_object = E_base_S->E_flow_Q_task_S_current;
+    }
+        #ifdef E_flow_C_thread_system_unblock_reports
+    else
+    {   task->thread_proc_arg = thread_proc_arg;
+        pthread_mutex_t *M_( thread_flow_mutex );
+        if( !thread_flow_mutex )
+        {   W( thread_flow_mutex );
+            _tasks_table_begin;
+            E_mem_Q_tab_I_rem( E_base_S->E_flow_Q_task_S, task_id );
+            _tasks_table_end;
+            V0_( munmap( stack, E_base_S->E_flow_Z_task_stacks_S_granulation_u ));
+            E_base_S->E_flow_Z_task_stacks_S_granulation_n_back++;
+            if( thread_proc_arg )
+                W( thread_proc_arg );
+            return ~0;
+        }
+        Vr( pthread_mutex_init( thread_flow_mutex, 0 ))
+        {   W( thread_flow_mutex );
+            _tasks_table_begin;
+            E_mem_Q_tab_I_rem( E_base_S->E_flow_Q_task_S, task_id );
+            _tasks_table_end;
+            V0_( munmap( stack, E_base_S->E_flow_Z_task_stacks_S_granulation_u ));
+            E_base_S->E_flow_Z_task_stacks_S_granulation_n_back++;
+            if( thread_proc_arg )
+                W( thread_proc_arg );
+            return ~0;
+        }
+        B *M_( thread_switch_back );
+        if( !thread_switch_back )
+        {   Vr_( pthread_mutex_destroy( thread_flow_mutex ));
+            W( thread_flow_mutex );
+            _tasks_table_begin;
+            E_mem_Q_tab_I_rem( E_base_S->E_flow_Q_task_S, task_id );
+            _tasks_table_end;
+            V0_( munmap( stack, E_base_S->E_flow_Z_task_stacks_S_granulation_u ));
+            E_base_S->E_flow_Z_task_stacks_S_granulation_n_back++;
+            if( thread_proc_arg )
+                W( thread_proc_arg );
+            return ~0;
+        }
+        task->thread_flow_mutex = thread_flow_mutex;
+        task->thread_switch_back = thread_switch_back;
+        *thread_switch_back = no;
+        struct E_flow_Q_task_in_thread_I_thread_proc_Z_args task_proc_args =
+        { .alt_stack = ( stack_t )
+          { .ss_flags = 0
+          , .ss_size = 2 * E_base_S->E_mem_S_page_size //CONF #1
+          }
+        , .proc = task_proc
+        };
+            #if defined( __gnu_linux__ )
+        V1p( task_proc_args.alt_stack.ss_sp = mmap( 0
+        , task_proc_args.alt_stack.ss_size
+        , PROT_READ | PROT_WRITE
+        , MAP_PRIVATE
+        | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_UNINITIALIZED
+        , -1
+        , 0
+        ))
+            #elif defined( __OpenBSD__ )
+        V1p( task_proc_args.alt_stack.ss_sp = mmap( 0
+        , task_proc_args.alt_stack.ss_size
+        , PROT_READ | PROT_WRITE
+        , MAP_PRIVATE
+        | MAP_ANON
+        , -1
+        , 0
+        ))
+            #else
+#error not implemented
+            #endif
+        {   W( thread_switch_back );
+            Vr_( pthread_mutex_destroy( thread_flow_mutex ));
+            W( thread_flow_mutex );
+            _tasks_table_begin;
+            E_mem_Q_tab_I_rem( E_base_S->E_flow_Q_task_S, task_id );
+            _tasks_table_end;
+            V0_( munmap( stack, E_base_S->E_flow_Z_task_stacks_S_granulation_u ));
+            E_base_S->E_flow_Z_task_stacks_S_granulation_n_back++;
+            if( thread_proc_arg )
+                W( thread_proc_arg );
+            return ~0;
+        }
+        pthread_attr_t thread_attr;
+        Vr( pthread_attr_init( &thread_attr ))
+        {   V0_( munmap( task_proc_args.alt_stack.ss_sp, task_proc_args.alt_stack.ss_size ));
+            W( thread_switch_back );
+            Vr_( pthread_mutex_destroy( thread_flow_mutex ));
+            W( thread_flow_mutex );
+            _tasks_table_begin;
+            E_mem_Q_tab_I_rem( E_base_S->E_flow_Q_task_S, task_id );
+            _tasks_table_end;
+            V0_( munmap( stack, E_base_S->E_flow_Z_task_stacks_S_granulation_u ));
+            E_base_S->E_flow_Z_task_stacks_S_granulation_n_back++;
+            if( thread_proc_arg )
+                W( thread_proc_arg );
+            return ~0;
+        }
+        Vr( pthread_attr_setstack( &thread_attr, touched_stack, touched_size ))
+        {   Vr_( pthread_attr_destroy( &thread_attr ));
+            V0_( munmap( task_proc_args.alt_stack.ss_sp, task_proc_args.alt_stack.ss_size ));
+            W( thread_switch_back );
+            Vr_( pthread_mutex_destroy( thread_flow_mutex ));
+            W( thread_flow_mutex );
+            _tasks_table_begin;
+            E_mem_Q_tab_I_rem( E_base_S->E_flow_Q_task_S, task_id );
+            _tasks_table_end;
+            V0_( munmap( stack, E_base_S->E_flow_Z_task_stacks_S_granulation_u ));
+            E_base_S->E_flow_Z_task_stacks_S_granulation_n_back++;
+            if( thread_proc_arg )
+                W( thread_proc_arg );
+            return ~0;
+        }
+        Vr( pthread_sigmask( SIG_SETMASK, &E_base_S->E_flow_Z_sigset_S_process_exec, 0 ))
+        {   Vr_( pthread_attr_destroy( &thread_attr ));
+            V0_( munmap( task_proc_args.alt_stack.ss_sp, task_proc_args.alt_stack.ss_size ));
+            W( thread_switch_back );
+            Vr_( pthread_mutex_destroy( thread_flow_mutex ));
+            W( thread_flow_mutex );
+            _tasks_table_begin;
+            E_mem_Q_tab_I_rem( E_base_S->E_flow_Q_task_S, task_id );
+            _tasks_table_end;
+            V0_( munmap( stack, E_base_S->E_flow_Z_task_stacks_S_granulation_u ));
+            E_base_S->E_flow_Z_task_stacks_S_granulation_n_back++;
+            if( thread_proc_arg )
+                W( thread_proc_arg );
+            return ~0;
+        }
+        I task_id_ = E_base_S->E_flow_Q_task_S_current;
+        E_base_S->E_flow_Q_task_S_current = task_id;
+        Vr( pthread_create( &task->thread, &thread_attr, E_flow_Q_task_in_thread_I_thread_proc, &task_proc_args ))
+        {   E_base_S->E_flow_Q_task_S_current = task_id_;
+            Vr_( pthread_sigmask( SIG_SETMASK, &E_base_S->E_flow_Z_sigset_S_empty, 0 ));
+            Vr_( pthread_attr_destroy( &thread_attr ));
+            V0_( munmap( task_proc_args.alt_stack.ss_sp, task_proc_args.alt_stack.ss_size ));
+            W( thread_switch_back );
+            Vr_( pthread_mutex_destroy( thread_flow_mutex ));
+            W( thread_flow_mutex );
+            _tasks_table_begin;
+            E_mem_Q_tab_I_rem( E_base_S->E_flow_Q_task_S, task_id );
+            _tasks_table_end;
+            V0_( munmap( stack, E_base_S->E_flow_Z_task_stacks_S_granulation_u ));
+            E_base_S->E_flow_Z_task_stacks_S_granulation_n_back++;
+            if( thread_proc_arg )
+                W( thread_proc_arg );
+            return ~0;
+        }
+        Vr_( pthread_sigmask( SIG_SETMASK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ));
+        Vr_( pthread_attr_destroy( &thread_attr ));
+            #if defined( C_line_report ) && defined( __gnu_linux__ )
+        task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id );
+        Pc s = E_text_Z_s_R_search_c_( task->proc_name, 'E' ) + 2;
+        Pc s_end = E_text_Z_s0_R_end_le( s, 16 );
+        if( *s_end )
+        {   s = E_text_Z_s_R_search_c_( task->proc_name, 'D' ) + 2;
+            s_end = E_text_Z_s0_R_end_le( s, 16 );
+        }
+        B b = no;
+        if( *s_end )
+        {   Pc s_ = M( s_end + 1 - s + 1 );
+            if( s_ )
+            {   E_text_Z_s_P_copy_0_( s_, s, s_end + 1 );
+                s = s_;
+            }else
+            {   GV_(NA);
+                b = yes;
+            }
+        }
+        if( !b )
+        {   Vr( pthread_setname_np( task->thread, s )){}
+            if( *s_end )
+                W(s);
+        }
+            #endif
+        O{  V0_( sched_yield() );
+            Vr_( pthread_mutex_lock( thread_flow_mutex ));
+            if( *thread_switch_back )
+                break;
+            Vr_( pthread_mutex_unlock( thread_flow_mutex ));
+        }
+        Vr_( pthread_sigmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ));
+        task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id );
+        if( task->run_state != E_flow_Z_run_state_S_ready )
+        {   E_base_S->E_flow_Q_task_S_current = task_id_;
+            Vr_( pthread_mutex_unlock( thread_flow_mutex ));
+            Vr_( pthread_join( task->thread, 0 ));
+            V0_( munmap( task_proc_args.alt_stack.ss_sp, task_proc_args.alt_stack.ss_size ));
+            W( thread_switch_back );
+            Vr_( pthread_mutex_destroy( thread_flow_mutex ));
+            W( thread_flow_mutex );
+            _tasks_table_begin;
+            E_mem_Q_tab_I_rem( E_base_S->E_flow_Q_task_S, task_id );
+            _tasks_table_end;
+            V0_( munmap( stack, E_base_S->E_flow_Z_task_stacks_S_granulation_u ));
+            E_base_S->E_flow_Z_task_stacks_S_granulation_n_back++;
+            if( thread_proc_arg )
+                W( thread_proc_arg );
+            return ~0;
+        }
+        *thread_switch_back = no;
+        E_base_S->E_flow_Q_task_S_current = task_id_;
+        return task_id;
+    }
+        #endif
+    E_flow_Q_task_I_switch( task_id );
+    if( !task->exe_stack ) ///w bloku– nowe ‹zadanie›: nic nie zmieniać na stosie należącym do przełączanego.
+    {   P *p = ( P * )exe_stack - 1;
+        *p = (P)&E_flow_Q_task_I_stop;
+        __asm__ volatile (
+        #if defined( __i386__ ) || defined( __x86_64__ )
+            #if defined( __i386__ )
+        "\n" "mov   %0,%%esp"
+            #else
+        "\n" "mov   %0,%%rsp"
+            #endif
+        "\n" "jmp   *%1"
+        //NKN pozostaje zagwarantowanie, że procedura ‹zadania› nie będzie nigdy oczekiwać (ze względu na ‘abi’) niczego tutaj nie zapewnianego przez ‘callera’ (m.in. rezerwacji obszaru na stosie, gdy argumentów i tak nie ma przekazywanych).
+        :
+        : "r" (p), "r" ( task_proc )
+                #if defined( __i386__ )
+        : "esp"
+            #else
+        : "rsp"
+            #endif
+        #else
+#error not implemented
+        #endif
+        );
+        _unreachable;
+    }
+    return task_id; ///NDFN zmienione tak, że może być “~0”.
+}
+    #ifdef E_flow_C_thread_system_unblock_reports
+///nie wolno tworzyć “wątku”/‘instancji’ tego samego ‹zadania› w bloku startowym (innej ‘instancji’) tego samego ‹zadania›. czyli nie wolno tworzyć wogóle w takim ‹zadaniu›, ponieważ ‹zadania› tworzy się w bloku startowym.
+void
+E_flow_Q_task_M_thread( I *uid
+, I subid
+, void (*task_proc)(P)
+, P thread_proc_arg
+    #ifdef C_line_report
+, Pc task_proc_name
+    #endif
+){  I id = E_flow_Q_task_M( task_proc, thread_proc_arg, yes
+        #ifdef C_line_report
+    , task_proc_name
+        #endif
+    );
+    struct E_mem_Q_tab_Z **tab_subid;
+    if( !~*uid )
+    {   *uid = E_mem_Q_tab_I_add( E_base_S->E_flow_Q_task_S_uid_subid );
+        tab_subid = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S_uid_subid, *uid );
+        *tab_subid = E_mem_Q_tab_M( sizeof(I), subid + 1 );
+    }else
+    {   tab_subid = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S_uid_subid, *uid );
+        E_mem_Q_tab_I_add_i( E_base_S->E_flow_Q_task_S_uid_subid, subid );
+    }
+    *( I * )E_mem_Q_tab_R( *tab_subid, subid ) = id;
+}
+///procedura ‹zadań› w wątku systemowym.
+_internal
+P
+E_flow_Q_task_in_thread_I_thread_proc( P args_
+){  struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+    Vr( pthread_sigmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ))
+    {   *task->thread_switch_back = yes;
+        return 0;
+    }
+    Vr( pthread_mutex_lock( task->thread_flow_mutex ))
+    {   *task->thread_switch_back = yes;
+        return 0;
+    }
+    struct E_flow_Q_task_in_thread_I_thread_proc_Z_args *args = args_;
+    V0( sigaltstack( &args->alt_stack, 0 ))
+    {   *task->thread_switch_back = yes;
+        Vr_( pthread_mutex_unlock( task->thread_flow_mutex ));
+        return 0;
+    }
+    args->proc( task->thread_proc_arg );
+    task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+    Vr_( pthread_mutex_unlock( task->thread_flow_mutex ));
+    stack_t alt_stack;
+    V0( sigaltstack( 0, &alt_stack ))
+        return 0;
+    return alt_stack.ss_sp;
+}
+    #endif
+///‹zadanie› wykonuje to przed rozpoczęcięm swojej pętli; w instrukcji “I_D”.
+B
+E_flow_Q_task_I_begin( void
+){  struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+    task->run_state = E_flow_Z_run_state_S_ready;
+        #ifdef E_flow_C_thread_system_unblock_reports
+    if( U_R( task->type, system_unblock_report ))
+    {   B *thread_switch_back = task->thread_switch_back;
+        *thread_switch_back = yes;
+        pthread_mutex_t *thread_flow_mutex = task->thread_flow_mutex;
+        Vr_( pthread_sigmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ));
+        Vr_( pthread_mutex_unlock( thread_flow_mutex ));
+        O{  V0_( sched_yield() );
+            Vr_( pthread_mutex_lock( thread_flow_mutex ));
+            if( !*thread_switch_back )
+                break;
+            Vr_( pthread_mutex_unlock( thread_flow_mutex ));
+        }
+        Vr_( pthread_sigmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ));
+    }else
+        #endif
+        E_flow_Q_task_I_switch( task->run_state_object ); ///powrót do ‹zadania› uruchamiającego bieżące.
+    task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+    return task->run_state == E_flow_Z_run_state_S_stopping_by_task;
+}
+void
+E_flow_Q_task_W( I id
+){  struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, id );
+    task->run_state = E_flow_Z_run_state_S_stopping_by_task;
+    task->run_state_object = E_base_S->E_flow_Q_task_S_current;
+        #ifdef E_flow_C_thread_system_unblock_reports
+    if( U_R( task->type, system_unblock_report ))
+    {   if( *task->thread_switch_back )
+            task->thread_unblock_proc( task->thread_proc_arg );
+        pthread_t thread = task->thread;
+        E_base_S->E_flow_Q_task_S_current = id;
+        Vr_( pthread_sigmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ));
+        Vr_( pthread_mutex_unlock( task->thread_flow_mutex ));
+        P alt_stack;
+        Vr_( pthread_join( thread, &alt_stack ));
+        Vr_( pthread_sigmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ));
+        task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, id );
+        E_base_S->E_flow_Q_task_S_current = task->run_state_object;
+        if( alt_stack )
+        {   V0_( munmap( alt_stack, 2 * E_base_S->E_mem_S_page_size )); //CONF #2
+        }
+        Vr_( pthread_mutex_destroy( task->thread_flow_mutex ));
+        W( task->thread_flow_mutex );
+        W( task->thread_switch_back );
+        if( task->thread_proc_arg )
+            W( task->thread_proc_arg );
+    }else
+        #endif
+    {   E_flow_Q_task_I_switch(id); ///przełącz tylko po to, by ‹zadanie› zwalniane zwolniło zasoby; również stosowo, hierarchicznie z powrotem przełączając przy zwalnianiu ‹zadań› przez siebie uruchomionych.
+        task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, id );
+    }
+    E_base_S->E_flow_Z_task_stacks_S_granulation_n_back += task->stack_size / E_base_S->E_flow_Z_task_stacks_S_granulation_u;
+    E_flow_Q_task_I_touch_stack();
+    V0_( munmap( task->stack - E_base_S->E_mem_S_page_size, task->stack_size ));
+    _tasks_table_begin;
+    E_mem_Q_tab_I_rem( E_base_S->E_flow_Q_task_S, id );
+    _tasks_table_end;
+}
+    #ifdef E_flow_C_thread_system_unblock_reports
+void
+E_flow_Q_task_W_thread( I *uid
+, I subid
+){  struct E_mem_Q_tab_Z **tab_subid = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S_uid_subid, *uid );
+    I id = *( I * )E_mem_Q_tab_R( *tab_subid, subid );
+    if( E_mem_Q_tab_R_n( *tab_subid ) != 1 )
+        E_mem_Q_tab_I_rem( *tab_subid, subid );
+    else
+    {   E_mem_Q_tab_W( *tab_subid );
+        *uid = ~0;
+    }
+    E_flow_Q_task_W(id);
+}
+    #endif
+///‹zadanie› wykonuje to po wyjściu z procedury; ma adres powrotu na stosie.
+_internal
+void
+E_flow_Q_task_I_stop( void
+){  struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+    E_flow_Q_task_I_switch( task->run_state_object ); ///powrót do ‹zadania› zwalniającego bieżące.
+    _unreachable;
+}
+//------------------------------------------------------------------------------
+///wymuszenie ‘prealokacji’ “stosu” ‹zadania›, by nie została wywołana procedura obsługi “sygnału” ‘uniksowego’ “SEGV” w trakcie zmieniania pamięci ‘alokowanej’ dynamicznie, z której korzysta.
+_internal
+void
+E_flow_Q_task_I_touch_stack( void
+){  if( !E_base_S->E_flow_Q_task_S_current ) ///‹zadanie› inne niż “main”, ponieważ to ma stos zarządzany przez system operacyjny.
+        return;
+    N pages = 4; //CONF
+    if( !pages || pages % 4 )
+    {   GV_(NDFN); V();
+    }
+    ///poniżej– dlatego kolejno “strony” pamięci, ponieważ jest tylko jedna zabezpieczająca na dole “stosu” ‹zadania›.
+    Pc sp;
+    __asm__ volatile (
+    #if defined( __i386__ ) || defined( __x86_64__ )
+        #if defined( __i386__ )
+    "\n" "mov   %%esp,%0"
+        #else
+    "\n" "mov   %%rsp,%0"
+        #endif
+    #else
+#error not implemented
+    #endif
+    : "=r" (sp)
+    );
+    if( pages == 4 )
+        __asm__ volatile (
+        #if defined( __i386__ ) || defined( __x86_64__ )
+            #if defined( __i386__ )
+        "\n" "movl  $0,(%1)"
+        "\n" "movl  $0,(%1,%2)"
+        "\n" "movl  $0,(%1,%2,2)"
+        "\n" "movl  $0,(%0,%2,4)"
+            #else
+        "\n" "movq  $0,(%1)"
+        "\n" "movq  $0,(%1,%2)"
+        "\n" "movq  $0,(%1,%2,2)"
+        "\n" "movq  $0,(%0,%2,4)"
+            #endif
+        #else
+#error not implemented
+        #endif
+        :
+        : "r" (sp), "r" ( sp - E_base_S->E_mem_S_page_size ), "r" ( -E_base_S->E_mem_S_page_size )
+        : "memory"
+        );
+    else
+        __asm__ volatile (
+        #if defined( __i386__ ) || defined( __x86_64__ )
+        "\n" "0:"
+        "\n" "lea   (%0,%2,4),%0"
+            #if defined( __i386__ )
+        "\n" "movl  $0,(%1)"
+        "\n" "movl  $0,(%1,%2)"
+        "\n" "movl  $0,(%1,%2,2)"
+        "\n" "movl  $0,(%0)"
+            #else
+        "\n" "movq  $0,(%1)"
+        "\n" "movq  $0,(%1,%2)"
+        "\n" "movq  $0,(%1,%2,2)"
+        "\n" "movq  $0,(%0)"
+            #endif
+        "\n" "lea   (%1,%2,4),%1"
+        "\n" "dec   %3"
+        "\n" "jnz   0b"
+        #else
+#error not implemented
+        #endif
+        :
+        : "r" (sp), "r" ( sp - E_base_S->E_mem_S_page_size ), "r" ( -E_base_S->E_mem_S_page_size ), "r" ( pages / 4 )
+        : "memory", "cc"
+        );
+}
+//------------------------------------------------------------------------------
+B
+E_flow_Q_task_R_exit( void
+){  struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+    return task->run_state == E_flow_Z_run_state_S_stopping_by_task;
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+I
+E_flow_Q_report_M( N uid
+){  struct E_flow_Q_report_Z *report;
+    for_each( report_id, E_base_S->E_flow_Q_report_S, E_mem_Q_tab )
+    {   report = E_mem_Q_tab_R( E_base_S->E_flow_Q_report_S, report_id );
+        if( report->uid == uid )
+            break;
+    }
+    if( !~report_id )
+    {   report_id = E_mem_Q_tab_I_add( E_base_S->E_flow_Q_report_S );
+        report = E_mem_Q_tab_R( E_base_S->E_flow_Q_report_S, report_id );
+        report->uid = uid;
+        report->reported_count = 0;
+    }
+    return report_id;
+}
+void
+E_flow_Q_report_W( I id
+){  E_mem_Q_tab_I_rem( E_base_S->E_flow_Q_report_S, id );
+}
+//------------------------------------------------------------------------------
+void
+E_flow_Q_report_I_signal( I id
+){  struct E_flow_Q_report_Z *report = E_mem_Q_tab_R( E_base_S->E_flow_Q_report_S, id );
+    report->reported_count++;
+    for_each( task_id, E_base_S->E_flow_Q_task_S, E_mem_Q_tab )
+    {   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id );
+        if( task->run_state == E_flow_Z_run_state_S_waiting_for_report
+        && task->run_state_object == id
+        )
+        {   task->run_state = E_flow_Z_run_state_S_ready;
+            break;
+        }
+    }
+}
+    #if 0
+B
+E_flow_Q_report_I_emit( I id
+, N *lost_count
+){  struct E_flow_Q_report_Z *report = E_mem_Q_tab_R( E_base_S->E_flow_Q_report_S, id );
+    if( lost_count )
+        *lost_count = ++report->reported_count;
+    for_each( task_id, E_base_S->E_flow_Q_task_S, E_mem_Q_tab )
+    {   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id );
+        if( task->run_state == E_flow_Z_run_state_S_waiting_for_report
+        && task->run_state_object == id
+        )
+        {   task->run_state = E_flow_Z_run_state_S_ready;
+            break;
+        }
+    }
+    if( !~task_id )
+    {   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+        task->run_state = E_flow_Z_run_state_S_emiting_report;
+        task->run_state_object = id;
+    }
+    return E_flow_Q_task_I_schedule();
+}
+    #endif
+B
+E_flow_Q_report_I_wait( I id
+, N *lost_count
+){  B ret;
+    struct E_flow_Q_report_Z *report = E_mem_Q_tab_R( E_base_S->E_flow_Q_report_S, id );
+    if( report->reported_count )
+    {   //for_each( task_id, E_base_S->E_flow_Q_task_S, E_mem_Q_tab )
+        //{   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id );
+            //if( task->run_state == E_flow_Z_run_state_S_emiting_report
+            //&& task->run_state_object == id
+            //)
+                //task->run_state = E_flow_Z_run_state_S_ready;
+        //}
+        ret = no; ///nie wywołuje “schedule”, ponieważ w przełączanym tylko w oznaczonych punktach przepływie wykonania— bieżące ‹zadanie› mogło umożliwić zaistnienie ‹raportu›, na który czeka, tylko wtedy, jeśli przełącza do innych ‹zadań› ·w innych punktach niż to oczekiwanie na ‹raport›·, więc po co czekać, skoro nie zaburza cyklu przełączania ‹zadań›, a tylko w implementacji własnego ‹zadania› zmienia na złożoną (przesuniętą) sekwencję przełączania.
+    }else
+    {   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+        task->run_state = E_flow_Z_run_state_S_waiting_for_report;
+        task->run_state_object = id;
+        ret = E_flow_Q_task_I_schedule();
+        report = E_mem_Q_tab_R( E_base_S->E_flow_Q_report_S, id );
+    }
+    if( lost_count )
+        *lost_count = report->reported_count - 1;
+    report->reported_count = 0;
+    return ret;
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+I
+E_flow_Q_timer_M( N period
+){  Z_clock_time tv;
+    _gettime( &tv );
+    I timer_id = E_mem_Q_tab_I_add( E_base_S->E_flow_Q_timer_S );
+    struct E_flow_Q_timer_Z *timer = E_mem_Q_tab_R( E_base_S->E_flow_Q_timer_S, timer_id );
+    timer->period.tv_sec = period / 1000000;
+    timer->period.Z_clock_time_minor_field = period % 1000000;
+        #ifdef E_flow_drv_C_clock_monotonic
+    timer->period.Z_clock_time_minor_field *= 1000;
+        #endif
+    timer->lost_count = 0;
+    timer->uid = ~0;
+    timer->task_to = E_base_S->E_flow_Q_task_S_current;
+    if( E_mem_Q_tab_R_n( E_base_S->E_flow_Q_timer_S ) != 1 )
+    {   for_each_out( timer_id, timer_id_, E_base_S->E_flow_Q_timer_S, E_mem_Q_tab )
+        {   struct E_flow_Q_timer_Z *timer_ = E_mem_Q_tab_R( E_base_S->E_flow_Q_timer_S, timer_id_ );
+            if( _timerisset( &timer_->period ) ///jest co najmniej jeden ‹cykler›.
+            || _timerisset( &timer_->left ) ///jest co najmniej jeden wzbudzony ‹impulsator›.
+            )
+            {   _timeradd( &tv, &timer->period, &tv );
+                if( _timercmp( &tv, <, &E_base_S->E_flow_Q_timer_S_next_real_time ))
+                    E_base_S->E_flow_Q_timer_S_next_real_time = tv;
+                _timersub( &tv, &E_base_S->E_flow_Q_timer_S_last_real_time, &timer->left );
+                return timer_id;
+            }
+        }
+    }
+    E_base_S->E_flow_Q_timer_S_last_real_time = tv;
+    _timeradd( &tv, &timer->period, &E_base_S->E_flow_Q_timer_S_next_real_time );
+    timer->left = timer->period;
+    return timer_id;
+}
+void
+E_flow_Q_timer_W( I id
+){  E_mem_Q_tab_I_rem( E_base_S->E_flow_Q_timer_S, id );
+    for_each( timer_id, E_base_S->E_flow_Q_timer_S, E_mem_Q_tab )
+    {   struct E_flow_Q_timer_Z *timer = E_mem_Q_tab_R( E_base_S->E_flow_Q_timer_S, timer_id );
+        if( _timerisset( &timer->period )
+        || _timerisset( &timer->left )
+        )
+            return;
+    }
+    _timerover( &E_base_S->E_flow_Q_timer_S_next_real_time );
+}
+//------------------------------------------------------------------------------
+B
+E_flow_Q_timer_I_wait( I id
+, N *lost_count
+){  struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+    task->run_state = E_flow_Z_run_state_S_waiting_for_timer;
+    task->run_state_object = id;
+    B ret = E_flow_Q_task_I_schedule();
+    struct E_flow_Q_timer_Z *timer = E_mem_Q_tab_R( E_base_S->E_flow_Q_timer_S, id );
+    if( lost_count )
+        *lost_count = timer->lost_count;
+    timer->lost_count = 0;
+    return ret;
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+I
+E_flow_Q_impulser_M( N uid
+){  struct E_flow_Q_timer_Z *timer;
+    for_each( timer_id, E_base_S->E_flow_Q_timer_S, E_mem_Q_tab )
+    {   timer = E_mem_Q_tab_R( E_base_S->E_flow_Q_timer_S, timer_id );
+        if( timer->uid == uid )
+            break;
+    }
+    if( !~timer_id )
+    {   timer_id = E_mem_Q_tab_I_add( E_base_S->E_flow_Q_timer_S );
+        timer = E_mem_Q_tab_R( E_base_S->E_flow_Q_timer_S, timer_id );
+        _timerclear( &timer->left );
+        _timerclear( &timer->period );
+        timer->uid = uid;
+    }
+    timer->task_to = E_base_S->E_flow_Q_task_S_current;
+    return timer_id;
+}
+I
+E_flow_Q_impulser_M_srv( N uid
+){  struct E_flow_Q_timer_Z *timer;
+    for_each( timer_id, E_base_S->E_flow_Q_timer_S, E_mem_Q_tab )
+    {   timer = E_mem_Q_tab_R( E_base_S->E_flow_Q_timer_S, timer_id );
+        if( timer->uid == uid )
+            break;
+    }
+    if( !~timer_id )
+    {   timer_id = E_mem_Q_tab_I_add( E_base_S->E_flow_Q_timer_S );
+        timer = E_mem_Q_tab_R( E_base_S->E_flow_Q_timer_S, timer_id );
+        _timerclear( &timer->left );
+        _timerclear( &timer->period );
+        timer->uid = uid;
+    }
+    return timer_id;
+}
+//------------------------------------------------------------------------------
+void
+E_flow_Q_impulser_I_activate( I id
+, N time
+){  Z_clock_time tv;
+    _gettime( &tv );
+    struct E_flow_Q_timer_Z *timer = E_mem_Q_tab_R( E_base_S->E_flow_Q_timer_S, id );
+    timer->left.tv_sec = time / 1000000;
+    timer->left.Z_clock_time_minor_field = time % 1000000;
+        #ifdef E_flow_drv_C_clock_monotonic
+    timer->left.Z_clock_time_minor_field *= 1000;
+        #endif
+    if( E_mem_Q_tab_R_n( E_base_S->E_flow_Q_timer_S ) != 1 )
+    {   for_each_out( id, timer_id_, E_base_S->E_flow_Q_timer_S, E_mem_Q_tab )
+        {   struct E_flow_Q_timer_Z *timer_ = E_mem_Q_tab_R( E_base_S->E_flow_Q_timer_S, timer_id_ );
+            if( _timerisset( &timer_->period )
+            || _timerisset( &timer_->left )
+            )
+            {   _timeradd( &tv, &timer->left, &tv );
+                if( _timercmp( &tv, <, &E_base_S->E_flow_Q_timer_S_next_real_time ))
+                    E_base_S->E_flow_Q_timer_S_next_real_time = tv;
+                _timersub( &tv, &E_base_S->E_flow_Q_timer_S_last_real_time, &timer->left );
+                return;
+            }
+        }
+    }
+    E_base_S->E_flow_Q_timer_S_last_real_time = tv;
+    _timeradd( &tv, &timer->left, &E_base_S->E_flow_Q_timer_S_next_real_time );
+}
+void
+E_flow_Q_impulser_I_deactivate( I id
+){  struct E_flow_Q_timer_Z *timer = E_mem_Q_tab_R( E_base_S->E_flow_Q_timer_S, id );
+    if( !_timerisset( &timer->left ))
+        return;
+    _timerclear( &timer->left );
+    for_each_out( id, timer_id_, E_base_S->E_flow_Q_timer_S, E_mem_Q_tab )
+    {   struct E_flow_Q_timer_Z *timer_ = E_mem_Q_tab_R( E_base_S->E_flow_Q_timer_S, timer_id_ );
+        if( _timerisset( &timer_->period )
+        || _timerisset( &timer_->left )
+        )
+            return;
+    }
+    _timerover( &E_base_S->E_flow_Q_timer_S_next_real_time );
+}
+//------------------------------------------------------------------------------
+//NDFN dodać “lost_count”?
+B
+E_flow_Q_impulser_I_wait( I id
+){  struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+    task->run_state = E_flow_Z_run_state_S_waiting_for_timer;
+    task->run_state_object = id;
+    return E_flow_Q_task_I_schedule();
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    #ifdef E_flow_C_thread_system_unblock_reports
+void
+E_flow_Q_thread_system_unblock_report_M( void ( *thread_unblock_proc )(P)
+, pthread_mutex_t **thread_flow_mutex
+, B **thread_switch_back
+){  struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+    task->thread_unblock_proc = thread_unblock_proc;
+    *thread_flow_mutex = task->thread_flow_mutex;
+    *thread_switch_back = task->thread_switch_back;
+}
+void
+E_flow_Q_thread_system_unblock_report_I_before_block(
+  pthread_mutex_t *thread_flow_mutex
+){  E_flow_Q_task_I_touch_stack();
+    Vr_( pthread_sigmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ));
+    Vr_( pthread_mutex_unlock( thread_flow_mutex ));
+}
+B
+E_flow_Q_thread_system_unblock_report_I_after_block(
+  pthread_mutex_t *thread_flow_mutex
+){  V0_( kill( E_base_S->E_flow_S_exe_pid, SIGALRM ));
+    Vr_( pthread_mutex_lock( thread_flow_mutex ));
+    Vr_( pthread_sigmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ));
+    struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+    return task->run_state == E_flow_Z_run_state_S_stopping_by_task;
+}
+void
+E_flow_Q_thread_system_unblock_report_I_unblock( I task_uid
+, I task_subid
+){  struct E_mem_Q_tab_Z **tab_subid = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S_uid_subid, task_uid );
+    struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, *( I * )E_mem_Q_tab_R( *tab_subid, task_subid ));
+    task->thread_unblock_proc( task->thread_proc_arg );
+}
+    #endif
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    #ifdef E_flow_C_itimer_system_unblock_report
+void
+E_flow_Q_itimer_system_unblock_report_M( B (*sigsuspend_)( sigset_t * )
+, void (*setitimer_)( Z_clock_time * )
+){  E_base_S->E_flow_Z_itimer_system_unblock_report_I_sigsuspend = sigsuspend_;
+    E_base_S->E_flow_Z_itimer_system_unblock_report_I_setitimer = setitimer_;
+    E_base_S->E_flow_Z_itimer_system_unblock_report_S_task_id = E_base_S->E_flow_Q_task_S_current;
+}
+void
+E_flow_Q_itimer_system_unblock_report_W( void
+){  E_base_S->E_flow_Z_itimer_system_unblock_report_I_sigsuspend = 0;
+    E_base_S->E_flow_Z_itimer_system_unblock_report_I_setitimer = 0;
+}
+//------------------------------------------------------------------------------
+B
+E_flow_Q_itimer_system_unblock_report_I_wait( void
+){  struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+    task->run_state = E_flow_Z_run_state_S_waiting_for_system_unblock_report;
+    return E_flow_Q_task_I_schedule();
+}
+    #endif
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+///każde ‹zadanie› po wywołaniu “E_flow_Q_task_I_schedule” i po przełączeniu w tej procedurze do innego ‹zadania› (“E_flow_Q_task_I_switch”) czeka przed instrukcją powrotu z tej procedury, by kontynuować w miejscu wywołania i ewentualnie zakończyć własne ‹zadanie› po powrocie.
+__attribute__ ((__noinline__,__returns_twice__,__hot__))
+B
+E_flow_Q_task_I_schedule( void
+){  _forced_statement;
+        #ifdef E_flow_C_thread_system_unblock_reports
+    I schedule_task_id = E_base_S->E_flow_Q_task_S_current;
+Loop:
+        #endif
+    O{  if( U_E( E_base_S->E_flow_S_signal, exit ))
+        {
+                #ifdef C_middle_code
+            U_F( E_base_S->E_flow_S_signal, exit_all );
+                #endif
+            struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, 0 );
+            task->run_state = E_flow_Z_run_state_S_stopping_by_task;
+                #ifdef E_flow_C_thread_system_unblock_reports
+            if( E_base_S->E_flow_Q_task_S_current != schedule_task_id )
+                E_base_S->E_flow_Q_task_S_current = schedule_task_id;
+            if( E_base_S->E_flow_Q_task_S_current )
+                #endif
+            {   E_flow_Q_task_I_switch(0);
+                task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+                return task->run_state == E_flow_Z_run_state_S_stopping_by_task;
+            }
+                #ifdef E_flow_C_thread_system_unblock_reports
+            return yes;
+                #endif
+        }
+        if( U_E( E_base_S->E_flow_S_signal, call_req ))
+            X_F( flow, call_req );
+        if( U_E( E_base_S->E_flow_S_signal, io_ready ))
+            X_F( io, stream_write );
+        Z_clock_time next_real_time;
+        _timerover( &next_real_time );
+        Z_clock_time tv;
+        _gettime( &tv );
+        _sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply_pong, 0 );
+        for_each( call_id, E_base_S->E_flow_Q_process_call_cli_S, E_mem_Q_tab )
+        {   struct E_flow_Q_process_call_cli_Z *call = E_mem_Q_tab_R( E_base_S->E_flow_Q_process_call_cli_S, call_id );
+            if( U_R( call->state, active ))
+                continue;
+            struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, call->task_id );
+            if( _timercmp( &tv, <, &task->run_state_time ))
+            {   if( _timercmp( &task->run_state_time, <, &next_real_time ))
+                    next_real_time = task->run_state_time;
+            }else if( U_R( call->state, ping ))
+            {   task->run_state = E_flow_Z_run_state_S_ready;
+                U_L( call->state, active );
+            }else
+            {   U_F( call->state, ping );
+                if( kill( call->process_id, SIGVTALRM ))
+                {   task->run_state = E_flow_Z_run_state_S_ready;
+                    U_L( call->state, active );
+                }else
+                {   _timeradd( &tv, &E_base_S->E_flow_Q_process_call_S_ping_period, &task->run_state_time );
+                    if( _timercmp( &task->run_state_time, <, &next_real_time ))
+                        next_real_time = task->run_state_time;
+                }
+            }
+        }
+        _sigprocmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply_pong, 0 );
+        if( U_E( E_base_S->E_flow_S_signal, time ) ///napewno poniższa linia, bo przychodzi z obudzenia po upływie tego czasu.
+        || !_timercmp( &tv, <, &E_base_S->E_flow_Q_timer_S_next_real_time ) ///jeśli nie przychodzi z obudzenia, a z wywołania w którymś ‹zadaniu›, to trzeba sprawdzić najbliższy czas ‹cyklerów>.
+        ) ///czy trzeba uaktualnić kolejne czasy ‹cyklerów›.
+        {   Z_clock_time elapsed_time;
+            _timersub( &tv, &E_base_S->E_flow_Q_timer_S_last_real_time, &elapsed_time );
+            //NDFN uzupełnić o jakieś przewidywanie ‘overhead’ na podstawie poprzedniego, by wyeliminować możliwość powtarzania pętli w pesymistycznym przypadku dla każdego ‹cyklera›? ale obliczać ten czas tylko wtedy, jeżeli ten fragment nie będzie mógł być wywłaszczony z wykonywania w czasie rzeczywistym (wszystkie przerwania wyłączone).
+            O{  B some_timer_is_active = no, some_timer_has_deactivated = no;
+                B some_task_got_ready = no;
+                Z_clock_time suspend_time;
+                _timerover( &suspend_time );
+                for_each( timer_id, E_base_S->E_flow_Q_timer_S, E_mem_Q_tab )
+                {   struct E_flow_Q_timer_Z *timer = E_mem_Q_tab_R( E_base_S->E_flow_Q_timer_S, timer_id );
+                    if( _timerisset( &timer->period )) ///‹cykler›.
+                    {   if( !_timercmp( &elapsed_time, <, &timer->left )) ///‹cykler› wykonał obieg— ‹zadanie› do wznowienia.
+                        {   Z_clock_time overlate_time;
+                            _timersub( &elapsed_time, &timer->left, &overlate_time );
+                            if( !_timercmp( &overlate_time, <, &timer->period )) ///‹cykler› wykonał więcej niż jeden obieg.
+                            {   do
+                                {   timer->lost_count++;
+                                    _timersub( &overlate_time, &timer->period, &overlate_time );
+                                }while( !_timercmp( &overlate_time, <, &timer->period ));
+                                GV_(NA); Gd( timer->lost_count ); Gd( timer->period.tv_sec ); Gd( timer->period.Z_clock_time_minor_field ); Gd( overlate_time.tv_sec ); Gd( overlate_time.Z_clock_time_minor_field ); ///lost time.
+                            }
+                            _timersub( &timer->period, &overlate_time, &timer->left );
+                            struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, timer->task_to );
+                            if( task->run_state == E_flow_Z_run_state_S_waiting_for_timer
+                            && task->run_state_object == timer_id
+                            )
+                            {   task->run_state = E_flow_Z_run_state_S_ready;
+                                some_task_got_ready = yes;
+                            }else
+                                timer->lost_count++;
+                        }else
+                            _timersub( &timer->left, &elapsed_time, &timer->left );
+                        if( _timercmp( &timer->left, <, &suspend_time ))
+                        {   suspend_time = timer->left;
+                            some_timer_is_active = yes;
+                        }
+                    }else if( _timerisset( &timer->left )) ///aktywowany ‹impulsator›.
+                    {   if( !_timercmp( &elapsed_time, <, &timer->left ))
+                        {   _timerclear( &timer->left );
+                            struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, timer->task_to );
+                            if( task->run_state == E_flow_Z_run_state_S_waiting_for_timer
+                            && task->run_state_object == timer_id
+                            )
+                            {   task->run_state = E_flow_Z_run_state_S_ready;
+                                some_task_got_ready = yes;
+                            } ///narazie– jeśli nie może wznowić ‹zadania›, to gubi impuls.
+                            some_timer_has_deactivated = yes;
+                        }else
+                        {   _timersub( &timer->left, &elapsed_time, &timer->left );
+                            if( _timercmp( &timer->left, <, &suspend_time ))
+                            {   suspend_time = timer->left;
+                                some_timer_is_active = yes;
+                            }
+                        }
+                    }
+                }
+                if( some_timer_has_deactivated
+                && !some_timer_is_active
+                ){  _timerover( &E_base_S->E_flow_Q_timer_S_next_real_time );
+                    break;
+                }
+                Z_clock_time tv_2;
+                _gettime( &tv_2 );
+                _timersub( &tv_2, &tv, &elapsed_time );
+                if( _timercmp( &elapsed_time, <, &suspend_time ) ///czy przeliczanie czasów ‹cyklerów› trwało krócej niż obliczony czas oczekiwania do pierwszego budzącego ‹zadanie›?
+                || !some_task_got_ready
+                ){  E_base_S->E_flow_Q_timer_S_last_real_time = tv;
+                    _timeradd( &tv, &suspend_time, &E_base_S->E_flow_Q_timer_S_next_real_time ); //NDFN rozważyć przepełnienie licznika czasu rzeczywistego.
+                    break;
+                }
+                tv = tv_2;
+                GV_(NA); Gd( suspend_time.tv_sec ); Gd( suspend_time.Z_clock_time_minor_field ); Gd( elapsed_time.tv_sec ); Gd( elapsed_time.Z_clock_time_minor_field ); ///timer schedule loop overhead.
+            }
+        }
+        for_each_out( E_base_S->E_flow_Q_task_S_current, task_id, E_base_S->E_flow_Q_task_S, E_mem_Q_tab )
+        {   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id );
+                #ifdef E_flow_C_thread_system_unblock_reports
+            if( U_R( task->type, system_unblock_report ))
+            {   B *thread_switch_back = task->thread_switch_back;
+                if( !*thread_switch_back )
+                {   E_base_S->E_flow_Q_task_S_current = task_id;
+                    pthread_mutex_t *thread_flow_mutex = task->thread_flow_mutex;
+                    Vr_( pthread_sigmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ));
+                    Vr_( pthread_mutex_unlock( thread_flow_mutex ));
+                    O{  V0_( sched_yield() );
+                        Vr_( pthread_mutex_lock( thread_flow_mutex ));
+                        if( *thread_switch_back )
+                            break;
+                        Vr_( pthread_mutex_unlock( thread_flow_mutex ));
+                    }
+                    Vr_( pthread_sigmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ));
+                    V0_( sched_yield() ); ///żeby dać szansę na wykonanie się “wątku” ‹zadania›, z którego przełączono spowrotem— od “Xh_B_” do rzeczywistej procedury systemowej, na której się blokuje.
+                    U_L( E_base_S->E_flow_S_signal, time ); ///“kill” z “Xh_B” jest niepotrzebne, więc ‘resetuje’ stan, by nie potrzeba było później wykonać ponownej pętli “schedule” ze względu na stan “wake”.
+                    goto Loop; ///wywołuje “E_flow_Q_task_I_schedule” w sposób wewnętrzny, gdy nie można użyć funkcjonalności “E_flow_Q_task_I_switch”, ale przy pierwszej konieczności przełączenia standardowego będzie przełączał w trybie ·pominięcia nie obługiwanych systemowych danych zatrzymywania przepływu wykonania z tablicy ‹zadań›· (pominięcia ‹zadań›) przekazanych kolejnych typu “wątkowanych” ‹systemowych raportów odblokowujących› z “cyklicznej kolejki”— na rzecz zwykłego ‹zadania› (“schedule_task_id”), które wywołało “schedule”.
+                }
+            }else
+                #endif
+                if( task->run_state == E_flow_Z_run_state_S_ready )
+                {
+                        #ifdef E_flow_C_thread_system_unblock_reports
+                    if( E_base_S->E_flow_Q_task_S_current != schedule_task_id )
+                        E_base_S->E_flow_Q_task_S_current = schedule_task_id;
+                    if( task_id != E_base_S->E_flow_Q_task_S_current )
+                        #endif
+                    {   E_flow_Q_task_I_switch( task_id );
+                        task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+                    }
+                    return task->run_state == E_flow_Z_run_state_S_stopping_by_task;
+                }
+        }
+        struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+            #ifdef E_flow_C_thread_system_unblock_reports
+        if( U_R( task->type, system_unblock_report ))
+        {   B *thread_switch_back = task->thread_switch_back;
+            if( !*thread_switch_back )
+            {   pthread_mutex_t *thread_flow_mutex = task->thread_flow_mutex;
+                Vr_( pthread_sigmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ));
+                Vr_( pthread_mutex_unlock( thread_flow_mutex ));
+                O{  V0_( sched_yield() );
+                    Vr_( pthread_mutex_lock( thread_flow_mutex ));
+                    if( *thread_switch_back )
+                        break;
+                    Vr_( pthread_mutex_unlock( thread_flow_mutex ));
+                }
+                Vr_( pthread_sigmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ));
+                V0_( sched_yield() );
+                U_L( E_base_S->E_flow_S_signal, time );
+                continue;
+            }
+        }else
+            #endif
+            if( task->run_state == E_flow_Z_run_state_S_ready )
+            {
+                    #ifdef E_flow_C_thread_system_unblock_reports
+                if( E_base_S->E_flow_Q_task_S_current != schedule_task_id )
+                    E_base_S->E_flow_Q_task_S_current = schedule_task_id;
+                    #endif
+                return task->run_state == E_flow_Z_run_state_S_stopping_by_task;
+            }
+        if( U_R( E_base_S->E_flow_S_signal, exit )
+        || U_R( E_base_S->E_flow_S_signal, time )
+        || U_R( E_base_S->E_flow_S_signal, call_req )
+        || U_R( E_base_S->E_flow_S_signal, io_ready )
+        )
+            continue;
+        if( _timercmp( &E_base_S->E_flow_Q_timer_S_next_real_time, <, &next_real_time ))
+            next_real_time = E_base_S->E_flow_Q_timer_S_next_real_time;
+        B U_has_suspend_time = !_timerisover( &next_real_time );
+        if( U_has_suspend_time )
+            _gettime( &tv );
+        if( !U_has_suspend_time
+        || _timercmp( &tv, <, &next_real_time )
+        ){  if( U_has_suspend_time )
+            {   _timersub( &next_real_time, &tv, &tv );
+                    #ifdef E_flow_C_itimer_system_unblock_report
+                if( E_base_S->E_flow_Z_itimer_system_unblock_report_I_setitimer )
+                    E_base_S->E_flow_Z_itimer_system_unblock_report_I_setitimer( &tv );
+                else
+                    #endif
+                    _setttimer( &tv );
+            }
+            _sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_volatile, 0 );
+            if( !U_R( E_base_S->E_flow_S_signal, exit )
+            && !U_R( E_base_S->E_flow_S_signal, time )
+            && !U_R( E_base_S->E_flow_S_signal, call_req )
+            && !U_R( E_base_S->E_flow_S_signal, io_ready )
+            )
+                U_E( E_base_S->E_flow_S_signal, wake );
+                #ifdef E_flow_C_itimer_system_unblock_report
+            if( E_base_S->E_flow_Z_itimer_system_unblock_report_I_sigsuspend )
+            {   B system_unblock_report = no;
+                while( !U_R( E_base_S->E_flow_S_signal, wake ))
+                    if( system_unblock_report = E_base_S->E_flow_Z_itimer_system_unblock_report_I_sigsuspend( &E_base_S->E_flow_Z_sigset_S_empty ))
+                        U_F( E_base_S->E_flow_S_signal, wake );
+                    else
+                    {   if( U_has_suspend_time
+                        && E_base_S->E_flow_Z_itimer_system_unblock_report_I_setitimer
+                        ){  _gettime( &tv );
+                            if( _timercmp( &tv, <, &next_real_time )) ///ustaw pozostały czas.
+                            {   _timersub( &next_real_time, &tv, &tv );
+                                E_base_S->E_flow_Z_itimer_system_unblock_report_I_setitimer( &tv );
+                            }else ///lub był upłynął.
+                                U_F( E_base_S->E_flow_S_signal, wake );
+                        }
+                    }
+                if( system_unblock_report )
+                {   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Z_itimer_system_unblock_report_S_task_id );
+                    task->run_state = E_flow_Z_run_state_S_ready;
+                }
+            }else
+                #endif
+                while( !U_R( E_base_S->E_flow_S_signal, wake ))
+                {   Vp_(( sigsuspend( &E_base_S->E_flow_Z_sigset_S_empty ), !_errno || _errno == EINTR ));
+                }
+            if( U_has_suspend_time
+            && !U_R( E_base_S->E_flow_S_signal, time )
+            ){  Z_clock_time tv_;
+                _timerclear( &tv_ );
+                    #ifdef E_flow_C_itimer_system_unblock_report
+                if( E_base_S->E_flow_Z_itimer_system_unblock_report_I_setitimer )
+                    E_base_S->E_flow_Z_itimer_system_unblock_report_I_setitimer( &tv_ );
+                else
+                    #endif
+                    _setttimer( &tv_ );
+            }
+            _sigprocmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_process_volatile, 0 );
+        }
+    }
+}
+///przełączenie do ‹zadania› przez przełączenie wskaźnika “stosu” wykonania.
+__attribute__ ((__noinline__,__returns_twice__,__hot__))
+_internal
+void
+E_flow_Q_task_I_switch( I task_to
+){
+//CONF jest ‘fpu’?
+        #if 1
+    feclearexcept( FE_ALL_EXCEPT );
+        #endif
+    struct E_flow_Q_task_Z *task_from = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+    E_base_S->E_flow_Q_task_S_current = task_to;
+    __asm__ volatile (
+    #if defined( __i386__ ) || defined( __x86_64__ )
+        #if defined( __i386__ )
+    "\n" "mov       %%esp,%0"
+    "\n" "test      %1,%1"
+//CONF jest ‘cmov’?
+            #if 1
+    "\n" "cmovne    %1,%%esp"
+            #else
+    "\n" "jz        0f"
+    "\n" "mov       %1,%%esp"
+    "\n" "0:"
+            #endif
+        #else
+    "\n" "mov       %%rsp,%0"
+    "\n" "cmp       $0,%1"
+    "\n" "cmovne    %1,%%rsp"
+        #endif
+    : "=m" ( task_from->exe_stack )
+    : "r" ((( struct E_flow_Q_task_Z * )E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_to ))->exe_stack )
+    : "cc", "memory"
+//CONF jest ‘fpu’?
+        #if 1
+    , "st", "st(1)", "st(2)", "st(3)", "st(4)", "st(5)", "st(6)", "st(7)"
+            #ifdef __MMX__
+    , "mm0", "mm1", "mm2", "mm3", "mm4", "mm5", "mm6", "mm7"
+                #ifdef __SSE__
+    , "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7"
+                #endif
+            #endif
+        #endif
+        #if defined( __i386__ )
+    , "ebx", "ecx", "ebp", "esi", "edi", "esp"
+        #else
+    , "rbx", "rcx", "rbp", "rsi", "rdi", "rsp"
+    , "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15"
+            #ifdef __SSE3__
+    , "xmm8", "xmm9", "xmm10", "xmm11", "xmm12", "xmm13", "xmm14", "xmm15"
+                #ifdef __AVX__
+    , "ymm0", "ymm1", "ymm2", "ymm3", "ymm4", "ymm5", "ymm6", "ymm7", "ymm8", "ymm9", "ymm10", "ymm11", "ymm12", "ymm13", "ymm14", "ymm15"
+                #endif
+            #endif
+        #endif
+    #else
+#error not implemented
+    #endif
+    );
+}
+//------------------------------------------------------------------------------
+_internal
+void
+E_flow_Z_signal_V_chld( int uid
+){  int errno_ = _errno;
+    int status;
+    VOp_(( ~waitpid( -1, &status, WNOHANG ) || _errno == ECHILD ));
+    _errno = errno_;
+}
+_internal
+void
+E_flow_Z_signal_V_term( int uid
+){  int errno_ = _errno;
+    struct sigaction sa =
+    { .sa_handler = SIG_IGN
+    , .sa_flags = 0
+    };
+    V0_( sigaction( SIGHUP, &sa, 0 ));
+    V0_( sigaction( SIGINT, &sa, 0 ));
+    V0_( sigaction( SIGQUIT, &sa, 0 ));
+    V0_( sigaction( SIGTERM, &sa, 0 ));
+    U_F( E_base_S->E_flow_S_signal, exit );
+    U_F( E_base_S->E_flow_S_signal, wake );
+    _errno = errno_;
+}
+_internal
+void
+E_flow_Z_signal_V_segv( int uid
+, siginfo_t *siginfo
+, P context
+){  int errno_ = _errno;
+    if( E_base_S->E_flow_Q_task_S_current
+        #ifdef C_pthreads
+    && U_R( E_base_S->E_flow_S_mode, Z_task_table_S_can_read )
+        #endif
+    ){  struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+        if( (Pc)siginfo->si_addr >= task->stack
+        && (Pc)siginfo->si_addr < task->touched_stack
+        ){  Pc new_base = E_simple_Z_p_I_align_down_to_v_2( siginfo->si_addr, E_base_S->E_mem_S_page_size );
+            V0_( mprotect( new_base
+            , task->touched_stack - new_base
+            , PROT_READ | PROT_WRITE
+            ));
+            task->touched_stack = new_base;
+            _errno = errno_;
+            return;
+        }
+    }
+    GV_(NDFN); Gd( siginfo->si_code ); Gh( siginfo->si_addr ); ///other fault.
+    struct sigaction sa =
+    { .sa_handler = SIG_DFL
+    , .sa_flags = 0
+    };
+    V0_( sigaction( SIGSEGV, &sa, 0 ));
+    _errno = errno_;
+}
+_internal
+void
+E_flow_Z_signal_V_alrm( int uid
+, siginfo_t *siginfo
+, P data
+){  int errno_ = _errno;
+    ///jako nieszkodliwa pozostałość po projektowaniu ‘schedulera’: jeśli programowi zostanie wysłany “sygnał” ‘unix’ “ALRM” (nie z powodu “setitimer”), gdy jest w “sigsuspend”, to wznowi wykonywanie, mimo że nie jest to konieczne ze względu na żadne ‹zadanie›, więc jeśli nie okaże się, że w trakcie wykonywania wznowionej pętli w “E_flow_Q_task_I_schedule” jest już konieczne wykonywanie któregoś ‹zadania›, to wykona pojedynczy obieg “E_flow_Q_task_I_schedule” i wróci do “sigsuspend”— czyli wykona pusty, testowy przebieg ‘schedulera’, jeśli nie byłby sprzeczny z normalnym, koniecznym wykonywaniem programu.
+    if( !siginfo->si_pid ) //NDFN brak w dokumentacji, ale tylko to jest stałe pomiędzy systemami dla “sygnału” z “setitimer” lub “timer_settime”.
+        U_F( E_base_S->E_flow_S_signal, time );
+    U_F( E_base_S->E_flow_S_signal, wake );
+    _errno = errno_;
+}
+//------------------------------------------------------------------------------
+_internal
+void
+E_flow_Z_signal_V_process_call_ping( int uid
+, siginfo_t *siginfo
+, P data
+){  if( siginfo->si_code != SI_USER )
+        return;
+    int errno_ = _errno;
+    V0( kill( siginfo->si_pid, SIGPROF )){}
+    _errno = errno_;
+}
+_internal
+void
+E_flow_Z_signal_V_process_call_pong( int uid
+, siginfo_t *siginfo
+, P data
+){  if( siginfo->si_code != SI_USER )
+        return;
+    int errno_ = _errno;
+    for_each( call_id, E_base_S->E_flow_Q_process_call_cli_S, E_mem_Q_tab )
+    {   struct E_flow_Q_process_call_cli_Z *call = E_mem_Q_tab_R( E_base_S->E_flow_Q_process_call_cli_S, call_id );
+        U_L( call->state, ping );
+        U_F( E_base_S->E_flow_S_signal, wake );
+        break;
+    }
+    _errno = errno_;
+}
+_internal
+void
+E_flow_Z_signal_V_process_call_req( int uid
+, siginfo_t *siginfo
+, P data
+){
+        #ifndef E_flow_Q_process_call_C_alt
+    if( siginfo->si_code != SI_QUEUE )
+        #else
+    if( siginfo->si_code != SI_USER )
+        #endif
+        return;
+    int errno_ = _errno;
+    for_each( call_id, E_base_S->E_flow_Q_process_call_srv_S, E_mem_Q_tab )
+    {   struct E_flow_Q_process_call_srv_Z *call = E_mem_Q_tab_R( E_base_S->E_flow_Q_process_call_srv_S, call_id );
+        if( call->process_id == siginfo->si_pid )
+        {   GV_(NXP); Gd( siginfo->si_pid ); ///duplicate process call request.
+            _errno = errno_;
+            return;
+        }
+    }
+    P shm;
+        #ifndef E_flow_Q_process_call_C_alt
+    if( !~(N)( shm = E_mem_Q_shared_Q_blk_M( siginfo->si_value.sival_int )))
+        #else
+    key_t key;
+    V1( key = ftok( E_base_S->E_flow_Q_process_call_S_service_path_guid, siginfo->si_pid ))
+    {   _errno = errno_;
+        return;
+    }
+    int shm_id;
+    if( !~( shm_id = E_mem_Q_shared_R(key))
+    || !~(N)( shm = E_mem_Q_shared_Q_blk_M( shm_id ))
+    )
+        #endif
+    {   _errno = errno_;
+        return;
+    }
+    call_id = E_mem_Q_tab_I_add( E_base_S->E_flow_Q_process_call_srv_S );
+    struct E_flow_Q_process_call_srv_Z *call = E_mem_Q_tab_R( E_base_S->E_flow_Q_process_call_srv_S, call_id );
+    call->process_id = siginfo->si_pid;
+    call->shm = shm;
+    U_F( E_base_S->E_flow_S_signal, call_req );
+    U_F( E_base_S->E_flow_S_signal, wake );
+    _errno = errno_;
+}
+_internal
+void
+E_flow_Z_signal_V_process_call_reply( int uid
+, siginfo_t *siginfo
+, P data
+){
+        #ifndef E_flow_Q_process_call_C_alt
+    if( siginfo->si_code != SI_QUEUE )
+        #else
+    if( siginfo->si_code != SI_USER )
+        #endif
+        return;
+    int errno_ = _errno;
+    for_each( call_id, E_base_S->E_flow_Q_process_call_cli_S, E_mem_Q_tab )
+    {   struct E_flow_Q_process_call_cli_Z *call = E_mem_Q_tab_R( E_base_S->E_flow_Q_process_call_cli_S, call_id );
+        if( call->process_id == siginfo->si_pid )
+        {   U_L( call->state, active );
+            struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, call->task_id );
+            task->run_state = E_flow_Z_run_state_S_ready;
+            U_F( E_base_S->E_flow_S_signal, wake );
+            _errno = errno_;
+            return;
+        }
+    }
+    GV_(NXP); Gd( siginfo->si_pid ); ///call reply from a unrequested process.
+    _errno = errno_;
+}
+//------------------------------------------------------------------------------
+    #if defined( E_io_C_aio ) || defined( E_io_Q_stream_out_C_sig )
+_internal
+void
+E_flow_Z_signal_V_io_ready( int uid
+, siginfo_t *siginfo
+, P data
+){  int errno_ = _errno;
+    //if( siginfo->si_code != POLL_OUT )
+    //{   G_(); Gh( siginfo->si_code ); Gd( siginfo->si_fd );
+    //}
+        #if defined( E_io_C_aio ) || defined( E_io_C_sig_has_fd )
+            #ifdef E_io_C_aio
+    if( siginfo->si_code != SI_ASYNCIO )
+    {   _errno = errno_;
+        return;
+    }
+            #else
+    //if( siginfo->si_code != POLL_OUT
+    //){  struct sigaction sa =
+        //{ .sa_handler = SIG_IGN
+        //, .sa_flags = 0
+        //};
+        //V0_( sigaction( SIGHUP, &sa, 0 ));
+        //V0_( sigaction( SIGINT, &sa, 0 ));
+        //V0_( sigaction( SIGQUIT, &sa, 0 ));
+        //V0_( sigaction( SIGTERM, &sa, 0 ));
+        //U_F( E_base_S->E_flow_S_signal, exit );
+        //U_F( E_base_S->E_flow_S_signal, wake );
+        //_errno = errno_;
+        //return;
+    //}
+            #endif
+    B found = no;
+    for_each( id, E_base_S->E_io_Q_stream_out_S, E_mem_Q_tab )
+    {   struct E_io_Q_stream_out_Z *stream = E_mem_Q_tab_R( E_base_S->E_io_Q_stream_out_S, id );
+            #ifdef E_io_C_aio
+        if( stream->aiocb->aio_fildes == siginfo->si_value.sival_int )
+        {   if( !U_R( stream->state, closeing ))
+            {   U_F( stream->state, io_ready );
+                found = yes;
+            }
+            break;
+        }
+            #else
+        if( stream->aiocb->aio_fildes == siginfo->si_fd )
+        //jeśli okaże się (a jest to bardzo prawdopodobne), że jest generowany “sygnał” tylko dla jednego strumienia na “terminalu”, to trzeba odpowiednio odkomentować poniższe linie.
+        //{   if( stream->tty )
+            //{   Pc tty = stream->tty;
+                //for_each( id, E_base_S->E_io_Q_stream_out_S, E_mem_Q_tab )
+                //{   struct E_io_Q_stream_out_Z *stream = E_mem_Q_tab_R( E_base_S->E_io_Q_stream_out_S, id );
+                    //if( !*stream->tty )
+                        //continue;
+                    {if( !U_R( stream->state, closeing )
+                    //&& E_text_Z_s0_T_eq( stream->tty, tty )
+                    && ( stream->aiocb->aio_nbytes
+                      || stream->data_l
+                    ))
+                    {   U_F( stream->state, io_ready );
+                        found = yes;
+                    }
+                //}
+            //}else
+            //{   U_F( stream->state, io_ready );
+                //found = yes;
+            //}
+            break;
+        }
+            #endif
+    }
+    if(found)
+        #endif
+    {   U_F( E_base_S->E_flow_S_signal, io_ready );
+        U_F( E_base_S->E_flow_S_signal, wake );
+    }
+    _errno = errno_;
+}
+#endif
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+I
+E_flow_Q_process_call_M( N l
+, P *data
+){  N shm_id;
+        #ifndef E_flow_Q_process_call_C_alt
+    if( !~( shm_id = E_mem_Q_shared_M(l)))
+        #else
+    if( !~( shm_id = E_mem_Q_shared_M_key( E_base_S->E_flow_Q_process_call_S_shm_key, l )))
+        #endif
+        return ~0;
+    P shm;
+    if( !~(N)( shm = E_mem_Q_shared_Q_blk_M( shm_id )))
+    {   E_mem_Q_shared_W( shm_id );
+        return ~0;
+    }
+    _sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply_pong, 0 );
+    I call_id = E_mem_Q_tab_I_add( E_base_S->E_flow_Q_process_call_cli_S );
+    struct E_flow_Q_process_call_cli_Z *call = E_mem_Q_tab_R( E_base_S->E_flow_Q_process_call_cli_S, call_id );
+    U_L( call->state, active );
+    call->shm_id = shm_id;
+    call->shm = shm;
+    _sigprocmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply_pong, 0 );
+    *data = shm;
+    return call_id;
+}
+void
+E_flow_Q_process_call_W( I id
+){  struct E_flow_Q_process_call_cli_Z *call = E_mem_Q_tab_R( E_base_S->E_flow_Q_process_call_cli_S, id );
+    E_mem_Q_shared_W( call->shm_id );
+    E_mem_Q_shared_Q_blk_W( call->shm );
+    _sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply_pong, 0 );
+    E_mem_Q_tab_I_rem( E_base_S->E_flow_Q_process_call_cli_S, id );
+    _sigprocmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply_pong, 0 );
+}
+//------------------------------------------------------------------------------
+B
+E_flow_Q_process_call_I( I id
+, pid_t process_id
+, B *successful
+){  struct E_flow_Q_process_call_cli_Z *call = E_mem_Q_tab_R( E_base_S->E_flow_Q_process_call_cli_S, id );
+    call->task_id = E_base_S->E_flow_Q_task_S_current;
+    call->process_id = process_id;
+    struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+    task->run_state = E_flow_Z_run_state_S_waiting_for_call_reply;
+    _gettime( &task->run_state_time );
+    _timeradd( &task->run_state_time, &E_base_S->E_flow_Q_process_call_S_ping_period, &task->run_state_time );
+        #ifndef E_flow_Q_process_call_C_alt
+    union sigval sv;
+    sv.sival_int = call->shm_id;
+    U_F( call->state, active );
+    V0( sigqueue( process_id, SIGUSR1, sv ))
+        #else
+    V0( kill( process_id, SIGUSR1 ))
+        #endif
+    {   U_L( call->state, active );
+        *successful = no;
+        return no;
+    }
+    B ret = E_flow_Q_task_I_schedule();
+    task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+    *successful = !U_R( call->state, ping );
+    return ret;
+}
+//------------------------------------------------------------------------------
+D( flow, call_srv )
+{   X_M_( flow, call_req );
+    I_D
+    {   X_B( flow, call_req, 0 )
+            break;
+        _sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_req, 0 );
+        for_each_pop( call_id, E_base_S->E_flow_Q_process_call_srv_S, E_mem_Q_tab )
+        {   struct E_flow_Q_process_call_srv_Z *call = E_mem_Q_tab_R( E_base_S->E_flow_Q_process_call_srv_S, call_id );
+            E_flow_Q_process_call_I_func( call->shm );
+            E_mem_Q_shared_Q_blk_W( call->shm );
+                #ifndef E_flow_Q_process_call_C_alt
+            union sigval sv;
+            V0( sigqueue( call->process_id, SIGUSR2, sv )){}
+                #else
+            V0( kill( call->process_id, SIGUSR2 )){}
+                #endif
+        }
+        _sigprocmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_req, 0 );
+    }
+    X_W( flow, call_req );
+}
+/******************************************************************************/

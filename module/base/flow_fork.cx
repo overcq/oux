@@ -1,0 +1,150 @@
+/*******************************************************************************
+*   ___   publicplace
+*  ¦OUX¦  ‟Coux”
+*  ¦Inc¦  component
+*   ---   base
+*         flow fork
+* ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2016‒1‒22 o
+*******************************************************************************/
+///rozłączenie procesu skopiowanego przez “fork” (w nowym procesie). nie wolno przełączać ‹zadań› w części od “begin” do “end”.
+pid_t
+E_flow_I_fork_I_begin( void
+){  E_flow_Q_task_I_touch_stack(); ///ponieważ podczas “fork” nie może być realizowana procedura obsługi “SIGSEGV”.
+    _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_Z_sigset_S_process_exec, &E_base_S->E_flow_I_fork_S_sigset );
+    pid_t pid;
+    V1( pid = fork() ){}
+    return pid;
+}
+void
+E_flow_I_fork_I_end( N pid
+){  if( ~pid )
+    {   sigset_t sigset_child = E_base_S->E_flow_I_fork_S_sigset;
+        V0_( sigaddset( &sigset_child, SIGCHLD ));
+        _sigprocmask( SIG_SETMASK, &sigset_child, 0 );
+        int status;
+        VO1( waitpid( pid, &status, 0 )){} ///czekanie do wykonania “daemon” w “E_flow_I_fork_I_exec”, jeśli “proces” potomny jeszcze istnieje.
+        _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_I_fork_S_sigset, 0 );
+        V0( sched_yield() ){}
+    }else
+        _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_I_fork_S_sigset, 0 );
+}
+//------------------------------------------------------------------------------
+///poniższe procedury, wykonywane w “procesie” potomnym, mogą używać tylko pasywnych funkcjonalności technologii, nie zintegrowanych w przepływie wykonania. czyli na przykład tylko synchronicznych raportów linii. nigdy nie wiadomo bez sprawdzenia tekstu procedur, czy nie używa ona wewnątrz funkcjonalności zintegrowanych.
+void
+E_flow_I_fork_I_start( void
+){  ///jeszcze przed wykonaniem się “exec”– usunięcie identyfikacji siebie jako wykonawcy “procesu”, który utworzył ten— z wykonywania funkcji “process call”.
+        #if defined( __gnu_linux__ )
+    V0_( prctl( PR_SET_NAME, "_", 0, 0, 0 ));
+        #elif defined( __OpenBSD__ )
+    setprogname( "_" );
+        #else
+#error not implemented
+        #endif
+    for_each( id, E_base_S->E_mem_Q_file_S, E_mem_Q_tab )
+    {   struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
+        V0_( close( file->fd ));
+    }
+}
+void
+E_flow_I_fork_I_exec( Pc cwd
+, struct E_flow_Z_args *args
+, N args_n
+){  S cmd_mode = 0;
+    N n = 0;
+    for_n( args_i, args_n )
+    {   for_n( arg_i, args[ args_i ].argc )
+        {   n++;
+            E_text_Z_s_Z_cmdline_Z_arg_I_mode( &cmd_mode, args[ args_i ].argv[ arg_i ]);
+            if( cmd_mode < 0 )
+                goto End_1;
+        }
+    }
+End_1:;
+    Pc *argv;
+    if( cmd_mode < 0 )
+    {   Mt_( argv, n + 1 + 1 ); ///scalony argument linii uruchomienia oraz “null”.
+        if( !argv )
+        {   GV_(NA); V();
+        }
+        N i = 0;
+        for_n_( args_i, args_n )
+        {   for_n( arg_i, args[ args_i ].argc )
+            {   if( i == n )
+                {   struct E_flow_Z_args *Mt_( args_, args_n - args_i );
+                    if( !args_ )
+                    {   GV_(NA); V();
+                    }
+                    Mt_( args_[0].argv, args_[0].argc = args[ args_i ].argc - arg_i );
+                    if( !args_[0].argv )
+                    {   GV_(NA); V();
+                    }
+                    for_n_( i, args[ args_i ].argc - arg_i )
+                        args_[0].argv[i] = args[ args_i ].argv[ arg_i + i ];
+                    for_n_( i, args_n - args_i - 1 )
+                        args_[ 1 + i ] = args[ args_i + 1 + i ];
+                    N l = E_text_Z_s_Z_cmdline_N_quote_G( 0, args_, args_n - args_i );
+                    argv[n] = M( l + 1 ); ///znak '\0'.
+                    if( !argv[n] )
+                    {   GV_(NA); V();
+                    }
+                    l = E_text_Z_s_Z_cmdline_N_quote( argv[n], 0, args_, args_n - args_i );
+                    E_text_Z_s_P_0( argv[n] + l );
+                    W( args_[0].argv );
+                    W( args_ );
+                    argv[ n + 1 ] = 0;
+                    goto End_2;
+                }
+                argv[ i++ ] = args[ args_i ].argv[ arg_i ];
+            }
+        }
+End_2:  ;
+    }else
+    {   N i = ~0;
+        for_n_( args_i, args_n )
+            if( args[ args_i ].argc )
+            {   if( ~i )
+                    break;
+                i = args_i;
+            }
+        if( ~i )
+        {   Mt_( argv, n + 1 ); ///“null”.
+            if( !argv )
+            {   GV_(NA); V();
+            }
+            i = 0;
+            for_n( args_i, args_n )
+            {   for_n( arg_i, args[ args_i ].argc )
+                    argv[ i++ ] = args[ args_i ].argv[ arg_i ];
+            }
+            argv[i] = 0;
+        }else
+            argv = args[i].argv;
+    }
+        #if 0
+    Pc *arg = argv;
+    while( *arg )
+    {   G_(); Gs( *arg );
+        arg++;
+    }
+        #endif
+    V0_( daemon( yes, yes ));
+    if(cwd)
+    {   V0_( chdir(cwd) );
+    }
+    //tutaj dodać ‘reset’ “standardowych” “deskryptorów”.
+    struct sigaction sa =
+    { .sa_handler = SIG_DFL
+    , .sa_flags = 0
+    };
+    V0_( sigaction( SIGTERM, &sa, 0 ));
+    V0_( sigaction( SIGQUIT, &sa, 0 ));
+    V0_( sigaction( SIGINT, &sa, 0 ));
+    V0_( sigaction( SIGHUP, &sa, 0 ));
+    V0_( sigaction( SIGPIPE, &sa, 0 ));
+    V0_( sigaction( SIGTTOU, &sa, 0 ));
+    V0_( sigaction( SIGTTIN, &sa, 0 ));
+    V0_( sigaction( SIGTSTP, &sa, 0 ));
+    _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_Z_sigset_S_empty, 0 );
+    Vp_(( execvp( argv[0], argv ), yes ));
+}
+/******************************************************************************/
