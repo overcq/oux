@@ -11,7 +11,7 @@
 //odczyt dostępnego bloku pamięci do podanej wielkości rozmiaru.
 //==============================================================================
 struct E_mem_Q_rel_map_blk_Z
-{ N rel_pos;
+{ N pos;
   N l;
   Pc data;
 };
@@ -22,7 +22,7 @@ struct E_mem_Z_range
 struct E_mem_Q_file_Z
 { struct E_mem_Q_rel_map_blk_Z *blk; ///tablica bloków danych wczytanych uporządkowana wg pozycji danych w pliku.
   N blk_n;
-  struct E_mem_Z_range *unsaved;
+  struct E_mem_Z_range *unsaved; ///tablica zakresów danych nie zapisanych uporządkowana wg pozycji danych w pliku.
   N unsaved_n;
   N pos;
   N current_blk;
@@ -62,7 +62,7 @@ E_mem_Q_file_W( I id
         N buf_pos = 0;
         N blk_i = 0;
         for( N pos = 0; blk_i != file->blk_n; blk_i++ )
-            if( range->pos < pos + file->blk[ blk_i ].rel_pos )
+            if( range->pos < file->blk[ blk_i ].pos )
                 break;
         if( data_pos != range->pos )
         {   E_mem_Q_file_I_read_pos( file->fd, data_pos );
@@ -153,20 +153,23 @@ E_mem_Q_file_R_current_blk( struct E_mem_Q_file_Z *file
     {   ///czy pozycja w pliku znajduje się w już obecnym bloku danych wczytanych.
         if( U_E( file->current_blk, valid_sob ))
         {   blk_i = file->current_blk;
-            pos = file->pos - file->current_blk_pos - blk[ blk_i ].rel_pos;
+            if( blk_i )
+                pos = blk[ blk_i - 1 ].pos;
+            else
+                pos = 0;
         }
         else if( U_E( file->current_blk, valid_eob ))
         {   blk_i = file->current_blk + 1;
-            pos = file->pos - file->current_blk_pos;
+            pos = blk[ blk_i ].pos;
         }
         else
         {   blk_i = 0;
             pos = 0;
         }
         for( blk = file->blk + blk_i; blk_i != file->blk_n; blk_i++, blk++ )
-        {   if( file->pos < pos + blk->rel_pos )
+        {   if( file->pos < blk->pos )
                 break;
-            pos += blk->rel_pos;
+            pos = blk->pos;
             if( file->pos < pos + blk->l )
             {   file->current_blk = blk_i;
                 file->current_blk_pos = file->pos - pos;
@@ -191,28 +194,28 @@ E_mem_Q_file_R_current_blk( struct E_mem_Q_file_Z *file
             O{  if( data_pos >= pos_begin )
                 {   if( data_pos > pos_begin + blk_begin->l )
                     {   blk_begin++;
-                        pos_begin += blk_begin->rel_pos;
+                        pos_begin = blk_begin->pos;
                     }
                     break;
                 }
                 if( blk_begin == file->blk )
                     break;
-                pos_begin -= blk_begin->rel_pos;
+                pos_begin = blk_begin->pos;
                 blk_begin--;
             }
         }else
         {   blk_begin = blk;
-            pos_begin = blk_begin->rel_pos;
+            pos_begin = blk_begin->pos;
         }
         struct E_mem_Q_rel_map_blk_Z *blk_end;
         N pos_end = pos;
         if( blk_i != file->blk_n )
         {   blk_end = blk;
-            O{  if( data_pos_end < pos_end + blk_end->rel_pos )
+            O{  if( data_pos_end < blk_end->pos )
                 {   blk_end--;
                     break;
                 }
-                pos_end += blk_end->rel_pos;
+                pos_end = blk_end->pos;
                 if( data_pos_end < pos_end + blk_end->l )
                     break;
                 if( blk_end + 1 == file->blk + file->blk_n )
@@ -225,11 +228,11 @@ E_mem_Q_file_R_current_blk( struct E_mem_Q_file_Z *file
         {   struct E_mem_Q_rel_map_blk_Z new_blk;
             N pos;
             if( data_pos < pos_begin )
-            {   new_blk.rel_pos = blk_begin->rel_pos - ( pos_begin - data_pos );
+            {   new_blk.pos = blk_begin->pos - ( pos_begin - data_pos );
                 pos = pos_begin - data_pos;
                 pos_begin = data_pos;
             }else
-            {   new_blk.rel_pos = blk_begin->rel_pos;
+            {   new_blk.pos = blk_begin->pos;
                 pos = 0;
             }
             new_blk.data = M( new_blk.l = ( data_pos_end <= pos_end + blk_end->l ? pos_end + blk_end->l : data_pos_end ) - pos_begin );
@@ -239,7 +242,7 @@ E_mem_Q_file_R_current_blk( struct E_mem_Q_file_Z *file
                 if( blk == blk_end )
                     break;
                 blk++;
-                pos += blk->rel_pos;
+                pos = blk->pos;
             }
             N i = ( blk_begin - file->blk ) / sizeof( struct E_mem_Q_rel_map_blk_Z );
             N n = ( blk_end - blk_begin ) / sizeof( struct E_mem_Q_rel_map_blk_Z );
@@ -254,7 +257,7 @@ E_mem_Q_file_R_current_blk( struct E_mem_Q_file_Z *file
             struct E_mem_Q_rel_map_blk_Z *new_blk = E_mem_Q_blk_I_insert( &file->blk, file->current_blk, 1 );
             if( !new_blk )
                 return ~0;
-            new_blk->rel_pos = data_pos - pos_end;
+            new_blk->pos = data_pos;
             new_blk->data = M( new_blk->l = l );
             E_mem_Q_blk_I_copy( new_blk->data, E_base_S->E_mem_Q_file_S_buffer, l );
         }
@@ -264,7 +267,7 @@ E_mem_Q_file_R_current_blk( struct E_mem_Q_file_Z *file
         struct E_mem_Q_rel_map_blk_Z *new_blk = E_mem_Q_blk_I_append( &file->blk, 1 );
         if( !new_blk )
             return ~0;
-        new_blk->rel_pos = data_pos;
+        new_blk->pos = data_pos;
         new_blk->data = M( new_blk->l = l );
         E_mem_Q_blk_I_copy( new_blk->data, E_base_S->E_mem_Q_file_S_buffer, l );
     }
@@ -279,7 +282,7 @@ E_mem_Q_file_P_pos( I id
     file->pos = pos;
     N blk_i = 0;
     for( pos = 0; blk_i != file->blk_n; blk_i++ )
-        if( file->pos < pos + file->blk[ blk_i ].rel_pos )
+        if( file->pos < file->blk[ blk_i ].pos )
             break;
     if( blk_i != file->blk_n )
         if( file->pos < pos + file->blk[ blk_i ].l )
@@ -321,23 +324,23 @@ E_mem_Q_file_R_rev_c( I id
         return ret;
     char c = file->blk[ file->current_blk ].data[ file->current_blk_pos-- ];
     file->pos--;
-    if( file->current_blk_pos == file->blk[ file->current_blk ].rel_pos - 1 )
+    if( file->current_blk_pos == -1 )
     {   U_L( file->current_blk, valid );
         U_F( file->current_blk, valid_sob );
     }
     return c;
 }
-//NDFN procedura nie sprawdzona.
 void
 E_mem_Q_file_P_c( I id
 , C c
 ){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
+    ///czy da się skleić zakresy danych nie zapisanych.
     B f = no;
     for_n( unsaved_i, file->unsaved_n )
     {   if( file->pos == file->unsaved[ unsaved_i ].pos - 1 )
         {   f = yes;
             if( unsaved_i
-            && file->unsaved[ unsaved_i - 1 ].pos_end == file->unsaved[ unsaved_i ].pos - 2
+            && file->unsaved[ unsaved_i - 1 ].pos_end == file->unsaved[ unsaved_i ].pos - 1
             ){  file->unsaved[ unsaved_i - 1 ].pos_end = file->unsaved[ unsaved_i ].pos_end;
                 E_mem_Q_blk_I_rem( &file->unsaved, unsaved_i, 1 );
             }else
@@ -347,36 +350,36 @@ E_mem_Q_file_P_c( I id
         if( file->pos < file->unsaved[ unsaved_i ].pos )
             break;
         if( file->pos >= file->unsaved[ unsaved_i ].pos
-        && file->pos <= file->unsaved[ unsaved_i ].pos_end
+        && file->pos < file->unsaved[ unsaved_i ].pos_end
         )
         {   f = yes;
             break;
         }
-        if( file->pos == file->unsaved[ unsaved_i ].pos_end + 1 )
+        if( file->pos == file->unsaved[ unsaved_i ].pos_end )
         {   f = yes;
-            if( unsaved_i + 1 < file->unsaved_n
-            && file->unsaved[ unsaved_i + 1 ].pos == file->unsaved[ unsaved_i ].pos_end + 2
+            if( unsaved_i + 1 != file->unsaved_n
+            && file->unsaved[ unsaved_i + 1 ].pos == file->unsaved[ unsaved_i ].pos_end + 1
             ){  file->unsaved[ unsaved_i ].pos_end = file->unsaved[ unsaved_i + 1 ].pos_end;
                 E_mem_Q_blk_I_rem( &file->unsaved, unsaved_i + 1, 1 );
             }else
-                file->unsaved[ unsaved_i ].pos++;
+                file->unsaved[ unsaved_i ].pos_end++;
             break;
         }
     }
     if( !f )
     {   E_mem_Q_blk_I_insert( &file->unsaved, unsaved_i, 1 );
-        file->unsaved[ unsaved_i ].pos = file->unsaved[ unsaved_i ].pos_end = file->pos;
+        file->unsaved[ unsaved_i ].pos = file->pos;
+        file->unsaved[ unsaved_i ].pos_end = file->pos + 1;
     }
+    ///ustawienie nowej pozycji w pliku.
     if( U_R( file->current_blk, valid ))
-    {   file->blk[ file->current_blk ].data[ file->current_blk_pos++ ] = c;
-        file->pos++;
-        if( file->current_blk_pos == file->blk[ file->current_blk ].l )
+    {   if( file->current_blk_pos + 1 == file->blk[ file->current_blk ].l )
         {   U_L( file->current_blk, valid );
             U_F( file->current_blk, valid_eob );
         }
     }else if( U_R( file->current_blk, valid_eob ))
     {   if( file->current_blk != file->blk_n
-        && file->blk[ file->current_blk + 1 ].rel_pos - file->blk[ file->current_blk ].l == 1
+        && file->blk[ file->current_blk + 1 ].pos - ( file->blk[ file->current_blk ].pos + file->blk[ file->current_blk ].l ) == 1
         )
         {   E_mem_Q_blk_I_append( &file->blk[ file->current_blk ].data, 1 + file->blk[ file->current_blk + 1 ].l );
             E_mem_Q_blk_I_copy( file->blk[ file->current_blk ].data + 1, file->blk[ file->current_blk + 1 ].data, file->blk[ file->current_blk + 1 ].l );
@@ -388,16 +391,15 @@ E_mem_Q_file_P_c( I id
         {   E_mem_Q_blk_I_append( &file->blk[ file->current_blk ].data, 1 );
             file->blk[ file->current_blk ].l++;
         }
-        file->blk[ file->current_blk ].data[ file->current_blk_pos++ ] = c;
     }else if( U_R( file->current_blk, valid_sob ))
     {   if( file->current_blk
-        && file->blk[ file->current_blk ].rel_pos - file->blk[ file->current_blk - 1 ].l == 1
+        && file->blk[ file->current_blk ].pos - ( file->blk[ file->current_blk - 1 ].pos + file->blk[ file->current_blk - 1 ].l ) == 1
         )
-        {   E_mem_Q_blk_I_append( &file->blk[ file->current_blk - 1 ].data, 1 + file->blk[ file->current_blk ].l );
-            E_mem_Q_blk_I_copy( file->blk[ file->current_blk - 1 ].data + 1, file->blk[ file->current_blk ].data, file->blk[ file->current_blk ].l );
-            file->current_blk--;
+        {   file->current_blk--;
             file->current_blk_pos = file->blk[ file->current_blk ].l;
             file->blk[ file->current_blk ].l += 1 + file->blk[ file->current_blk + 1 ].l;
+            E_mem_Q_blk_I_append( &file->blk[ file->current_blk ].data, 1 + file->blk[ file->current_blk + 1 ].l );
+            E_mem_Q_blk_I_copy( file->blk[ file->current_blk ].data + 1, file->blk[ file->current_blk + 1 ].data, file->blk[ file->current_blk + 1 ].l );
             W( file->blk[ file->current_blk + 1 ].data );
             E_mem_Q_blk_I_rem( &file->blk, file->current_blk + 1, 1 );
             U_F( file->current_blk, valid );
@@ -409,13 +411,12 @@ E_mem_Q_file_P_c( I id
             else
                 U_F( file->current_blk, valid );
         }
-        file->blk[ file->current_blk ].data[ file->current_blk_pos++ ] = c;
         U_L( file->current_blk, valid_sob );
     }else
     {   N blk_i = 0;
         N pos;
         for( pos = 0; blk_i != file->blk_n; blk_i++ )
-            if( file->pos < pos + file->blk[ blk_i ].rel_pos )
+            if( file->pos < file->blk[ blk_i ].pos )
                 break;
         if( blk_i != file->blk_n )
             E_mem_Q_blk_I_insert( &file->blk, blk_i, 1 );
@@ -424,8 +425,9 @@ E_mem_Q_file_P_c( I id
         file->blk_n++;
         file->current_blk = blk_i;
         file->blk[ file->current_blk ].data = M( file->blk[ file->current_blk ].l = 1 );
-        file->blk[ file->current_blk ].rel_pos = file->pos - pos;
-        file->blk[ file->current_blk ].data[ file->current_blk_pos++ ] = c;
+        file->blk[ file->current_blk ].pos = file->pos;
     }
+    file->pos++;
+    file->blk[ file->current_blk ].data[ file->current_blk_pos++ ] = c;
 }
 /******************************************************************************/
