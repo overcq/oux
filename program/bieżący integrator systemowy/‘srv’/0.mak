@@ -9,7 +9,7 @@
 S_headers := stdlib.h string.h unistd.h
 #===============================================================================
 install:
-	$(INSTALL) -m 700 a.out "$${HOME}/lib/ocq-bis"
+	$(INSTALL) -c -m 700 a.out "$${HOME}/lib/ocq-bis"
 	-pkill -x ocq-bis
 	fbrun -title 'run ocq-bis server' -text 'oux "$${HOME}/lib/ocq-bis"' >/dev/null 2>&1
 ################################################################################
