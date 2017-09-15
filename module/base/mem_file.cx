@@ -170,6 +170,7 @@ N
 E_mem_Q_file_R_current_blk( struct E_mem_Q_file_Z *file
 ){  if( U_R( file->current_blk, valid ))
         return 0;
+    N l;
     N pos;
     struct E_mem_Q_rel_map_blk_Z *blk;
     N blk_i;
@@ -197,16 +198,17 @@ E_mem_Q_file_R_current_blk( struct E_mem_Q_file_Z *file
             if( file->pos < pos + blk->l )
             {   file->current_blk = blk_i;
                 file->current_blk_pos = file->pos - pos;
+                l = 0;
                 goto End;
             }
         }
     }
     N data_pos = E_simple_Z_n_I_align_down_to_v_2( file->pos, E_base_S->E_mem_Q_file_S_buffer_l );
-    N l = E_mem_Q_file_I_read_pos( file->fd, data_pos );
-    if( !l )
-        return E_mem_Q_file_S_eof;
+    l = E_mem_Q_file_I_read_pos( file->fd, data_pos );
     if( !~l )
         return l;
+    if( l <= file->pos - data_pos )
+        return E_mem_Q_file_S_eof;
     N data_pos_end = data_pos + l;
     if( file->blk_n )
     {   ///scalenie bloków danych wczytanych zawartych w bloku odczytanym z pliku.
