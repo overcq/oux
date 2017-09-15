@@ -64,21 +64,25 @@ E_mem_Q_file_W( I id
         for( blk_i = 0; blk_i != file->blk_n; blk_i++ )
             if( range->pos < file->blk[ blk_i ].pos )
                 break;
+        N data_pos_end;
         if( data_pos != range->pos )
-        {   E_mem_Q_file_I_read_pos( file->fd, data_pos );
-            while( buf_pos < E_base_S->E_mem_Q_file_S_buffer_l
+        {   N data_l = E_mem_Q_file_I_read_pos( file->fd, data_pos );
+            while( buf_pos < data_l
             && blk_i != file->blk_n
             ){  N l;
                 E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_file_S_buffer + buf_pos
                 , file->blk[ blk_i ].data
-                , l = file->blk[ blk_i ].l > E_base_S->E_mem_Q_file_S_buffer_l - buf_pos ? E_base_S->E_mem_Q_file_S_buffer_l - buf_pos : file->blk[ blk_i ].l
+                , l = file->blk[ blk_i ].l > data_l - buf_pos ? data_l - buf_pos : file->blk[ blk_i ].l
                 );
                 buf_pos += l;
                 blk_i++;
             }
             E_mem_Q_file_I_write_pos( file->fd, data_pos );
-        }
-        N data_pos_end = E_simple_Z_n_I_align_up_to_v_2( range->pos, E_base_S->E_mem_Q_file_S_buffer_l );
+            data_pos_end = data_l == E_base_S->E_mem_Q_file_S_buffer_l
+            ? E_simple_Z_n_I_align_up_to_v_2( range->pos, E_base_S->E_mem_Q_file_S_buffer_l )
+            : data_pos + data_l;
+        }else
+            data_pos_end = E_simple_Z_n_I_align_up_to_v_2( range->pos, E_base_S->E_mem_Q_file_S_buffer_l );
         buf_pos = 0;
         if( data_pos_end < range->pos_end )
         {   N l;
@@ -119,8 +123,22 @@ E_mem_Q_file_I_write_pos( int fd
 , N pos
 ){  V1( lseek( fd, pos, SEEK_SET ))
         return ~0;
+        #ifdef __gnu_linux__
     N l;
     VO1( l = write( fd, E_base_S->E_mem_Q_file_S_buffer, E_base_S->E_mem_Q_file_S_buffer_l )){}
+        #else
+    N l = 0;
+    N l_;
+    O{  VO1( l_ = write( fd, E_base_S->E_mem_Q_file_S_buffer + l, E_base_S->E_mem_Q_file_S_buffer_l - l )){}
+        if( !l_
+        || !~l_
+        )
+            break;
+        l += l_;
+        if( l == E_base_S->E_mem_Q_file_S_buffer_l )
+            break;
+    }
+        #endif
     return l;
 }
 _internal
@@ -129,8 +147,22 @@ E_mem_Q_file_I_read_pos( int fd
 , N pos
 ){  V1( lseek( fd, pos, SEEK_SET ))
         return ~0;
+        #ifdef __gnu_linux__
     N l;
     VO1( l = read( fd, E_base_S->E_mem_Q_file_S_buffer, E_base_S->E_mem_Q_file_S_buffer_l )){}
+        #else
+    N l = 0;
+    N l_;
+    O{  VO1( l_ = read( fd, E_base_S->E_mem_Q_file_S_buffer + l, E_base_S->E_mem_Q_file_S_buffer_l - l )){}
+        if( !l_
+        || !~l_
+        )
+            break;
+        l += l_;
+        if( l == E_base_S->E_mem_Q_file_S_buffer_l )
+            break;
+    }
+        #endif
     return l;
 }
 _internal
@@ -227,7 +259,6 @@ E_mem_Q_file_R_current_blk( struct E_mem_Q_file_Z *file
             {   new_blk.pos = blk_begin->pos;
                 pos = 0;
             }
-            //TODO blok danych nie jest właściwie wczytany dla funkcji “R_c”.
             new_blk.data = M( new_blk.l = ( data_pos_end <= pos_end + blk_end->l ? pos_end + blk_end->l : data_pos_end ) - pos_begin ); //TODO użyć funkcji “append”/“prepend”.
             E_mem_Q_blk_I_copy( new_blk.data + ( data_pos - pos_begin ), E_base_S->E_mem_Q_file_S_buffer, l );
             struct E_mem_Q_rel_map_blk_Z *blk = blk_begin;
@@ -321,10 +352,6 @@ E_mem_Q_file_P_pos( I id
         U_L( file->current_blk, valid_sob );
         U_L( file->current_blk, valid_eob );
     }
-    B b = U_R( file->current_blk, valid );
-    B b_sob = U_R( file->current_blk, valid_sob );
-    B b_eob = U_R( file->current_blk, valid_eob );
-    endwin(); G_(); Gd(b); Gd( b_sob ); Gd( b_eob );
 }
 N
 E_mem_Q_file_R_c( I id
@@ -334,7 +361,6 @@ E_mem_Q_file_R_c( I id
     || ret == E_mem_Q_file_S_eof
     )
         return ret;
-    endwin(); G_(); Gd( file->current_blk ); Gd( file->current_blk_pos );
     char c = file->blk[ file->current_blk ].data[ file->current_blk_pos++ ];
     file->pos++;
     if( file->current_blk_pos == file->blk[ file->current_blk ].l )
