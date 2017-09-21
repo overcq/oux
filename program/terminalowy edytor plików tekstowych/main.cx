@@ -10,12 +10,6 @@
 N test_test_test_test_test_test_test_test_test_test_test_test_test_test_test_test_test_test_test_test_test_test_test_test_test_test_test_test_test_test_test_test_test_test_test_test_test_test_test_;
 //TODO zarządzanie liniami.
 //==============================================================================
-Pn E_main_S_line;
-N E_main_S_line_n = 1;
-N E_main_S_line_i = 0;
-N E_main_S_first_line_wrap_i = 0;
-N E_main_S_last_line_wrap_i = 0;
-N E_main_S_last_line_u_i;
 int E_main_I_getch_S_ret;
 wint_t E_main_I_getch_S_c;
 I file;
@@ -23,6 +17,10 @@ I file;
 N
 E_main_Q_file_R_c( void
 ){  return E_mem_Q_file_R_c(file);
+}
+N
+E_main_Q_file_R_rev_c( void
+){  return E_mem_Q_file_R_rev_c(file);
 }
 int
 main(
@@ -47,14 +45,13 @@ main(
     keypad( stdscr, TRUE );
     notimeout( stdscr, TRUE );
     nodelay( stdscr, FALSE );
+    E_lines_M();
     if( !~( file = E_mem_Q_file_M( argv[1] )))
     {   endwin(); G_(); V();
     }
     int y = 0, x = 0, y_, x_;
     getmaxyx( stdscr, y_, x_ );
     N u_i = 0;
-    Mt_( E_main_S_line, 1 );
-    *E_main_S_line = 0;
     O{  U u = E_text_Z_getter_Z_c_R_u( &E_main_Q_file_R_c );
         if( !~u )
         {   endwin(); G_(); V();
@@ -68,16 +65,19 @@ main(
         {   endwin(); G_(); V();
         }
         if( u == '\n' )
-        {   E_main_S_last_line_wrap_i = 0;
-            E_mem_Q_blk_I_append( &E_main_S_line, 1 );
-            E_main_S_line[ E_main_S_line_n++ ] = u_i;
+        {   if( E_lines_Q_lines_S_l )
+                E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].l = u_i - E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].start;
+            E_lines_Q_lines_I_append();
+            E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ] = ( struct E_lines_Q_lines_Z ){ u_i, ~0 };
             if( y == y_ - 1 )
                 break;
             y++;
             x = 0;
             goto Cont;
         }else if( x == x_ )
-        {   E_main_S_last_line_wrap_i++;
+        {   E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].l = u_i - E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].start;
+            E_lines_Q_lines_I_append();
+            E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ] = ( struct E_lines_Q_lines_Z ){ u_i, ~0 };
             if( y == y_ - 1 )
                 break;
             y++;
@@ -89,12 +89,12 @@ main(
         ins_wch( &cc );
 Cont:   u_i++;
     }
-    E_main_S_last_line_u_i = u_i + 1;
     D_M( main, getch );
     X_M( main, none );
     X_B( main, none, 0 ){}
     X_W( main, none );
     D_W( main, getch );
+    E_lines_W();
     endwin();
     E_flow_W();
     return 0;
@@ -314,16 +314,13 @@ E_main_Q_file_I_paint_line( void
 }
 B
 E_main_Q_file_I_paint_first_line( void
-){  if( !E_main_S_line_i
-    && !E_main_S_first_line_wrap_i
-    )
+){  if( !E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen ].start )
         return no;
-    N u_i = E_main_S_line[ E_main_S_line_i ], wrap_u_i = u_i;
-    N line_wrap_i = 0;
+    N u_i = E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen ].start - 1;
     E_mem_Q_file_P_pos( file, u_i );
     int x = 0, y_, x_;
     getmaxyx( stdscr, y_, x_ );
-    O{  U u = E_text_Z_getter_Z_c_R_u( &E_main_Q_file_R_c );
+    O{  U u = E_text_Z_getter_Z_c_R_u( &E_main_Q_file_R_rev_c );
         if( !~u )
         {   endwin(); G_(); V();
         }
@@ -338,21 +335,13 @@ E_main_Q_file_I_paint_first_line( void
         if( u == '\n' )
             break;
         if( x == x_ )
-        {   if( E_main_S_first_line_wrap_i
-            && line_wrap_i == E_main_S_first_line_wrap_i - 1
-            )
-            {   E_main_S_first_line_wrap_i--;
-                break;
-            }
-            x = 0;
-            wrap_u_i = u_i + 1;
-            line_wrap_i++;
+        {   x = 0;
         }else
             x++;
         u_i++;
     }
     scrl( -1 );
-    E_mem_Q_file_P_pos( file, wrap_u_i );
+    E_mem_Q_file_P_pos( file, u_i );
     x = 0;
     O{  U u = E_text_Z_getter_Z_c_R_u( &E_main_Q_file_R_c );
         if( !~u )
@@ -381,10 +370,13 @@ E_main_Q_file_I_paint_first_line( void
 }
 B
 E_main_Q_file_I_paint_last_line( void
-){  N u_i = E_main_S_last_line_u_i;
-    E_mem_Q_file_P_pos( file, u_i );
-    int x = 0, y_, x_;
+){  int x = 0, y_, x_;
     getmaxyx( stdscr, y_, x_ );
+    if( E_lines_Q_lines_S_first_on_screen + y_ - 1 == E_lines_Q_lines_S_l )
+        return no;
+    E_lines_Q_lines_S_first_on_screen++;
+    N u_i = E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y_ - 1 ].start;
+    E_mem_Q_file_P_pos( file, u_i );
     B start = yes;
     O{  U u = E_text_Z_getter_Z_c_R_u( &E_main_Q_file_R_c );
         if( !~u )
@@ -399,26 +391,26 @@ E_main_Q_file_I_paint_last_line( void
         {   endwin(); G_(); V();
         }
         if(start)
-        {   if( !E_main_S_last_line_wrap_i )
-                E_main_S_line_i++;
-            scrl(1);
+        {   scrl(1);
             start = no;
         }
-        E_main_S_last_line_u_i++;
         if( u == '\n' )
-        {   E_main_S_last_line_wrap_i = 0;
-            E_mem_Q_blk_I_append( &E_main_S_line, 1 );
-            E_main_S_line[ E_main_S_line_n++ ] = E_main_S_last_line_u_i;
+        {   E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].l = u_i - E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].start;
+            E_lines_Q_lines_I_append();
+            E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ] = ( struct E_lines_Q_lines_Z ){ u_i, ~0 };
             break;
         }
         if( x == x_ )
-        {   E_main_S_last_line_wrap_i++;
+        {   E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].l = u_i - E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].start;
+            E_lines_Q_lines_I_append();
+            E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ] = ( struct E_lines_Q_lines_Z ){ u_i, ~0 };
             break;
         }
         move( y_ - 1, ++x );
         cchar_t cc;
         setcchar( &cc, ( wchar_t * )&u, A_NORMAL, COLOR_PAIR(0), 0 );
         ins_wch( &cc );
+        u_i++;
     }
     return yes;
 }
