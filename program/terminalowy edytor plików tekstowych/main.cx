@@ -65,28 +65,29 @@ main(
         {   endwin(); G_(); V();
         }
         if( u == '\n' )
-        {   if( E_lines_Q_lines_S_l )
-                E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].l = u_i - E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].start;
+        {   E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].l = u_i + 1 - E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].start;
             E_lines_Q_lines_I_append();
-            E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ] = ( struct E_lines_Q_lines_Z ){ u_i, ~0 };
+            E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ] = ( struct E_lines_Q_lines_Z ){ u_i + 1, ~0 };
             if( y == y_ - 1 )
                 break;
             y++;
             x = 0;
             goto Cont;
-        }else if( x == x_ )
-        {   E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].l = u_i - E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].start;
+        }
+        move( y, x );
+        cchar_t cc;
+        setcchar( &cc, ( wchar_t * )&u, A_NORMAL, COLOR_PAIR(0), 0 );
+        ins_wch( &cc );
+        if( x == x_ - 1 )
+        {   E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].l = u_i + 1 - E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].start;
             E_lines_Q_lines_I_append();
-            E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ] = ( struct E_lines_Q_lines_Z ){ u_i, ~0 };
+            E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ] = ( struct E_lines_Q_lines_Z ){ u_i + 1, ~0 };
             if( y == y_ - 1 )
                 break;
             y++;
             x = 0;
-        }
-        move( y, x++ );
-        cchar_t cc;
-        setcchar( &cc, ( wchar_t * )&u, A_NORMAL, COLOR_PAIR(0), 0 );
-        ins_wch( &cc );
+        }else
+            x++;
 Cont:   u_i++;
     }
     D_M( main, getch );
@@ -316,32 +317,12 @@ B
 E_main_Q_file_I_paint_first_line( void
 ){  if( !E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen ].start )
         return no;
-    N u_i = E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen ].start - 1;
+    E_lines_Q_lines_I_pop();
+    N u_i = E_lines_Q_lines_S[ --E_lines_Q_lines_S_first_on_screen ].start;
     E_mem_Q_file_P_pos( file, u_i );
     int x = 0, y_, x_;
     getmaxyx( stdscr, y_, x_ );
-    O{  U u = E_text_Z_getter_Z_c_R_u( &E_main_Q_file_R_rev_c );
-        if( !~u )
-        {   endwin(); G_(); V();
-        }
-        if( (S32)u == E_mem_Q_file_S_eof )
-            return no;
-        if( !( u == '\n'
-        || u == ' '
-        || iswgraph(u)
-        ))
-        {   endwin(); G_(); V();
-        }
-        if( u == '\n' )
-            break;
-        if( x == x_ )
-        {   x = 0;
-        }else
-            x++;
-        u_i++;
-    }
     scrl( -1 );
-    E_mem_Q_file_P_pos( file, u_i );
     x = 0;
     O{  U u = E_text_Z_getter_Z_c_R_u( &E_main_Q_file_R_c );
         if( !~u )
@@ -357,14 +338,13 @@ E_main_Q_file_I_paint_first_line( void
         }
         if( u == '\n' )
             break;
-        if( u == '\n'
-        || x == x_
-        )
-            break;
-        move( 0, ++x );
+        move( 0, x );
         cchar_t cc;
         setcchar( &cc, ( wchar_t * )&u, A_NORMAL, COLOR_PAIR(0), 0 );
         ins_wch( &cc );
+        if( x == x_ - 1 )
+            break;
+        x++;
     }
     return yes;
 }
@@ -372,10 +352,10 @@ B
 E_main_Q_file_I_paint_last_line( void
 ){  int x = 0, y_, x_;
     getmaxyx( stdscr, y_, x_ );
-    if( E_lines_Q_lines_S_first_on_screen + y_ - 1 == E_lines_Q_lines_S_l )
+    if( E_lines_Q_lines_S_first_on_screen + y_ - 1 >= E_lines_Q_lines_S_l )
         return no;
+    N u_i = E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y_ ].start;
     E_lines_Q_lines_S_first_on_screen++;
-    N u_i = E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y_ - 1 ].start;
     E_mem_Q_file_P_pos( file, u_i );
     B start = yes;
     O{  U u = E_text_Z_getter_Z_c_R_u( &E_main_Q_file_R_c );
@@ -395,21 +375,22 @@ E_main_Q_file_I_paint_last_line( void
             start = no;
         }
         if( u == '\n' )
-        {   E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].l = u_i - E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].start;
+        {   E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].l = u_i + 1 - E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].start;
             E_lines_Q_lines_I_append();
-            E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ] = ( struct E_lines_Q_lines_Z ){ u_i, ~0 };
+            E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ] = ( struct E_lines_Q_lines_Z ){ u_i + 1, ~0 };
             break;
         }
-        if( x == x_ )
-        {   E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].l = u_i - E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].start;
-            E_lines_Q_lines_I_append();
-            E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ] = ( struct E_lines_Q_lines_Z ){ u_i, ~0 };
-            break;
-        }
-        move( y_ - 1, ++x );
+        move( y_ - 1, x );
         cchar_t cc;
         setcchar( &cc, ( wchar_t * )&u, A_NORMAL, COLOR_PAIR(0), 0 );
         ins_wch( &cc );
+        if( x == x_ - 1 )
+        {   E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].l = u_i + 1 - E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].start;
+            E_lines_Q_lines_I_append();
+            E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ] = ( struct E_lines_Q_lines_Z ){ u_i + 1, ~0 };
+            break;
+        }
+        x++;
         u_i++;
     }
     return yes;

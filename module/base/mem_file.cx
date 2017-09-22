@@ -306,54 +306,9 @@ E_mem_Q_file_P_pos( I id
 , N pos
 ){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
     file->pos = pos;
-    if( file->blk_n )
-    {   if( file->pos < file->blk[0].pos )
-        {   U_L( file->current_blk, valid );
-            if( file->pos == file->blk[0].pos - 1 )
-                U_F( file->current_blk, valid_sob );
-            else
-                U_L( file->current_blk, valid_sob );
-            U_L( file->current_blk, valid_eob );
-            return;
-        }
-        N blk_i;
-        for( blk_i = 1; blk_i != file->blk_n; blk_i++ )
-            if( file->pos < file->blk[ blk_i ].pos )
-                break;
-        if( blk_i-- != file->blk_n )
-        {   if( file->pos < file->blk[ blk_i ].pos + file->blk[ blk_i ].l )
-            {   U_F( file->current_blk, valid );
-                U_L( file->current_blk, valid_sob );
-                U_L( file->current_blk, valid_eob );
-            }else if( file->pos == file->blk[ blk_i ].pos + file->blk[ blk_i ].l )
-            {   U_L( file->current_blk, valid );
-                U_L( file->current_blk, valid_sob );
-                U_F( file->current_blk, valid_eob );
-            }else if( file->pos == file->blk[ blk_i + 1 ].pos - 1 )
-            {   U_L( file->current_blk, valid );
-                U_F( file->current_blk, valid_sob );
-                U_L( file->current_blk, valid_eob );
-            }else
-            {   U_L( file->current_blk, valid );
-                U_L( file->current_blk, valid_sob );
-                U_L( file->current_blk, valid_eob );
-            }
-        }else if( file->pos >= file->blk[ blk_i ].pos
-        && file->pos < file->blk[ blk_i ].pos + file->blk[ blk_i ].l
-        )
-        {   U_F( file->current_blk, valid );
-            U_L( file->current_blk, valid_sob );
-            U_L( file->current_blk, valid_eob );
-        }else if( file->pos == file->blk[ blk_i ].pos + file->blk[ blk_i ].l )
-        {   U_L( file->current_blk, valid );
-            U_L( file->current_blk, valid_sob );
-            U_F( file->current_blk, valid_eob );
-        }
-    }else
-    {   U_L( file->current_blk, valid );
-        U_L( file->current_blk, valid_sob );
-        U_L( file->current_blk, valid_eob );
-    }
+    U_L( file->current_blk, valid );
+    U_L( file->current_blk, valid_sob );
+    U_L( file->current_blk, valid_eob );
 }
 N
 E_mem_Q_file_R_c( I id
