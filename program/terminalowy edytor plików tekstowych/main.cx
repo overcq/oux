@@ -218,10 +218,7 @@ D( main, getch )
                         if( y < y_ - 1 )
                             move( y_ - 1, x );
                         else
-                        {   N l = E_main_Q_file_I_paint_prev_window();
-                            if(l)
-                                scrl(l);
-                        }
+                            E_main_Q_file_I_paint_next_window();
                         break;
                     }
                   case KEY_PPAGE:
@@ -231,10 +228,7 @@ D( main, getch )
                         if( y > 0 )
                             move( 0, x );
                         else
-                        {   N l = E_main_Q_file_I_paint_next_window();
-                            if(l)
-                                scrl( -l );
-                        }
+                            E_main_Q_file_I_paint_prev_window();
                         break;
                     }
                   case KEY_BREAK:
@@ -387,14 +381,6 @@ Enter:;         int x, y, x_, y_;
     Xh1_W();
 }
 //==============================================================================
-N
-E_main_Q_file_I_paint_prev_window( void
-){  
-}
-N
-E_main_Q_file_I_paint_next_window( void
-){
-}
 B
 E_main_Q_file_I_paint_first_line( void
 ){  if( !E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen ].start )
@@ -402,7 +388,7 @@ E_main_Q_file_I_paint_first_line( void
     E_lines_Q_lines_I_pop();
     N u_i = E_lines_Q_lines_S[ --E_lines_Q_lines_S_first_on_screen ].start;
     E_mem_Q_file_P_pos( E_main_S_file, u_i );
-    int x = 0, y_, x_;
+    int x = 0, x_, y_;
     getmaxyx( stdscr, y_, x_ );
     scrl( -1 );
     x = 0;
@@ -433,12 +419,11 @@ E_main_Q_file_I_paint_first_line( void
 }
 B
 E_main_Q_file_I_paint_last_line( void
-){  int x = 0, y_, x_;
+){  int x = 0, x_, y_;
     getmaxyx( stdscr, y_, x_ );
     if( E_lines_Q_lines_S_first_on_screen + y_ - 1 >= E_lines_Q_lines_S_l )
         return no;
     N u_i = E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y_ ].start;
-    E_lines_Q_lines_S_first_on_screen++;
     E_mem_Q_file_P_pos( E_main_S_file, u_i );
     B start = yes;
     O{  U u = E_text_Z_getter_Z_c_R_u( &E_main_Q_file_R_c );
@@ -455,6 +440,7 @@ E_main_Q_file_I_paint_last_line( void
         }
         if(start)
         {   scrl(1);
+            E_lines_Q_lines_S_first_on_screen++;
             start = no;
         }
         if( u == '\n' )
@@ -478,6 +464,22 @@ E_main_Q_file_I_paint_last_line( void
         u_i++;
     }
     return yes;
+}
+void
+E_main_Q_file_I_paint_prev_window( void
+){  int x_, y_;
+    getmaxyx( stdscr, y_, x_ );
+    for_n( i, y_ )
+        if( !E_main_Q_file_I_paint_first_line() )
+            break;
+}
+void
+E_main_Q_file_I_paint_next_window( void
+){  int x_, y_;
+    getmaxyx( stdscr, y_, x_ );
+    for_n( i, y_ )
+        if( !E_main_Q_file_I_paint_last_line() )
+            break;
 }
 //==============================================================================
 void
