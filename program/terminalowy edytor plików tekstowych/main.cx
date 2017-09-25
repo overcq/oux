@@ -41,7 +41,7 @@ main(
     if( !~( E_main_S_file = E_mem_Q_file_M( argv[1] )))
     {   endwin(); G_(); V();
     }
-    E_main_Q_file_I_paint_lines( 0, 0, 0 );
+    E_main_Q_file_I_paint_lines( 0, 0 );
     D_M( main, getch );
     X_M( main, none );
     X_B( main, none, 0 ){}
@@ -86,30 +86,49 @@ D( main, getch )
                     {   int y, x;
                         getyx( stdscr, y, x );
                         if(x)
-                        {   if( y + 1 != E_lines_Q_lines_S_l )
-                                E_lines_Q_lines_I_shift_c( y + 1 );
+                        {   //if( y + 1 != E_lines_Q_lines_S_l )
+                                //E_lines_Q_lines_I_shift_c( y + 1 );
                             move( y, x - 1 );
                             delch();
                         }else
                         {   int y_, x_;
                             getmaxyx( stdscr, y_, x_ );
                             if(y)
-                            {   int x_dest = J_min( E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y - 1 ].l - 1, x_ - 1 );
-                                E_lines_Q_lines_I_pop_from(y);
-                                E_main_Q_file_I_paint_lines( E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y - 1 ].start + x_dest
-                                , x_dest
-                                , y
-                                );
-                                move( y - 1, x_dest );
+                            {   //E_mem_Q_file_P_pos( E_main_S_file, E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y ].start + x - 1 );
+                                //E_mem_Q_file_P_rem_c( E_main_S_file );
+                                if( x_ + 1 == E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y - 1 ].l ) ///cała linia zakończona '\n'.
+                                    break;
+                                clrtoeol();
+                                for( int y_i = y + 1; y_i != y_; y_i++ )
+                                {   move( y_i, 0 );
+                                    clrtoeol();
+                                }
+                                if( x_ == E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y - 1 ].l ) ///cała linia zawinięta.
+                                {   E_lines_Q_lines_I_pop_from( E_lines_Q_lines_S_first_on_screen + y + 1 );
+                                    E_main_Q_file_I_paint_lines( 0, y );
+                                    move( y - 1, x_ - 1 );
+                                }else ///niecała linia.
+                                {   E_lines_Q_lines_I_pop_from( E_lines_Q_lines_S_first_on_screen + y );
+                                    E_main_Q_file_I_paint_lines( E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y - 1 ].l - 1, y - 1 );
+                                    move( y - 1, E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y - 1 ].l - 1 );
+                                }
                             }else
                                 if( E_main_Q_file_I_paint_first_line() )
-                                {   int x_dest = J_min( E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y - 1 ].l - 1, x_ - 1 );
-                                    E_lines_Q_lines_I_pop_from(y);
-                                    E_main_Q_file_I_paint_lines( E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y - 1 ].start + x_dest
-                                    , x_dest
-                                    , y
-                                    );
-                                    move( y, x_dest );
+                                {   //E_mem_Q_file_P_pos( E_main_S_file, E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen ].start + E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y ].l - 1 );
+                                    //E_mem_Q_file_P_rem_c( E_main_S_file );
+                                    clrtoeol();
+                                    for( int y_i = y + 1; y_i != y_; y_i++ )
+                                    {   move( y_i, 0 );
+                                        clrtoeol();
+                                    }
+                                    if( x_ == E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y ].l ) ///cała linia zawinięta.
+                                    {   E_lines_Q_lines_I_pop_from( E_lines_Q_lines_S_first_on_screen + 2 );
+                                        E_main_Q_file_I_paint_lines( 0, 0 );
+                                    }else ///niecała linia.
+                                    {   E_lines_Q_lines_I_pop_from( E_lines_Q_lines_S_first_on_screen + 1 );
+                                        E_main_Q_file_I_paint_lines( E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen ].l - 1, 0 );
+                                    }
+                                    move( 0, E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y ].l - 1 );
                                 }
                         }
                         break;
@@ -230,7 +249,7 @@ D( main, getch )
                         break;
                   default:
                         beep();
-                        endwin(); G_(); Gd( E_main_I_getch_S_c ); V();
+                        //endwin(); G_(); Gd( E_main_I_getch_S_c ); V();
                         break;
                 }
                 break;
@@ -248,43 +267,41 @@ Enter:;         int x, y, x_, y_;
                 if( E_main_I_getch_S_c == '\r' )
                 {   //E_mem_Q_file_P_pos( E_main_S_file, E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y ].start + x );
                     //E_mem_Q_file_P_insert_c( E_main_S_file, '\n' );
-                    for( ; x != x_; x++ )
-                    {   move( y, x );
-                        delch();
-                    }
+                    clrtoeol();
                     if( E_lines_Q_lines_S_first_on_screen + y + 1 != E_lines_Q_lines_S_l )
-                    {   E_lines_Q_lines_I_pop_from(y);
-                        E_main_Q_file_I_paint_lines( E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y ].start + x
-                        , x
-                        , y
-                        );
+                    {   for( int y_i = y + 1; y_i != y_; y_i++ )
+                        {   move( y_i, 0 );
+                            clrtoeol();
+                        }
+                        //E_lines_Q_lines_I_unshift_c( E_lines_Q_lines_S_first_on_screen + y + 1 );
+                        if( E_lines_Q_lines_S_first_on_screen + y + 2 != E_lines_Q_lines_S_l )
+                        {   E_lines_Q_lines_I_pop_from( E_lines_Q_lines_S_first_on_screen + y + 2 );
+                            E_main_Q_file_I_paint_lines( x, y + 1 );
+                        }
                     }
                     if( y != y_ - 1 )
                         move( y + 1, 0 );
                     else
-                        move( y, 0 );
-                }else
-                {   if( y + 1 != E_lines_Q_lines_S_l )
-                    {   E_lines_Q_lines_I_unshift_c( y + 1 );
-                        E_lines_Q_lines_I_pop_from(y);
-                        E_main_Q_file_I_paint_lines( E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y ].start + x + 1
-                        , x + 1
-                        , y
-                        );
+                    {   if( E_main_Q_file_I_paint_last_line() )
+                            move( y, 0 );
                     }
-                    cchar_t cc;
+                }else
+                {   cchar_t cc;
                     wchar_t s[2] = { E_main_I_getch_S_c, '\0' };
                     setcchar( &cc, s, A_NORMAL, COLOR_PAIR(0), 0 );
                     ins_wch( &cc );
                     //E_mem_Q_file_P_pos( E_main_S_file, E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y ].start + x );
                     //E_mem_Q_file_P_insert_c( E_main_S_file, E_main_I_getch_S_c );
-                    if( ~E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y ].l
-                    && E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y ].l == x_
-                    ){  E_lines_Q_lines_I_pop_from(y);
-                        E_main_Q_file_I_paint_lines( E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y ].start + x
-                        , x
-                        , y
-                        );
+                    if( E_lines_Q_lines_S_first_on_screen + y + 1 != E_lines_Q_lines_S_l )
+                    {   for( int y_i = y + 1; y_i != y_; y_i++ )
+                        {   move( y_i, 0 );
+                            clrtoeol();
+                        }
+                        //E_lines_Q_lines_I_unshift_c( E_lines_Q_lines_S_first_on_screen + y + 1 );
+                        if( E_lines_Q_lines_S_first_on_screen + y + 2 != E_lines_Q_lines_S_l )
+                        {   E_lines_Q_lines_I_pop_from( E_lines_Q_lines_S_first_on_screen + y + 2 );
+                            E_main_Q_file_I_paint_lines( 0, y + 1 );
+                        }
                     }
                     if( x != x_ - 1 )
                         move( y, x + 1 );
@@ -292,28 +309,29 @@ Enter:;         int x, y, x_, y_;
                     {   if( y != y_ - 1 )
                             move( y + 1, 0 );
                         else
-                        {   move( y, 0 );
-                            scrl(1);
-                        }
+                            if( E_main_Q_file_I_paint_last_line() )
+                                move( y, 0 );
                     }
                 }
                 break;
             }
           default:
-            //NDFN error.
-            break;
+                endwin(); G_(); Gd( E_main_I_getch_S_ret ); V();
+                break;
         }
     }
     Xh1_W();
 }
 //==============================================================================
 void
-E_main_Q_file_I_paint_lines( N u_i
-, int x
+E_main_Q_file_I_paint_lines(
+  int x
 , int y
-){  E_mem_Q_file_P_pos( E_main_S_file, u_i );
+){  N u_i = E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y ].start + x;
+    E_mem_Q_file_P_pos( E_main_S_file, u_i );
     int y_, x_;
     getmaxyx( stdscr, y_, x_ );
+    move( y, x );
     O{  U u = E_text_Z_getter_Z_c_R_u( &E_main_Q_file_R_c );
         if( !~u )
         {   endwin(); G_(); V();
