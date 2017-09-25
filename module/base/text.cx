@@ -705,27 +705,30 @@ E_text_Z_s_Z_utf8_R_u( Pc s
     || n == 6
     )
         return s;
-    if( n != 7 )
-    {   v = *s & ( _v( v, 1 ) << n ) - 1;
-        for_n( i, 6 - n )
-        {   if(( *++s & 0xc0 ) != 0x80 )
-                return s;
-            v <<= 6;
-            v |= *s & 0x37;
-        }
+    v = *s & ( _v( v, 1 ) << n ) - 1;
+    for_n( i, 6 - n )
+    {   if(( *++s & 0xc0 ) != 0x80 )
+            return s;
+        v <<= 6;
+        v |= *s & 0x3f;
     }
     *u = v;
     return s + 1;
 }
-N
+N ///ile bajtów przeczytano.
 E_text_Z_getter_Z_c_R_u( N (*getter)(void)
+, U *u
 ){  N c = getter();
     if( !~c
     || c == E_mem_Q_file_S_eof
     )
-        return c;
+    {   *u = c;
+        return 0;
+    }
     if(( signed char )c > 0 )
-        return c;
+    {   *u = c;
+        return 1;
+    }
     U v = ~( signed char )c;
     U n;
         #if defined( __i386__ ) || defined( __x86_64__ )
@@ -743,17 +746,18 @@ E_text_Z_getter_Z_c_R_u( N (*getter)(void)
     if( n == 0
     || n == 6
     )
-        return ~0;
-    if( n != 7 )
-    {   v = c & ( _v( v, 1 ) << n ) - 1;
-        for_n( i, 6 - n )
-        {   c = getter();
-            if(( c & 0xc0 ) != 0x80 )
-                return ~0;
-            v <<= 6;
-            v |= c & 0x37;
-        }
+    {   *u = ~0;
+        return 0;
     }
-    return v;
+    v = c & ( _v( v, 1 ) << n ) - 1;
+    for_n( i, 6 - n )
+    {   c = getter();
+        if(( c & 0xc0 ) != 0x80 )
+            return ~0;
+        v <<= 6;
+        v |= c & 0x3f;
+    }
+    *u = v;
+    return 7 - n;
 }
 /******************************************************************************/
