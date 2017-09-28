@@ -13,12 +13,22 @@ _inline
 N
 E_asm_I_bsr( N n
 ){  N i;
-    __asm__ (
-    "\n" "bsr   %1,%0"
-    : "=r" (i)
-    : "r" (n)
+        #if defined( __i386__ ) || defined( __x86_64__ )
+    N v;
+    __asm__ volatile (
+    "\n" "orl   $~0,%0"
+    "\n" "bsr   %2,%1"
+    "\n" "cmove %0,%1"
+    : "=g" (v), "=r" (i)
+    : "g" (n)
     : "cc"
     );
+        #else
+    if(n)
+        i = sizeof(N) * 8 - 1 - __builtin_clzl(n);
+    else
+        i = ~0;
+        #endif
     return i;
 }
 //==============================================================================
@@ -35,7 +45,9 @@ E_simple_T_multiply_overflow(
   N a
 , N b
 ){  return a && b
-    && E_asm_I_bsr(a) + E_asm_I_bsr(b) >= sizeof(N) * 8;
+    && ( E_asm_I_bsr(a) != ~0 ? E_asm_I_bsr(a) : 0 )
+      + ( E_asm_I_bsr(b) != ~0 ? E_asm_I_bsr(b) : 0 )
+      >= sizeof(N) * 8;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 _inline

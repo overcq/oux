@@ -442,13 +442,55 @@ E_mem_Q_file_P_c( I id
     file->pos++;
     file->blk[ file->current_blk ].data[ file->current_blk_pos++ ] = c;
 }
-void
-E_mem_Q_file_P_insert_c( I id
-, C c
-){
+N
+E_mem_Q_file_P_insert_s( I id
+, Pc s
+, N l
+){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
+    N pos_c = file->pos;
+    N pos = file->pos;
+    O{  N ret = E_mem_Q_file_R_current_blk(file);
+        if( !~ret )
+            return ret;
+        if( ret == E_mem_Q_file_S_eof )
+            break;
+        pos += E_base_S->E_mem_Q_file_S_buffer_l;
+        E_mem_Q_file_P_pos( id, pos );
+    }
+    E_mem_Q_file_P_pos( id, pos_c );
+    E_mem_Q_file_R_current_blk(file);
+    Pc pc = E_mem_Q_blk_I_append( &file->blk[ file->current_blk ].data, l );
+    if( !pc )
+        return ~0;
+    file->blk[ file->current_blk ].l += l;
+    E_mem_Q_blk_I_copy_rev( file->blk[ file->current_blk ].data + file->current_blk_pos
+    , file->blk[ file->current_blk ].data + file->current_blk_pos + l
+    , file->blk[ file->current_blk ].l - l - file->current_blk_pos
+    );
+    //TODO dodać “unsaved” reszty bloku zamiast poniższego.
+    //E_mem_Q_file_P_pos( id, file->blk[ file->current_blk ].pos + file->blk[ file->current_blk ].l - 1 );
+    //E_mem_Q_file_P_c( id, *pc );
+    E_mem_Q_file_P_pos( id, pos_c );
+    //E_mem_Q_file_P_c( id, c );
+    return 0;
 }
-void
-E_mem_Q_file_P_rem_c( I id
-){
+N
+E_mem_Q_file_P_rem_s( I id
+, N n
+){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
+    N pos_c = file->pos;
+    N pos = file->pos;
+    O{  N ret = E_mem_Q_file_R_current_blk(file);
+        if( !~ret )
+            return ret;
+        if( ret == E_mem_Q_file_S_eof )
+            break;
+        pos += E_base_S->E_mem_Q_file_S_buffer_l;
+        E_mem_Q_file_P_pos( id, pos );
+    }
+    E_mem_Q_blk_I_rem( &file->blk[ file->current_blk ].data, file->current_blk_pos, n );
+    //TODO dodać “unsaved” reszty bloku.
+    E_mem_Q_file_P_pos( id, pos_c );
+    return 0;
 }
 /******************************************************************************/

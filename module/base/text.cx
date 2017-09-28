@@ -390,6 +390,17 @@ E_text_Z_s0_P_copy_0( Pc s
 ){  return E_text_Z_s_P_0( E_text_Z_s0_P_copy( s, t ));
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void
+E_text_Z_s_P_reverse( Pc s
+, N l
+){  N i = 0;
+    N l_ = l / 2;
+    while( l_ /= 2 )
+    {   J_swap( C, s[i], s[ l - 1 - i ] );
+        i++;
+    }
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Pc
 E_text_Z_s_Z_cmdline_T_quote_n( Pc s
 , Pc s_end
@@ -679,6 +690,26 @@ E_text_Z_s_Z_cmdline_N_quote_G(
     return l;
 }
 //==============================================================================
+N ///ile bajtów zapisano.
+E_text_Z_s_Z_u_R_utf8( U u
+, Pc s
+){  if( u <= 0x7f )
+    {   s[0] = (C)u;
+        return 1;
+    }
+    N first = 0x1f;
+    N i = 0;
+    while( u > first )
+    {   s[i] = (C)(( u & 0x3f ) | 0x80 );
+        first >>= 1;
+        if( !first )
+            return ~0;
+        i++;
+    }
+    s[i] = (C)(( ~first << 1 ) | u );
+    E_text_Z_s_P_reverse( s, i );
+    return i;
+}
 Pc
 E_text_Z_s_Z_utf8_R_u( Pc s
 , U *u
@@ -688,23 +719,8 @@ E_text_Z_s_Z_utf8_R_u( Pc s
     }
     *u = ~0;
     U v = ~( signed char )*s;
-    U n;
-        #if defined( __i386__ ) || defined( __x86_64__ )
-    __asm__ volatile (
-    "\n" "xor   %%eax,%%eax"
-    "\n" "bsr   %1,%0"
-    "\n" "cmove %%eax,%0"
-    : "=r" (n)
-    : "g" (v)
-    : "cc", "eax"
-    );
-        #else
-    if(v)
-        n = 31 - __builtin_clz(v);
-    else
-        n = 0;
-        #endif
-    if( n == 0
+    U n = E_asm_I_bsr(v);
+    if( n == ~0
     || n == 6
     )
         return s;
@@ -716,7 +732,7 @@ E_text_Z_s_Z_utf8_R_u( Pc s
         v |= *s & 0x3f;
     }
     *u = v;
-    return s + 1;
+    return s + 7 - n;
 }
 N ///ile bajtów przeczytano.
 E_text_Z_getter_Z_c_R_u( N (*getter)(void)
@@ -733,23 +749,8 @@ E_text_Z_getter_Z_c_R_u( N (*getter)(void)
         return 1;
     }
     U v = ~( signed char )c;
-    U n;
-        #if defined( __i386__ ) || defined( __x86_64__ )
-    __asm__ volatile (
-    "\n" "xor   %%eax,%%eax"
-    "\n" "bsr   %1,%0"
-    "\n" "cmove %%eax,%0"
-    : "=r" (n)
-    : "g" (v)
-    : "cc", "eax"
-    );
-        #else
-    if(v)
-        n = 31 - __builtin_clz(v);
-    else
-        n = 0;
-        #endif
-    if( n == 0
+    U n = E_asm_I_bsr(v);
+    if( n == ~0
     || n == 6
     )
     {   *u = ~0;
