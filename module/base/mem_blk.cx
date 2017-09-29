@@ -180,7 +180,7 @@ E_mem_Q_blk_I_copy( P dst
 , P src
 , N l
 ){  Pc dst_c = dst, src_c = src;
-    for( N i = 0; i < l; i++ )
+    for_n( i, l )
     {   *dst_c = *src_c;
         dst_c++;
         src_c++;
@@ -189,8 +189,8 @@ E_mem_Q_blk_I_copy( P dst
 }
 //TODO do optymalizacji? jw.
 P
-E_mem_Q_blk_I_copy_rev( P src
-, P dst
+E_mem_Q_blk_I_copy_rev( P dst
+, P src
 , N l
 ){  Pc dst_end = (Pc)dst + l, src_end = (Pc)src + l;
     while( src_end != src )
@@ -1093,7 +1093,7 @@ E_mem_Q_blk_I_prepend_( P p
                             }
                             if( !U_R( E_base_S->E_flow_S_mode, Z_task_table_S_can_read ))
                                 E_flow_Q_task_I_touch_stack();
-                            E_mem_Q_blk_I_copy_rev( p_0, p_0 + l, l_0 );
+                            E_mem_Q_blk_I_copy_rev( p_0 + l, p_0, l_0 );
                             if( l_1 )
                                 *( P * )p = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p -= l_1;
                             E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n += n;
@@ -1182,8 +1182,8 @@ E_mem_Q_blk_I_insert_( P p
                             , E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p + l_1
                             , i * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
                             );
-                            E_mem_Q_blk_I_copy_rev( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p + l_1 + i * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
-                            , E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p + l_1 + i * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u + l
+                            E_mem_Q_blk_I_copy_rev( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p + l_1 + i * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u + l
+                            ,  E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p + l_1 + i * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
                             , l_0 - i * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
                             );
                             E_mem_Q_blk_P_fill_c( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p + i * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u, l_1, 0xa5 ); ///TODO procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
@@ -1204,8 +1204,8 @@ E_mem_Q_blk_I_insert_( P p
                 return p_1;
             //TODO zrobić w “E_mem_Q_blk_Q_table_M_from_free_or_map” parametr przesuniecia dla ‘split’ i kopiowania tam odrazu?
             if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n )
-                E_mem_Q_blk_I_copy_rev( (Pc)p_1 + i * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
-                , (Pc)p_1 + ( i + n ) * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
+                E_mem_Q_blk_I_copy_rev( (Pc)p_1 + ( i + n ) * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
+                , (Pc)p_1 + i * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
                 , l_0 - i * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
                 ); ///“E_flow_Q_task_I_touch_stack” było wykonane w “E_mem_Q_blk_Q_table_M_from_free_or_map”.
             E_mem_Q_blk_P_fill_c( (Pc)p_1 + i * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u, n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u, 0xa5 ); ///TODO procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.

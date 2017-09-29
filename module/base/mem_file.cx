@@ -445,9 +445,9 @@ E_mem_Q_file_P_c( I id
 N
 E_mem_Q_file_P_insert_s( I id
 , Pc s
-, N l
+, N n
 ){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
-    N pos_c = file->pos;
+    N pos_s = file->pos;
     N pos = file->pos;
     O{  N ret = E_mem_Q_file_R_current_blk(file);
         if( !~ret )
@@ -457,28 +457,49 @@ E_mem_Q_file_P_insert_s( I id
         pos += E_base_S->E_mem_Q_file_S_buffer_l;
         E_mem_Q_file_P_pos( id, pos );
     }
-    E_mem_Q_file_P_pos( id, pos_c );
+    E_mem_Q_file_P_pos( id, pos_s );
     E_mem_Q_file_R_current_blk(file);
-    Pc pc = E_mem_Q_blk_I_append( &file->blk[ file->current_blk ].data, l );
+    Pc pc = E_mem_Q_blk_I_append( &file->blk[ file->current_blk ].data, n );
     if( !pc )
         return ~0;
-    file->blk[ file->current_blk ].l += l;
-    E_mem_Q_blk_I_copy_rev( file->blk[ file->current_blk ].data + file->current_blk_pos
-    , file->blk[ file->current_blk ].data + file->current_blk_pos + l
-    , file->blk[ file->current_blk ].l - l - file->current_blk_pos
+    file->blk[ file->current_blk ].l += n;
+    E_mem_Q_blk_I_copy_rev( file->blk[ file->current_blk ].data + file->current_blk_pos + n
+    , file->blk[ file->current_blk ].data + file->current_blk_pos
+    , file->blk[ file->current_blk ].l - n - file->current_blk_pos
     );
-    //TODO dodać “unsaved” reszty bloku zamiast poniższego.
-    //E_mem_Q_file_P_pos( id, file->blk[ file->current_blk ].pos + file->blk[ file->current_blk ].l - 1 );
-    //E_mem_Q_file_P_c( id, *pc );
-    E_mem_Q_file_P_pos( id, pos_c );
-    //E_mem_Q_file_P_c( id, c );
+    E_mem_Q_blk_I_copy( file->blk[ file->current_blk ].data + file->current_blk_pos
+    , s
+    , n
+    );
+    pos = file->blk[ file->current_blk ].pos + file->current_blk_pos;
+    N pos_end = file->blk[ file->current_blk ].pos + file->blk[ file->current_blk ].l;
+    B f = no;
+    for_n( unsaved_i, file->unsaved_n )
+    {   if(( file->unsaved[ unsaved_i ].pos >= pos
+          && file->unsaved[ unsaved_i ].pos <= pos_end
+          )
+        || ( file->unsaved[ unsaved_i ].pos_end >= pos
+          && file->unsaved[ unsaved_i ].pos_end <= pos_end
+          )
+        ){  if( !f )
+            {   if( file->unsaved[ unsaved_i ].pos > pos )
+                    file->unsaved[ unsaved_i ].pos = pos;
+                if( file->unsaved[ unsaved_i ].pos_end < pos_end )
+                    file->unsaved[ unsaved_i ].pos_end = pos_end;
+                f = yes;
+            }
+            else
+                E_mem_Q_blk_I_rem( &file->unsaved, unsaved_i--, 1 );
+        }
+    }
+    E_mem_Q_file_P_pos( id, pos_s + n );
     return 0;
 }
 N
 E_mem_Q_file_P_rem_s( I id
 , N n
 ){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
-    N pos_c = file->pos;
+    N pos_s = file->pos;
     N pos = file->pos;
     O{  N ret = E_mem_Q_file_R_current_blk(file);
         if( !~ret )
@@ -489,8 +510,29 @@ E_mem_Q_file_P_rem_s( I id
         E_mem_Q_file_P_pos( id, pos );
     }
     E_mem_Q_blk_I_rem( &file->blk[ file->current_blk ].data, file->current_blk_pos, n );
-    //TODO dodać “unsaved” reszty bloku.
-    E_mem_Q_file_P_pos( id, pos_c );
+    file->blk[ file->current_blk ].l -= n;
+    pos = file->blk[ file->current_blk ].pos + file->current_blk_pos;
+    N pos_end = file->blk[ file->current_blk ].pos + file->blk[ file->current_blk ].l;
+    B f = no;
+    for_n( unsaved_i, file->unsaved_n )
+    {   if(( file->unsaved[ unsaved_i ].pos >= pos
+          && file->unsaved[ unsaved_i ].pos <= pos_end
+          )
+        || ( file->unsaved[ unsaved_i ].pos_end >= pos
+          && file->unsaved[ unsaved_i ].pos_end <= pos_end
+          )
+        ){  if( !f )
+            {   if( file->unsaved[ unsaved_i ].pos > pos )
+                    file->unsaved[ unsaved_i ].pos = pos;
+                if( file->unsaved[ unsaved_i ].pos_end < pos_end )
+                    file->unsaved[ unsaved_i ].pos_end = pos_end;
+                f = yes;
+            }
+            else
+                E_mem_Q_blk_I_rem( &file->unsaved, unsaved_i--, 1 );
+        }
+    }
+    E_mem_Q_file_P_pos( id, pos_s );
     return 0;
 }
 /******************************************************************************/
