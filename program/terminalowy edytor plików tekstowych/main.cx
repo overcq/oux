@@ -106,9 +106,11 @@ D( main, getch )
                 { case KEY_DC:
                     {   int y, x, y_, x_;
                         getyx( stdscr, y, x );
+                        N pos = E_main_Q_file_I_line_rewind( x, y );
+                        N l = E_main_Q_file_I_u_forward();
+                        E_mem_Q_file_P_pos( E_main_S_file, pos );
+                        E_mem_Q_file_P_rem_s( E_main_S_file, l );
                         getmaxyx( stdscr, y_, x_ );
-                        E_mem_Q_file_P_pos( E_main_S_file, E_main_Q_file_I_line_rewind( x, y ));
-                        E_mem_Q_file_P_rem_s( E_main_S_file, E_main_Q_file_I_u_forward() );
                         int x_dest = J_min( E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y ].l - 1, x_ - 1 );
                         if( x != x_dest )
                         {   for( int y_i = y; y_i != y_; y_i++ )
@@ -139,8 +141,10 @@ D( main, getch )
                         getyx( stdscr, y, x );
                         getmaxyx( stdscr, y_, x_ );
                         if(x)
-                        {   E_mem_Q_file_P_pos( E_main_S_file, E_main_Q_file_I_line_rewind( x - 1, y ));
-                            E_mem_Q_file_P_rem_s( E_main_S_file, E_main_Q_file_I_u_forward() );
+                        {   N pos = E_main_Q_file_I_line_rewind( x - 1, y );
+                            N l = E_main_Q_file_I_u_forward();
+                            E_mem_Q_file_P_pos( E_main_S_file, pos );
+                            E_mem_Q_file_P_rem_s( E_main_S_file, l );
                             for( int y_i = y; y_i != y_; y_i++ )
                             {   move( y_i, 0 );
                                 clrtoeol();
@@ -151,8 +155,10 @@ D( main, getch )
                         }else
                         {   int x_prev = E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y - 1 ].l - 1;
                             if(y)
-                            {   E_mem_Q_file_P_pos( E_main_S_file, E_main_Q_file_I_line_rewind( x_prev, y ));
-                                E_mem_Q_file_P_rem_s( E_main_S_file, E_main_Q_file_I_u_forward() );
+                            {   N pos = E_main_Q_file_I_line_rewind( x_prev, y - 1 );
+                                N l = E_main_Q_file_I_u_forward();
+                                E_mem_Q_file_P_pos( E_main_S_file, pos );
+                                E_mem_Q_file_P_rem_s( E_main_S_file, l );
                                 if( x_ + 1 == E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y - 1 ].l ) ///cała linia zakończona '\n'.
                                     break;
                                 for( int y_i = y - 1; y_i != y_; y_i++ )
@@ -164,8 +170,10 @@ D( main, getch )
                                 move( y - 1, x_prev );
                             }else
                                 if( E_main_Q_file_I_paint_first_line() )
-                                {   E_mem_Q_file_P_pos( E_main_S_file, E_main_Q_file_I_line_rewind( x_prev, 0 ));
-                                    E_mem_Q_file_P_rem_s( E_main_S_file, E_main_Q_file_I_u_forward() );
+                                {   N pos = E_main_Q_file_I_line_rewind( x_prev, 0 );
+                                    N l = E_main_Q_file_I_u_forward();
+                                    E_mem_Q_file_P_pos( E_main_S_file, pos );
+                                    E_mem_Q_file_P_rem_s( E_main_S_file, l );
                                     for( int y_i = y; y_i != y_; y_i++ )
                                     {   move( y_i, 0 );
                                         clrtoeol();
@@ -322,7 +330,7 @@ Enter:;         int x, y, x_, y_;
                 getmaxyx( stdscr, y_, x_ );
                 if( E_main_I_getch_S_c == '\r' )
                 {   E_mem_Q_file_P_pos( E_main_S_file, E_main_Q_file_I_line_rewind( x, y ));
-                    E_mem_Q_file_P_insert_s( E_main_S_file, &(( C[] ){ '\n' })[0], 1 );
+                    E_mem_Q_file_P_insert_c( E_main_S_file, '\n' );
                     if( E_lines_Q_lines_S_first_on_screen + y + 1 != E_lines_Q_lines_S_l )
                     {   for( int y_i = y; y_i != y_; y_i++ )
                         {   move( y_i, 0 );
@@ -550,14 +558,15 @@ E_main_Q_file_I_line_rewind( int x
     E_mem_Q_file_P_pos( E_main_S_file, u_i );
     int x_i = 0;
     while( x_i != x )
-    {  U u;
+    {   U u;
         N u_i_ = E_text_Z_getter_Z_c_R_u( &E_main_Q_file_R_c, &u );
         if( !~u )
         {   endwin(); G_(); V();
         }
         if( (S32)u == E_mem_Q_file_S_eof )
             break;
-        if( !( u == ' '
+        if( !( u == '\n'
+        || u == ' '
         || iswgraph(u)
         ))
         {   endwin(); G_(); V();
@@ -576,7 +585,8 @@ E_main_Q_file_I_u_forward( void
     }
     if( (S32)u == E_mem_Q_file_S_eof )
         return 0;
-    if( !( u == ' '
+    if( !( u == '\n'
+    || u == ' '
     || iswgraph(u)
     ))
     {   endwin(); G_(); V();
