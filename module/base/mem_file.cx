@@ -8,7 +8,7 @@
 *******************************************************************************/
 //obsługę plików zrobić jako obiekt pamięci implementujący niegdyś wymyślone pojęcie dostępu do bloków pamięci masowej bez obecności tzw. “wymiatania na dysk”. teraz byłby to raczej obiekt pamięci operacyjnej do umieszczania w nim danych zachowywanych w postaci integralnej pomiędzy ‘wywaleniami’ programu. czyli bazować na automatycznych mechanizmach systemu operacyjnego zapisujących zawartość pamięci do wcześniej gwarantowanego miejsca na dysku— dopiero w momencie konieczności, np. ‘wywalenia’ programu.
 //trzeba podjąć decyzje strukturalne co do sposobu bezpośredniego indeksowania bloków, bloku bieżącego— w przepływie wykonania funkcji ‹modułu›.
-//odczyt dostępnego bloku pamięci do podanej wielkości rozmiaru.
+//odczyt dostępnego bloku pamięci do podanej wielkości rozmiaru danych.
 //==============================================================================
 struct E_mem_Q_rel_map_blk_Z
 { N pos;
@@ -60,7 +60,7 @@ E_mem_Q_file_W( I id
 ){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
     struct E_mem_Z_range *range = file->unsaved;
         #ifdef __gnu_linux__
-    V1( fcntl( file->fd, F_SETFL, 0 )){}
+    V0( fcntl( file->fd, F_SETFL, 0 )){}
         #endif
     VO1( ftruncate( file->fd, file->l )){}
     for_n( unsaved_i, file->unsaved_n )
@@ -307,6 +307,7 @@ E_mem_Q_file_R_rev_c( I id
     }
     return c;
 }
+//procedura nie sprawdzona.
 void
 E_mem_Q_file_P_c( I id
 , C c
@@ -467,7 +468,9 @@ E_mem_Q_file_P_insert_s( I id
                 if( file->unsaved[ unsaved_i ].pos_end > pos_end )
                     file->unsaved[ f_i ].pos_end = file->unsaved[ unsaved_i ].pos_end;
                 else
-                    E_mem_Q_blk_I_rem( &file->unsaved, unsaved_i--, 1 );
+                {   E_mem_Q_blk_I_rem( &file->unsaved, unsaved_i--, 1 );
+                    file->unsaved_n--;
+                }
         }
     }
     if( !f )
@@ -509,17 +512,23 @@ E_mem_Q_file_P_rem_s( I id
         ){  if( file->unsaved[ unsaved_i ].pos >= pos
             && file->unsaved[ unsaved_i ].pos_end <= pos_end
             )
-                E_mem_Q_blk_I_rem( &file->unsaved, unsaved_i--, 1 );
+            {   E_mem_Q_blk_I_rem( &file->unsaved, unsaved_i--, 1 );
+                file->unsaved_n--;
+            }
             else if( file->unsaved[ unsaved_i ].pos_end > pos )
                 if( file->unsaved[ unsaved_i ].pos != pos )
                     file->unsaved[ unsaved_i ].pos_end = pos;
                 else
-                    E_mem_Q_blk_I_rem( &file->unsaved, unsaved_i--, 1 );
-            else ///file->unsaved[ unsaved_i ].pos < pos_end
+                {   E_mem_Q_blk_I_rem( &file->unsaved, unsaved_i--, 1 );
+                    file->unsaved_n--;
+                }
+            else if( file->unsaved[ unsaved_i ].pos < pos_end )
                 if( file->unsaved[ unsaved_i ].pos_end != pos_end )
                     file->unsaved[ unsaved_i ].pos = pos_end;
                 else
-                    E_mem_Q_blk_I_rem( &file->unsaved, unsaved_i--, 1 );
+                {   E_mem_Q_blk_I_rem( &file->unsaved, unsaved_i--, 1 );
+                    file->unsaved_n--;
+                }
         }
     }
     E_mem_Q_blk_I_rem( &file->blk[ file->current_blk ].data, file->current_blk_pos, n );
@@ -550,7 +559,9 @@ E_mem_Q_file_P_rem_s( I id
                 if( file->unsaved[ unsaved_i ].pos_end > pos_end )
                     file->unsaved[ f_i ].pos_end = file->unsaved[ unsaved_i ].pos_end;
                 else
-                    E_mem_Q_blk_I_rem( &file->unsaved, unsaved_i--, 1 );
+                {   E_mem_Q_blk_I_rem( &file->unsaved, unsaved_i--, 1 );
+                    file->unsaved_n--;
+                }
         }
     }
     if( !f )
