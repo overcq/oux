@@ -391,7 +391,7 @@ E_text_Z_s0_P_copy_0( Pc s
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 void
-E_text_Z_s_P_reverse( Pc s
+E_text_Z_s_P_rev( Pc s
 , N l
 ){  N i = 0;
     N l_ = l / 2;
@@ -690,7 +690,7 @@ E_text_Z_s_Z_cmdline_N_quote_G(
     return l;
 }
 //==============================================================================
-N ///ile bajtów zapisano.
+N ///ile bajtów zapisano lub błąd.
 E_text_Z_s_Z_u_R_utf8( U u
 , Pc s
 ){  if( u <= 0x7f )
@@ -708,7 +708,7 @@ E_text_Z_s_Z_u_R_utf8( U u
         i++;
     }
     s[i] = (C)(( ~first << 2 ) | u );
-    E_text_Z_s_P_reverse( s, i + 1 );
+    E_text_Z_s_P_rev( s, i + 1 );
     return i + 1;
 }
 Pc
@@ -718,9 +718,8 @@ E_text_Z_s_Z_utf8_R_u( Pc s
     {   *u = *s;
         return s + 1;
     }
-    *u = ~0;
     U v = ~( signed char )*s;
-    U n = E_asm_I_bsr(v);
+    N n = E_asm_I_bsr(v);
     if( n == ~0
     || n == 6
     )
@@ -735,31 +734,52 @@ E_text_Z_s_Z_utf8_R_u( Pc s
     *u = v;
     return s + 7 - n;
 }
-N ///ile bajtów przeczytano.
+Pc
+E_text_Z_s_Z_utf8_R_rev_u( Pc s
+, U *u
+){  if(( signed char )*( s - 1 ) > 0 )
+    {   *u = *s;
+        return s - 1;
+    }
+    U v = 0;
+    for_n( i, 7 )
+    {   if(( *--s & 0xc0 ) != 0x80 )
+            break;
+        v |= ( *s & 0x3f ) << ( i * 6 );
+    }
+    N n = E_asm_I_bsr( ~( signed char )*s );
+    if( n == ~0
+    || n != 6 - i
+    )
+        return s + i;
+    v |= ( *s & (( _v( v, 1 ) << n ) - 1 )) << (( i + 1 ) * 6 );
+    *u = v;
+    return s;
+}
+N ///ile bajtów przeczytano lub błąd.
 E_text_Z_getter_Z_c_R_u( N (*getter)(void)
 , U *u
 ){  N c = getter();
     if( !~c
     || c == E_mem_Q_file_S_eof
     )
-    {   *u = c;
-        return 0;
-    }
+        return c;
     if(( signed char )c > 0 )
     {   *u = c;
         return 1;
     }
-    U v = ~( signed char )c;
-    U n = E_asm_I_bsr(v);
+    N n = E_asm_I_bsr( ~( signed char )c );
     if( n == ~0
     || n == 6
     )
-    {   *u = ~0;
-        return 0;
-    }
-    v = c & ( _v( v, 1 ) << n ) - 1;
+        return ~0;
+    U v = c & ( _v( v, 1 ) << n ) - 1;
     for_n( i, 6 - n )
     {   c = getter();
+        if( !~c
+        || c == E_mem_Q_file_S_eof
+        )
+            return c;
         if(( c & 0xc0 ) != 0x80 )
             return ~0;
         v <<= 6;
@@ -767,5 +787,37 @@ E_text_Z_getter_Z_c_R_u( N (*getter)(void)
     }
     *u = v;
     return 7 - n;
+}
+N
+E_text_Z_getter_Z_c_R_rev_u( N (*getter)(void)
+, U *u
+){  N c = getter();
+    if( !~c
+    || c == E_mem_Q_file_S_eof
+    )
+        return c;
+    if(( signed char )c > 0 )
+    {   *u = c;
+        return 1;
+    }
+    U v = 0;
+    for_n( i, 7 )
+    {   if(( c & 0xc0 ) != 0x80 )
+            break;
+        v |= ( c & 0x3f ) << ( i * 6 );
+        c = getter();
+        if( !~c
+        || c == E_mem_Q_file_S_eof
+        )
+            return c;
+    }
+    N n = E_asm_I_bsr( ~( signed char )c );
+    if( n == ~0
+    || n != 6 - i
+    )
+        return ~0;
+    v |= ( c & (( _v( v, 1 ) << n ) - 1 )) << ( i * 6 );
+    *u = v;
+    return i;
 }
 /******************************************************************************/
