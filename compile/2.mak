@@ -398,12 +398,12 @@ run: build
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 install-0: build
 	$(CMP) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_root_path)/oux) /usr/bin/ \
-	|| gksu -D 'install oux wrapper' "$(INSTALL) -m 755 $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_root_path)/oux) /usr/bin/"
+	|| gksu -D 'install oux wrapper' '$(INSTALL) -m 755 $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_root_path)/oux) /usr/bin/'
 	$(if $(H_make_C_to_libs), \
         $(foreach module,$(H_make_S_modules),$(CMP) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so) $(call H_make_Z_shell_cmd_arg_I_quote,/usr/lib/lib$(H_make_S_lib_prefix)$(module).so) && )true \
-        || gksu -D 'install libraries' " \
+        || gksu -D 'install libraries' ' \
             $(INSTALL) -m 755 $(foreach module,$(H_make_S_modules),$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so)) /usr/lib/ \
-      " \
+      ' \
     )
 #-------------------------------------------------------------------------------
 uninstall-0:
