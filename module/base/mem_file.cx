@@ -89,6 +89,31 @@ E_mem_Q_file_W_unsave( I id
     E_mem_Q_blk_I_rem( &file->unsaved, 0, file->unsaved_n );
     file->unsaved_n = 0;
 }
+void
+E_mem_Q_file_I_save( I id
+){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
+    struct E_mem_Z_range *range = file->unsaved;
+        #ifdef __gnu_linux__
+    V0( fcntl( file->fd, F_SETFL, 0 )){}
+        #endif
+    VO1( ftruncate( file->fd, file->l )){}
+    for_n( unsaved_i, file->unsaved_n )
+    {   for_n( blk_i, file->blk_n )
+            if( range->pos >= file->blk[ blk_i ].pos )
+                break;
+        E_mem_Q_file_I_write_pos( file->fd
+        , range->pos
+        , file->blk[ blk_i ].data + range->pos - file->blk[ blk_i ].pos
+        , range->pos_end - range->pos
+        );
+        range++;
+    }
+    E_mem_Q_blk_I_rem( &file->unsaved, 0, file->unsaved_n );
+    file->unsaved_n = 0;
+        #ifdef __gnu_linux__
+    V0( fcntl( file->fd, F_SETFL, O_DIRECT )){}
+        #endif
+}
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 _internal
 N
