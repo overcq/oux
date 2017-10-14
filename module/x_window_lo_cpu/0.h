@@ -8,6 +8,8 @@
 *******************************************************************************/
 //NDFN zmienić na automatyczne wykrywanie.
 #define E_x_Q_obj_C_id_bits         16
+#define E_x_Q_window_C_hidden_x     -1
+#define E_x_Q_window_C_hidden_y     -1
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #define XCB_ATOM_LAST_PREDEFINED    XCB_ATOM_WM_TRANSIENT_FOR
 #define XCB_ATOM_FIRST_DEFINED_     C_STRING
@@ -59,7 +61,7 @@ enum E_x_Q_display_Z_atom
     , type \
     , 32 \
     , sizeof (value) / 4 \
-    , ( N8 * )&(value) \
+    , &(value) \
     )
 #define E_x_Z_property_P_v(display,window,property,type,value) \
 {   N32 J_autogen(v) = (value); \

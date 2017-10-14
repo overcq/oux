@@ -192,65 +192,72 @@ E_x_Q_object_I_lay(
     struct Z_stack
     { struct E_x_Q_object_Z *object;
       N i;
-      S16 x, y;
-      N16 width, height;
-      S16 next_x, next_y;
     };
     struct Z_stack *stack = Mt( sizeof( struct Z_stack ), 1 );
     N stack_i = 0;
-    stack->x = E_x_Q_object_S_layout_dx;
-    stack->y = E_x_Q_object_S_layout_dy;
-    stack->width = 0;
-    stack->height = 0;
-    stack->next_x = stack->x;
-    stack->next_y = stack->y;
+    stack->object = object;
+    S16 next_x = E_x_Q_object_S_layout_dx;
+    S16 next_y = E_x_Q_object_S_layout_dy;
     O{  if( object->child_n )
         {   struct Z_stack *stack_top = E_mem_Q_blk_I_append( &stack, 1 );
             stack_top->i = 0;
             stack_top->object = object;
             if( lay_down )
-                stack_top->x = stack[ stack_i - lay_down ].x;
-            else
-                stack_top->x = stack[ stack_i ].next_x;
-            stack_top->y = stack[ stack_i ].next_y;
-            stack_top->width = 0;
-            stack_top->height = 0;
-            stack_top->next_x = stack_top->x;
-            stack_top->next_y = stack_top->y;
+            {   next_x = stack[ stack_i - lay_down ].object->x;
+                N i = stack_i;
+                while( i
+                && !stack[i].i
+                )
+                    i--;
+                next_y = stack[i].object->y + stack[i].object->height + E_x_Q_object_S_layout_dy;
+            }
+            object->x = next_x;
+            object->y = next_y;
+            object->width = 0;
+            object->height = 0;
             object = E_mem_Q_tab_R( window->object, object->child[0] );
             stack_i++;
+            G_(); Gd( next_x ); Gd( next_y );
         }else
-        {   if( stack[ stack_i ].next_x + object->width > window->width )
-            {   object->x = stack[ stack_i ].x;
+        {   if( next_x + object->width > window->width )
+            {   object->x = stack[ stack_i ].object->x;
                 if( object->x + object->width > window->width
                 && stack_i - lay_down
-                ){  lay_down++;
+                ){  G_();
+                    lay_down++;
                     object = stack[ stack_i ].object;
                     E_mem_Q_blk_I_rem( &stack, stack_i--, 1 );
-                    stack[ stack_i ].next_y = stack[ stack_i ].y + stack[ stack_i ].height + E_x_Q_object_S_layout_dy;
                     continue;
                 }
                 lay_down = 0;
-                stack[ stack_i ].next_x = stack[ stack_i ].x + object->width + E_x_Q_object_S_layout_dx;
-                stack[ stack_i ].next_y = stack[ stack_i ].y + stack[ stack_i ].object->height + E_x_Q_object_S_layout_dy;
-                stack[ stack_i ].height += E_x_Q_object_S_layout_dy + object->height;
-                object->y = stack[ stack_i ].next_y;
-                if( stack[ stack_i ].width < object->width )
-                    stack[ stack_i ].width = object->width;
-            }else
-            {   lay_down = 0;
-                object->x = stack[ stack_i ].next_x;
-                object->y = stack[ stack_i ].next_y;
+                object->y = next_y;
+                next_x = stack[ stack_i ].object->x + object->width + E_x_Q_object_S_layout_dx;
+                next_y = stack[ stack_i ].object->y + stack[ stack_i ].object->height + E_x_Q_object_S_layout_dy;
                 if( stack[ stack_i ].i )
-                {   if( stack[ stack_i ].object->height < E_x_Q_object_S_layout_dy + object->height )
-                        stack[ stack_i ].object->height = E_x_Q_object_S_layout_dy + object->height;
+                {   if( stack[ stack_i ].object->height < next_y - stack[ stack_i ].object->y + object->height )
+                        stack[ stack_i ].object->height = next_y - stack[ stack_i ].object->y + object->height;
                 }else
                     stack[ stack_i ].object->height = object->height;
-                stack[ stack_i ].object->width += E_x_Q_object_S_layout_dx + object->width;
-                stack[ stack_i ].width += E_x_Q_object_S_layout_dx + object->width;
-                stack[ stack_i ].next_x += object->width + E_x_Q_object_S_layout_dx;
-                if( stack[ stack_i ].height < stack[ stack_i ].next_y - E_x_Q_object_S_layout_dy + object->height )
-                    stack[ stack_i ].height = stack[ stack_i ].next_y - E_x_Q_object_S_layout_dy + object->height;
+                if( stack[ stack_i ].i )
+                {   if( stack[ stack_i ].object->width < object->width )
+                        stack[ stack_i ].object->width = object->width;
+                }else
+                    stack[ stack_i ].object->width = object->width;
+                G_(); Gd( next_x ); Gd( next_y );
+            }else
+            {   lay_down = 0;
+                object->x = next_x;
+                object->y = next_y;
+                if( stack[ stack_i ].i )
+                {   if( stack[ stack_i ].object->height < next_y - stack[ stack_i ].object->y + object->height )
+                        stack[ stack_i ].object->height = next_y - stack[ stack_i ].object->y + object->height;
+                    stack[ stack_i ].object->width += E_x_Q_object_S_layout_dx + object->width;
+                }else
+                {   stack[ stack_i ].object->height = object->height;
+                    stack[ stack_i ].object->width += object->width;
+                }
+                next_x += object->width + E_x_Q_object_S_layout_dx;
+                G_(); Gd( next_x ); Gd( next_y );
             }
             if( !stack_i )
                 break;
@@ -258,11 +265,12 @@ E_x_Q_object_I_lay(
                 object = E_mem_Q_tab_R( window->object, stack[ stack_i ].object->child[ stack[ stack_i ].i ] );
             else
             {   do
-                {   stack[ stack_i - 1 ].width = stack[ stack_i ].width;
-                    stack[ stack_i - 1 ].height = stack[ stack_i ].height;
-                    stack[ stack_i - 1 ].next_x = stack[ stack_i ].next_x;
-                    stack[ stack_i - 1 ].next_y = stack[ stack_i ].next_y;
+                {   if( stack[ stack_i - 1 ].object->x + stack[ stack_i - 1 ].object->width < stack[ stack_i ].object->x + stack[ stack_i ].object->width )
+                        stack[ stack_i - 1 ].object->width = stack[ stack_i ].object->x + stack[ stack_i ].object->width - stack[ stack_i - 1 ].object->x;
+                    if( stack[ stack_i - 1 ].object->y + stack[ stack_i - 1 ].object->height < stack[ stack_i ].object->y + stack[ stack_i ].object->height )
+                        stack[ stack_i - 1 ].object->height = stack[ stack_i ].object->y + stack[ stack_i ].object->height - stack[ stack_i - 1 ].object->y;
                     E_mem_Q_blk_I_rem( &stack, stack_i--, 1 );
+                    G_();
                 }while( stack_i
                 && ++stack[ stack_i ].i == stack[ stack_i ].object->child_n
                 );
