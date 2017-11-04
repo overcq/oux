@@ -16,7 +16,11 @@ E_asm_I_bsr( N n
         #if defined( __i386__ ) || defined( __x86_64__ )
     N v;
     __asm__ volatile (
+            #if defined( __i386__ )
     "\n" "orl   $~0,%0"
+            #else
+    "\n" "orq   $~0,%0"
+            #endif
     "\n" "bsr   %2,%1"
     "\n" "cmove %0,%1"
     : "=g" (v), "=r" (i)

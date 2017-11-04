@@ -20,6 +20,8 @@ H_make_C_to_libs_C_replace_c_alloc := 1
 E_flow_drv_C_clock_monotonic := 1
 #wybiera ‟POSIX” “aio” zamiast “strumieni asynchronicznych” ‟BSD” (“O_ASYNC”). generalnie– “wątkowane” “aio” nie jest potrzebne. żadne nie jest gwarantowane bezczasowo ze względu na brak metody znalezienia wartości “E_io_Q_stream_out_S_delay”, ograniczającej możliwe opóźnienie systemu operacyjnego przed oddaniem użycia “aiocb” (dla “aio”) lub “aio_buf” (dla “O_ASYNC”).
 E_io_C_aio := 1
+#włącza kontrolę poprawności pamięci ‘alokatora’ bloków.
+#E_mem_Q_blk_C_debug := 1
 #===============================================================================
 H_make_S_os := $(shell uname -s)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
