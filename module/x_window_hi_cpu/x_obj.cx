@@ -182,6 +182,66 @@ E_x_Q_object_I_draw_Z_arcs(
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 void
+E_x_Q_object_I_lay_2(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_window_Z *window
+){  if( !E_mem_Q_tab_R_n( window->object ))
+        return;
+    struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, 0 );
+    struct Z_stack
+    { struct E_x_Q_object_Z *object;
+      N i;
+    };
+    struct Z_stack *stack = Mt( sizeof( struct Z_stack ), 0 );
+    N stack_i = ~0;
+    S16 next_x = E_x_Q_object_S_layout_dx;
+    S16 next_y = E_x_Q_object_S_layout_dy;
+    if( object->child_n )
+        O{  object->x = next_x;
+            object->y = next_y;
+            if( object->child_n )
+            {   struct Z_stack *stack_top = E_mem_Q_blk_I_append( &stack, 1 );
+                stack_i++;
+                stack_top->object = object;
+                stack_top->i = 0;
+                object->width = 0;
+                object->height = 0;
+                next_x += E_x_Q_object_S_layout_dx;
+                next_y += E_x_Q_object_S_layout_dy;
+                object = E_mem_Q_tab_R( window->object, object->child[0] );
+                continue;
+            }
+            if( ++stack[ stack_i ].i != stack[ stack_i ].object->child_n )
+            {   stack[ stack_i ].object->width += E_x_Q_object_S_layout_dx + object->width;
+                next_x += object->width + E_x_Q_object_S_layout_dx;
+                object = E_mem_Q_tab_R( window->object, stack[ stack_i ].object->child[ stack[ stack_i ].i ] );
+                continue;
+            }
+            next_x += object->width + E_x_Q_object_S_layout_dx;
+            do
+            {   stack[ stack_i ].object->width += E_x_Q_object_S_layout_dx + object->width + E_x_Q_object_S_layout_dx;
+                if( stack[ stack_i ].object->height < object->height + 2 * E_x_Q_object_S_layout_dy )
+                    stack[ stack_i ].object->height = object->height + 2 * E_x_Q_object_S_layout_dy;
+                next_x += E_x_Q_object_S_layout_dx;
+                next_y -= E_x_Q_object_S_layout_dy;
+                object = stack[ stack_i ].object;
+                E_mem_Q_blk_I_rem( &stack, stack_i--, 1 );
+            }while( ~stack_i
+            && ++stack[ stack_i ].i == stack[ stack_i ].object->child_n
+            );
+            if( !~stack_i )
+                break;
+            for_n_rev( i, stack_i + 1 )
+            {   stack[i].object->width += object->width + E_x_Q_object_S_layout_dx;
+                if( stack[i].i != stack[i].object->child_n )
+                    break;
+                object = stack[i].object;
+            }
+            object = E_mem_Q_tab_R( window->object, stack[ stack_i ].object->child[ stack[ stack_i ].i ] );
+        }
+    W(stack);
+}
+void
 E_x_Q_object_I_lay(
   struct E_x_Q_display_Z *display
 , struct E_x_Q_window_Z *window

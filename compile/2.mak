@@ -180,7 +180,7 @@ $(error gcc too old)
 undefine H_make_S_words
 undefine H_make_S_number
         else #nie “clang”, nie “gcc”
-CFLAGS += -std=$(H_make_S_c_std_alt)99 -D_unreachable=no
+CFLAGS += -std=c99 -D_unreachable=no
         endif
 CFLAGS += -O3
     endif
