@@ -55,23 +55,24 @@ E_mem_Q_file_M( Pc path
     U_L( file->current_blk, valid_eob );
     return id;
 }
-void
+N
 E_mem_Q_file_W( I id
 ){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
     struct E_mem_Z_range *range = file->unsaved;
         #ifdef __gnu_linux__
     V0( fcntl( file->fd, F_SETFL, 0 )){}
         #endif
-    VO1( ftruncate( file->fd, file->l )){}
     for_n( unsaved_i, file->unsaved_n )
     {   for_n( blk_i, file->blk_n )
             if( range->pos >= file->blk[ blk_i ].pos )
                 break;
-        E_mem_Q_file_I_write_pos( file->fd
+        N l = E_mem_Q_file_I_write_pos( file->fd
         , range->pos
         , file->blk[ blk_i ].data + range->pos - file->blk[ blk_i ].pos
         , range->pos_end - range->pos
         );
+        if( !~l )
+            return l;
         range++;
     }
     W( file->unsaved );
@@ -80,6 +81,7 @@ E_mem_Q_file_W( I id
     W( file->blk );
     V0( close( file->fd )){} //NDFN co robić, gdy się nie powiedzie?
     E_mem_Q_tab_I_rem( E_base_S->E_mem_Q_file_S, id );
+    return 0;
 }
 //------------------------------------------------------------------------------
 void
@@ -89,23 +91,24 @@ E_mem_Q_file_W_unsave( I id
     E_mem_Q_blk_I_rem( &file->unsaved, 0, file->unsaved_n );
     file->unsaved_n = 0;
 }
-void
+N
 E_mem_Q_file_I_save( I id
 ){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
     struct E_mem_Z_range *range = file->unsaved;
         #ifdef __gnu_linux__
     V0( fcntl( file->fd, F_SETFL, 0 )){}
         #endif
-    VO1( ftruncate( file->fd, file->l )){}
     for_n( unsaved_i, file->unsaved_n )
     {   for_n( blk_i, file->blk_n )
             if( range->pos >= file->blk[ blk_i ].pos )
                 break;
-        E_mem_Q_file_I_write_pos( file->fd
+        N l = E_mem_Q_file_I_write_pos( file->fd
         , range->pos
         , file->blk[ blk_i ].data + range->pos - file->blk[ blk_i ].pos
         , range->pos_end - range->pos
         );
+        if( !~l )
+            return l;
         range++;
     }
     E_mem_Q_blk_I_rem( &file->unsaved, 0, file->unsaved_n );
@@ -113,6 +116,7 @@ E_mem_Q_file_I_save( I id
         #ifdef __gnu_linux__
     V0( fcntl( file->fd, F_SETFL, O_DIRECT )){}
         #endif
+    return 0;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 _internal
@@ -125,7 +129,8 @@ E_mem_Q_file_I_write_pos( int fd
         return ~0;
     N l = 0;
     N l_;
-    O{  VO1( l_ = write( fd, data + l, data_l - l )){}
+    O{  VO1( l_ = write( fd, data + l, data_l - l ))
+            return ~0;
         if( !l_
         || !~l_
         )
@@ -451,163 +456,129 @@ E_mem_Q_file_P_insert_s( I id
 , Pc s
 , N n
 ){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
-    N pos_s = file->pos;
-    if( file->blk[ file->current_blk ].pos + file->blk[ file->current_blk ].l != file->l )
-    {   N pos = file->pos;
-        O{  N ret = E_mem_Q_file_R_current_blk(file);
-            if( !~ret )
-                return ret;
-            if( ret == E_mem_Q_file_S_eof )
-                break;
-            pos += E_base_S->E_mem_Q_file_S_buffer_l;
-            E_mem_Q_file_P_pos( id, pos );
-        }
-        E_mem_Q_file_P_pos( id, pos_s );
-    }
-    E_mem_Q_file_R_current_blk(file);
-    Pc pc = E_mem_Q_blk_I_append( &file->blk[ file->current_blk ].data, n );
-    if( !pc )
-        return ~0;
-    file->blk[ file->current_blk ].l += n;
-    file->l += n;
-    E_mem_Q_blk_I_copy_rev( file->blk[ file->current_blk ].data + file->current_blk_pos + n
-    , file->blk[ file->current_blk ].data + file->current_blk_pos
-    , file->blk[ file->current_blk ].l - n - file->current_blk_pos
-    );
-    E_mem_Q_blk_I_copy( file->blk[ file->current_blk ].data + file->current_blk_pos
-    , s
-    , n
-    );
-    N pos = file->blk[ file->current_blk ].pos + file->current_blk_pos;
-    N pos_end = file->blk[ file->current_blk ].pos + file->blk[ file->current_blk ].l;
-    B f = no;
-    N f_i;
+    struct E_mem_Z_range *range = file->unsaved;
+        #ifdef __gnu_linux__
+    V0( fcntl( file->fd, F_SETFL, 0 )){}
+        #endif
     for_n( unsaved_i, file->unsaved_n )
-    {   if( file->unsaved[ unsaved_i ].pos >= pos_end )
-            break;
-        if(( file->unsaved[ unsaved_i ].pos >= pos
-          && file->unsaved[ unsaved_i ].pos <= pos_end
-          )
-        || ( file->unsaved[ unsaved_i ].pos_end >= pos
-          && file->unsaved[ unsaved_i ].pos_end <= pos_end
-          )
-        ){  if( !f )
-            {   if( file->unsaved[ unsaved_i ].pos > pos )
-                    file->unsaved[ unsaved_i ].pos = pos;
-                if( file->unsaved[ unsaved_i ].pos_end < pos_end )
-                    file->unsaved[ unsaved_i ].pos_end = pos_end;
-                f = yes;
-                f_i = unsaved_i;
-            }
-            else
-                if( file->unsaved[ unsaved_i ].pos_end > pos_end )
-                    file->unsaved[ f_i ].pos_end = file->unsaved[ unsaved_i ].pos_end;
-                else
-                {   E_mem_Q_blk_I_rem( &file->unsaved, unsaved_i--, 1 );
-                    file->unsaved_n--;
-                }
+    {   for_n( blk_i, file->blk_n )
+            if( range->pos >= file->blk[ blk_i ].pos )
+                break;
+        N l = E_mem_Q_file_I_write_pos( file->fd
+        , range->pos
+        , file->blk[ blk_i ].data + range->pos - file->blk[ blk_i ].pos
+        , range->pos_end - range->pos
+        );
+        if( !~l )
+            return l;
+        range++;
+    }
+    E_mem_Q_blk_I_rem( &file->unsaved, 0, file->unsaved_n );
+    file->unsaved_n = 0;
+    N buf_l = n > E_base_S->E_mem_Q_file_S_buffer_l ? E_base_S->E_mem_Q_file_S_buffer_l : n;
+    N pos = file->l;
+    O{  if( pos < buf_l )
+            buf_l = pos;
+        pos -= buf_l;
+        if( pos < file->pos + n )
+        {   buf_l -= file->pos + n - pos;
+            if( !buf_l )
+                break;
+            pos = file->pos + n - buf_l;
         }
+        V1( lseek( file->fd, pos, SEEK_SET ))
+            return ~0;
+            #ifdef __gnu_linux__
+        N l;
+        VO1( l = read( file->fd, E_base_S->E_mem_Q_file_S_buffer, buf_l ))
+            return ~0;
+            #else
+        N l = 0;
+        N l_;
+        O{  VO1( l_ = read( file->fd, E_base_S->E_mem_Q_file_S_buffer + l, buf_l - l ))
+                return ~0;
+            if( !l_
+            || !~l_
+            )
+                break;
+            l += l_;
+            if( l == buf_l )
+                break;
+        }
+            #endif
+        l = E_mem_Q_file_I_write_pos( file->fd, pos + buf_l, E_base_S->E_mem_Q_file_S_buffer, buf_l );
+        if( !~l )
+            return l;
     }
-    if( !f )
-    {   E_mem_Q_blk_I_insert( &file->unsaved, unsaved_i, 1 );
-        file->unsaved_n++;
-        file->unsaved[ unsaved_i ].pos = pos;
-        file->unsaved[ unsaved_i ].pos_end = pos_end;
-    }
-    E_mem_Q_file_P_pos( id, pos_s + n );
+    N l = E_mem_Q_file_I_write_pos( file->fd, file->pos, s, n );
+    if( !~l )
+        return l;
+    file->l += n;
+        #ifdef __gnu_linux__
+    V0( fcntl( file->fd, F_SETFL, O_DIRECT )){}
+        #endif
     return 0;
 }
 N
 E_mem_Q_file_P_rem_s( I id
 , N n
 ){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
-    N pos_s = file->pos;
-    if( file->blk[ file->current_blk ].pos + file->blk[ file->current_blk ].l != file->l )
-    {   N pos = file->pos;
-        O{  N ret = E_mem_Q_file_R_current_blk(file);
-            if( !~ret )
-                return ret;
-            if( ret == E_mem_Q_file_S_eof )
-                break;
-            pos += E_base_S->E_mem_Q_file_S_buffer_l;
-            E_mem_Q_file_P_pos( id, pos );
-        }
-        E_mem_Q_file_P_pos( id, pos_s );
-    }
-    E_mem_Q_file_R_current_blk(file);
-    N pos_end = file->blk[ file->current_blk ].pos + file->blk[ file->current_blk ].l;
-    N pos = pos_end - n;
+    struct E_mem_Z_range *range = file->unsaved;
+        #ifdef __gnu_linux__
+    V0( fcntl( file->fd, F_SETFL, 0 )){}
+        #endif
     for_n( unsaved_i, file->unsaved_n )
-    {   if( file->unsaved[ unsaved_i ].pos >= pos_end )
+    {   for_n( blk_i, file->blk_n )
+            if( range->pos >= file->blk[ blk_i ].pos )
+                break;
+        N l = E_mem_Q_file_I_write_pos( file->fd
+        , range->pos
+        , file->blk[ blk_i ].data + range->pos - file->blk[ blk_i ].pos
+        , range->pos_end - range->pos
+        );
+        if( !~l )
+            return l;
+        range++;
+    }
+    E_mem_Q_blk_I_rem( &file->unsaved, 0, file->unsaved_n );
+    file->unsaved_n = 0;
+    N buf_l = n > E_base_S->E_mem_Q_file_S_buffer_l ? E_base_S->E_mem_Q_file_S_buffer_l : n;
+    N pos = file->pos + n;
+    O{  if( pos >= file->l )
             break;
-        if(( file->unsaved[ unsaved_i ].pos >= pos
-          && file->unsaved[ unsaved_i ].pos <= pos_end
-          )
-        || ( file->unsaved[ unsaved_i ].pos_end >= pos
-          && file->unsaved[ unsaved_i ].pos_end <= pos_end
-          )
-        ){  if( file->unsaved[ unsaved_i ].pos >= pos
-            && file->unsaved[ unsaved_i ].pos_end <= pos_end
+        if( file->l - pos < buf_l )
+            buf_l = file->l - pos;
+        V1( lseek( file->fd, pos, SEEK_SET ))
+            return ~0;
+            #ifdef __gnu_linux__
+        N l;
+        VO1( l = read( file->fd, E_base_S->E_mem_Q_file_S_buffer, buf_l ))
+            return ~0;
+            #else
+        N l = 0;
+        N l_;
+        O{  VO1( l_ = read( file->fd, E_base_S->E_mem_Q_file_S_buffer + l, buf_l - l ))
+                return ~0;
+            if( !l_
+            || !~l_
             )
-            {   E_mem_Q_blk_I_rem( &file->unsaved, unsaved_i--, 1 );
-                file->unsaved_n--;
-            }
-            else if( file->unsaved[ unsaved_i ].pos_end > pos )
-                if( file->unsaved[ unsaved_i ].pos != pos )
-                    file->unsaved[ unsaved_i ].pos_end = pos;
-                else
-                {   E_mem_Q_blk_I_rem( &file->unsaved, unsaved_i--, 1 );
-                    file->unsaved_n--;
-                }
-            else if( file->unsaved[ unsaved_i ].pos < pos_end )
-                if( file->unsaved[ unsaved_i ].pos_end != pos_end )
-                    file->unsaved[ unsaved_i ].pos = pos_end;
-                else
-                {   E_mem_Q_blk_I_rem( &file->unsaved, unsaved_i--, 1 );
-                    file->unsaved_n--;
-                }
+                break;
+            l += l_;
+            if( l == buf_l )
+                break;
         }
+            #endif
+        l = E_mem_Q_file_I_write_pos( file->fd, pos - n, E_base_S->E_mem_Q_file_S_buffer, buf_l );
+        if( !~l )
+            return l;
+        pos += buf_l;
     }
-    E_mem_Q_blk_I_rem( &file->blk[ file->current_blk ].data, file->current_blk_pos, n );
-    file->blk[ file->current_blk ].l -= n;
     file->l -= n;
-    pos = file->blk[ file->current_blk ].pos + file->current_blk_pos;
-    pos_end = file->blk[ file->current_blk ].pos + file->blk[ file->current_blk ].l;
-    B f = no;
-    N f_i;
-    for_n_( unsaved_i, file->unsaved_n )
-    {   if( file->unsaved[ unsaved_i ].pos >= pos_end )
-            break;
-        if(( file->unsaved[ unsaved_i ].pos >= pos
-          && file->unsaved[ unsaved_i ].pos <= pos_end
-          )
-        || ( file->unsaved[ unsaved_i ].pos_end >= pos
-          && file->unsaved[ unsaved_i ].pos_end <= pos_end
-          )
-        ){  if( !f )
-            {   if( file->unsaved[ unsaved_i ].pos > pos )
-                    file->unsaved[ unsaved_i ].pos = pos;
-                if( file->unsaved[ unsaved_i ].pos_end < pos_end )
-                    file->unsaved[ unsaved_i ].pos_end = pos_end;
-                f = yes;
-                f_i = unsaved_i;
-            }
-            else
-                if( file->unsaved[ unsaved_i ].pos_end > pos_end )
-                    file->unsaved[ f_i ].pos_end = file->unsaved[ unsaved_i ].pos_end;
-                else
-                {   E_mem_Q_blk_I_rem( &file->unsaved, unsaved_i--, 1 );
-                    file->unsaved_n--;
-                }
-        }
-    }
-    if( !f )
-    {   E_mem_Q_blk_I_insert( &file->unsaved, unsaved_i, 1 );
-        file->unsaved_n++;
-        file->unsaved[ unsaved_i ].pos = pos;
-        file->unsaved[ unsaved_i ].pos_end = pos_end;
-    }
-    E_mem_Q_file_P_pos( id, pos_s );
+    VO1( ftruncate( file->fd, file->l ))
+        return ~0;
+        #ifdef __gnu_linux__
+    V0( fcntl( file->fd, F_SETFL, O_DIRECT )){}
+        #endif
     return 0;
 }
 /******************************************************************************/
