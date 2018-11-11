@@ -25,7 +25,7 @@ case "$1" in
         print '\''};'\'';
     ' "$@"
     ;;
--h0) #‹report› ‘uid’ declarations.
+-h1) #‹report› ‘uid’ declarations.
     trap 'rm "$tmp_file_0" "$tmp_file_1" "$tmp_file_2"' EXIT
     tmp_file_0=$(mktemp); tmp_file_1=$(mktemp); tmp_file_2=$(mktemp)
     awk '
@@ -94,7 +94,7 @@ case "$1" in
         fi
     fi
     ;;
--h00) #‹report› ‘uid’ declarations for these are used by ‹modules› and owned elsewhere; in the executable program if compiled with the ‹modules› as ‘dlls’.
+-h1_) #‹report› ‘uid’ declarations for these are used by ‹modules› and owned elsewhere; in the executable program if compiled with the ‹modules› as ‘dlls’.
     trap 'rm "$tmp_file_0" "$tmp_file_1" "$tmp_file_2"' EXIT
     tmp_file_0=$(mktemp); tmp_file_1=$(mktemp); tmp_file_2=$(mktemp)
     while [ -n "$2" ]; do
@@ -143,7 +143,7 @@ case "$1" in
             local $\ = $/;
             $_ = <>;
             chomp;
-            print " _XhYi_uid($_) = _XhYi_F_uid_v( ~0 << ( sizeof(int) * 8 / 2 - 1 ))";
+            print " _XhYi_uid($_) = _F_uid_v( ~0 << ( sizeof(int) * 8 / 2 - 1 ))";
             while(<>)
             {   chomp;
                 print ", _XhYi_uid($_)";
@@ -152,7 +152,7 @@ case "$1" in
         echo '};'
     fi
     ;;
--h1) #type forward declarations.
+-h2) #type forward declarations.
     perl -e '
         my $last_line;
         local $\ = $/;
@@ -167,7 +167,7 @@ case "$1" in
         }
     ' "$2"
     ;;
--h2) #type definitions. variable and procedure forward declarations.
+-h3) #type definitions. variable and procedure forward declarations.
     perl -e '
         my $inside_braces = 0;
         my $last_line;

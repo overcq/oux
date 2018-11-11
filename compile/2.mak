@@ -252,7 +252,7 @@ $(addprefix $(H_make_S_compile_path)/,1.mak 2.mak Makefile) \
         echo '#include "E_coux_S_language.h"' ;\
         $(H_make_Z_shell_cmd_N_cx_to_c) -f $(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,%,$(H_make_S_cx_sources))) $(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(module)/),$(call H_make_Z_shell_cmd_arg_I_quote_for,$(sort $(patsubst %.cx,%,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))))))) ;\
         $(if $(H_make_C_to_libs), \
-        $(H_make_Z_shell_cmd_N_cx_to_c) -h00 $(foreach module,$(H_make_S_modules),$(call H_make_Z_shell_cmd_arg_I_quote_for,$(wildcard $(H_make_S_root_path)/module/$(module)/*.cx))) ;\
+        $(H_make_Z_shell_cmd_N_cx_to_c) -h1_ $(foreach module,$(H_make_S_modules),$(call H_make_Z_shell_cmd_arg_I_quote_for,$(wildcard $(H_make_S_root_path)/module/$(module)/*.cx))) ;\
         ) \
         $(foreach module,$(H_make_S_modules),$(call H_make_Q_main_header_I_module_0,$(module)) ;) \
         if [ -e 0.h ]; then \
@@ -282,7 +282,7 @@ $(addprefix $(H_make_S_compile_path)/,1.mak 2.mak Makefile)
         echo '#include "E_coux_S_machine.h"' ;\
         echo '#include "E_coux_S_language.h"' ;\
         $(H_make_Z_shell_cmd_N_cx_to_c) -f $(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,%,$(H_make_S_cx_sources))) $(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(module)/),$(call H_make_Z_shell_cmd_arg_I_quote_for,$(sort $(patsubst %.cx,%,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))))))) ;\
-        $(H_make_Z_shell_cmd_N_cx_to_c) -h00 $(foreach module,$(H_make_S_modules),$(call H_make_Z_shell_cmd_arg_I_quote_for,$(wildcard $(H_make_S_root_path)/module/$(module)/*.cx))) ;\
+        $(H_make_Z_shell_cmd_N_cx_to_c) -h1_ $(foreach module,$(H_make_S_modules),$(call H_make_Z_shell_cmd_arg_I_quote_for,$(wildcard $(H_make_S_root_path)/module/$(module)/*.cx))) ;\
         $(foreach module,$(H_make_S_modules),$(call H_make_Q_main_header_I_module_0,$(module)) ;) \
         $(foreach module,$(H_make_S_modules),$(call H_make_Q_main_header_I_module_1,$(module)) ;) \
         $(foreach module,$(H_make_S_modules),$(call H_make_Q_main_header_I_module_2,$(module)) ;) \
@@ -292,13 +292,13 @@ E_coux_S_1_%.h: %.cx \
 $(H_make_Z_shell_cmd_N_cx_to_c) \
 $(addprefix $(H_make_S_compile_path)/,1.mak 2.mak Makefile) \
 $(if $(H_make_C_to_libs),$(H_make_S_module_path)/E_coux_S_0_to_libs.h)
-	{   $(H_make_Z_shell_cmd_N_cx_to_c) -h0 $(call H_make_Z_shell_cmd_arg_I_quote,$<)$(if $(H_make_C_to_libs), $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/E_coux_S_0_to_libs.h)) \
-        && $(H_make_Z_shell_cmd_N_cx_to_c) -h1 $(call H_make_Z_shell_cmd_arg_I_quote,$<) ;\
+	{   $(H_make_Z_shell_cmd_N_cx_to_c) -h1 $(call H_make_Z_shell_cmd_arg_I_quote,$<)$(if $(H_make_C_to_libs), $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/E_coux_S_0_to_libs.h)) \
+        && $(H_make_Z_shell_cmd_N_cx_to_c) -h2 $(call H_make_Z_shell_cmd_arg_I_quote,$<) ;\
     } > $(call H_make_Z_shell_cmd_arg_I_quote,$@)
 E_coux_S_2_%.h: %.cx \
 $(H_make_Z_shell_cmd_N_cx_to_c) \
 $(addprefix $(H_make_S_compile_path)/,1.mak 2.mak Makefile)
-	$(H_make_Z_shell_cmd_N_cx_to_c) -h2 $(call H_make_Z_shell_cmd_arg_I_quote,$<) > $(call H_make_Z_shell_cmd_arg_I_quote,$@)
+	$(H_make_Z_shell_cmd_N_cx_to_c) -h3 $(call H_make_Z_shell_cmd_arg_I_quote,$<) > $(call H_make_Z_shell_cmd_arg_I_quote,$@)
 %.c: %.cx \
 $(H_make_Z_shell_cmd_N_cx_to_c) \
 $(addprefix $(H_make_S_compile_path)/,1.mak 2.mak Makefile)

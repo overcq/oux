@@ -131,7 +131,16 @@ End_2:  ;
     if(cwd)
     {   V0_( chdir(cwd) );
     }
-    //tutaj dodać ‘reset’ “standardowych” “deskryptorów”.
+    int fd;
+    VO1_( fd = open( "/dev/stdin", 0, O_RDONLY ));
+    VO1_( dup2( fd, 0 ));
+    V0_( close(fd) );
+    VO1_( fd = open( "/dev/stdout", 0, O_WRONLY ));
+    VO1_( dup2( fd, 1 ));
+    V0_( close(fd) );
+    VO1_( fd = open( "/dev/stderr", 0, O_WRONLY ));
+    VO1_( dup2( fd, 2 ));
+    V0_( close(fd) );
     struct sigaction sa =
     { .sa_handler = SIG_DFL
     , .sa_flags = 0

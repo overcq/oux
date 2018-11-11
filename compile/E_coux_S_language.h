@@ -30,7 +30,7 @@ typedef P           *Pp; ///wskaźnik do tablic adresów.
 #define J_swap(type,a,b)                    { type J_autogen(c) = a; a = b; b = J_autogen(c); }
 #define J_min(a,b)                          ( (a) > (b) ? (b) : (a) )
 #define J_max(a,b)                          ( (a) < (b) ? (b) : (a) )
-#define T_sign(v)                           ( ~( _v( (v), ~0 ) >> 1 ) != 0 )
+#define T_sign(v)                           (( (v) & ~( _v( (v), ~0 ) >> 1 )) != 0 )
 #define J_abs(v)                            ( (v) & ( _v( (v), ~0 ) >> 1 ))
 //------------------------------------------------------------------------------
 #define J_autogen_S                         _autogen
@@ -72,9 +72,12 @@ typedef P           *Pp; ///wskaźnik do tablic adresów.
   while(( id_var = J_a_b(q,Q_iter_R_next)( (p), (iter), ++J_autogen_line(id_var) )) != (out) )
 #define for_each_q(id_var,p,iter,q)         for_each_q_out(~0,id_var,(p),(iter),q)
 //==============================================================================
+#define _F_uid_v(v)                         ( (v) << ( sizeof(int) * 8 / 2 ))
 #define _F_uid(file_identifier)             J_autogen(J_a_b(F,file_identifier))
-#define _XhYi_F_uid_v(v)                    ( (v) << ( sizeof(int) * 8 / 2 ))
-#define _XhYi_F_uid(file_identifier)        _XhYi_F_uid_v( _F_uid(file_identifier) )
+#define _K_F_uid(file_identifier)           _F_uid_v(v)
+#define _K_proc(module,event)               J_a_b(J_a_b(E,module),J_a_b(K,event))
+#define _K_uid(module,event)                J_autogen(J_a_b(J_a_b(E,module),J_a_b(K,event)))
+#define _XhYi_F_uid(file_identifier)        _F_uid_v( _F_uid(file_identifier) )
 #define _XhYi_uid(module,report_impulser)   J_autogen(J_a_b(J_a_b(E,module),report_impulser))
 #define _X_uid(module,report)               J_autogen(J_a_b(J_a_b(E,module),J_a_b(X,report)))
 #define _X_var(module,report)               J_autogen(J_a_b(J_a_b(E,module),J_a_b(J_a_b(X,report),S)))
@@ -134,6 +137,11 @@ typedef P           *Pp; ///wskaźnik do tablic adresów.
 ///albo blokowe.
 #define U_E(start_expr,state_name)          ( U_R(start_expr,state_name) && ( U_L(start_expr,state_name), yes ))
 //------------------------------------------------------------------------------
+///instrukcja blokowa definicji ‹zdarzenia›.
+#define K(module,event)                     B _K_proc(module,event)( I object )
+///deklaracja emisji ‹zdarzenia›.
+#define K_E(module,event,object)            if( !_K_proc(module,event)(object) ){} else
+//------------------------------------------------------------------------------
 ///utworzenie i wyrzucenie ‹raportu›.
 #define X_M_(module,report)                 _X_var(module,report) = E_flow_Q_report_M( _X_uid(module,report) )
 #define X_M(module,report)                  I X_M_(module,report)
@@ -144,8 +152,6 @@ typedef P           *Pp; ///wskaźnik do tablic adresów.
 #define X_F(module,report)                  E_flow_Q_report_I_signal( _X_var(module,report) )
 ///i warunkowa– gdy jest stan pojedynczego obiektu.
 #define X_U(module,report)                  if( !U_E(module,report) ){} else X_F(module,report)
-///albo z oczekiwaniem na obsłużenie. NDFN przecież to jest ‹zdarzenie›. do utworzenia odpowiedniej implementacji, zgodnej z opisem w projekcie: procedura obsługi (nowy obiekt systemowy podobny do ‹zadania›, ale specjalnie automatycznie blokowany) menedżera obiektów, przekazanie ‘uidu’ obiektu.
-//#define X_E(module,report,lost_count) if( !E_flow_Q_report_I_emit( _X_var(module,report),lost_count) ){} else
 ///czekanie na ‹raport› kolekcji.
 #define X_B(module,report,lost_count)       if( !E_flow_Q_report_I_wait( _X_var(module,report), (lost_count) )){} else
 //------------------------------------------------------------------------------
@@ -214,8 +220,8 @@ typedef P           *Pp; ///wskaźnik do tablic adresów.
 //------------------------------------------------------------------------------
 ///wypisywanie zmiennych programu; po “G”/“GV”/“G_”/“GV_” w linii.
 #define Gc(c)       if( _G_var ) E_flow_Z_line_report_Z_text_c_I_sync( J_s(c), c ); else E_flow_Z_line_report_Z_text_c_I( J_s(c), c )
-#define Gs(s)       Gs_l( (s), 0 )
-#define Gs_(s)      Gs_l_( (s), 0 )
+#define Gs(s)       Gs_l( s, 0 )
+#define Gs_(s)      Gs_l_( s, 0 )
 #define Gs_l(s,l)   if( _G_var ) E_flow_Z_line_report_Z_text_s_I_sync( J_s(s), (s), (l) ); else E_flow_Z_line_report_Z_text_s_I( J_s(s), (s), (l) )
 #define Gs_l_(s,l)  if( _G_var ) E_flow_Z_line_report_Z_s_I_sync( (s), (l) ); else E_flow_Z_line_report_Z_s_I( (s), (l) )
 #define Gd(n)       if( _G_var ) E_flow_Z_line_report_Z_text_n_I_sync( J_s(n), (N)(n), sizeof(n), 10 ); else E_flow_Z_line_report_Z_text_n_I( J_s(n), (N)(n), sizeof(n), 10 )

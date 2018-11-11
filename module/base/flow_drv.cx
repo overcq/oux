@@ -32,7 +32,6 @@ I _X_var( io, stream_write );
 //==============================================================================
 enum E_flow_Z_run_state
 { E_flow_Z_run_state_S_ready
-//, E_flow_Z_run_state_S_emiting_report
 , E_flow_Z_run_state_S_waiting_for_report
 , E_flow_Z_run_state_S_waiting_for_timer
 , E_flow_Z_run_state_S_waiting_for_call_reply
@@ -728,30 +727,6 @@ E_flow_Q_report_I_signal( I id
         }
     }
 }
-    #if 0
-B
-E_flow_Q_report_I_emit( I id
-, N *lost_count
-){  struct E_flow_Q_report_Z *report = E_mem_Q_tab_R( E_base_S->E_flow_Q_report_S, id );
-    if( lost_count )
-        *lost_count = ++report->reported_count;
-    for_each( task_id, E_base_S->E_flow_Q_task_S, E_mem_Q_tab )
-    {   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id );
-        if( task->run_state == E_flow_Z_run_state_S_waiting_for_report
-        && task->run_state_object == id
-        )
-        {   task->run_state = E_flow_Z_run_state_S_ready;
-            break;
-        }
-    }
-    if( !~task_id )
-    {   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
-        task->run_state = E_flow_Z_run_state_S_emiting_report;
-        task->run_state_object = id;
-    }
-    return E_flow_Q_task_I_schedule();
-}
-    #endif
 B
 E_flow_Q_report_I_wait( I id
 , N *lost_count
