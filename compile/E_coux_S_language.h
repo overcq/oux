@@ -74,9 +74,7 @@ typedef P           *Pp; ///wskaźnik do tablic adresów.
 //==============================================================================
 #define _F_uid_v(v)                         ( (v) << ( sizeof(int) * 8 / 2 ))
 #define _F_uid(file_identifier)             J_autogen(J_a_b(F,file_identifier))
-#define _K_F_uid(file_identifier)           _F_uid_v(v)
 #define _K_proc(module,event)               J_a_b(J_a_b(E,module),J_a_b(K,event))
-#define _K_uid(module,event)                J_autogen(J_a_b(J_a_b(E,module),J_a_b(K,event)))
 #define _XhYi_F_uid(file_identifier)        _F_uid_v( _F_uid(file_identifier) )
 #define _XhYi_uid(module,report_impulser)   J_autogen(J_a_b(J_a_b(E,module),report_impulser))
 #define _X_uid(module,report)               J_autogen(J_a_b(J_a_b(E,module),J_a_b(X,report)))
