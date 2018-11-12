@@ -7,8 +7,8 @@
 # ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2015‒4‒28 #
 ################################################################################
 S_libraries := m
-#TODO generować automatycznie “S_headers”.
-S_headers := ctype.h limits.h math.h errno.h fcntl.h fenv.h locale.h sched.h signal.h stdarg.h stdbool.h stdio.h stdlib.h string.h sys/file.h sys/ipc.h sys/mman.h sys/shm.h sys/stat.h sys/time.h sys/types.h sys/wait.h termios.h time.h unistd.h
+S_headers := errno.h limits.h
+#S_headers := ctype.h math.h errno.h fcntl.h fenv.h locale.h sched.h signal.h stdarg.h stdbool.h stdio.h stdlib.h string.h sys/file.h sys/ipc.h sys/mman.h sys/shm.h sys/stat.h sys/time.h sys/types.h sys/wait.h termios.h time.h unistd.h
     ifeq ($(H_make_S_os),Linux)
 S_headers += alloca.h error.h sys/prctl.h ucontext.h
 CFLAGS += -D_GNU_SOURCE

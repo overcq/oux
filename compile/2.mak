@@ -106,7 +106,9 @@ H_make_S_base_driver := flow_drv
 H_make_Z_shell_cmd_arg_I_quote = '$(subst ','\'',$(1))'
 H_make_Z_shell_cmd_arg_I_quote_for = $(foreach s,$(1),$(call H_make_Z_shell_cmd_arg_I_quote,$(s)))
 #-------------------------------------------------------------------------------
+H_make_Z_shell_cmd_N_gen_headers_db := $(H_make_S_compile_path)/E_coux_I_gen_headers_db.sh
 H_make_Z_shell_cmd_N_cx_to_c := $(H_make_S_compile_path)/E_coux_I_compile_N_cx_to_c.sh
+H_make_Z_shell_cmd_N_cx_to_h := $(H_make_S_compile_path)/E_coux_I_compile_N_cx_to_h.sh
 H_make_Q_packages_R_cflags = $(if $(1),$(shell pkg-config --cflags $(call H_make_Z_shell_cmd_arg_I_quote_for,$(1))))
 H_make_Q_packages_R_ldflags = $(if $(1),$(filter-out -l%,$(shell pkg-config --libs $(call H_make_Z_shell_cmd_arg_I_quote_for,$(1)))))
 H_make_Q_packages_R_ldlibs = $(if $(1),$(filter -l%,$(shell pkg-config --libs $(call H_make_Z_shell_cmd_arg_I_quote_for,$(1)))))
@@ -218,12 +220,17 @@ rebuild-run: rebuild run
 #-------------------------------------------------------------------------------
 .SECONDARY: 0.mak 0.h $(foreach module,$(H_make_S_modules),$(addprefix $(H_make_S_module_path)/$(module)/,0.mak 0.h)) \
 E_coux_S_0_main_not_to_libs.h $(H_make_S_module_path)/E_coux_S_0_to_libs.h \
-$(patsubst %.cx,E_coux_S_1_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,E_coux_S_2_%.h,$(H_make_S_cx_sources)) \
-$(foreach module,$(H_make_S_modules),$(addprefix $(H_make_S_module_path)/$(module)/,$(patsubst %.cx,E_coux_S_1_%.h,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))) $(patsubst %.cx,E_coux_S_2_%.h,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))))) \
+$(patsubst %.cx,E_coux_S_0_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,E_coux_S_1_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,E_coux_S_2_%.h,$(H_make_S_cx_sources)) \
+$(foreach module,$(H_make_S_modules),$(addprefix $(H_make_S_module_path)/$(module)/,$(patsubst %.cx,E_coux_S_0_%.h,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))) $(patsubst %.cx,E_coux_S_1_%.h,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))) $(patsubst %.cx,E_coux_S_2_%.h,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))))) \
 $(patsubst %.cx,%.c,$(H_make_S_cx_sources) $(foreach module,$(H_make_S_modules),$(wildcard $(H_make_S_module_path)/$(module)/*.cx)))
 0.mak 0.h $(foreach module,$(H_make_S_modules),$(addprefix $(H_make_S_module_path)/$(module)/,0.mak 0.h)):
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     define H_make_Q_main_header_I_module_0
+for header in $(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(1)/),$(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,E_coux_S_0_%.h,$(notdir $(wildcard $(H_make_S_module_path)/$(1)/*.cx))))); do \
+    echo "#include \"$${header}\"" ;\
+done
+    endef
+    define H_make_Q_main_header_I_module_0h
 if [ -e $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(1)/0.h) ]; then \
     echo $(call H_make_Z_shell_cmd_arg_I_quote,#include "$(1)/0.h") ;\
 fi
@@ -239,6 +246,9 @@ for header in $(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(1)/),$(call H_
 done
     endef
 #-------------------------------------------------------------------------------
+$(H_make_S_compile_path)/headers_db:
+	$(H_make_Z_shell_cmd_N_gen_headers_db) > $(call H_make_Z_shell_cmd_arg_I_quote,$@)
+#-------------------------------------------------------------------------------
 E_coux_S_0_main_not_to_libs.h: \
 $(H_make_Z_shell_cmd_N_cx_to_c) \
 $(addprefix $(H_make_S_compile_path)/,1.mak 2.mak Makefile) \
@@ -248,13 +258,17 @@ $(addprefix $(H_make_S_compile_path)/,1.mak 2.mak Makefile) \
             echo "#include <$${include}>" ;\
         done ;\
         ) \
+        $(foreach module,$(H_make_S_modules),$(call H_make_Q_main_header_I_module_0,$(module)) ;) \
+        for header in $(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,E_coux_S_0_%.h,$(H_make_S_cx_sources))); do \
+            echo "#include \"$${header}\"" ;\
+        done ;\
         echo '#include "E_coux_S_machine.h"' ;\
         echo '#include "E_coux_S_language.h"' ;\
         $(H_make_Z_shell_cmd_N_cx_to_c) -f $(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,%,$(H_make_S_cx_sources))) $(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(module)/),$(call H_make_Z_shell_cmd_arg_I_quote_for,$(sort $(patsubst %.cx,%,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))))))) ;\
         $(if $(H_make_C_to_libs), \
         $(H_make_Z_shell_cmd_N_cx_to_c) -h1_ $(foreach module,$(H_make_S_modules),$(call H_make_Z_shell_cmd_arg_I_quote_for,$(wildcard $(H_make_S_root_path)/module/$(module)/*.cx))) ;\
         ) \
-        $(foreach module,$(H_make_S_modules),$(call H_make_Q_main_header_I_module_0,$(module)) ;) \
+        $(foreach module,$(H_make_S_modules),$(call H_make_Q_main_header_I_module_0h,$(module)) ;) \
         if [ -e 0.h ]; then \
             echo "#include \"0.h\"" ;\
         fi ;\
@@ -279,15 +293,22 @@ $(addprefix $(H_make_S_compile_path)/,1.mak 2.mak Makefile)
             echo "#include <$${include}>" ;\
         done ;\
         ) \
+        $(foreach module,$(H_make_S_modules),$(call H_make_Q_main_header_I_module_0,$(module)) ;) \
         echo '#include "E_coux_S_machine.h"' ;\
         echo '#include "E_coux_S_language.h"' ;\
         $(H_make_Z_shell_cmd_N_cx_to_c) -f $(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,%,$(H_make_S_cx_sources))) $(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(module)/),$(call H_make_Z_shell_cmd_arg_I_quote_for,$(sort $(patsubst %.cx,%,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))))))) ;\
         $(H_make_Z_shell_cmd_N_cx_to_c) -h1_ $(foreach module,$(H_make_S_modules),$(call H_make_Z_shell_cmd_arg_I_quote_for,$(wildcard $(H_make_S_root_path)/module/$(module)/*.cx))) ;\
-        $(foreach module,$(H_make_S_modules),$(call H_make_Q_main_header_I_module_0,$(module)) ;) \
+        $(foreach module,$(H_make_S_modules),$(call H_make_Q_main_header_I_module_0h,$(module)) ;) \
         $(foreach module,$(H_make_S_modules),$(call H_make_Q_main_header_I_module_1,$(module)) ;) \
         $(foreach module,$(H_make_S_modules),$(call H_make_Q_main_header_I_module_2,$(module)) ;) \
     } > $(call H_make_Z_shell_cmd_arg_I_quote,$@)
     endif
+E_coux_S_0_%.h: %.cx \
+$(H_make_S_compile_path)/headers_db \
+$(H_make_Z_shell_cmd_N_cx_to_h)
+	$(H_make_Z_shell_cmd_N_cx_to_h) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_compile_path)/headers_db) \
+	< $(call H_make_Z_shell_cmd_arg_I_quote,$<) \
+	> $(call H_make_Z_shell_cmd_arg_I_quote,$@)
 E_coux_S_1_%.h: %.cx \
 $(H_make_Z_shell_cmd_N_cx_to_c) \
 $(addprefix $(H_make_S_compile_path)/,1.mak 2.mak Makefile) \
@@ -307,8 +328,8 @@ $(addprefix $(H_make_S_compile_path)/,1.mak 2.mak Makefile)
     ifeq (,$(H_make_C_to_libs))
 a.out: \
 $(addprefix $(H_make_S_compile_path)/,E_coux_S_machine.h E_coux_S_language.h $(H_make_S_compiler_cx_sources)) \
-0.mak E_coux_S_0_main_not_to_libs.h 0.h $(patsubst %.cx,E_coux_S_1_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,E_coux_S_2_%.h,$(H_make_S_cx_sources)) \
-$(foreach module,$(H_make_S_modules),$(addprefix $(H_make_S_module_path)/$(module)/,0.mak 0.h $(patsubst %.cx,E_coux_S_1_%.h,$(notdir $(wildcard $(H_make_S_root_path)/module/$(module)/*.cx))) $(patsubst %.cx,E_coux_S_2_%.h,$(notdir $(wildcard $(H_make_S_root_path)/module/$(module)/*.cx))))) \
+0.mak E_coux_S_0_main_not_to_libs.h 0.h $(patsubst %.cx,E_coux_S_0_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,E_coux_S_1_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,E_coux_S_2_%.h,$(H_make_S_cx_sources)) \
+$(foreach module,$(H_make_S_modules),$(addprefix $(H_make_S_module_path)/$(module)/,0.mak 0.h $(patsubst %.cx,E_coux_S_0_%.h,$(notdir $(wildcard $(H_make_S_root_path)/module/$(module)/*.cx))) $(patsubst %.cx,E_coux_S_1_%.h,$(notdir $(wildcard $(H_make_S_root_path)/module/$(module)/*.cx))) $(patsubst %.cx,E_coux_S_2_%.h,$(notdir $(wildcard $(H_make_S_root_path)/module/$(module)/*.cx))))) \
 $(patsubst %.cx,%.c,$(H_make_S_cx_sources) $(foreach module,$(H_make_S_modules),$(wildcard $(H_make_S_module_path)/$(module)/*.cx)))
 	$(CC) $(call H_make_Q_packages_R_cflags,$(E_main_S_packages)) $(CFLAGS) $(call H_make_Q_packages_R_ldflags,$(E_main_S_packages)) $(LDFLAGS) $(TARGET_ARCH) -fPIE -pie -s -iquote$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_compile_path)) -iquote$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)) -include E_coux_S_0_main_not_to_libs.h $(addprefix -include ,$(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_compiler_cx_sources))) $(call H_make_Z_shell_cmd_arg_I_quote_for,$(filter %.c,$^)) -o $(call H_make_Z_shell_cmd_arg_I_quote,$@) $(addprefix -l,$(call H_make_Z_shell_cmd_arg_I_quote_for,$(E_main_S_libraries))) $(call H_make_Q_packages_R_ldlibs,$(E_main_S_packages))
     else
@@ -316,7 +337,7 @@ $(patsubst %.cx,%.c,$(H_make_S_cx_sources) $(foreach module,$(H_make_S_modules),
 $$(H_make_S_module_path)/$(1)/%.lo: $$(H_make_S_module_path)/$(1)/%.c \
 $$(addprefix $$(H_make_S_compile_path)/,E_coux_S_machine.h E_coux_S_language.h $$(H_make_S_compiler_cx_sources)) \
 $$(H_make_S_module_path)/E_coux_S_0_to_libs.h \
-$$(foreach module,$$(H_make_S_modules),$$(addprefix $$(H_make_S_module_path)/$$(module)/,0.mak 0.h $$(patsubst %.cx,E_coux_S_1_%.h,$$(notdir $$(wildcard $$(H_make_S_module_path)/$$(module)/*.cx))) $$(patsubst %.cx,E_coux_S_2_%.h,$$(notdir $$(wildcard $$(H_make_S_module_path)/$$(module)/*.cx)))))
+$$(foreach module,$$(H_make_S_modules),$$(addprefix $$(H_make_S_module_path)/$$(module)/,0.mak 0.h $$(patsubst %.cx,E_coux_S_0_%.h,$$(notdir $$(wildcard $$(H_make_S_module_path)/$$(module)/*.cx))) $$(patsubst %.cx,E_coux_S_1_%.h,$$(notdir $$(wildcard $$(H_make_S_module_path)/$$(module)/*.cx))) $$(patsubst %.cx,E_coux_S_2_%.h,$$(notdir $$(wildcard $$(H_make_S_module_path)/$$(module)/*.cx)))))
 	$$(LIBTOOL) --quiet --mode=compile --tag=CC $$(CC) $$(call H_make_Q_packages_R_cflags,$$(E_module_S_packages)) $$(CFLAGS) $$(TARGET_ARCH) -shared -prefer-pic -c -iquote$$(call H_make_Z_shell_cmd_arg_I_quote,$$(H_make_S_compile_path)) -iquote$$(call H_make_Z_shell_cmd_arg_I_quote,$$(H_make_S_module_path)) -include E_coux_S_0_to_libs.h $$(addprefix -include ,$$(call H_make_Z_shell_cmd_arg_I_quote_for,$$(H_make_S_compiler_cx_sources))) $$(call H_make_Z_shell_cmd_arg_I_quote,$$<) -o $$(call H_make_Z_shell_cmd_arg_I_quote,$$@)
 $$(H_make_S_module_path)/$(1)/lib$$(H_make_S_lib_prefix)$(1).so: $$(patsubst %.cx,%.lo,$$(wildcard $$(H_make_S_module_path)/$(1)/*.cx))
 	$$(LIBTOOL) --quiet --mode=link --tag=CC $$(CC) $$(call H_make_Q_packages_R_cflags,$$(E_module_S_packages)) $$(CFLAGS) $$(call H_make_Q_packages_R_ldflags,$$(E_$(2)_S_packages)) $$(LDFLAGS) $$(TARGET_ARCH) -s -shared -fPIC -Wc,-shared -Wc,-fPIC $$(call H_make_Z_shell_cmd_arg_I_quote_for,$$^) -o $$(call H_make_Z_shell_cmd_arg_I_quote,$$@) $$(addprefix -l,$$(call H_make_Z_shell_cmd_arg_I_quote_for,$$(E_$(2)_S_libraries))) $$(call H_make_Q_packages_R_ldlibs,$$(E_$(2)_S_packages))
@@ -325,7 +346,7 @@ $$(H_make_S_module_path)/$(1)/lib$$(H_make_S_lib_prefix)$(1).so: $$(patsubst %.c
 $(foreach module,$(H_make_S_modules),$(eval $(call H_make_Q_lib_M,$(module),$(call H_make_Z_list_I_index,$(module),$(H_make_S_modules)))))
         undefine H_make_Q_lib_M
 a.out: \
-0.mak E_coux_S_0_main_not_to_libs.h 0.h $(patsubst %.cx,E_coux_S_1_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,E_coux_S_2_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,%.c,$(H_make_S_cx_sources)) \
+0.mak E_coux_S_0_main_not_to_libs.h 0.h $(patsubst %.cx,E_coux_S_0_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,E_coux_S_1_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,E_coux_S_2_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,%.c,$(H_make_S_cx_sources)) \
 $(foreach module,$(H_make_S_modules),$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so)
 	$(CC) $(call H_make_Q_packages_R_cflags,$(sort $(E_module_S_packages) $(E_main_S_packages))) $(CFLAGS) $(call H_make_Q_packages_R_ldflags,$(E_main_S_packages)) $(LDFLAGS) $(TARGET_ARCH) -fPIE -pie -s -iquote$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_compile_path)) -iquote$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)) -include E_coux_S_0_main_not_to_libs.h $(addprefix -include ,$(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_compiler_cx_sources))) $(call H_make_Z_shell_cmd_arg_I_quote_for,$(filter %.c,$^)) -o $(call H_make_Z_shell_cmd_arg_I_quote,$@) $(foreach module,$(H_make_S_modules),-L$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module))) $(foreach module,$(H_make_S_modules),-l$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_lib_prefix)$(module))) $(addprefix -l,$(call H_make_Z_shell_cmd_arg_I_quote_for,$(E_main_S_libraries))) $(call H_make_Q_packages_R_ldlibs,$(E_main_S_packages))
     endif
@@ -375,14 +396,17 @@ distclean:
       $(foreach module,$(H_make_S_modules),$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/.libs)) \
     ) ;\
 	$(RM) E_coux_S_0_main_not_to_libs.h \
-      $(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,E_coux_S_1_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,E_coux_S_2_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,%.c,$(H_make_S_cx_sources))) \
+      $(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,E_coux_S_0_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,E_coux_S_1_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,E_coux_S_2_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,%.c,$(H_make_S_cx_sources))) \
       $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/E_coux_S_0_to_libs.h) \
       $(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/), \
         $(call H_make_Z_shell_cmd_arg_I_quote_for, \
+          $(patsubst %.cx,E_coux_S_0_%.h,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))) \
           $(patsubst %.cx,E_coux_S_1_%.h,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))) \
           $(patsubst %.cx,E_coux_S_2_%.h,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))) \
           $(patsubst %.cx,%.c,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))) \
-      )))
+      ))) ;\
+    $(RM) $(H_make_S_compile_path)/_0.h ;\
+	$(RM) $(H_make_S_compile_path)/headers_db
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #uruchamianie rezultatu niezainstalowanego.
 run: build
