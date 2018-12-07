@@ -84,16 +84,11 @@ E_mem_Q_file_W( I id
     return 0;
 }
 //------------------------------------------------------------------------------
-void
-E_mem_Q_file_W_unsave( I id
-){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
-    V1( file->l = lseek( file->fd, 0, SEEK_END )){}
-    E_mem_Q_blk_I_rem( &file->unsaved, 0, file->unsaved_n );
-    file->unsaved_n = 0;
-}
 N
 E_mem_Q_file_I_save( I id
 ){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
+    if( !file->unsaved_n )
+        return 0;
     struct E_mem_Z_range *range = file->unsaved;
         #ifdef __gnu_linux__
     V0( fcntl( file->fd, F_SETFL, 0 )){}
@@ -580,5 +575,15 @@ E_mem_Q_file_P_rem_s( I id
     V0( fcntl( file->fd, F_SETFL, O_DIRECT )){}
         #endif
     return 0;
+}
+D( mem, file_save )
+{   I timer = Y_M(1000000000);
+    I_D
+    {   Y_B( timer, 0 )
+            break;
+        for_each( id, E_base_S->E_mem_Q_file_S, E_mem_Q_tab )
+            E_mem_Q_file_I_save(id);
+    }
+    Y_W(timer);
 }
 /******************************************************************************/

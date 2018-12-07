@@ -182,7 +182,7 @@ E_x_Q_object_I_draw_Z_arcs(
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 void
-E_x_Q_object_I_lay_2(
+E_x_Q_object_I_lay(
   struct E_x_Q_display_Z *display
 , struct E_x_Q_window_Z *window
 ){  if( !E_mem_Q_tab_R_n( window->object ))
@@ -192,274 +192,123 @@ E_x_Q_object_I_lay_2(
       N i;
     };
 Restart:;
-    G(); Gs_( "RESTART" );
-    struct Z_stack *stack = Mt( sizeof( struct Z_stack ), 0 );
-    N stack_i = ~0;
-    S16 next_x = E_x_Q_object_S_layout_dx;
-    S16 next_y = E_x_Q_object_S_layout_dy;
     struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, 0 );
     if( object->child_n )
-        O{  object->x = next_x;
-            object->y = next_y;
-            G(); Gd( object->x ); Gd( object->y );
-            ///przetworzenie zasobnika obiektu
-            if( object->child_n )
-            {   if( U_R( object->mode, lay_height ))
-                    next_x = stack[ stack_i ].object->x;
-                if( ~stack_i
-                && stack[ stack_i ].i
-                ){  next_x += E_x_Q_object_S_layout_dx;
-                    object->x = next_x;
-                }
+    {   struct Z_stack *stack = Mt( sizeof( struct Z_stack ), 0 );
+        N stack_i = ~0;
+        S16 next_x = E_x_Q_object_S_layout_dx;
+        S16 next_y = E_x_Q_object_S_layout_dy;
+        S16 after_x = E_x_Q_object_S_layout_dx;
+        S16 after_y = E_x_Q_object_S_layout_dy;
+        O{  if( object->child_n )
+            {   if( ~stack_i )
+                    if( U_R( object->mode, lay_height ))
+                    {   next_x = stack[ stack_i ].object->x + E_x_Q_object_S_layout_dx;
+                        after_x = next_x + E_x_Q_object_S_layout_dx;
+                        next_y = after_y + E_x_Q_object_S_layout_dy;
+                    }else
+                        after_y = next_y + E_x_Q_object_S_layout_dy;
                 struct Z_stack *stack_top = E_mem_Q_blk_I_append( &stack, 1 );
                 stack_i++;
                 stack_top->object = object;
                 stack_top->i = 0;
-                object->width = 0;
-                object->height = 0;
+                object->x = next_x;
+                object->y = next_y;
+                object->width = E_x_Q_object_S_layout_dx;
+                object->height = E_x_Q_object_S_layout_dy;
                 next_x += E_x_Q_object_S_layout_dx;
                 if( next_x > window->width
                 && !U_R( object->mode, lay_height )
                 ){  U_F( object->mode, lay_height );
-                    object->draw = E_x_Q_object_Z_text_field_I_draw_2;
                     do
-                    {   object = stack[ stack_i-- ].object;
-                    }while( ~stack_i
+                    {   object = stack[ stack_i ].object;
+                    }while( ~--stack_i
                     && !stack[ stack_i ].i
                     );
                     U_F( object->mode, lay_height );
-                    object->draw = E_x_Q_object_Z_text_field_I_draw_5;
                     W(stack);
                     goto Restart;
                 }
                 next_y += E_x_Q_object_S_layout_dy;
-                if( U_R( object->mode, lay_height ))
-                    object->x = next_x;
                 object = E_mem_Q_tab_R( window->object, object->child[0] );
                 continue;
             }
-            ///przetworzenie obiektów potomnych oprócz ostatniego
-            if( ++stack[ stack_i ].i != stack[ stack_i ].object->child_n )
-            {   if( U_R( object->mode, lay_height ))
-                {   if( stack[ stack_i ].i != 1 )
-                    {   /*if( stack[ stack_i ].object->width < E_x_Q_object_S_layout_dx + object->width )
-                            stack[ stack_i ].object->width = E_x_Q_object_S_layout_dx + object->width;
-                        struct E_x_Q_object_Z *object_ = E_mem_Q_tab_R( window->object, stack[ stack_i ].object->child[0] );
-                        next_x = stack[ stack_i ].object->x + E_x_Q_object_S_layout_dx;
-                        next_y += object_->height + E_x_Q_object_S_layout_dy;
-                        object->x = next_x;
-                        object->y = next_y;*/
-                    }else
-                    {   next_y += object->height + E_x_Q_object_S_layout_dy;
-                        object->y = next_y;
-                    }
-                    if( stack[ stack_i ].object->height < next_y - stack[ stack_i ].object->y + object->height + E_x_Q_object_S_layout_dy )
-                        stack[ stack_i ].object->height = next_y - stack[ stack_i ].object->y + object->height + E_x_Q_object_S_layout_dy;
+            if( stack[ stack_i ].i != stack[ stack_i ].object->child_n )
+            {   stack[ stack_i ].i++;
+                if( U_R( object->mode, lay_height )
+                && stack[ stack_i ].i != 1
+                ){  next_x = stack[ stack_i ].object->x + E_x_Q_object_S_layout_dx;
+                    next_y = after_y;
                 }
                 object->x = next_x;
+                object->y = next_y;
+                if( after_x < next_x + object->width + E_x_Q_object_S_layout_dx )
+                    after_x = next_x + object->width + E_x_Q_object_S_layout_dx;
+                if( after_y < next_y + object->height + E_x_Q_object_S_layout_dy )
+                    after_y = next_y + object->height + E_x_Q_object_S_layout_dy;
+                struct E_x_Q_object_Z *object_ = object;
+                N stack_i_ = stack_i;
+                N16 after_x_ = after_x;
+                N16 after_y_ = after_y;
+                do
+                {   object_ = stack[ stack_i_ ].object;
+                    if( object_->width < after_x_ - object_->x )
+                        object_->width = after_x_ - object_->x;
+                    if( object_->height < after_y_ - object_->y )
+                        object_->height = after_y_ - object_->y;
+                    after_x_ += E_x_Q_object_S_layout_dx;
+                    after_y_ += E_x_Q_object_S_layout_dy;
+                }while( ~--stack_i_ );
                 next_x += object->width + E_x_Q_object_S_layout_dx;
-                if( stack[ stack_i ].object->width < next_x - stack[ stack_i ].object->x )
-                    stack[ stack_i ].object->width = next_x - stack[ stack_i ].object->x;
                 if( next_x > window->width
                 && !U_R( object->mode, lay_height )
                 ){  U_F( object->mode, lay_height );
-                    object->draw = E_x_Q_object_Z_text_field_I_draw_3;
                     if( stack[ stack_i ].i == 1 )
                     {   do
-                        {   object = stack[ stack_i-- ].object;
-                        }while( ~stack_i
+                        {   object = stack[ stack_i ].object;
+                        }while( ~--stack_i
                         && !stack[ stack_i ].i
                         );
                         U_F( object->mode, lay_height );
-                        object->draw = E_x_Q_object_Z_text_field_I_draw_5;
                     }
                     W(stack);
                     goto Restart;
                 }
-                object = E_mem_Q_tab_R( window->object, stack[ stack_i ].object->child[ stack[ stack_i ].i ] );
-                continue;
+                if( stack[ stack_i ].i != stack[ stack_i ].object->child_n )
+                {   object = E_mem_Q_tab_R( window->object, stack[ stack_i ].object->child[ stack[ stack_i ].i ] );
+                    continue;
+                }
             }
-            ///przetworzenie ostatniego obiektu potomnego
-            object->x = next_x;
-            next_x += object->width;
-            if( stack[ stack_i ].object->height < next_y - stack[ stack_i ].object->y + object->height + E_x_Q_object_S_layout_dy )
-                stack[ stack_i ].object->height = next_y - stack[ stack_i ].object->y + object->height + E_x_Q_object_S_layout_dy;
-            ///szerokości i wysokości ostatniego obiektu potomnego i zasobników obiektów
-            struct E_x_Q_object_Z *object_1 = object;
             N stack_i_1 = stack_i;
-            do
-            {   if( U_R( object->mode, lay_height ))
-                {   object->x = stack[ stack_i ].object->x + E_x_Q_object_S_layout_dx;
-                    next_x = stack[ stack_i ].object->x + E_x_Q_object_S_layout_dx + object->width + E_x_Q_object_S_layout_dx;
-                    //next_y += object->height;
-                    //object->y = next_y;
-                    struct E_x_Q_object_Z *object_ = object;
-                    N stack_i_ = stack_i;
-                    do
-                    {   object_ = stack[ stack_i_-- ].object;
-                        object_->height += object->height + E_x_Q_object_S_layout_dy;
-                    }while( ~stack_i_
-                    && !stack[ stack_i_ ].i
-                    );
-                }else
-                    next_x += E_x_Q_object_S_layout_dx;
-                if( stack[ stack_i ].object->width < next_x - stack[ stack_i ].object->x )
-                    stack[ stack_i ].object->width = next_x - stack[ stack_i ].object->x;
-                if( stack[ stack_i ].object->height < object->height + 2 * E_x_Q_object_S_layout_dy )
-                    stack[ stack_i ].object->height = object->height + 2 * E_x_Q_object_S_layout_dy;
+            next_x = stack[ stack_i ].object->x + stack[ stack_i ].object->width + E_x_Q_object_S_layout_dx;
+            next_y -= E_x_Q_object_S_layout_dy;
+            object = stack[ stack_i ].object;
+            while( ~--stack_i
+            && ++stack[ stack_i ].i == stack[ stack_i ].object->child_n
+            ){  next_x = stack[ stack_i ].object->x + stack[ stack_i ].object->width + E_x_Q_object_S_layout_dx;
                 if( next_x > window->width
                 && !U_R( object->mode, lay_height )
                 ){  U_F( object->mode, lay_height );
-                    object->draw = E_x_Q_object_Z_text_field_I_draw_4;
                     do
                     {   object = stack[ stack_i-- ].object;
                     }while( ~stack_i
                     && !stack[ stack_i ].i
                     );
                     U_F( object->mode, lay_height );
-                    object->draw = E_x_Q_object_Z_text_field_I_draw_5;
                     W(stack);
                     goto Restart;
                 }
+                after_y += E_x_Q_object_S_layout_dy;
                 next_y -= E_x_Q_object_S_layout_dy;
                 object = stack[ stack_i ].object;
-            }while( ~--stack_i
-            && ++stack[ stack_i ].i == stack[ stack_i ].object->child_n
-            );
-            N stack_i_2 = stack_i;
-            ///przesunięcia pionowe zasobników obiektów przerzuconych
-            for( stack_i++; stack_i != stack_i_1; stack_i++ )
-                if( U_R( stack[ stack_i + 1 ].object->mode, lay_height ))
-                {   G();
-                    next_y = stack[ stack_i ].object->y + stack[ stack_i ].object->height;
-                    stack[ stack_i ].object->height += stack[ stack_i + 1 ].object->height;
-                    stack[ stack_i + 1 ].object->y = next_y;
-                }
-            if( U_R( object_1->mode, lay_height ))///?
-            {   G();
-                //next_y = stack[ stack_i ].object->y + stack[ stack_i ].object->height;
-                //stack[ stack_i ].object->height += object_1->height;
-                //object_1->y = next_y;
-            }
-            ///wysokości zasobników obiektów (przerzuconych)
-            for( stack_i--; stack_i != stack_i_2; stack_i-- )
-            {   if( stack[ stack_i ].object->height < stack[ stack_i + 1 ].object->height + 2 * E_x_Q_object_S_layout_dx )
-                    stack[ stack_i ].object->height = stack[ stack_i + 1 ].object->height + 2 * E_x_Q_object_S_layout_dx;
             }
             if( !~stack_i )
                 break;
             E_mem_Q_blk_I_rem( &stack, stack_i + 1, stack_i_1 - stack_i );
-            ///szerokości pozostałych u góry nie zamkniętych zasobników obiektów
-            for_n_rev( i, stack_i + 1 )
-            {   if( stack[i].object->width < object->width + E_x_Q_object_S_layout_dx )
-                    stack[i].object->width = object->width + E_x_Q_object_S_layout_dx;
-                object = stack[i].object;
-            }
             object = E_mem_Q_tab_R( window->object, stack[ stack_i ].object->child[ stack[ stack_i ].i ] );
-            G(); Gd( next_y );
         }
-    W(stack);
-}
-void
-E_x_Q_object_I_lay(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_window_Z *window
-){  if( !E_mem_Q_tab_R_n( window->object ))
-        return;
-    struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, 0 );
-    N lay_down = 0;
-    struct Z_stack
-    { struct E_x_Q_object_Z *object;
-      N i;
-    };
-    struct Z_stack *stack = Mt( sizeof( struct Z_stack ), 1 );
-    N stack_i = 0;
-    stack->object = object;
-    S16 next_x = E_x_Q_object_S_layout_dx;
-    S16 next_y = E_x_Q_object_S_layout_dy;
-    O{  if( object->child_n )
-        {   struct Z_stack *stack_top = E_mem_Q_blk_I_append( &stack, 1 );
-            stack_top->i = 0;
-            stack_top->object = object;
-            if( lay_down )
-            {   next_x = stack[ stack_i - lay_down ].object->x;
-                N i = stack_i;
-                while( i
-                && !stack[i].i
-                )
-                    i--;
-                next_y = stack[i].object->y + stack[i].object->height + E_x_Q_object_S_layout_dy;
-            }
-            object->x = next_x;
-            object->y = next_y;
-            object->width = 0;
-            object->height = 0;
-            object = E_mem_Q_tab_R( window->object, object->child[0] );
-            stack_i++;
-            G_(); Gd( next_x ); Gd( next_y );
-        }else
-        {   if( next_x + object->width > window->width )
-            {   object->x = stack[ stack_i ].object->x;
-                if( object->x + object->width > window->width
-                && stack_i - lay_down
-                ){  G_();
-                    lay_down++;
-                    object = stack[ stack_i ].object;
-                    E_mem_Q_blk_I_rem( &stack, stack_i--, 1 );
-                    continue;
-                }
-                lay_down = 0;
-                object->y = next_y;
-                next_x = stack[ stack_i ].object->x + object->width + E_x_Q_object_S_layout_dx;
-                next_y = stack[ stack_i ].object->y + stack[ stack_i ].object->height + E_x_Q_object_S_layout_dy;
-                if( stack[ stack_i ].i )
-                {   if( stack[ stack_i ].object->height < next_y - stack[ stack_i ].object->y + object->height )
-                        stack[ stack_i ].object->height = next_y - stack[ stack_i ].object->y + object->height;
-                }else
-                    stack[ stack_i ].object->height = object->height;
-                if( stack[ stack_i ].i )
-                {   if( stack[ stack_i ].object->width < object->width )
-                        stack[ stack_i ].object->width = object->width;
-                }else
-                    stack[ stack_i ].object->width = object->width;
-                G_(); Gd( next_x ); Gd( next_y );
-            }else
-            {   lay_down = 0;
-                object->x = next_x;
-                object->y = next_y;
-                if( stack[ stack_i ].i )
-                {   if( stack[ stack_i ].object->height < next_y - stack[ stack_i ].object->y + object->height )
-                        stack[ stack_i ].object->height = next_y - stack[ stack_i ].object->y + object->height;
-                    stack[ stack_i ].object->width += E_x_Q_object_S_layout_dx + object->width;
-                }else
-                {   stack[ stack_i ].object->height = object->height;
-                    stack[ stack_i ].object->width += object->width;
-                }
-                next_x += object->width + E_x_Q_object_S_layout_dx;
-                G_(); Gd( next_x ); Gd( next_y );
-            }
-            if( !stack_i )
-                break;
-            if( ++stack[ stack_i ].i != stack[ stack_i ].object->child_n )
-                object = E_mem_Q_tab_R( window->object, stack[ stack_i ].object->child[ stack[ stack_i ].i ] );
-            else
-            {   do
-                {   if( stack[ stack_i - 1 ].object->x + stack[ stack_i - 1 ].object->width < stack[ stack_i ].object->x + stack[ stack_i ].object->width )
-                        stack[ stack_i - 1 ].object->width = stack[ stack_i ].object->x + stack[ stack_i ].object->width - stack[ stack_i - 1 ].object->x;
-                    if( stack[ stack_i - 1 ].object->y + stack[ stack_i - 1 ].object->height < stack[ stack_i ].object->y + stack[ stack_i ].object->height )
-                        stack[ stack_i - 1 ].object->height = stack[ stack_i ].object->y + stack[ stack_i ].object->height - stack[ stack_i - 1 ].object->y;
-                    E_mem_Q_blk_I_rem( &stack, stack_i--, 1 );
-                    G_();
-                }while( stack_i
-                && ++stack[ stack_i ].i == stack[ stack_i ].object->child_n
-                );
-                if( !stack_i )
-                    break;
-                object = E_mem_Q_tab_R( window->object, stack[ stack_i ].object->child[ stack[ stack_i ].i ] );
-            }
-        }
+        W(stack);
     }
-    W(stack);
 }
 //------------------------------------------------------------------------------
 I
@@ -494,74 +343,6 @@ E_x_Q_object_Z_text_field_I_draw(
 , struct E_x_Q_window_Z *window
 , struct E_x_Q_object_Z *object
 ){  E_x_Q_object_I_draw_P_color_( E_x_Z_color_M( 0xff, 0, 0 ));
-    E_x_Q_object_I_draw_Z_rectangles_((
-      ( xcb_rectangle_t[] )
-      { { .x = 0
-        , .y = 0
-        , .width = object->width
-        , .height = object->height
-        }
-      }
-    ));
-}
-void
-E_x_Q_object_Z_text_field_I_draw_2(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_screen_Z *screen
-, struct E_x_Q_window_Z *window
-, struct E_x_Q_object_Z *object
-){  E_x_Q_object_I_draw_P_color_( E_x_Z_color_M( 0, 0xff, 0 ));
-    E_x_Q_object_I_draw_Z_rectangles_((
-      ( xcb_rectangle_t[] )
-      { { .x = 0
-        , .y = 0
-        , .width = object->width
-        , .height = object->height
-        }
-      }
-    ));
-}
-void
-E_x_Q_object_Z_text_field_I_draw_3(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_screen_Z *screen
-, struct E_x_Q_window_Z *window
-, struct E_x_Q_object_Z *object
-){  E_x_Q_object_I_draw_P_color_( E_x_Z_color_M( 0, 0, 0xff ));
-    E_x_Q_object_I_draw_Z_rectangles_((
-      ( xcb_rectangle_t[] )
-      { { .x = 0
-        , .y = 0
-        , .width = object->width
-        , .height = object->height
-        }
-      }
-    ));
-}
-void
-E_x_Q_object_Z_text_field_I_draw_4(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_screen_Z *screen
-, struct E_x_Q_window_Z *window
-, struct E_x_Q_object_Z *object
-){  E_x_Q_object_I_draw_P_color_( E_x_Z_color_M( 0, 0xff, 0xff ));
-    E_x_Q_object_I_draw_Z_rectangles_((
-      ( xcb_rectangle_t[] )
-      { { .x = 0
-        , .y = 0
-        , .width = object->width
-        , .height = object->height
-        }
-      }
-    ));
-}
-void
-E_x_Q_object_Z_text_field_I_draw_5(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_screen_Z *screen
-, struct E_x_Q_window_Z *window
-, struct E_x_Q_object_Z *object
-){  E_x_Q_object_I_draw_P_color_( E_x_Z_color_M( 0xff, 0xff, 0xff ));
     E_x_Q_object_I_draw_Z_rectangles_((
       ( xcb_rectangle_t[] )
       { { .x = 0

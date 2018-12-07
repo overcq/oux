@@ -8,7 +8,7 @@
 ################################################################################
 S_packages := xcb
 S_libraries := m
-S_headers := xcb/xcb.h xcb/xcb_event.h xcb/xcb_icccm.h
+S_headers := xcb/xcb.h xcb/xcb_event.h xcb/xcb_icccm.h xcb/xproto.h
 #“C_xcb_shape” do użycia tylko z własnymi oknami, pozwalającymi ‘serverowi’ ‟X” odświeżać bez migotania, ponieważ z ustawionej “pixmapy” tła.
     ifeq (,)
 S_packages += xcb-shape
