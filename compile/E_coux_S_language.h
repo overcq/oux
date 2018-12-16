@@ -208,13 +208,13 @@ typedef P           *Pp; ///wskaźnik do tablic adresów.
     #ifdef C_line_report
 //TODO w przyszłości zastąpić niegwarantowane wypisywanie synchroniczne na wypisywanie do specjalnego wyjścia danych, zawsze dostępnego, a niekoniecznie o dużej pojemności.
 ///‹raport linii› nie wymagający integralności programu. w miejscach, gdzie nie można wykonywać funkcji wypisywania integralnej tego programu. ponieważ nie można wywoływać żadnej funkcji obiektowości zarządzanej albo takiej funkcji może użyć funkcja żądania wypisania integralna tego programu.
-#define G_()        _unused B _G_var = yes; E_flow_Z_line_report_Z_line_I_sync( J_source_filename, __LINE__, 0 )
+#define G_()        _unused B _G_var = yes; E_flow_Z_line_report_Z_line_I_sync( &__FILE__[0], __LINE__, 0 )
 ///‹raport linii›.
-#define G()         _unused B _G_var = no; E_flow_Z_line_report_Z_line_I( J_source_filename, __LINE__, 0 )
+#define G()         _unused B _G_var = no; E_flow_Z_line_report_Z_line_I( &__FILE__[0], __LINE__, 0 )
 ///‹niepowodzenie zakańczające› (ewentualną instrukcją “V” umieszczoną na końcu linii). zaistniałe przez wejście na tę linię tekstu programu.
-#define GV_(s)      _unused B _G_var = yes; E_flow_Z_line_report_Z_line_I_sync( J_source_filename, __LINE__, J_s(s) )
+#define GV_(s)      _unused B _G_var = yes; E_flow_Z_line_report_Z_line_I_sync( &__FILE__[0], __LINE__, J_s(s) )
 ///‹niepowodzenie ostrzegające› (bez instrukcji “V”). 〃
-#define GV(s)       _unused B _G_var = no; E_flow_Z_line_report_Z_line_I( J_source_filename, __LINE__, J_s(s) )
+#define GV(s)       _unused B _G_var = no; E_flow_Z_line_report_Z_line_I( &__FILE__[0], __LINE__, J_s(s) )
 //------------------------------------------------------------------------------
 ///wypisywanie zmiennych programu; po “G”/“GV”/“G_”/“GV_” w linii.
 #define Gc(c)       if( _G_var ) E_flow_Z_line_report_Z_text_c_I_sync( J_s(c), c ); else E_flow_Z_line_report_Z_text_c_I( J_s(c), c )
@@ -269,28 +269,28 @@ typedef P           *Pp; ///wskaźnik do tablic adresów.
     #ifdef C_line_report
 #define Vr(statement) \
   int J_autogen_line(e) = (statement); \
-  if( !J_autogen_line(e) || ( _errno = J_autogen_line(e), E_flow_Z_line_report_Z_line_I_error( J_source_filename, __LINE__ ), no )) \
+  if( !J_autogen_line(e) || ( _errno = J_autogen_line(e), E_flow_Z_line_report_Z_line_I_error( &__FILE__[0], __LINE__ ), no )) \
   { \
   }else
 #define Vr1(statement) \
   int J_autogen_line(e) = (statement); \
-  if( J_autogen_line(e) <= 0 || ( _errno = J_autogen_line(e), E_flow_Z_line_report_Z_line_I_error( J_source_filename, __LINE__ ), no )) \
+  if( J_autogen_line(e) <= 0 || ( _errno = J_autogen_line(e), E_flow_Z_line_report_Z_line_I_error( &__FILE__[0], __LINE__ ), no )) \
   { \
   }else
 #define Vr_1(statement) \
   int J_autogen_line(e) = (statement); \
-  if( J_autogen_line(e) >= 0 || ( _errno = -J_autogen_line(e), E_flow_Z_line_report_Z_line_I_error( J_source_filename, __LINE__ ), no )) \
+  if( J_autogen_line(e) >= 0 || ( _errno = -J_autogen_line(e), E_flow_Z_line_report_Z_line_I_error( &__FILE__[0], __LINE__ ), no )) \
   { \
   }else
 #define _Ve(statement,e) \
-  if( _errno = 0, (statement) || ( e = _errno, E_flow_Z_line_report_Z_line_I_error( J_source_filename, __LINE__ ), no )) \
+  if( _errno = 0, (statement) || ( e = _errno, E_flow_Z_line_report_Z_line_I_error( &__FILE__[0], __LINE__ ), no )) \
   { \
   }else
 #define _VOe(statement,e) \
   J_autogen_line(Loop): \
   if( _errno = 0, (statement) || ( e = _errno, no )) \
   { \
-  }else if( e == EINTR || ( E_flow_Z_line_report_Z_line_I_error( J_source_filename, __LINE__ ), no )) \
+  }else if( e == EINTR || ( E_flow_Z_line_report_Z_line_I_error( &__FILE__[0], __LINE__ ), no )) \
       goto J_autogen_line(Loop); \
   else
     #else

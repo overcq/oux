@@ -7,7 +7,7 @@
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2015‒4‒28 *
 *******************************************************************************/
 ///są to obiekty wizualne.
-//każdy obiekt okna jest jednokrotny w konkretnym oknie i jest tylko wizualny. typy obiektów w celu przypisania referencyjnego funkcji obiektu ewentualnie do zrobienia później, jeśli to rozwiązanie okaże się potrzebne zamiast zwykłego ustawiania wskaźników do procedur.
+//każdy obiekt okna jest jednokrotny w konkretnym oknie. typy obiektów w celu przypisania referencyjnego funkcji obiektu ewentualnie do zrobienia później, jeśli to rozwiązanie okaże się potrzebne zamiast zwykłego ustawiania wskaźników do procedur.
 //==============================================================================
 typedef
 void
@@ -17,20 +17,37 @@ void
 , struct E_x_Q_window_Z *
 , struct E_x_Q_object_Z *
 );
+typedef
+void
+(*click_object_proc)(
+  struct E_x_Q_window_Z *
+, struct E_x_Q_object_Z *
+, N8
+, N8
+);
 struct E_x_Q_object_Z
-{   void ///ale obiekt zawiera punkty, które narysuje ta funkcja w czasie wywołania.
-    (*draw)(
-      struct E_x_Q_display_Z *
-    , struct E_x_Q_screen_Z *
-    , struct E_x_Q_window_Z *
-    , struct E_x_Q_object_Z *
-    );
-    N child_n;
-    I *child;
-    S16 x, y;
-    N16 width, height; ///prostokąt oczekiwanej widoczności obiektu.
-    unsigned U_R( mode, lay_height ):1;
-    unsigned U_R( mode, drag_src )  :1;
+{ void ///ale obiekt zawiera punkty, które narysuje ta funkcja w czasie wywołania.
+  (*draw)(
+    struct E_x_Q_display_Z *
+  , struct E_x_Q_screen_Z *
+  , struct E_x_Q_window_Z *
+  , struct E_x_Q_object_Z *
+  );
+  void
+  (*click)(
+    struct E_x_Q_window_Z *
+  , struct E_x_Q_object_Z *
+  , N8
+  , N8
+  );
+  N child_n;
+  I *child;
+  P data;
+  S16 x, y;
+  N16 width, height; ///prostokąt oczekiwanej widoczności obiektu.
+  unsigned U_R( mode, lay_height ):1;
+  unsigned U_R( mode, draggable ) :1;
+  unsigned U_R( mode, drag_src )  :1;
 };
 //==============================================================================
 S16 E_x_Q_object_S_layout_dx = 4, E_x_Q_object_S_layout_dy = 4;
@@ -51,37 +68,26 @@ E_x_Q_object_M(
   , struct E_x_Q_window_Z *
   , struct E_x_Q_object_Z *
   )
-){  I object_id = E_mem_Q_tab_I_add( window->object );
-    E_x_Q_object_M_( display, window, object_id, child_n, x, y, width, height, draw );
-    return object_id;
-}
-I
-E_x_Q_object_M_(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_window_Z *window
-, I object_id
-, N child_n
-, S16 x
-, S16 y
-, N16 width
-, N16 height
 , void
-  (*draw)(
-    struct E_x_Q_display_Z *
-  , struct E_x_Q_screen_Z *
-  , struct E_x_Q_window_Z *
+  (*click)(
+    struct E_x_Q_window_Z *
   , struct E_x_Q_object_Z *
+  , N8 button
+  , N8 seq
   )
-){  struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
+){  I object_id = E_mem_Q_tab_I_add( window->object );
+    struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
     object->draw = draw;
+    object->click = click;
     object->child_n = child_n;
-    if( child_n )
-        object->child = Mt( sizeof(I), child_n );
+    Mt_( object->child, child_n );
+    object->data = 0;
     object->x = x;
     object->y = y;
-    object->width = child_n ? 0 : width;
-    object->height = child_n ? 0 : height;
+    object->width = width;
+    object->height = height;
     U_L( object->mode, lay_height );
+    U_L( object->mode, draggable );
     U_L( object->mode, drag_src );
     U_F( window->req, draw );
     U_F( display->req, draw );
@@ -91,11 +97,88 @@ void
 E_x_Q_object_W(
   struct E_x_Q_display_Z *display
 , struct E_x_Q_window_Z *window
-, N object_id
+, I object_id
 ){  struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
-    if( object->child_n )
-        W( object->child );
+    if( object->data )
+        W( object->data );
+    W( object->child );
     E_mem_Q_tab_I_rem( window->object, object_id );
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+B
+E_x_Q_object_R_top( struct E_x_Q_window_Z *window
+, I id
+){  for_each( object_id, window->object, E_mem_Q_tab )
+    {   struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
+        for_n( child_i, object->child_n )
+        {   if( object->child[ child_i ] == id )
+                return no;
+        }
+    }
+    return yes;
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+N
+E_x_Q_object_I_add( struct E_x_Q_window_Z *window
+, I id
+, I child_id
+){  struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, id );
+    if( !E_mem_Q_blk_I_append( &object->child, 1 ))
+        return ~0;
+    object->child[ object->child_n ] = child_id;
+    object->child_n++;
+    return 0;
+}
+//------------------------------------------------------------------------------
+N
+E_x_Q_object_I_rem( struct E_x_Q_window_Z *window
+, I id
+){  for_each( object_id, window->object, E_mem_Q_tab )
+    {   struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
+        for_n( child_i, object->child_n )
+        {   if( object->child[ child_i ] == id )
+            {   E_mem_Q_blk_I_rem( &object->child, child_i, 1 );
+                object->child_n--;
+                struct E_x_Q_object_Z *object_rem = E_mem_Q_tab_R( window->object, id );
+                if( object_rem->child_n )
+                {   if( !E_mem_Q_blk_I_append( &object->child, object_rem->child_n ))
+                        return ~0;
+                    E_mem_Q_blk_I_copy_rev( &object->child[ child_i ] + object_rem->child_n, &object->child[ child_i ], ( object->child_n - child_i ) * sizeof( object->child[0] ));
+                    for_n( i, object_rem->child_n )
+                        object->child[ child_i + i ] = object_rem->child[i];
+                    object->child_n += object_rem->child_n;
+                }
+                goto End;
+            }
+        }
+    }
+End:E_mem_Q_tab_I_rem( window->object, id );
+    return 0;
+}
+N
+E_x_Q_object_I_rem_descendants( struct E_x_Q_window_Z *window
+, I id
+){  struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, id );
+    N ids_n = object->child_n;
+    I * Mt_( ids, ids_n );
+    if( !ids )
+        return ~0;
+    for_n( child_i, object->child_n )
+        ids[ child_i ] = object->child[ child_i ];
+    E_mem_Q_blk_I_rem( &object->child, 0, object->child_n );
+    object->child_n = 0;
+    for_n( ids_i, ids_n )
+    {   object = E_mem_Q_tab_R( window->object, ids[ ids_i ] );
+        if( !E_mem_Q_blk_I_append( &ids, object->child_n ))
+            return ~0;
+        for_n( child_i, object->child_n )
+            ids[ ids_n + child_i ] = object->child[ child_i ];
+        ids_n += object->child_n;
+    }
+    for_n_( ids_i, ids_n )
+        E_mem_Q_tab_I_rem( window->object, ids[ ids_i ] );
+    W(ids);
+    return 0;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 void
@@ -108,6 +191,20 @@ E_x_Q_object_I_draw_P_color(
         E_x_Q_window_I_draw_P_color( display, screen, color );
 }
 //------------------------------------------------------------------------------
+void
+E_x_Q_object_I_fill_Z_points(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_screen_Z *screen
+, struct E_x_Q_window_Z *window
+, struct E_x_Q_object_Z *object
+, N32 n
+, xcb_point_t *points
+){  for_n( i, n )
+    {   points[i].x += object->x;
+        points[i].y += object->y;
+    }
+    E_x_Q_window_I_fill_Z_points( display, screen, window, n, points );
+}
 void
 E_x_Q_object_I_draw_Z_points(
   struct E_x_Q_display_Z *display
@@ -181,6 +278,7 @@ E_x_Q_object_I_draw_Z_arcs(
     E_x_Q_window_I_draw_Z_arcs( display, screen, window, n, arcs );
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//NDFN kolejne obiekty będące na różnych stopniach hierarchii przykleja od góry.
 void
 E_x_Q_object_I_lay(
   struct E_x_Q_display_Z *display
@@ -191,10 +289,14 @@ E_x_Q_object_I_lay(
     { struct E_x_Q_object_Z *object;
       N i;
     };
-Restart:;
     struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, 0 );
     if( object->child_n )
-    {   struct Z_stack *stack = Mt( sizeof( struct Z_stack ), 0 );
+    {   for_each( id, window->object, E_mem_Q_tab )
+        {   struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, id );
+            U_L( object->mode, lay_height );
+        }
+Restart:;
+        struct Z_stack *stack = Mt( sizeof( struct Z_stack ), 0 );
         N stack_i = ~0;
         S16 next_x = E_x_Q_object_S_layout_dx;
         S16 next_y = E_x_Q_object_S_layout_dy;
@@ -205,7 +307,7 @@ Restart:;
                     if( U_R( object->mode, lay_height ))
                     {   next_x = stack[ stack_i ].object->x + E_x_Q_object_S_layout_dx;
                         after_x = next_x + E_x_Q_object_S_layout_dx;
-                        next_y = after_y + E_x_Q_object_S_layout_dy;
+                        next_y = after_y;
                     }else
                         after_y = next_y + E_x_Q_object_S_layout_dy;
                 struct Z_stack *stack_top = E_mem_Q_blk_I_append( &stack, 1 );
@@ -227,6 +329,7 @@ Restart:;
                     );
                     U_F( object->mode, lay_height );
                     W(stack);
+                    object = E_mem_Q_tab_R( window->object, 0 );
                     goto Restart;
                 }
                 next_y += E_x_Q_object_S_layout_dy;
@@ -272,6 +375,7 @@ Restart:;
                         U_F( object->mode, lay_height );
                     }
                     W(stack);
+                    object = E_mem_Q_tab_R( window->object, 0 );
                     goto Restart;
                 }
                 if( stack[ stack_i ].i != stack[ stack_i ].object->child_n )
@@ -282,25 +386,25 @@ Restart:;
             N stack_i_1 = stack_i;
             next_x = stack[ stack_i ].object->x + stack[ stack_i ].object->width + E_x_Q_object_S_layout_dx;
             next_y -= E_x_Q_object_S_layout_dy;
-            object = stack[ stack_i ].object;
             while( ~--stack_i
             && ++stack[ stack_i ].i == stack[ stack_i ].object->child_n
             ){  next_x = stack[ stack_i ].object->x + stack[ stack_i ].object->width + E_x_Q_object_S_layout_dx;
-                if( next_x > window->width
+                if( next_x > window->width //TODO poprawić o sprawdzanie zasobników: czy wystają za okno.
                 && !U_R( object->mode, lay_height )
                 ){  U_F( object->mode, lay_height );
                     do
-                    {   object = stack[ stack_i-- ].object;
-                    }while( ~stack_i
+                    {   object = stack[ stack_i ].object;
+                    }while( ~--stack_i
                     && !stack[ stack_i ].i
                     );
                     U_F( object->mode, lay_height );
                     W(stack);
+                    object = E_mem_Q_tab_R( window->object, 0 );
                     goto Restart;
                 }
-                after_y += E_x_Q_object_S_layout_dy;
                 next_y -= E_x_Q_object_S_layout_dy;
-                object = stack[ stack_i ].object;
+                if( after_y < stack[ stack_i ].object->y + stack[ stack_i ].object->height + E_x_Q_object_S_layout_dy )
+                    after_y = stack[ stack_i ].object->y + stack[ stack_i ].object->height + E_x_Q_object_S_layout_dy;
             }
             if( !~stack_i )
                 break;
@@ -312,28 +416,68 @@ Restart:;
 }
 //------------------------------------------------------------------------------
 I
+E_x_Q_object_Z_button_M(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_window_Z *window
+){  return E_x_Q_object_M( display, window
+    , 0
+    , 0
+    , 0
+    , 40
+    , 30
+    , E_x_Q_object_Z_button_I_draw
+    , E_x_Q_object_Z_button_I_click
+    );
+}
+void
+E_x_Q_object_Z_button_I_draw(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_screen_Z *screen
+, struct E_x_Q_window_Z *window
+, struct E_x_Q_object_Z *object
+){  E_x_Q_object_I_draw_P_color_( E_x_theme_Q_theme.object_bg );
+    E_x_Q_object_I_draw_P_color_( E_x_theme_Q_theme.line );
+    E_x_Q_object_I_draw_Z_rectangles_((
+      ( xcb_rectangle_t[] )
+      { { .x = 0
+        , .y = 0
+        , .width = object->width
+        , .height = object->height
+        }
+      }
+    ));
+    E_x_Q_object_I_fill_Z_points_((
+      ( xcb_point_t[] )
+      { { 1, 1 }
+      , { object->width - 1, 1 }
+      , { object->width - 1, object->height - 1 }
+      , { 1, object->height - 1 }
+      }
+    ));
+}
+void
+E_x_Q_object_Z_button_I_click(
+  struct E_x_Q_window_Z *window
+, struct E_x_Q_object_Z *object
+, N8 button
+, N8 seq
+){  if( button == 1 && seq == 2 )
+    {   G();
+    }
+}
+//------------------------------------------------------------------------------
+I
 E_x_Q_object_Z_text_field_M(
   struct E_x_Q_display_Z *display
 , struct E_x_Q_window_Z *window
-, N child_n
-){  I object_id = E_mem_Q_tab_I_add( window->object );
-    E_x_Q_object_Z_text_field_M_( display, window, object_id, child_n );
-    return object_id;
-}
-void
-E_x_Q_object_Z_text_field_M_(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_window_Z *window
-, I object_id
-, N child_n
-){  E_x_Q_object_M_( display, window
-    , object_id
-    , child_n
+){  return E_x_Q_object_M( display, window
+    , 0
     , 0
     , 0
     , 40
     , 30
     , E_x_Q_object_Z_text_field_I_draw
+    , 0
     );
 }
 void
@@ -342,7 +486,7 @@ E_x_Q_object_Z_text_field_I_draw(
 , struct E_x_Q_screen_Z *screen
 , struct E_x_Q_window_Z *window
 , struct E_x_Q_object_Z *object
-){  E_x_Q_object_I_draw_P_color_( E_x_Z_color_M( 0xff, 0, 0 ));
+){  E_x_Q_object_I_draw_P_color_( E_x_theme_Q_theme.line );
     E_x_Q_object_I_draw_Z_rectangles_((
       ( xcb_rectangle_t[] )
       { { .x = 0

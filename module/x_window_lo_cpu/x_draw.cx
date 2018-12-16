@@ -45,7 +45,7 @@ E_x_Z_color_M_gray(
   N8 luminance
 ){  return E_x_Z_color_M( luminance, luminance, luminance );
 }
-N8
+N32
 E_x_Z_color_P_luminance( N32 color
 , F luminance
 ){  N8 red = E_x_Z_color_R_red(color);
@@ -84,6 +84,38 @@ E_x_Q_window_I_draw_P_color(
         );
 }
 //------------------------------------------------------------------------------
+void
+E_x_Q_window_I_fill_Z_points(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_screen_Z *screen
+, struct E_x_Q_window_Z *window
+, N32 n
+, xcb_point_t *points
+){  xcb_fill_poly( display->x_display
+    , window->drawable
+    , screen->drawable_gc
+    , XCB_POLY_SHAPE_COMPLEX
+    , XCB_COORD_MODE_ORIGIN
+    , n
+    , points
+    );
+    xcb_fill_poly( display->x_display
+    , window->drawable_mask
+    , screen->bitmask_1_gc
+    , XCB_POLY_SHAPE_COMPLEX
+    , XCB_COORD_MODE_ORIGIN
+    , n
+    , points
+    );
+    xcb_fill_poly( display->x_display
+    , window->object_mask
+    , screen->object_mask_gc
+    , XCB_POLY_SHAPE_COMPLEX
+    , XCB_COORD_MODE_ORIGIN
+    , n
+    , points
+    );
+}
 void
 E_x_Q_window_I_draw_Z_points(
   struct E_x_Q_display_Z *display

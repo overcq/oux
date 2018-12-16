@@ -110,37 +110,10 @@ struct E_x_Q_display_Z
   unsigned U_R( req, draw )                         :1;
   //unsigned U_R( req, draw_click )                   :1;
   unsigned U_R( req, flush )                        :1;
+  unsigned U_R( req, restart )                      :1; //TODO wymagana obsługa.
 };
 struct E_mem_Q_tab_Z *E_x_Q_display_S;
 //==============================================================================
-void
-E_x_M( void
-){  E_x_S_wm_icon_S_n =
-    #if 1
-    16 * 16 + 32 * 32 + 64 * 64 + 128 * 128;
-    #else
-    3;
-    #endif
-    E_x_S_wm_icon = Mt( 4, E_x_S_wm_icon_S_n );
-    N32 *E_x_S_wm_icon_ = &(( N32 [] )
-    #if 1
-#include "wm_icon_data_1.h"
-    #else
-    { 1, 1, 0xff00007f
-    }
-    #endif
-    )[0];
-    E_mem_Q_blk_I_copy( E_x_S_wm_icon, E_x_S_wm_icon_, E_x_S_wm_icon_S_n * 4 );
-    E_x_Q_window_S_hidden_x = E_x_Q_window_C_hidden_x;
-    E_x_Q_window_S_hidden_y = E_x_Q_window_C_hidden_y;
-    E_x_Q_display_S = E_mem_Q_tab_M( sizeof( struct E_x_Q_display_Z ), 0 );
-}
-void
-E_x_W( void
-){  E_mem_Q_tab_W( E_x_Q_display_S );
-    W( E_x_S_wm_icon );
-}
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 I
 E_x_Q_display_M( void
 ){  I display_id = E_mem_Q_tab_I_add( E_x_Q_display_S );
@@ -242,37 +215,32 @@ E_x_Q_display_M( void
           , no
           }
         );
-        xcb_pixmap_t drawable_background = xcb_generate_id( display->x_display );
-        xcb_create_pixmap( display->x_display
-        , screen_iter.data->root_depth
-        , drawable_background
-        , screen_iter.data->root
-        , 254, 254
-        );
-        for_n( x, 254 )
-        {   for_n( y, 254 )
-            {   E_x_Q_window_I_draw_P_color( display, screen, E_x_Z_color_M(( x + 2 ) % 256, ( y + 2 ) % 256, (( x + 2 ) * ( y + 2 )) % 256 ));
-                xcb_poly_point( display->x_display
-                , XCB_COORD_MODE_ORIGIN
-                , drawable_background
-                , screen->drawable_gc
-                , 1
-                , ( xcb_point_t [] ){ x, y }
-                );
-            }
-        }
+        //xcb_pixmap_t drawable_background = xcb_generate_id( display->x_display );
+        //xcb_create_pixmap( display->x_display
+        //, screen_iter.data->root_depth
+        //, drawable_background
+        //, screen_iter.data->root
+        //, 1, 1
+        //);
+        //E_x_Q_window_I_draw_P_color( display, screen, E_x_theme_Q_theme.window_bg );
+        //xcb_poly_point( display->x_display
+        //, XCB_COORD_MODE_ORIGIN
+        //, drawable_background
+        //, screen->drawable_gc
+        //, 1
+        //, ( xcb_point_t [] ){ 0, 0 }
+        //);
         screen->drawable_background_gc = xcb_generate_id( display->x_display );
         xcb_create_gc( display->x_display
         , screen->drawable_background_gc
         , screen_iter.data->root
-        , XCB_GC_FILL_STYLE | XCB_GC_TILE | XCB_GC_GRAPHICS_EXPOSURES
+        , XCB_GC_FOREGROUND | XCB_GC_GRAPHICS_EXPOSURES
         , ( N32[] )
-          { XCB_FILL_STYLE_TILED
-          , drawable_background
+          { E_x_theme_Q_theme.window_bg
           , no
           }
         );
-        xcb_free_pixmap( display->x_display, drawable_background );
+        //xcb_free_pixmap( display->x_display, drawable_background );
         xcb_copy_gc( display->x_display, screen->drawable_background_gc, screen->drawable_gc, XCB_GC_TILE );
         xcb_pixmap_t pixmap_obj_wa = xcb_generate_id( display->x_display );
         xcb_create_pixmap( display->x_display
@@ -450,6 +418,7 @@ E_x_Q_display_M( void
     U_L( display->req, draw );
     //U_L( display->req, draw_click );
     U_F( display->req, flush );
+    U_L( display->req, restart );
     return display_id;
 }
 void

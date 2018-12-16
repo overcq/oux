@@ -156,7 +156,7 @@ CFLAGS += -DC_pthreads -pthread
 H_make_S_c_std_alt := gnu
     endif
     ifeq (clang,$(H_make_S_cc))
-CFLAGS += -std=$(H_make_S_c_std_alt)11 -O1 -Qunused-arguments
+CFLAGS += -std=$(H_make_S_c_std_alt)11 -O1 -Qunused-arguments -Wno-incompatible-pointer-types-discards-qualifiers
     else #nie “clang”.
         ifeq (gcc,$(H_make_S_cc))
 H_make_S_words := $(subst ., ,$(H_make_S_cc_version))
@@ -164,9 +164,6 @@ H_make_S_number := $(word 1,$(H_make_S_words)).$(word 2,$(H_make_S_words))
             ifneq (0,$(shell expr $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_number) > 4.6)))
 CFLAGS += -std=$(H_make_S_c_std_alt)11
 CFLAGS += -fno-signed-zeros
-				ifneq (0,$(shell expr $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_number) >= 5.0)))
-$(error gcc too new)
-				endif
             else ifneq (0,$(shell expr $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_number) = 4.6))) #“gcc” z “c1x”
 CFLAGS += -std=$(H_make_S_c_std_alt)1x
             else ifneq (0,$(shell expr $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_number) >= 2.95))) #“gcc” bez “c11”
@@ -184,9 +181,9 @@ undefine H_make_S_number
         else #nie “clang”, nie “gcc”
 CFLAGS += -std=c99 -D_unreachable=no
         endif
-CFLAGS += -O3
+CFLAGS += -O2 -Wno-old-style-declaration -Wno-overflow -Wno-shift-negative-value
     endif
-CFLAGS += -pedantic -fno-common -Wfatal-errors -Wall -Wextra -Wno-incompatible-pointer-types-discards-qualifiers -Wno-missing-braces -Wno-parentheses -Wno-sign-compare -Wstrict-prototypes -Wno-unused-parameter \
+CFLAGS += -pedantic -fno-common -Wfatal-errors -Wall -Wextra -Wno-missing-braces -Wno-parentheses -Wno-sign-compare -Wstrict-prototypes -Wno-unused-parameter \
 -fno-stack-protector -fno-trapping-math -fwrapv \
 -pipe
     ifeq (clang,$(H_make_S_cc))
@@ -383,6 +380,7 @@ clean: mostlyclean
       $(foreach module,$(H_make_S_modules),$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/.libs)) \
     )
     endif
+	$(RM) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/E_coux_S_0_to_libs.h) E_coux_S_0_main_not_to_libs.h
 distclean:
 	$(RM) a.out ;\
 	$(call H_make_I_libtool_I_clean, \

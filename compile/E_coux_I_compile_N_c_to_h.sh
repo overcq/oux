@@ -10,13 +10,21 @@
 headers_db="$1"
 cx_source="$2"
 #===============================================================================
-awk '
-    {   if( system( "grep -qEe \"(^|[^0-9A-Za-z_])" $1 "\\(\" \"'"$cx_source"'\"" ) == 0 )
-        {   pos = index( $0, " " )
-            line = substr( $0, pos + 1 )
-            split( line, a )
-            for( e in a )
-                print "#include <" a[e] ">"
+perl -we '
+    use warnings;
+    local $/;
+    open my $file, "'"$cx_source"'";
+    my $cnt = <$file>;
+    close $file;
+    local $/ = "\n";
+    while(<>)
+    {   chomp;
+        @line = split;
+        $func = shift @line;
+        if( $cnt =~ /(?:^|[^0-9A-Za-z_])${func}\(/m )
+        {   foreach ( @line )
+            {   print "#include <$_>\n";
+            }
         }
     }
 ' < "$headers_db" \

@@ -10,6 +10,18 @@
 //==============================================================================
     #ifdef C_line_report
 _internal
+Pc
+E_flow_Z_line_report_N_source_filename( Pc filename
+){  Pc s = E_text_Z_s0_R_search_last_c( filename, E_mem_Q_file_S_filename_separator );
+    if( *s != E_mem_Q_file_S_filename_separator )
+        return filename;
+    s = E_text_Z_s_R_search_last_c( filename, s - 1, E_mem_Q_file_S_filename_separator );
+    if( *s != E_mem_Q_file_S_filename_separator )
+        return filename;
+    return s + 1;
+}
+//------------------------------------------------------------------------------
+_internal
 void
 E_flow_Z_line_report_I_write_Z_s( Pc s
 , N l
@@ -133,7 +145,8 @@ void
 E_flow_Z_line_report_Z_line_I_sync( Pc file
 , N line
 , Pc s
-){  E_flow_Z_line_report_I_write_Z_c( '\n' );
+){  file = E_flow_Z_line_report_N_source_filename(file);
+    E_flow_Z_line_report_I_write_Z_c( '\n' );
     E_flow_Z_line_report_Z_s_I_sync( E_base_S->E_flow_S_exe_name, 0 );
     E_flow_Z_line_report_Z_n_I_sync( E_base_S->E_flow_S_exe_pid, sizeof( E_base_S->E_flow_S_exe_pid ), 10 );
     E_flow_Z_line_report_Z_s_I_sync( file, 0 );
@@ -150,7 +163,8 @@ void
 E_flow_Z_line_report_Z_line_I( Pc file
 , N line
 , Pc s
-){  E_io_Q_stream_out_P_c( 0, '\n' );
+){  file = E_flow_Z_line_report_N_source_filename(file);
+    E_io_Q_stream_out_P_c( 0, '\n' );
     E_flow_Z_line_report_Z_s_I( E_base_S->E_flow_S_exe_name, 0 );
     E_flow_Z_line_report_Z_n_I( E_base_S->E_flow_S_exe_pid, sizeof( E_base_S->E_flow_S_exe_pid ), 10 );
     E_flow_Z_line_report_Z_s_I( file, 0 );
@@ -165,6 +179,7 @@ void
 E_flow_Z_line_report_Z_line_I_error( Pc file
 , N line
 ){  int errno_ = _errno;
+    file = E_flow_Z_line_report_N_source_filename(file);
     E_flow_Z_line_report_Z_line_I_sync( file, line, "NA" );
     E_flow_Z_line_report_Z_text_n_I_sync( "errno", errno_, sizeof( errno_ ), 10 );
     E_flow_Z_line_report_Z_s_I_sync( strerror( errno_ ), 0 );

@@ -6,7 +6,6 @@
 *         global defines
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”              2015‒9‒4 *
 *******************************************************************************/
-//NDFN zmienić na automatyczne wykrywanie.
 #define E_x_Q_obj_C_id_bits         16
 #define E_x_Q_window_C_hidden_x     -1
 #define E_x_Q_window_C_hidden_y     -1
@@ -89,6 +88,7 @@ enum E_x_Q_display_Z_atom
     )
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #define E_x_Q_window_I_draw_P_color_(color)             E_x_Q_window_I_draw_P_color( display, screen, color )
+#define E_x_Q_window_I_fill_Z_points_(points)           E_x_Q_window_I_fill_Z_points( display, screen, window, sizeof(points) / sizeof( xcb_point_t ), points )
 #define E_x_Q_window_I_draw_Z_points_(points)           E_x_Q_window_I_draw_Z_points( display, screen, window, sizeof(points) / sizeof( xcb_point_t ), points )
 #define E_x_Q_window_I_draw_Z_segments_(points)         E_x_Q_window_I_draw_Z_segments( display, screen, window, sizeof(segments) / sizeof( xcb_segment_t ), segments )
 #define E_x_Q_window_I_draw_Z_line_(points)             E_x_Q_window_I_draw_Z_line( display, screen, window, sizeof(points) / sizeof( xcb_point_t ), points )
@@ -96,6 +96,7 @@ enum E_x_Q_display_Z_atom
 #define E_x_Q_window_I_draw_Z_arcs_(arcs)               E_x_Q_window_I_draw_Z_arcs( display, screen, window, sizeof(arcs) / sizeof( xcb_arc_t ), rectangles )
 //------------------------------------------------------------------------------
 #define E_x_Q_object_I_draw_P_color_(color)             E_x_Q_object_I_draw_P_color( display, screen, object, color )
+#define E_x_Q_object_I_fill_Z_points_(points)           E_x_Q_object_I_fill_Z_points( display, screen, window, object, sizeof(points) / sizeof( xcb_point_t ), points )
 #define E_x_Q_object_I_draw_Z_points_(points)           E_x_Q_object_I_draw_Z_points( display, screen, window, object, sizeof(points) / sizeof( xcb_point_t ), points )
 #define E_x_Q_object_I_draw_Z_segments_(segments)       E_x_Q_object_I_draw_Z_segments( display, screen, window, object, sizeof(segments) / sizeof( xcb_segment_t ), segments )
 #define E_x_Q_object_I_draw_Z_line_(points)             E_x_Q_object_I_draw_Z_line( display, screen, window, object, sizeof(points) / sizeof( xcb_point_t ), points )

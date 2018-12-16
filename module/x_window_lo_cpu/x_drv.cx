@@ -567,7 +567,16 @@ Loop:           free( x_event );
                         {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->drag_S_object_src[i].window_id );
                             U_F( window->req, draw );
                             //TODO join object into destination window.
-                            E_mem_Q_tab_I_rem( window->object, display->drag_S_object_src[i].object_id );
+                            if( E_x_Q_object_R_top( window, display->drag_S_object_src[i].object_id ))
+                            {   struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->drag_S_object_src[i].object_id );
+                                U_L( object->mode, drag_src );
+                                if( !~E_x_Q_object_I_rem_descendants( window, display->drag_S_object_src[i].object_id ))
+                                    U_F( display->req, restart );
+                            }
+                            else
+                                if( !~E_x_Q_object_I_rem( window, display->drag_S_object_src[i].object_id ))
+                                    U_F( display->req, restart );
+                            E_x_Q_object_I_lay( display, window );
                         }
                     }
                 }
@@ -675,126 +684,124 @@ Loop:           free( x_event );
                             }else
                                 xbutton_object_id = ~0;
                             if( ~xbutton_object_id )
-                            {   if( display->pointer_button_S_seq_i == 1 )
-                                {   if( display->pointer_button == 1 || display->pointer_button == 3 )
-                                    {   Mt_( display->drag_S_object_src, 1 );
-                                        if( display->drag_S_object_src )
-                                        {   display->drag_S_object_src_n = 1;
-                                            U_F( window->req, draw );
-                                            screen = E_mem_Q_tab_R( display->screen, window->screen_id );
-                                            struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, xbutton_object_id );
-                                            display->drag_S_pointer_button = display->pointer_button;
-                                            display->drag_S_dnd_window_screen_id = window->screen_id;
-                                            display->drag_S_object_src[0].window_id = display->pointer_button_S_window_id;
-                                            display->drag_S_object_src[0].object_id = xbutton_object_id;
-                                            display->drag_S_grab_x = display->pointer_button_S_x - object->x;
-                                            display->drag_S_grab_y = display->pointer_button_S_y - object->y;
-                                            U_F( object->mode, drag_src );
-                                            struct E_x_Q_window_Z *dnd_window = &screen->dnd_window;
-                                            dnd_window->width_new = dnd_window->width = object->width;
-                                            dnd_window->height_new = dnd_window->height = object->height;
-                                            dnd_window->object = E_mem_Q_tab_M( sizeof( struct E_x_Q_object_Z ), display->drag_S_object_src_n );
-                                            E_mem_Q_tab_Q_iter_M( dnd_window->object, ~0 );
-                                            E_x_Q_object_M_( display, dnd_window, 0, 0, 0, 0, object->width, object->height, object->draw );
-                                            xcb_grab_pointer_cookie_t ret_id = xcb_grab_pointer_unchecked( display->x_display
-                                            , yes
-                                            , dnd_window->x_window
-                                            , XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION
-                                            , XCB_GRAB_MODE_ASYNC
-                                            , XCB_GRAB_MODE_ASYNC
-                                            , XCB_NONE
-                                            , display->drag_S_cursor
-                                            , display->pointer_button_S_grab_time
-                                            );
-                                            xcb_grab_pointer_reply_t *ret = xcb_grab_pointer_reply( display->x_display, ret_id, 0 );
-                                            free(ret);
-                                            dnd_window->drawable = xcb_generate_id( display->x_display );
-                                            xcb_create_pixmap( display->x_display
-                                            , screen->depth
-                                            , dnd_window->drawable
-                                            , dnd_window->x_window
-                                            , dnd_window->width
-                                            , dnd_window->height
-                                            );
-                                            dnd_window->drawable_mask = xcb_generate_id( display->x_display );
-                                            xcb_create_pixmap( display->x_display
-                                            , 1
-                                            , dnd_window->drawable_mask
-                                            , dnd_window->x_window
-                                            , dnd_window->width
-                                            , dnd_window->height
-                                            );
-                                            dnd_window->drawable_mask_2 = xcb_generate_id( display->x_display );
-                                            xcb_create_pixmap( display->x_display
-                                            , 1
-                                            , dnd_window->drawable_mask_2
-                                            , dnd_window->x_window
-                                            , dnd_window->width
-                                            , dnd_window->height
-                                            );
-                                            xcb_poly_fill_rectangle( display->x_display
-                                            , dnd_window->drawable_mask_2
-                                            , screen->bitmask_1_gc
-                                            , 1
-                                            , ( xcb_rectangle_t[] )
-                                              { 0, 0
-                                              , dnd_window->width
-                                              , dnd_window->height
-                                              }
-                                            );
-                                            dnd_window->object_mask = xcb_generate_id( display->x_display );
-                                            xcb_create_pixmap( display->x_display
-                                            , E_x_Q_obj_C_id_bits
-                                            , dnd_window->object_mask
-                                            , dnd_window->x_window
-                                            , 1, 1
-                                            );
-                                                #ifdef C_xcb_shape
-                                            xcb_shape_mask( display->x_display
-                                            , XCB_SHAPE_SO_SUBTRACT
-                                            , XCB_SHAPE_SK_BOUNDING
-                                            , dnd_window->x_window
-                                            , 0, 0
-                                            , dnd_window->drawable_mask_2
-                                            );
-                                                #endif
-                                            xcb_configure_window( display->x_display
-                                            , dnd_window->x_window
-                                            , XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT | XCB_CONFIG_WINDOW_STACK_MODE
-                                            , ( N32[] )
-                                              { display->pointer_button_S_root_x - display->drag_S_grab_x
-                                              , display->pointer_button_S_root_y - display->drag_S_grab_y
-                                              , dnd_window->width
-                                              , dnd_window->height
-                                              , XCB_STACK_MODE_ABOVE
-                                              }
-                                            );
-                                            U_L( dnd_window->mode, resize );
-                                            U_L( dnd_window->req, resize );
-                                            U_F( dnd_window->req, draw );
-                                            U_F( dnd_window->req_ex, draw_S_set_background_pixmap );
-                                            U_F( display->req, draw );
-                                            U_F( display->req, flush );
-                                            U_F( display->mode, drag );
-                                            U_L( display->mode_ex, drag_S_copy );
-                                            U_F( display->mode_ex, drag_stop_S_cancel );
-                                        }else
-                                        {   GV_(NA);
-                                        }
-                                    }
-                                }else
-                                {   if( display->pointer_button == 2
-                                    && display->pointer_button_S_seq_i == 2
-                                    )
-                                    {   E_mem_Q_tab_I_rem( window->object, xbutton_object_id );
+                            {   struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, xbutton_object_id );
+                                if( U_R( object->mode, draggable )
+                                && display->pointer_button_S_seq_i == 1
+                                && display->pointer_button == 1
+                                ){   Mt_( display->drag_S_object_src, 1 );
+                                    if( display->drag_S_object_src )
+                                    {   display->drag_S_object_src_n = 1;
                                         U_F( window->req, draw );
+                                        screen = E_mem_Q_tab_R( display->screen, window->screen_id );
+                                        display->drag_S_pointer_button = display->pointer_button;
+                                        display->drag_S_dnd_window_screen_id = window->screen_id;
+                                        display->drag_S_object_src[0].window_id = display->pointer_button_S_window_id;
+                                        display->drag_S_object_src[0].object_id = xbutton_object_id;
+                                        display->drag_S_grab_x = display->pointer_button_S_x - object->x;
+                                        display->drag_S_grab_y = display->pointer_button_S_y - object->y;
+                                        U_F( object->mode, drag_src );
+                                        struct E_x_Q_window_Z *dnd_window = &screen->dnd_window;
+                                        dnd_window->width_new = dnd_window->width = object->width;
+                                        dnd_window->height_new = dnd_window->height = object->height;
+                                        dnd_window->object = E_mem_Q_tab_M( sizeof( struct E_x_Q_object_Z ), 0 );
+                                        E_mem_Q_tab_Q_iter_M( dnd_window->object, ~0 );
+                                        E_x_Q_object_M( display, dnd_window, 0, 0, 0, object->width, object->height, object->draw, 0 );
+                                        xcb_grab_pointer_cookie_t ret_id = xcb_grab_pointer_unchecked( display->x_display
+                                        , yes
+                                        , dnd_window->x_window
+                                        , XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION
+                                        , XCB_GRAB_MODE_ASYNC
+                                        , XCB_GRAB_MODE_ASYNC
+                                        , XCB_NONE
+                                        , display->drag_S_cursor
+                                        , display->pointer_button_S_grab_time
+                                        );
+                                        xcb_grab_pointer_reply_t *ret = xcb_grab_pointer_reply( display->x_display, ret_id, 0 );
+                                        free(ret);
+                                        dnd_window->drawable = xcb_generate_id( display->x_display );
+                                        xcb_create_pixmap( display->x_display
+                                        , screen->depth
+                                        , dnd_window->drawable
+                                        , dnd_window->x_window
+                                        , dnd_window->width
+                                        , dnd_window->height
+                                        );
+                                        dnd_window->drawable_mask = xcb_generate_id( display->x_display );
+                                        xcb_create_pixmap( display->x_display
+                                        , 1
+                                        , dnd_window->drawable_mask
+                                        , dnd_window->x_window
+                                        , dnd_window->width
+                                        , dnd_window->height
+                                        );
+                                        dnd_window->drawable_mask_2 = xcb_generate_id( display->x_display );
+                                        xcb_create_pixmap( display->x_display
+                                        , 1
+                                        , dnd_window->drawable_mask_2
+                                        , dnd_window->x_window
+                                        , dnd_window->width
+                                        , dnd_window->height
+                                        );
+                                        xcb_poly_fill_rectangle( display->x_display
+                                        , dnd_window->drawable_mask_2
+                                        , screen->bitmask_1_gc
+                                        , 1
+                                        , ( xcb_rectangle_t[] )
+                                          { 0, 0
+                                          , dnd_window->width
+                                          , dnd_window->height
+                                          }
+                                        );
+                                        dnd_window->object_mask = xcb_generate_id( display->x_display );
+                                        xcb_create_pixmap( display->x_display
+                                        , E_x_Q_obj_C_id_bits
+                                        , dnd_window->object_mask
+                                        , dnd_window->x_window
+                                        , 1, 1
+                                        );
+                                            #ifdef C_xcb_shape
+                                        xcb_shape_mask( display->x_display
+                                        , XCB_SHAPE_SO_SUBTRACT
+                                        , XCB_SHAPE_SK_BOUNDING
+                                        , dnd_window->x_window
+                                        , 0, 0
+                                        , dnd_window->drawable_mask_2
+                                        );
+                                            #endif
+                                        xcb_configure_window( display->x_display
+                                        , dnd_window->x_window
+                                        , XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT | XCB_CONFIG_WINDOW_STACK_MODE
+                                        , ( N32[] )
+                                          { display->pointer_button_S_root_x - display->drag_S_grab_x
+                                          , display->pointer_button_S_root_y - display->drag_S_grab_y
+                                          , dnd_window->width
+                                          , dnd_window->height
+                                          , XCB_STACK_MODE_ABOVE
+                                          }
+                                        );
+                                        U_L( dnd_window->mode, resize );
+                                        U_L( dnd_window->req, resize );
+                                        U_F( dnd_window->req, draw );
+                                        U_F( dnd_window->req_ex, draw_S_set_background_pixmap );
                                         U_F( display->req, draw );
+                                        U_F( display->req, flush );
+                                        U_F( display->mode, drag );
+                                        U_L( display->mode_ex, drag_S_copy );
+                                        U_F( display->mode_ex, drag_stop_S_cancel );
+                                    }else
+                                    {   GV_(NA);
                                     }
-                                }
+                                }else if( display->pointer_button_S_seq_i == 2 //TODO to testowe działanie będzie do usunięcia.
+                                && display->pointer_button == 2
+                                ){  E_mem_Q_tab_I_rem( window->object, xbutton_object_id );
+                                    U_F( window->req, draw );
+                                    U_F( display->req, draw );
+                                }else if( object->click )
+                                    object->click( window, object, display->pointer_button, display->pointer_button_S_seq_i );
                             }
                         }else
                         {   if( display->pointer_button_S_seq_i == 2
-                            && ( display->pointer_button == 1 || display->pointer_button == 3 )
+                            && display->pointer_button == 3
                             )
                             {   xcb_change_active_pointer_grab( display->x_display
                                 , ( U_R( display->mode_ex, drag_S_copy ) = !U_R( display->mode_ex, drag_S_copy )) ? display->drag_S_copy_cursor : display->drag_S_cursor

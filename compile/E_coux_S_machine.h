@@ -74,12 +74,10 @@ typedef N32                 I;
         #endif
     #endif
 typedef unsigned            In; ///służy do konwersji wartości “I” podczas porównywania.
-typedef N32                 U; ///znak ‘unicode’; nie do końca pewne, czy tak, ale zakres wartości ten.
+typedef N32                 U; ///znak ‘unicode’.
 typedef double              F; ///podstawowa liczba zmiennoprzecinkowa maszyny, ale do stosowania tylko w obliczeniach, w których wartość zbierająca niedokładność obliczeń jest urealniania w poszczególnych krokach programu.
 typedef void                *P; ///tylko do deklaracji parametrów i konwersji pomiędzy typami wskaźnikowymi (nadawania przetwarzanej zawartości danych wskazywanych).
 //==============================================================================
 #define E_mem_Q_file_S_filename_separator   '/'
 #define E_mem_Q_file_S_filename_separator_s "/"
-//------------------------------------------------------------------------------
-#define J_source_filename   ( *E_text_Z_s_R_search_last_c( &__FILE__[0], ( *E_text_Z_s0_R_search_last_c( &__FILE__[0], E_mem_Q_file_S_filename_separator ) == E_mem_Q_file_S_filename_separator ? E_text_Z_s0_R_search_last_c( &__FILE__[0], E_mem_Q_file_S_filename_separator ) - 1 : &__FILE__[0] ), E_mem_Q_file_S_filename_separator ) == E_mem_Q_file_S_filename_separator ? E_text_Z_s_R_search_last_c( &__FILE__[0], ( *E_text_Z_s0_R_search_last_c( &__FILE__[0], E_mem_Q_file_S_filename_separator ) == E_mem_Q_file_S_filename_separator ? E_text_Z_s0_R_search_last_c( &__FILE__[0], E_mem_Q_file_S_filename_separator ) - 1 : &__FILE__[0] ), E_mem_Q_file_S_filename_separator ) + 1 : &__FILE__[0] )
 /******************************************************************************/
