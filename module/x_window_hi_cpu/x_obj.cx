@@ -278,7 +278,6 @@ E_x_Q_object_I_draw_Z_arcs(
     E_x_Q_window_I_draw_Z_arcs( display, screen, window, n, arcs );
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//NDFN kolejne obiekty będące na różnych stopniach hierarchii przykleja od góry.
 void
 E_x_Q_object_I_lay(
   struct E_x_Q_display_Z *display
@@ -308,6 +307,7 @@ Restart:;
                     {   next_x = stack[ stack_i ].object->x + E_x_Q_object_S_layout_dx;
                         after_x = next_x + E_x_Q_object_S_layout_dx;
                         next_y = after_y;
+                        after_y += E_x_Q_object_S_layout_dy;
                     }else
                         after_y = next_y + E_x_Q_object_S_layout_dy;
                 struct Z_stack *stack_top = E_mem_Q_blk_I_append( &stack, 1 );
@@ -384,15 +384,41 @@ Restart:;
                 }
             }
             N stack_i_1 = stack_i;
-            next_x = stack[ stack_i ].object->x + stack[ stack_i ].object->width + E_x_Q_object_S_layout_dx;
-            next_y -= E_x_Q_object_S_layout_dy;
-            while( ~--stack_i
-            && ++stack[ stack_i ].i == stack[ stack_i ].object->child_n
-            ){  next_x = stack[ stack_i ].object->x + stack[ stack_i ].object->width + E_x_Q_object_S_layout_dx;
-                if( next_x > window->width //TODO poprawić o sprawdzanie zasobników: czy wystają za okno.
-                && !U_R( object->mode, lay_height )
-                ){  U_F( object->mode, lay_height );
-                    do
+            do
+            {   next_x = stack[ stack_i ].object->x + stack[ stack_i ].object->width + E_x_Q_object_S_layout_dx;
+                if( next_x > window->width
+                && !U_R( stack[ stack_i ].object->mode, lay_height )
+                ){  U_F( stack[ stack_i ].object->mode, lay_height );
+                    N stack_i_ = stack_i;
+                    O{  if( object->child_n )
+                        {   struct Z_stack *stack_top = E_mem_Q_blk_I_append( &stack, 1 );
+                            stack_i_++;
+                            stack_top->object = object;
+                            stack_top->i = object->child_n;
+                            object = E_mem_Q_tab_R( window->object, object->child[ stack_top->i - 1 ] );
+                            continue;
+                        }
+                        if( stack[ stack_i_ ].i )
+                        {   stack[ stack_i_ ].i--;
+                            U_L( object->mode, lay_height );
+                            if( stack[ stack_i_ ].i )
+                            {   object = E_mem_Q_tab_R( window->object, stack[ stack_i_ ].object->child[ stack[ stack_i_ ].i ] );
+                                continue;
+                            }
+                        }
+                        N stack_i_1 = stack_i_;
+                        do
+                        {   if( stack_i_ == stack_i )
+                                goto Cont;
+                            U_L( stack[ stack_i_ ].object->mode, lay_height );
+                            stack_i_--;
+                            if( stack[ stack_i_ ].i )
+                                stack[ stack_i_ ].i--;
+                        }while( !stack[ stack_i_ ].i );
+                        E_mem_Q_blk_I_rem( &stack, stack_i_ + 1, stack_i_1 - stack_i_ );
+                        object = E_mem_Q_tab_R( window->object, stack[ stack_i_ ].object->child[ stack[ stack_i_ ].i ] );
+                    }
+Cont:               do
                     {   object = stack[ stack_i ].object;
                     }while( ~--stack_i
                     && !stack[ stack_i ].i
@@ -405,7 +431,9 @@ Restart:;
                 next_y -= E_x_Q_object_S_layout_dy;
                 if( after_y < stack[ stack_i ].object->y + stack[ stack_i ].object->height + E_x_Q_object_S_layout_dy )
                     after_y = stack[ stack_i ].object->y + stack[ stack_i ].object->height + E_x_Q_object_S_layout_dy;
-            }
+            }while( ~--stack_i
+            && ++stack[ stack_i ].i == stack[ stack_i ].object->child_n
+            );
             if( !~stack_i )
                 break;
             E_mem_Q_blk_I_rem( &stack, stack_i + 1, stack_i_1 - stack_i );

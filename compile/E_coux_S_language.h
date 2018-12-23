@@ -383,7 +383,9 @@ typedef P           *Pp; ///wskaźnik do tablic adresów.
       if( too_small_errno ) \
           J_autogen_line( p_end ) = E_text_Z_s0_R_end( pointer_variable ); \
       if( (Pc)( pointer_variable ) + J_autogen_line(l) != J_autogen_line( p_end )) \
-          E_mem_Q_blk_I_rem( &( pointer_variable ), J_autogen_line( p_end ) - ( pointer_variable ), (Pc)( pointer_variable ) + J_autogen_line(l) - J_autogen_line( p_end )); \
+          if( !E_mem_Q_blk_I_rem( &( pointer_variable ), J_autogen_line( p_end ) - ( pointer_variable ), (Pc)( pointer_variable ) + J_autogen_line(l) - J_autogen_line( p_end ))) \
+          {   GV_(NA); \
+          } \
   }
 //==============================================================================
     #ifdef E_flow_C_errno_p
