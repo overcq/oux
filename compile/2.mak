@@ -244,7 +244,7 @@ for header in $(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(1)/),$(call H_
 done
     endef
 #-------------------------------------------------------------------------------
-$(H_make_S_compile_path)/headers_db:
+$(H_make_S_compile_path)/headers_db: $(H_make_Z_shell_cmd_N_gen_headers_db)
 	$(H_make_Z_shell_cmd_N_gen_headers_db) > $(call H_make_Z_shell_cmd_arg_I_quote,$@)
 #-------------------------------------------------------------------------------
 E_coux_S_0_main_not_to_libs.h: \

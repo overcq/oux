@@ -15,9 +15,9 @@ do
     apropos ${a}
 done \
 | awk '
-    /^(([A-Za-z_][0-9A-Za-z_]*)( *, *[A-Za-z_][0-9A-Za-z_]*)*).*\([23]\)/ {
-        match( $0, "\\([23]\\)" )
-        sect = substr( $0, RSTART + 1, RLENGTH - 2 )
+    /^(([A-Za-z_][0-9A-Za-z_]*)( *, *[A-Za-z_][0-9A-Za-z_]*)*).*\([23][/a-z]*\)/ {
+        match( $0, "\\([23][/a-z]*\\)" )
+        sect = substr( $0, RSTART + 1, 1 )
         match( $0, "[A-Za-z_][0-9A-Za-z_]*( *, *[A-Za-z_][0-9A-Za-z_]*)*" )
         split( substr( $0, RSTART, RLENGTH ), a, " *, *" )
         for ( i in a )
