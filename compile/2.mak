@@ -420,8 +420,15 @@ run: build
     fi
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 install-0: build
-	$(CMP) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_root_path)/oux) /usr/bin/ \
-	|| gksu -D 'install oux wrapper' '$(INSTALL) -m 755 $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_root_path)/oux) /usr/bin/'
+	tmp_file=$$( mktemp ) ;\
+	trap '$(RM) "$$tmp_file"' EXIT ;\
+	{ echo '#!/bin/sh' ;\
+	$(if $(H_make_C_to_libs_C_replace_c_alloc), \
+	echo 'exec env LD_PRELOAD=liboux-base.so "$$@"', \
+	echo 'exec "$$@"' \
+	) ;} > "$$tmp_file" ;\
+	$(CMP) "$$tmp_file" /usr/bin/oux \
+	|| gksu -D 'install oux wrapper' '$(INSTALL) -m 755 $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_root_path)/oux) /usr/bin/oux' ;\
 	$(if $(H_make_C_to_libs), \
         $(foreach module,$(H_make_S_modules),$(CMP) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so) $(call H_make_Z_shell_cmd_arg_I_quote,/usr/lib/lib$(H_make_S_lib_prefix)$(module).so) && )true \
         || gksu -D 'install libraries' ' \

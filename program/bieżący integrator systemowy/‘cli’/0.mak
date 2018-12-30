@@ -9,6 +9,6 @@
 S_headers := ctype.h dirent.h errno.h fcntl.h stdlib.h string.h sys/stat.h sys/types.h unistd.h
 #===============================================================================
 install:
-	ln -f ../../../oux_direct "$${HOME}/bin/ocq"
-	$(INSTALL) -m 700 a.out "$${HOME}/bin/ocq_indirect"
+	ln -f ../../../direct_oux "$${HOME}/bin/ocq"
+	$(INSTALL) -m 700 a.out "$${HOME}/bin/indirect_ocq"
 ################################################################################

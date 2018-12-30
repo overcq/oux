@@ -11,8 +11,8 @@ _ := E_coux_S_0_main_not_to_libs.h
 #===============================================================================
 install:
 	gksu -D 'install tept' ' \
-		$(INSTALL) -m 755 ../../oux_direct /usr/bin/oux_direct \
-		&& ln -f /usr/bin/oux_direct /usr/bin/tept \
-		&& $(INSTALL) -m 755 a.out /usr/bin/tept_indirect \
+		$(INSTALL) -m 755 ../../direct_oux /usr/bin/direct_oux \
+		&& ln -f /usr/bin/direct_oux /usr/bin/tept \
+		&& $(INSTALL) -m 755 a.out /usr/bin/indirect_tept \
 	'
 ################################################################################
