@@ -428,16 +428,12 @@ install-0: build
 	echo 'exec "$$@"' \
 	) ;} > "$$tmp_file" ;\
 	$(CMP) "$$tmp_file" /usr/bin/oux \
-	|| gksu -D 'install oux wrapper' '$(INSTALL) -m 755 $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_root_path)/oux) /usr/bin/oux' ;\
+	|| $(INSTALL) -m 755 "$$tmp_file" /usr/bin/oux ;\
 	$(if $(H_make_C_to_libs), \
         $(foreach module,$(H_make_S_modules),$(CMP) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so) $(call H_make_Z_shell_cmd_arg_I_quote,/usr/lib/lib$(H_make_S_lib_prefix)$(module).so) && )true \
-        || gksu -D 'install libraries' ' \
-            $(INSTALL) -m 755 $(foreach module,$(H_make_S_modules),$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so)) /usr/lib/ \
-      ' \
+        || $(INSTALL) -m 755 $(foreach module,$(H_make_S_modules),$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so)) /usr/lib/ \
     )
 #-------------------------------------------------------------------------------
 uninstall-0:
-	gksu -D 'uninstall libraries' ' \
-      $(RM) /usr/lib/lib$(H_make_S_lib_prefix)*.so \
-    '
+	$(RM) /usr/lib/lib$(H_make_S_lib_prefix)*.so
 ################################################################################

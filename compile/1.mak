@@ -13,7 +13,6 @@
 #•plik wykonywalny zależny od ‹modułów› tworzonych tutaj jako ‘dll’ (“to libs”). oszczędza pamięć, gdy jest używany kolejny program.
 #•program do uruchomienia instrukcją wpisaną pomiędzy innym programem (“middle code”). tekst programu do tego jest już przygotowany, ale brak sposobu konfiguracji i ‘kompilacji’ docelowej —w “2.mak”.
 H_make_C_to_libs := 1
-#poniższy przełącznik na ‟Linuksach” powinien być włączony, a na ‟OpenBSD” program nie działa.
 H_make_C_to_libs_C_replace_c_alloc := 1
 #H_make_C_middle_code := 1
 #przełącza na zegar nanosekundowy ‟POSIX 2008” (z pozastandardowymi rozszerzeniami) zamiast milisekundowego ‟POSIX 2001”. te nowe mogą być odporne na nieakceptowalne ustawianie zegara systemowego, więc powinno być włączone. rozdzielczość nanosekundowa i tak nie jest potrzebna lub wykorzystywana.
@@ -40,9 +39,5 @@ H_make_S_cc_version := $(shell $(H_make_S_cc) -dumpversion)
 #===============================================================================
     ifneq (,$(H_make_C_middle_code))
 undefine H_make_C_to_libs
-    endif
-#-------------------------------------------------------------------------------
-    ifeq (OpenBSD,$(H_make_S_os))
-undefine H_make_C_to_libs_C_replace_c_alloc
     endif
 ################################################################################

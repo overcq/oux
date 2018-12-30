@@ -36,8 +36,8 @@ zależnie od zastosowania powiększania bloku pamięci, w celu niewykonywania ni
 //==============================================================================
     #ifdef C_to_libs_C_replace_c_alloc
         #ifdef C_pthreads
-#define _single_thread_begin    pthread_mutex_lock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex )
-#define _single_thread_end      pthread_mutex_unlock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex )
+#define _single_thread_begin    while( !__sync_bool_compare_and_swap( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex, no, yes )) sched_yield()
+#define _single_thread_end      E_base_S->E_mem_Q_blk_S_threads_sync_mutex = no
         #else
 #define _single_thread_begin
 #define _single_thread_end
