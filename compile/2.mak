@@ -112,7 +112,6 @@ H_make_Z_shell_cmd_N_c_to_h := $(H_make_S_compile_path)/E_coux_I_compile_N_c_to_
 H_make_Q_packages_R_cflags = $(if $(1),$(shell pkg-config --cflags $(call H_make_Z_shell_cmd_arg_I_quote_for,$(1))))
 H_make_Q_packages_R_ldflags = $(if $(1),$(filter-out -l%,$(shell pkg-config --libs $(call H_make_Z_shell_cmd_arg_I_quote_for,$(1)))))
 H_make_Q_packages_R_ldlibs = $(if $(1),$(filter -l%,$(shell pkg-config --libs $(call H_make_Z_shell_cmd_arg_I_quote_for,$(1)))))
-CMP := cmp -s
 INSTALL := install -C
 LIBTOOL := libtool
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -427,11 +426,10 @@ install-0: build
 	echo 'exec env LD_PRELOAD=liboux-base.so "$$@"', \
 	echo 'exec "$$@"' \
 	) ;} > "$$tmp_file" ;\
-	$(CMP) "$$tmp_file" /usr/bin/oux \
-	|| $(INSTALL) -m 755 "$$tmp_file" /usr/bin/oux ;\
+	$(INSTALL) -m 755 "$$tmp_file" /usr/bin/oux \
+	&& $(INSTALL) -m 755 ../../direct_oux /usr/bin/direct_oux \
 	$(if $(H_make_C_to_libs), \
-        $(foreach module,$(H_make_S_modules),$(CMP) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so) $(call H_make_Z_shell_cmd_arg_I_quote,/usr/lib/lib$(H_make_S_lib_prefix)$(module).so) && )true \
-        || $(INSTALL) -m 755 $(foreach module,$(H_make_S_modules),$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so)) /usr/lib/ \
+        && $(INSTALL) -m 755 $(foreach module,$(H_make_S_modules),$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so)) /usr/lib/ \
     )
 #-------------------------------------------------------------------------------
 uninstall-0:

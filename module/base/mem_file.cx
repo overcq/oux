@@ -503,18 +503,23 @@ E_mem_Q_file_P_insert_s( I id
     || ret == E_mem_Q_file_S_eof
     )
         return ret;
-    N pos = file->pos;
-    while(( file->pos += E_base_S->E_mem_Q_file_S_buffer_l ) < file->l )
-    {   U_L( file->current_blk, valid );
+    if( !file->blk_n
+    || file->blk[ file->blk_n - 1 ].pos > file->pos
+    || file->blk[ file->blk_n - 1 ].pos + file->blk[ file->blk_n - 1 ].l != file->l
+    )
+    {   N pos = file->pos;
+        while(( file->pos += E_base_S->E_mem_Q_file_S_buffer_l ) < file->l )
+        {   U_L( file->current_blk, valid );
+            U_L( file->current_blk, valid_sob );
+            U_L( file->current_blk, valid_eob );
+            E_mem_Q_file_R_current_blk(file);
+        }
+        U_L( file->current_blk, valid );
         U_L( file->current_blk, valid_sob );
         U_L( file->current_blk, valid_eob );
+        file->pos = pos;
         E_mem_Q_file_R_current_blk(file);
     }
-    U_L( file->current_blk, valid );
-    U_L( file->current_blk, valid_sob );
-    U_L( file->current_blk, valid_eob );
-    file->pos = pos;
-    E_mem_Q_file_R_current_blk(file);
     if( !E_mem_Q_blk_I_append( &file->blk[ file->current_blk ].data, n ))
         return ~0;
     E_mem_Q_blk_I_copy_rev( file->blk[ file->current_blk ].data + file->current_blk_pos + n, file->blk[ file->current_blk ].data + file->current_blk_pos, file->blk[ file->current_blk ].l - file->current_blk_pos );
@@ -557,18 +562,23 @@ E_mem_Q_file_P_rem_s( I id
     || ret == E_mem_Q_file_S_eof
     )
         return ret;
-    N pos = file->pos;
-    while(( file->pos += E_base_S->E_mem_Q_file_S_buffer_l ) < file->l )
-    {   U_L( file->current_blk, valid );
+    if( !file->blk_n
+    || file->blk[ file->blk_n - 1 ].pos > file->pos
+    || file->blk[ file->blk_n - 1 ].pos + file->blk[ file->blk_n - 1 ].l != file->l
+    )
+    {   N pos = file->pos;
+        while(( file->pos += E_base_S->E_mem_Q_file_S_buffer_l ) < file->l )
+        {   U_L( file->current_blk, valid );
+            U_L( file->current_blk, valid_sob );
+            U_L( file->current_blk, valid_eob );
+            E_mem_Q_file_R_current_blk(file);
+        }
+        U_L( file->current_blk, valid );
         U_L( file->current_blk, valid_sob );
         U_L( file->current_blk, valid_eob );
+        file->pos = pos;
         E_mem_Q_file_R_current_blk(file);
     }
-    U_L( file->current_blk, valid );
-    U_L( file->current_blk, valid_sob );
-    U_L( file->current_blk, valid_eob );
-    file->pos = pos;
-    E_mem_Q_file_R_current_blk(file);
     N blk_l = file->blk[ file->current_blk ].l - n;
     if( blk_l )
     {   E_mem_Q_blk_I_copy( file->blk[ file->current_blk ].data + file->current_blk_pos, file->blk[ file->current_blk ].data + file->current_blk_pos + n, file->blk[ file->current_blk ].l - file->current_blk_pos - n );
