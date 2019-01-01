@@ -14,8 +14,12 @@ S_packages := ncursesw
 _ := E_coux_S_0_main_not_to_libs.h
 #===============================================================================
 install:
-	ln -f /usr/bin/direct_oux /usr/bin/tept \
-	&& $(INSTALL) -m 755 a.out /usr/bin/indirect_tept
+	{ $(CMP) /usr/bin/direct_oux /usr/bin/tept \
+	|| ln -f /usr/bin/direct_oux /usr/bin/tept; \
+	} \
+	&& { $(CMP) a.out /usr/bin/indirect_tept \
+	|| $(INSTALL) -m 755 a.out /usr/bin/indirect_tept; \
+	}
 uninstall:
 	$(RM) /usr/bin/indirect_tept /usr/bin/tept
 ################################################################################
