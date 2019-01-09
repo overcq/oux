@@ -53,7 +53,8 @@ struct E_x_Q_window_Z
   unsigned U_R( req, close )                            :1;
 };
 struct E_x_Q_screen_Z
-{ N32 draw_color;
+{ F dpi_x, dpi_y;
+  N32 draw_color;
   xcb_window_t x_root_window;
     #ifdef C_xcb_glx
   xcb_glx_fbconfig_t glx_fbconfig;
@@ -80,6 +81,9 @@ struct E_x_Q_display_Z
   xcb_atom_t *atom;
   Pc class_name;
   N class_name_l;
+  F red_luminance_ratio;
+  F green_luminance_ratio;
+  F blue_luminance_ratio;
   struct E_mem_Q_tab_Z *screen; ///indeksy wyświetlaczy ‘servera’ ‟X” są utożsamione z indeksami tablicy; w protokole ‟X” jest “N8” dla numeru wyświetlacza, co wystarcza, by “(I)~0” było różne od “(N8)~0”.
   struct E_mem_Q_tab_Z *window;
   struct E_x_Z_drag_object_src *drag_S_object_src; //NDFN przed zaprojektowaniem ‘drop’.
@@ -118,6 +122,9 @@ I
 E_x_Q_display_M( void
 ){  I display_id = E_mem_Q_tab_I_add( E_x_Q_display_S );
     struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
+    display->red_luminance_ratio = 0.2126;
+    display->green_luminance_ratio = 0.7152;
+    display->blue_luminance_ratio = 0.0722;
     //NDFN można szukać innych dostępnych połączeń z serwerem ‟X” na lokalnej maszynie i wykrywać nie połączenie już tutaj.
     int x_screen_id_default_;
     display->x_display = xcb_connect( 0, &x_screen_id_default_ );
@@ -202,6 +209,8 @@ E_x_Q_display_M( void
     do
     {   G(); Gd( screen_id );
         struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, screen_id );
+        screen->dpi_x = 25.4 * screen_iter.data->width_in_pixels / screen_iter.data->width_in_millimeters;
+        screen->dpi_y = 25.4 * screen_iter.data->height_in_pixels / screen_iter.data->height_in_millimeters;
         screen->draw_color = 0;
         screen->x_root_window = screen_iter.data->root;
         screen->depth = screen_iter.data->root_depth;
@@ -392,6 +401,7 @@ E_x_Q_display_M( void
             #ifndef E_flow_C_thread_system_unblock_reports
         D_M( x_window, events );
             #endif
+        D_M( x_object, draw );
     }
         #ifdef E_flow_C_thread_system_unblock_reports
     I *M_( thread_proc_arg );
@@ -428,7 +438,7 @@ E_x_Q_display_W( I id
     Dh_W( x_window, events, id );
         #endif
     if( E_mem_Q_tab_R_n( E_x_Q_display_S ) == 1 )
-    {
+    {   D_W( x_object, draw );
             #ifndef E_flow_C_thread_system_unblock_reports
         D_W( x_window, events );
             #endif
@@ -467,7 +477,6 @@ E_x_Q_window_M( I display_id
     window->width_new = window->width = width;
     window->height_new = window->height = height;
     window->object = E_mem_Q_tab_M( sizeof( struct E_x_Q_object_Z ), 0 );
-    E_mem_Q_tab_Q_iter_M( window->object, ~0 );
     window->drawable = xcb_generate_id( display->x_display );
     xcb_create_pixmap( display->x_display
     , screen->depth

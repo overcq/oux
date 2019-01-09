@@ -13,7 +13,7 @@
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ///przeprojektowywane pod rzeczywiste potrzeby.
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-///[ta linia– do aktualizacji.] instrukcje mogące przełączyć ‹zadanie›: “X_B”, [“X_E”], “Y_B”, “I_B”. “I_M” i “I_W” zawsze przełączają jakby proceduralnie do ‹zadania› uruchamianego/zwalnianego, wykonują blok startowy/końcowy i wracają, więc nie zaliczają się do tego zbioru.
+///[ta linia– do aktualizacji.] instrukcje mogące przełączyć ‹zadanie›: “X_B”, [“X_E”], “Y_B”, “I_B”. “D_M” i “D_W” zawsze przełączają jakby proceduralnie do ‹zadania› uruchamianego/zwalnianego, wykonują blok startowy/końcowy i wracają, więc nie zaliczają się do tego zbioru.
 ///bloki startowe i końcowe ‹zadań› służą obowiązkowo do rejestracji (np. ‹raportów›) i zwalniania zasobów ‘interfejsu’ bytu ‹zadania› ·bezwarunkowo· widzianych przez inne. w blokach tych nie wolno przełączać (tzn. jawnie, nie przez normalne wykonywanie się “D_W”) ani wykonywać celu ‹zadania›. (jeśli w bloku startowym zostanie użyta jedna z instrukcji przełączenia, to ‹zadanie› pozostanie zablokowane dla ‘schedulera’ w nie wznawialnym (nie obsługiwanym) stanie oczekiwania (“E_flow_Z_run_state_S_starting_by_task”). jeśli zostanie użyta w bloku końcowym, to ‹zadanie› zostanie zablokowane (“E_flow_Z_run_state_S_stopping_by_task”) i usunięte przez ‹zadanie› usuwające, po przełączeniu do niego przez ‘schedulera’— bez wykonania reszty programu ‹zadania› usuwanego.)
 ///adresy danych dostępnych przez identyfikatory (adresy ‹okien wglądu›) muszą być ponownie odczytane przed użyciem po możliwym przełączeniu ‹zadania›.
 //------------------------------------------------------------------------------
@@ -22,9 +22,7 @@
 //------------------------------------------------------------------------------
 ///“process_call”– synchroniczne w przepływie pojedynczego ‹zadania›— funkcje żądane przy użyciu ‘uniksowego’ “sygnału”:
 ///tylko jedno ‹zadanie› w programie (‹sterownik› funkcji programu zewnętrznego) może implementować żądania funkcji konkretnego (jednego) programu ‟oux” uruchomionego w systemie operacyjnym. obecnie w programie ‟bis” rozróżnianie programów jest realizowane przez rozróżnianie nazw procesów, tzn. nie jest uwzględniony przypadek, gdy program ‟oux” posiada procesy podrzędne. [to zdanie sprawdzić, bo coś już było zrobione.] ponadto nie zostało (dla optymalizacji) zaimplementowane rozpoznawanie programu typu ‟oux” (uzupełnić o autoryzację potwierdzaną chwilowo?) oraz własnego (wykluczać u źródła), a wykonanie żądania funkcji do takiego programu nie jest dozwolone.
-//==============================================================================
-//TODO (dla “middle code”) przenieść zmienne globalne do struktur ‹modułów›, które będą alokowane i ustawiane podczas tworzenia ‹modułów›, oraz wyeliminować ustawianie zmiennych globalnych w przestrzeni globalnej. to wyeliminuje konieczność jakichkolwiek “sekcji” w plikach wykonywalnych, w przygotowaniu dla “middle code”, a dla zwykłych programów odstatyczni lokalizacje zmiennych globalnych. narazie pozostaną zmienne globalne ‹zadań›. usunąć z “prekompilatora” część “regex” odpowiadającą za wartości początkowe zmiennych globalnych.
-//NDFN lokalizacja do zmiany z przestrzeni globalnej.
+//TODO rozwiązać inaczej “subid” ‹zadań› w wątku systemowym?
 _internal
 I _X_var( flow, call_req );
 _internal
@@ -97,7 +95,8 @@ struct E_flow_Q_process_call_cli_Z
 };
 //==============================================================================
 I
-E_flow_Q_task_M( void (*task_proc)(P)
+E_flow_Q_task_M( I *uid
+, void (*task_proc)(P)
     #ifdef E_flow_C_thread_system_unblock_reports
 , P thread_proc_arg
 , B task_in_thread_kind
@@ -470,11 +469,12 @@ E_flow_Q_task_M( void (*task_proc)(P)
         );
         _unreachable;
     }
+    *uid = task_id;
     return task_id; ///NDFN zmienione tak, że może być “~0”.
 }
     #ifdef E_flow_C_thread_system_unblock_reports
 ///nie wolno tworzyć “wątku”/‘instancji’ tego samego ‹zadania› w bloku startowym (innej ‘instancji’) tego samego ‹zadania›. czyli nie wolno tworzyć wogóle w takim ‹zadaniu›, ponieważ ‹zadania› tworzy się w bloku startowym.
-void
+I
 E_flow_Q_task_M_thread( I *uid
 , I subid
 , void (*task_proc)(P)
@@ -482,13 +482,16 @@ E_flow_Q_task_M_thread( I *uid
     #ifdef C_line_report
 , Pc task_proc_name
     #endif
-){  I id = E_flow_Q_task_M( task_proc, thread_proc_arg, yes
+){  I uid_start = *uid;
+    I id;
+    if( !~( id = E_flow_Q_task_M( uid, task_proc, thread_proc_arg, yes
         #ifdef C_line_report
     , task_proc_name
         #endif
-    );
+    )))
+        return ~0;
     struct E_mem_Q_tab_Z **tab_subid;
-    if( !~*uid )
+    if( !~uid_start )
     {   *uid = E_mem_Q_tab_I_add( E_base_S->E_flow_Q_task_S_uid_subid );
         tab_subid = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S_uid_subid, *uid );
         *tab_subid = E_mem_Q_tab_M( sizeof(I), subid + 1 );
@@ -497,6 +500,7 @@ E_flow_Q_task_M_thread( I *uid
         E_mem_Q_tab_I_add_i( E_base_S->E_flow_Q_task_S_uid_subid, subid );
     }
     *( I * )E_mem_Q_tab_R( *tab_subid, subid ) = id;
+    return *uid;
 }
 ///procedura ‹zadań› w wątku systemowym.
 _internal
@@ -552,8 +556,10 @@ E_flow_Q_task_I_begin( void
     return task->run_state == E_flow_Z_run_state_S_stopping_by_task;
 }
 void
-E_flow_Q_task_W( I id
-){  struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, id );
+E_flow_Q_task_W( I *uid
+){  I id = *uid;
+    *uid = ~0;
+    struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, id );
     task->run_state = E_flow_Z_run_state_S_stopping_by_task;
     task->run_state_object = E_base_S->E_flow_Q_task_S_current;
         #ifdef E_flow_C_thread_system_unblock_reports
@@ -601,7 +607,7 @@ E_flow_Q_task_W_thread( I *uid
     {   E_mem_Q_tab_W( *tab_subid );
         *uid = ~0;
     }
-    E_flow_Q_task_W(id);
+    E_flow_Q_task_W(&id);
 }
     #endif
 ///‹zadanie› wykonuje to po wyjściu z procedury; ma adres powrotu na stosie.

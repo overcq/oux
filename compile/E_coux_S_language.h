@@ -109,22 +109,22 @@ typedef P           *Pp; ///wskaźnik do tablic adresów.
 ///utworzenie i wyrzucenie ‹zadania› lub ‹zadania› “wątkowanego” czekającego na ‹systemowy raport odblokowujący›.
     #ifndef E_flow_C_thread_system_unblock_reports
         #ifdef C_line_report
-#define D_M(module,task)                    D_id(module,task) = E_flow_Q_task_M( _D_proc(module,task), J_s( _D_proc(module,task) ))
+#define D_M(module,task)                    E_flow_Q_task_M( &(D_id(module,task)), _D_proc(module,task), J_s( _D_proc(module,task) ))
         #else
-#define D_M(module,task)                    D_id(module,task) = E_flow_Q_task_M( _D_proc(module,task) )
+#define D_M(module,task)                    E_flow_Q_task_M( &(D_id(module,task)), _D_proc(module,task) )
         #endif
     #else
 //TODO rozdzielić dla “Dh”— na ‹zadania› takie jak “D” (bez “subid”) oraz takie jak obecnie “Dh” (“Dhi”).
         #ifdef C_line_report
-#define D_M(module,task)                    D_id(module,task) = E_flow_Q_task_M( _D_proc(module,task), 0, no, J_s( _D_proc(module,task) ))
+#define D_M(module,task)                    E_flow_Q_task_M( &(D_id(module,task)), _D_proc(module,task), 0, no, J_s( _D_proc(module,task) ))
 #define Dh_M(module,task,subid,arg)         E_flow_Q_task_M_thread( &(D_id(module,task)), (subid), _D_proc(module,task), (arg), J_s( _D_proc(module,task) ))
         #else
-#define D_M(module,task)                    D_id(module,task) = E_flow_Q_task_M( _D_proc(module,task), 0, no )
+#define D_M(module,task)                    E_flow_Q_task_M( &(D_id(module,task)), _D_proc(module,task), 0, no )
 #define Dh_M(module,task,subid,arg)         E_flow_Q_task_M_thread( &(D_id(module,task)), (subid), _D_proc(module,task), (arg) )
         #endif
 #define Dh_W(module,task,subid)             E_flow_Q_task_W_thread( &(D_id(module,task)), (subid) )
     #endif
-#define D_W(module,task)                    { E_flow_Q_task_W( D_id(module,task) ); D_id(module,task) = ~0; }
+#define D_W(module,task)                    E_flow_Q_task_W( &(D_id(module,task)) )
 //------------------------------------------------------------------------------
 ///znacznik stanu —zwykle stanu pojedynczego obiektu sygnalizującego później kolekcję— umieszczony w strukturze tego ‹obiektu› dostępnej przez wyrażenie.
 #define U_R(start_expr,state_name)          J_a_b(start_expr,J_autogen(J_a_b(U,state_name)))

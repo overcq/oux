@@ -48,6 +48,7 @@ struct E_x_Q_object_Z
   unsigned U_R( mode, lay_height ):1;
   unsigned U_R( mode, draggable ) :1;
   unsigned U_R( mode, drag_src )  :1;
+  unsigned U_R( req, draw )       :1;
 };
 //==============================================================================
 S16 E_x_Q_object_S_layout_dx = 4, E_x_Q_object_S_layout_dy = 4;
@@ -89,8 +90,7 @@ E_x_Q_object_M(
     U_L( object->mode, lay_height );
     U_L( object->mode, draggable );
     U_L( object->mode, drag_src );
-    U_F( window->req, draw );
-    U_F( display->req, draw );
+    U_R( object->req, draw );
     return object_id;
 }
 void
@@ -524,5 +524,81 @@ E_x_Q_object_Z_text_field_I_draw(
         }
       }
     ));
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void
+E_x_Q_object_I_draw( void (*draw_object_proc)( struct E_x_Q_display_Z *, struct E_x_Q_screen_Z *, struct E_x_Q_window_Z *, struct E_x_Q_object_Z * )
+){  X_A( x_object, draw );
+    for_each( display_id, E_x_Q_display_S, E_mem_Q_tab )
+    {   struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
+        for_each( window_id, display->window, E_mem_Q_tab )
+        {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
+            for_each( object_id, window->object, E_mem_Q_tab )
+            {   struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
+                if( object->draw == draw_object_proc )
+                {   U_F( object->req, draw );
+                    U_F( x_object, draw );
+                }
+            }
+        }
+        if( U_R( display->mode, drag ))
+        {   struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, display->drag_S_dnd_window_screen_id );
+            struct E_x_Q_window_Z *window = &screen->dnd_window;
+            for_each( object_id, window->object, E_mem_Q_tab )
+            {   struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
+                if( object->draw == draw_object_proc )
+                {   U_F( object->req, draw );
+                    U_F( x_object, draw );
+                }
+            }
+        }
+    }
+    X_U( x_object, draw );
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+D( x_object, draw )
+{   X_M( x_object, draw );
+    X_A( x_window, draw );
+    I_D
+    {   X_B( x_object, draw, 0 )
+            break;
+        for_each( display_id, E_x_Q_display_S, E_mem_Q_tab )
+        {   B U_L( display, draw );
+            struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
+            for_each( window_id, display->window, E_mem_Q_tab )
+            {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
+                B U_L( window, draw );
+                for_each( object_id, window->object, E_mem_Q_tab )
+                {   struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
+                    if( U_E( object->req, draw ))
+                        U_F( window, draw );
+                }
+                if( U_R( window, draw ))
+                {   U_F( window->req, draw );
+                    U_F( display, draw );
+                }
+            }
+            if( U_R( display->mode, drag ))
+            {   struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, display->drag_S_dnd_window_screen_id );
+                struct E_x_Q_window_Z *window = &screen->dnd_window;
+                B U_L( window, draw );
+                for_each( object_id, window->object, E_mem_Q_tab )
+                {   struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
+                    if( U_E( object->req, draw ))
+                        U_F( window, draw );
+                }
+                if( U_R( window, draw ))
+                {   U_F( window->req, draw );
+                    U_F( display, draw );
+                }
+            }
+            if( U_R( display, draw ))
+            {   U_F( display->req, draw );
+                U_F( x_window, draw );
+            }
+        }
+        X_U( x_window, draw );
+    }
+    X_W( x_object, draw );
 }
 /******************************************************************************/

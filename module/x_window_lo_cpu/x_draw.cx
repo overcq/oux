@@ -6,10 +6,6 @@
 *         window drawing
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2015‒4‒28 *
 *******************************************************************************/
-const F red_luminance_ratio = 0.2126;
-const F green_luminance_ratio = 0.7152;
-const F blue_luminance_ratio = 0.0722;
-//==============================================================================
 enum E_x_Z_aa_pixel
 { Z_aa_pixel_S_e = 1 << 0,
   Z_aa_pixel_S_se = 1 << 1,
@@ -46,12 +42,13 @@ E_x_Z_color_M_gray(
 ){  return E_x_Z_color_M( luminance, luminance, luminance );
 }
 N32
-E_x_Z_color_P_luminance( N32 color
+E_x_Z_color_P_luminance( struct E_x_Q_display_Z *display
+, N32 color
 , F luminance
 ){  N8 red = E_x_Z_color_R_red(color);
     N8 green = E_x_Z_color_R_green(color);
     N8 blue = E_x_Z_color_R_blue(color);
-    F color_luminance = E_x_Z_color_R_luminance(color);
+    F color_luminance = E_x_Z_color_R_luminance( display, color );
     if( luminance < color_luminance )
     {   red = round( red * luminance / color_luminance );
         green = round( green * luminance / color_luminance );
@@ -65,8 +62,9 @@ E_x_Z_color_P_luminance( N32 color
     return E_x_Z_color_M( red, green, blue );
 }
 F
-E_x_Z_color_R_luminance( N32 color
-){  return red_luminance_ratio * E_x_Z_color_R_red(color) + green_luminance_ratio * E_x_Z_color_R_green(color) + blue_luminance_ratio * E_x_Z_color_R_blue(color);
+E_x_Z_color_R_luminance( struct E_x_Q_display_Z *display
+, N32 color
+){  return display->red_luminance_ratio * E_x_Z_color_R_red(color) + display->green_luminance_ratio * E_x_Z_color_R_green(color) + display->blue_luminance_ratio * E_x_Z_color_R_blue(color);
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 void
@@ -330,16 +328,14 @@ E_x_Q_window_I_angle_line(
         angle %= 360;
     F a = angle * M_PI / 180;
     F d = tan(a); //NDFN oblicza skończoną wartość dla 90!
-    const N dpi_x = 98; //NDFN zuniwersalizować ‘dpi’ do opisu wyświetlacza.
-    const N dpi_y = 96;
     N width;
     N height;
-    if( dpi_x < dpi_y )
-        width = round( dpi_x * max_height / ( fabs(d) * dpi_y ));
+    if( screen->dpi_x < screen->dpi_y )
+        width = round( screen->dpi_x * max_height / ( fabs(d) * screen->dpi_y ));
     else
         width = round( max_height / fabs(d) );
-    if( dpi_y < dpi_x )
-        height = round( max_width * fabs(d) * dpi_y / dpi_x );
+    if( screen->dpi_y < screen->dpi_x )
+        height = round( max_width * fabs(d) * screen->dpi_y / screen->dpi_x );
     else
         height = round( max_width * fabs(d) );
     if( angle == 0
