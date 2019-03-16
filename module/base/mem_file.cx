@@ -69,8 +69,12 @@ E_mem_Q_file_W( I id
     V0( fcntl( file->fd, F_SETFL, 0 ))
         return ~0;
         #endif
-    VO1( ftruncate( file->fd, file->l ))
-        return ~0;
+    struct stat st;
+    V1( fstat( file->fd, &st )){} //NDFN być może przenieść do sprawdzania po otwarciu pliku.
+    if(( st.st_mode & S_IFMT ) == S_IFREG )
+    {   VO1( ftruncate( file->fd, file->l ))
+            return ~0;
+    }
     for_n( unsaved_i, file->unsaved_n )
     {   for_n( blk_i, file->blk_n )
             if( range->pos >= file->blk[ blk_i ].pos )
@@ -90,7 +94,7 @@ E_mem_Q_file_W( I id
     W( file->blk );
     V0( close( file->fd ))
         return ~0;
-    if( !E_mem_Q_tab_I_rem( E_base_S->E_mem_Q_file_S, id ))
+    if( E_mem_Q_tab_I_rem( E_base_S->E_mem_Q_file_S, id ))
         return ~0;
     return 0;
 }
@@ -105,8 +109,12 @@ E_mem_Q_file_I_save( I id
     V0( fcntl( file->fd, F_SETFL, 0 ))
         return ~0;
         #endif
-    VO1( ftruncate( file->fd, file->l ))
-        return ~0;
+    struct stat st;
+    V1( fstat( file->fd, &st )){} //NDFN być może przenieść do sprawdzania po otwarciu pliku.
+    if(( st.st_mode & S_IFMT ) == S_IFREG )
+    {   VO1( ftruncate( file->fd, file->l ))
+            return ~0;
+    }
     for_n( unsaved_i, file->unsaved_n )
     {   for_n( blk_i, file->blk_n )
             if( range->pos >= file->blk[ blk_i ].pos )
@@ -329,35 +337,78 @@ E_mem_Q_file_P_pos( I id
 }
 N
 E_mem_Q_file_R_c( I id
+, C *c
 ){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
     N ret = E_mem_Q_file_R_current_blk(file);
     if( !~ret
     || ret == E_mem_Q_file_S_eof
     )
         return ret;
-    char c = file->blk[ file->current_blk ].data[ file->current_blk_pos++ ];
+    *c = file->blk[ file->current_blk ].data[ file->current_blk_pos++ ];
     file->pos++;
     if( file->current_blk_pos == file->blk[ file->current_blk ].l )
     {   U_L( file->current_blk, valid );
         U_F( file->current_blk, valid_eob );
     }
-    return c;
+    return 0;
 }
 N
 E_mem_Q_file_R_rev_c( I id
+, C *c
 ){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
     N ret = E_mem_Q_file_R_current_blk(file);
     if( !~ret
     || ret == E_mem_Q_file_S_eof
     )
         return ret;
-    char c = file->blk[ file->current_blk ].data[ file->current_blk_pos-- ];
+    *c = file->blk[ file->current_blk ].data[ file->current_blk_pos-- ];
     file->pos--;
     if( file->current_blk_pos == -1 )
     {   U_L( file->current_blk, valid );
         U_F( file->current_blk, valid_sob );
     }
-    return c;
+    return 0;
+}
+N
+E_mem_Q_file_R_s( I id
+, C *s
+, N n
+){  for_n( i, n )
+    {   char c;
+        N ret = E_mem_Q_file_R_c( id, &c );
+        if(ret)
+            return ret;
+        s[i] = c;
+    }
+    return 0;
+}
+N
+E_mem_Q_file_R_N( I id
+, N *v
+, N n
+){  for_n( i, n )
+    {   char c;
+        N ret = E_mem_Q_file_R_c( id, &c );
+        if(ret)
+            return ret;
+        *v |= (N)c << ( i * 8 );
+    }
+    return 0;
+}
+N
+E_mem_Q_file_R_16( I id
+, N *v
+){  return E_mem_Q_file_R_N( id, v, 2 );
+}
+N
+E_mem_Q_file_R_32( I id
+, N *v
+){  return E_mem_Q_file_R_N( id, v, 2 );
+}
+N
+E_mem_Q_file_R_64( I id
+, N *v
+){  return E_mem_Q_file_R_N( id, v, 2 );
 }
 N
 E_mem_Q_file_P_c( I id
@@ -401,14 +452,14 @@ E_mem_Q_file_P_s( I id
         if( file->pos == file->unsaved[ unsaved_i ].pos_end ) ///po bloku
         {   blk_exists = yes;
             if( unsaved_i + 1 != file->unsaved_n
-            && file->unsaved[ unsaved_i + 1 ].pos == file->unsaved[ unsaved_i ].pos_end + 1
+            && file->unsaved[ unsaved_i + 1 ].pos <= file->unsaved[ unsaved_i ].pos_end + n
             )
             {   file->unsaved[ unsaved_i ].pos_end = file->unsaved[ unsaved_i + 1 ].pos_end;
                 if( !E_mem_Q_blk_I_rem( &file->unsaved, unsaved_i + 1, 1 ))
                     return ~0;
                 file->unsaved_n--;
             }else
-                file->unsaved[ unsaved_i ].pos_end++;
+                file->unsaved[ unsaved_i ].pos_end += n;
             break;
         }
         if( file->pos > file->unsaved[ unsaved_i ].pos_end )
@@ -497,6 +548,30 @@ E_mem_Q_file_P_s( I id
     return 0;
 }
 N
+E_mem_Q_file_P_N( I id
+, N v
+, N n
+){  C s[n];
+    for_n( i, n )
+        s[i] = ( v >> ( i * 8 )) & 0xff;
+    return E_mem_Q_file_P_s( id, &s[0], n );
+}
+N
+E_mem_Q_file_P_16( I id
+, N v
+){  return E_mem_Q_file_P_N( id, v, 2 );
+}
+N
+E_mem_Q_file_P_32( I id
+, N v
+){  return E_mem_Q_file_P_N( id, v, 4 );
+}
+N
+E_mem_Q_file_P_64( I id
+, N v
+){  return E_mem_Q_file_P_N( id, v, 8 );
+}
+N
 E_mem_Q_file_P_insert_c( I id
 , C c
 ){  return E_mem_Q_file_P_insert_s( id, &(( C[] ){ c })[0], 1 );
@@ -560,6 +635,30 @@ E_mem_Q_file_P_insert_s( I id
         unsaved->pos_end = file->pos + file->blk[ file->current_blk ].l - file->current_blk_pos;
     }
     return 0;
+}
+N
+E_mem_Q_file_P_insert_N( I id
+, N v
+, N n
+){  C s[n];
+    for_n( i, n )
+        s[i] = ( v >> ( i * 8 )) & 0xff;
+    return E_mem_Q_file_P_insert_s( id, &s[0], n );
+}
+N
+E_mem_Q_file_P_insert_16( I id
+, N v
+){  return E_mem_Q_file_P_insert_N( id, v, 2 );
+}
+N
+E_mem_Q_file_P_insert_32( I id
+, N v
+){  return E_mem_Q_file_P_insert_N( id, v, 4 );
+}
+N
+E_mem_Q_file_P_insert_64( I id
+, N v
+){  return E_mem_Q_file_P_insert_N( id, v, 8 );
 }
 N
 E_mem_Q_file_P_rem_s( I id

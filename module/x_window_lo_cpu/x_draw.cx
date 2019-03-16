@@ -54,9 +54,9 @@ E_x_Z_color_P_luminance( struct E_x_Q_display_Z *display
         green = round( green * luminance / color_luminance );
         blue = round( blue * luminance / color_luminance );
     }else if( luminance > color_luminance )
-    {   red += round(( 0xff - red ) * ( luminance - color_luminance ) / ( 0xff - color_luminance ));
-        green += round(( 0xff - green ) * ( luminance - color_luminance ) / ( 0xff - color_luminance ));
-        blue += round(( 0xff - blue ) * ( luminance - color_luminance ) / ( 0xff - color_luminance ));
+    {   red += lround(( 0xff - red ) * ( luminance - color_luminance ) / ( 1 - color_luminance ));
+        green += lround(( 0xff - green ) * ( luminance - color_luminance ) / ( 1 - color_luminance ));
+        blue += lround(( 0xff - blue ) * ( luminance - color_luminance ) / ( 1 - color_luminance ));
     }else
         return color;
     return E_x_Z_color_M( red, green, blue );
@@ -64,7 +64,7 @@ E_x_Z_color_P_luminance( struct E_x_Q_display_Z *display
 F
 E_x_Z_color_R_luminance( struct E_x_Q_display_Z *display
 , N32 color
-){  return display->red_luminance_ratio * E_x_Z_color_R_red(color) + display->green_luminance_ratio * E_x_Z_color_R_green(color) + display->blue_luminance_ratio * E_x_Z_color_R_blue(color);
+){  return ( display->red_luminance_ratio * E_x_Z_color_R_red(color) + display->green_luminance_ratio * E_x_Z_color_R_green(color) + display->blue_luminance_ratio * E_x_Z_color_R_blue(color) ) / 255;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 void

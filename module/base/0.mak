@@ -8,7 +8,6 @@
 ################################################################################
 S_libraries := m
 S_headers := errno.h limits.h signal.h sys/time.h time.h
-#S_headers := ctype.h math.h errno.h fcntl.h fenv.h locale.h sched.h signal.h stdarg.h stdbool.h stdio.h stdlib.h string.h sys/file.h sys/ipc.h sys/mman.h sys/shm.h sys/stat.h sys/time.h sys/types.h sys/wait.h termios.h time.h unistd.h
     ifeq ($(H_make_S_os),Linux)
 S_headers += error.h
 CFLAGS += -D_GNU_SOURCE
