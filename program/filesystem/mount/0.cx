@@ -1,0 +1,203 @@
+/*******************************************************************************
+*   ___   [obszar]
+*  ¦OUX¦  [system programowania]
+*  ¦Inc¦  [rodzaj składnika]
+*   ---   [nazwa składnika]
+*         [tytuł elementu]
+* ©overcq                on ‟Gentoo Linux 17.0” “x86_64”             2019‒3‒10 b
+*******************************************************************************/
+#include <linux/fuse.h>
+//==============================================================================
+Pc device;
+Pc directory;
+int fuse_fd;
+I file_id;
+C n_size;
+struct fuse_in_header in_buf;
+struct fuse_out_header out_buf;
+N fuse_major;
+N fuse_minor;
+//==============================================================================
+int
+main(
+  int argc
+, char *argv[]
+){  E_base_M( argc, argv );
+    device = 0;
+    for( int i = 1; i != argc; i++ )
+    {   if( *argv[i] == '-' )
+        {   E_base_W();
+            return 1;
+        }
+        if(directory)
+        {   E_base_W();
+            return 1;
+        }
+        if(device)
+            directory = argv[i];
+        else
+            device = argv[i];
+    }
+
+    if( !device )
+    {   E_base_W();
+        return 1;
+    }
+    if( !~( file_id = E_mem_Q_file_M(device) ))
+    {   E_base_W();
+        return 1;
+    }
+    E_mem_Q_file_P_pos( file_id, 3 );
+    C s[3];
+    if( E_mem_Q_file_R_s( file_id, &s[0], 3 )
+    || !E_text_Z_s_T_eq( &s[0], &s[0] + 3, "OUX" )
+    ){  E_base_W();
+        return 1;
+    }
+    if( E_mem_Q_file_R_c( file_id, &n_size )
+    || ( n_size != 2
+      && n_size != 4
+      && n_size != 8
+      )
+    ){  E_base_W();
+        return 1;
+    }
+    VO1( fuse_fd = open( "/dev/fuse", 0, O_RDWR ))
+    {   E_base_W();
+        return 1;
+    }
+    cap_t cap;
+    Vp( cap = cap_get_proc() )
+    {   VO1( close( fuse_fd )){}
+        E_base_W();
+        return 1;
+    }
+    cap_value_t cap_list[1] = { CAP_SYS_ADMIN };
+    V1( cap_set_flag( cap, CAP_EFFECTIVE, 1, &cap_list[0], CAP_CLEAR ))
+    {   V1( cap_free(cap) ){}
+        VO1( close( fuse_fd )){}
+        E_base_W();
+        return 1;
+    }
+    Pc s_2 = M(4096);
+    snprintf( s_2, 4096, "fd=%i,rootmode=%o,user_id=%u,group_id=%u", fuse_fd, 040000, getuid(), getgid() );
+    V1( mount( device, directory, "fuseblk", 0, s_2 ))
+    {   V1( cap_set_proc(cap) ){}
+        V1( cap_free(cap) ){}
+        VO1( close( fuse_fd )){}
+        E_base_W();
+        return 1;
+    }
+    W( s_2 );
+    V1( cap_set_proc(cap) )
+    {   V1( cap_free(cap) ){}
+        VO1( close( fuse_fd )){}
+        E_base_W();
+        return 1;
+    }
+    V1( cap_free(cap) )
+    {   VO1( close( fuse_fd )){}
+        E_base_W();
+        return 1;
+    }
+    O{  ssize_t n_read = 0;
+        O{  ssize_t n;
+            G_(); Gd( fuse_fd ); Gh( &in_buf ); Gd( n_read ); Gd( sizeof( in_buf ));
+            VO1( n = read( fuse_fd, (Pc)&in_buf + n_read, sizeof( in_buf ) - n_read ))
+            {   VO1( close( fuse_fd )){}
+                E_base_W();
+                return 1;
+            }
+            G_();
+            n_read += n;
+            if( n_read == sizeof( in_buf ))
+                break;
+        }
+        out_buf.len = sizeof( out_buf );
+        out_buf.error = 0;
+        out_buf.unique = in_buf.unique;
+        switch( in_buf.opcode )
+        { case FUSE_INIT:
+            {   struct fuse_init_in in_buf_2;
+                O{  ssize_t n;
+                    VO1( n = read( fuse_fd, (Pc)&in_buf_2 + n_read, sizeof( in_buf_2 ) - n_read ))
+                    {   VO1( close( fuse_fd )){}
+                        E_base_W();
+                        return 1;
+                    }
+                    n_read += n;
+                    if( n_read == sizeof( in_buf_2 ))
+                        break;
+                }
+                out_buf.len += sizeof( struct fuse_init_out );
+                G_(); Gd( in_buf_2.major ); Gd( in_buf_2.minor );
+                if( in_buf_2.major > 7 )
+                {   fuse_major = 7;
+                    fuse_minor = 0;
+                }else
+                {   fuse_major = in_buf_2.major;
+                    if( in_buf_2.major == 7 )
+                        fuse_minor = in_buf_2.major > 26 ? 26 : in_buf_2.minor;
+                    else
+                        fuse_minor = in_buf_2.minor;
+                }
+                break;
+            }
+          default:
+                out_buf.error = 1;
+                break;
+        }
+        ssize_t n_write = 0;
+        O{  ssize_t n;
+            VO1( n = write( fuse_fd, (Pc)&out_buf + n_write, sizeof( out_buf ) - n_write ))
+            {   VO1( close( fuse_fd )){}
+                E_base_W();
+                return 1;
+            }
+            n_write += n;
+            if( n_write == sizeof( out_buf ))
+                break;
+        }
+        switch( in_buf.opcode )
+        { case FUSE_INIT:
+            {   struct fuse_init_out out_buf_2;
+                out_buf_2.major = fuse_major;
+                out_buf_2.minor = fuse_minor;
+                ssize_t n_write = 0;
+                O{  ssize_t n;
+                    VO1( n = write( fuse_fd, (Pc)&out_buf_2 + n_write, sizeof( out_buf_2 ) - n_write ))
+                    {   VO1( close( fuse_fd )){}
+                        E_base_W();
+                        return 1;
+                    }
+                    n_write += n;
+                    if( n_write == sizeof( out_buf_2 ))
+                        break;
+                }
+                break;
+            }
+        }
+    }
+    
+    //N file_pos;
+    //if( E_mem_Q_file_R_N( file_id, &file_pos, n_size ))
+    //{   VO1( close( fuse_fd )){}
+        //E_base_W();
+        //return 1;
+    //}
+    
+    if( E_mem_Q_file_W( file_id ))
+    {   VO1( close( fuse_fd )){}
+        E_base_W();
+        return 1;
+    }
+    VO1( close( fuse_fd )){}
+    E_base_W();
+    return 0;
+}
+//==============================================================================
+void
+E_flow_Q_process_call_I_func( void *data
+){
+}
+/******************************************************************************/
