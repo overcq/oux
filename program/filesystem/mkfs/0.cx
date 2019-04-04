@@ -17,46 +17,38 @@ main(
     device = 0;
     for( int i = 1; i != argc; i++ )
     {   if( *argv[i] == '-' )
-        {   E_base_W();
-            return 1;
-        }
+            goto Error;
         if(device)
-        {   E_base_W();
-            return 1;
-        }
+            goto Error;
         device = argv[i];
     }
     if( !device )
-    {   E_base_W();
-        return 1;
-    }
+        goto Error;
     if( !~( file_id = E_mem_Q_file_M(device) ))
-    {   E_base_W();
-        return 1;
-    }
+        goto Error;
     if( E_mem_Q_file_P_s( file_id, "\xeb\x76\x90", 3 ))
-    {   E_base_W();
-        return 1;
-    }
+        goto Error;
     if( E_mem_Q_file_P_s( file_id, "OUX", 3 ))
-    {   E_base_W();
-        return 1;
-    }
+        goto Error;
     if( E_mem_Q_file_P_c( file_id, 8 )) //CONF
-    {   E_base_W();
-        return 1;
-    }
-    if( E_mem_Q_file_P_64( file_id, 0 ))
-    {   E_base_W();
-        return 1;
-    }
-    
+        goto Error;
+    if( E_mem_Q_file_P_64( file_id, 1 )) ///directory
+        goto Error;
+    if( E_mem_Q_file_P_64( file_id, 0 )) ///size
+        goto Error;
+    if( E_mem_Q_file_P_64( file_id, 1 )) ///parent directory
+        goto Error;
+    if( E_mem_Q_file_P_s( file_id, "/", 2 )) ///parent directory
+        goto Error;
+    if( E_mem_Q_file_P_64( file_id, 0 )) ///end of table
+        goto Error;
     if( E_mem_Q_file_W( file_id ))
-    {   E_base_W();
-        return 1;
-    }
+        goto Error;
     E_base_W();
     return 0;
+Error:
+    E_base_W();
+    return 1;
 }
 //==============================================================================
 void
