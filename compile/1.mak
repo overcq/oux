@@ -40,4 +40,6 @@ H_make_S_cc_version := $(shell $(H_make_S_cc) -dumpversion)
     ifneq (,$(H_make_C_middle_code))
 undefine H_make_C_to_libs
     endif
+#===============================================================================
+all: build
 ################################################################################

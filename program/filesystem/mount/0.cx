@@ -11,7 +11,6 @@
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #define S_inode_table_offset 7
 #define file_pos_S_directory 1
-#define file_pos_S_empty 2
 //==============================================================================
 Pc device;
 Pc directory;
@@ -122,7 +121,28 @@ main(
             out_buf.unique = in_buf->unique;
             G_(); Gd( in_buf->opcode );
             switch( in_buf->opcode )
-            { case FUSE_INIT:
+            { case FUSE_INTERRUPT:
+                {   struct fuse_interrupt_in *in_buf_2;
+                    if( buffer_read < sizeof( *in_buf_2 ))
+                        goto Error;
+                    buffer_read -= sizeof( *in_buf_2 );
+                    in_buf_2 = (P)( (Pc)in_buf + sizeof( *in_buf ));
+                    in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
+                    break;
+                }
+              case FUSE_FORGET:
+                    goto End;
+              case FUSE_BATCH_FORGET:
+                {   struct fuse_batch_forget_in *in_buf_2;
+                    if( buffer_read < sizeof( *in_buf_2 ))
+                        goto Error;
+                    buffer_read -= sizeof( *in_buf_2 );
+                    in_buf_2 = (P)( (Pc)in_buf + sizeof( *in_buf ));
+                    if( buffer_read < in_buf_2->count * sizeof( struct fuse_forget_one ))
+                        goto Error;
+                    goto End;
+                }
+              case FUSE_INIT:
                 {   struct fuse_init_in *in_buf_2;
                     if( buffer_read < sizeof( *in_buf_2 ))
                         goto Error;
@@ -148,7 +168,7 @@ main(
                     if( fuse_major > 7
                     || ( fuse_major == 7 && fuse_minor >= 5
                     ))
-                        out_buf_2.max_write = in_buf_2->max_readahead;
+                        out_buf_2.max_write = in_buf_2->max_readahead; //NDFN
                     struct iovec bufs[2] =
                     { { &out_buf, sizeof( out_buf ) }
                     , { &out_buf_2, sizeof( out_buf_2 ) }
@@ -160,411 +180,14 @@ main(
                 }
               case FUSE_DESTROY:
                     break;
-              case FUSE_FORGET:
-              case FUSE_BATCH_FORGET:
-                    goto End;
-              case FUSE_GETATTR:
-                {   struct fuse_getattr_in *in_buf_2;
-                    if( buffer_read < sizeof( *in_buf_2 ))
-                        goto Error;
-                    buffer_read -= sizeof( *in_buf_2 );
-                    in_buf_2 = (P)( (Pc)in_buf + sizeof( *in_buf ));
-                    struct fuse_attr_out out_buf_2;
-                    E_mem_Q_blk_P_fill_c( &out_buf_2, sizeof( out_buf_2 ), 0 );
-                    out_buf_2.attr_valid = 1;
-                    if( in_buf_2->getattr_flags & FUSE_GETATTR_FH )
-                    {   if( !E_mem_Q_tab_T( file_handles, in_buf_2->fh ))
-                        {   out_buf.error = -ENOENT;
-                            struct iovec bufs[1] =
-                            { { &out_buf, sizeof( out_buf ) }
-                            };
-                            VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
-                                goto Error;
-                            in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
-                            break;
-                        }
-                        struct E_main_Z_file_handle *file_handle = E_mem_Q_tab_R( file_handles, in_buf_2->fh );
-                        out_buf_2.attr.ino = file_handle->inode;
-                    }else
-                    {   out_buf_2.attr.ino = in_buf->nodeid;
-                    }
-                    N inode = 1;
-                    E_mem_Q_file_P_pos( device_file_id, S_inode_table_offset );
-                    O{  if( inode == out_buf_2.attr.ino )
-                            break;
-                        N file_pos;
-                        if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
-                            goto Error;
-                        if( !file_pos )
-                            break;
-                        N file_size;
-                        if( E_mem_Q_file_R_N( device_file_id, &file_size, device_n_size ))
-                            goto Error;
-                        N parent_dir_inode;
-                        if( E_mem_Q_file_R_N( device_file_id, &parent_dir_inode, device_n_size ))
-                            goto Error;
-                        O{  C c;
-                            if( E_mem_Q_file_R_c( device_file_id, &c ))
-                                goto Error;
-                            if( !c )
-                                break;
-                        }
-                        inode++;
-                    }
-                    if( inode != out_buf_2.attr.ino )
-                    {   out_buf.error = -ENOENT;
-                        struct iovec bufs[1] =
-                        { { &out_buf, sizeof( out_buf ) }
-                        };
-                        VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
-                            goto Error;
-                        in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
-                        break;
-                    }
-                    N file_pos;
-                    if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
-                        goto Error;
-                    if( !file_pos )
-                    {   out_buf.error = -ENOENT;
-                        struct iovec bufs[1] =
-                        { { &out_buf, sizeof( out_buf ) }
-                        };
-                        VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
-                            goto Error;
-                        in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
-                        break;
-                    }
-                    N file_size;
-                    if( E_mem_Q_file_R_N( device_file_id, &file_size, device_n_size ))
-                        goto Error;
-                    N parent_dir_inode;
-                    if( E_mem_Q_file_R_N( device_file_id, &parent_dir_inode, device_n_size ))
-                        goto Error;
-                    if( file_pos == file_pos_S_directory )
-                    {   out_buf_2.attr.mode = S_IFDIR | 0777;
-                        out_buf_2.attr.nlink = 1;
-                        E_mem_Q_file_P_pos( device_file_id, S_inode_table_offset );
-                        O{  N file_pos;
-                            if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
-                                goto Error;
-                            if( !file_pos )
-                                break;
-                            N file_size;
-                            if( E_mem_Q_file_R_N( device_file_id, &file_size, device_n_size ))
-                                goto Error;
-                            N parent_dir_inode;
-                            if( E_mem_Q_file_R_N( device_file_id, &parent_dir_inode, device_n_size ))
-                                goto Error;
-                            N i = 0;
-                            O{  C c;
-                                if( E_mem_Q_file_R_c( device_file_id, &c ))
-                                    goto Error;
-                                i++;
-                                if( !c )
-                                    break;
-                            }
-                            if( parent_dir_inode == out_buf_2.attr.ino )
-                            {   out_buf_2.attr.size += E_simple_Z_n_I_align_up_to_v_2( sizeof( struct fuse_dirent ) + i, 8 );
-                                out_buf_2.attr.nlink++;
-                            }
-                        }
-                    }else
-                    {   out_buf_2.attr.size = file_size;
-                        out_buf_2.attr.mode = S_IFREG | 0666;
-                        out_buf_2.attr.nlink = 1;
-                    }
-                    out_buf_2.attr.blocks = E_simple_Z_n_I_align_up_to_v_2( file_size, 512 ) / 512;
-                    out_buf.len += sizeof( out_buf_2 );
-                    struct iovec bufs[2] =
-                    { { &out_buf, sizeof( out_buf ) }
-                    , { &out_buf_2, sizeof( out_buf_2 ) }
-                    };
-                    VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
-                        goto Error;
-                    in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
-                    break;
-                }
-              case FUSE_GETXATTR:
-                {   struct fuse_getxattr_in *in_buf_2;
-                    if( buffer_read < sizeof( *in_buf_2 ))
-                        goto Error;
-                    buffer_read -= in_buf->len - sizeof( *in_buf );
-                    in_buf_2 = (P)( (Pc)in_buf + sizeof( *in_buf ));
-                    out_buf.error = -ENOSYS;
-                    struct iovec bufs[1] =
-                    { { &out_buf, sizeof( out_buf ) }
-                    };
-                    VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
-                        goto Error;
-                    in_buf = (P)( (Pc)in_buf + in_buf->len );
-                    break;
-                }
-              case FUSE_OPEN:
-              case FUSE_OPENDIR:
-                {   struct fuse_open_in *in_buf_2;
-                    if( buffer_read < sizeof( *in_buf_2 ))
-                        goto Error;
-                    buffer_read -= sizeof( *in_buf_2 );
-                    in_buf_2 = (P)( (Pc)in_buf + sizeof( *in_buf ));
-                    N inode = 1;
-                    E_mem_Q_file_P_pos( device_file_id, S_inode_table_offset );
-                    O{  if( inode == in_buf->nodeid )
-                            break;
-                        N file_pos;
-                        if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
-                            goto Error;
-                        if( !file_pos )
-                            break;
-                        N file_size;
-                        if( E_mem_Q_file_R_N( device_file_id, &file_size, device_n_size ))
-                            goto Error;
-                        N parent_dir_inode;
-                        if( E_mem_Q_file_R_N( device_file_id, &parent_dir_inode, device_n_size ))
-                            goto Error;
-                        O{  C c;
-                            if( E_mem_Q_file_R_c( device_file_id, &c ))
-                                goto Error;
-                            if( !c )
-                                break;
-                        }
-                        inode++;
-                    }
-                    if( inode != in_buf->nodeid )
-                    {   out_buf.error = -ENOENT;
-                        struct iovec bufs[1] =
-                        { { &out_buf, sizeof( out_buf ) }
-                        };
-                        VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
-                            goto Error;
-                        in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
-                        break;
-                    }
-                    N file_pos;
-                    if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
-                        goto Error;
-                    if( !file_pos )
-                    {   out_buf.error = -ENOENT;
-                        struct iovec bufs[1] =
-                        { { &out_buf, sizeof( out_buf ) }
-                        };
-                        VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
-                            goto Error;
-                        in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
-                        break;
-                    }
-                    struct fuse_open_out out_buf_2;
-                    E_mem_Q_blk_P_fill_c( &out_buf_2, sizeof( out_buf_2 ), 0 );
-                    out_buf_2.fh = E_mem_Q_tab_I_add( file_handles );
-                    if( !~out_buf_2.fh )
-                    {   out_buf.error = -ENOMEM;
-                        struct iovec bufs[1] =
-                        { { &out_buf, sizeof( out_buf ) }
-                        };
-                        VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
-                            goto Error;
-                        in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
-                        break;
-                    }
-                    struct E_main_Z_file_handle *file_handle = E_mem_Q_tab_R( file_handles, out_buf_2.fh );
-                    file_handle->inode = in_buf->nodeid;
-                    out_buf.len += sizeof( out_buf_2 );
-                    struct iovec bufs[2] =
-                    { { &out_buf, sizeof( out_buf ) }
-                    , { &out_buf_2, sizeof( out_buf_2 ) }
-                    };
-                    VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
-                        goto Error;
-                    in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
-                    break;
-                }
-              case FUSE_READ:
-              case FUSE_READDIR:
-                {   struct fuse_read_in *in_buf_2;
-                    if( buffer_read < sizeof( *in_buf_2 ))
-                        goto Error;
-                    buffer_read -= sizeof( *in_buf_2 );
-                    in_buf_2 = (P)( (Pc)in_buf + sizeof( *in_buf ));
-                    if( !E_mem_Q_tab_T( file_handles, in_buf_2->fh ))
-                    {   out_buf.error = -ENOENT;
-                        struct iovec bufs[1] =
-                        { { &out_buf, sizeof( out_buf ) }
-                        };
-                        VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
-                            goto Error;
-                        in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
-                        break;
-                    }
-                    struct E_main_Z_file_handle *file_handle = E_mem_Q_tab_R( file_handles, in_buf_2->fh );
-                    N inode = 1;
-                    E_mem_Q_file_P_pos( device_file_id, S_inode_table_offset );
-                    O{  if( inode == file_handle->inode )
-                            break;
-                        N file_pos;
-                        if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
-                            goto Error;
-                        if( !file_pos )
-                            break;
-                        N file_size;
-                        if( E_mem_Q_file_R_N( device_file_id, &file_size, device_n_size ))
-                            goto Error;
-                        N parent_dir_inode;
-                        if( E_mem_Q_file_R_N( device_file_id, &parent_dir_inode, device_n_size ))
-                            goto Error;
-                        O{  C c;
-                            if( E_mem_Q_file_R_c( device_file_id, &c ))
-                                goto Error;
-                            if( !c )
-                                break;
-                        }
-                        inode++;
-                    }
-                    if( inode != file_handle->inode )
-                    {   out_buf.error = -ENOENT;
-                        struct iovec bufs[1] =
-                        { { &out_buf, sizeof( out_buf ) }
-                        };
-                        VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
-                            goto Error;
-                        in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
-                        break;
-                    }
-                    N file_pos;
-                    if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
-                        goto Error;
-                    if( !file_pos )
-                    {   out_buf.error = -ENOENT;
-                        struct iovec bufs[1] =
-                        { { &out_buf, sizeof( out_buf ) }
-                        };
-                        VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
-                            goto Error;
-                        in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
-                        break;
-                    }
-                    N file_size;
-                    if( E_mem_Q_file_R_N( device_file_id, &file_size, device_n_size ))
-                        goto Error;
-                    N parent_dir_inode;
-                    if( E_mem_Q_file_R_N( device_file_id, &parent_dir_inode, device_n_size ))
-                        goto Error;
-                    N len;
-                    P out_buf_2;
-                    if( file_pos == file_pos_S_directory )
-                    {   out_buf_2 = M( len = 0 );
-                        N node_offset = 0;
-                        N node_size = in_buf_2->size;
-                        N nodeid = 1;
-                        E_mem_Q_file_P_pos( device_file_id, S_inode_table_offset );
-                        O{  N file_pos;
-                            if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
-                                goto Error;
-                            if( !file_pos )
-                                break;
-                            N file_size;
-                            if( E_mem_Q_file_R_N( device_file_id, &file_size, device_n_size ))
-                                goto Error;
-                            N parent_dir_inode;
-                            if( E_mem_Q_file_R_N( device_file_id, &parent_dir_inode, device_n_size ))
-                                goto Error;
-                            N i = 0;
-                            Pc s = M(0);
-                            O{  if( !E_mem_Q_blk_I_append( &s, 1 ))
-                                {   W(s);
-                                    W( out_buf_2 );
-                                    out_buf.error = -ENOMEM;
-                                    struct iovec bufs[1] =
-                                    { { &out_buf, sizeof( out_buf ) }
-                                    };
-                                    VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
-                                        goto Error;
-                                    goto End_read;
-                                }
-                                C c;
-                                if( E_mem_Q_file_R_c( device_file_id, &c ))
-                                    goto Error;
-                                s[i] = c;
-                                i++;
-                                if( !c )
-                                    break;
-                            }
-                            if( parent_dir_inode == file_handle->inode )
-                            {   N size = E_simple_Z_n_I_align_up_to_v_2( sizeof( struct fuse_dirent ) + i, 8 );
-                                if( node_offset >= in_buf_2->offset )
-                                {   if( node_size < size )
-                                    {   W(s);
-                                        W( out_buf_2 );
-                                        out_buf.error = -EINVAL;
-                                        struct iovec bufs[1] =
-                                        { { &out_buf, sizeof( out_buf ) }
-                                        };
-                                        VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
-                                            goto Error;
-                                        goto End_read;
-                                    }
-                                    node_size -= size;
-                                    len += size;
-                                    if( !E_mem_Q_blk_I_append( &out_buf_2, size ))
-                                    {   W(s);
-                                        W( out_buf_2 );
-                                        out_buf.error = -ENOMEM;
-                                        struct iovec bufs[1] =
-                                        { { &out_buf, sizeof( out_buf ) }
-                                        };
-                                        VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
-                                            goto Error;
-                                        goto End_read;
-                                    }
-                                    struct fuse_dirent *d = (P)( (Pc)out_buf_2 + len - size );
-                                    *d = ( struct fuse_dirent )
-                                    { nodeid
-                                    , node_offset + size
-                                    , i - 1
-                                    , ( file_pos == file_pos_S_directory ? S_IFDIR : S_IFREG ) >> 12
-                                    };
-                                    E_text_Z_s0_P_copy_0( d->name, s );
-                                    E_mem_Q_blk_P_fill_c( d->name + i, size - ( offsetof( struct fuse_dirent, name ) + i ), 0 );
-                                }
-                                node_offset += size;
-                            }
-                            W(s);
-                            nodeid++;
-                        }
-                    }else
-                    {   if( in_buf_2->offset >= file_size )
-                            len = 0;
-                        else if( in_buf_2->offset + in_buf_2->size >= file_size )
-                            len = file_size - in_buf_2->offset;
-                        else
-                            len = in_buf_2->size;
-                        out_buf_2 = M(len);
-                        if(len)
-                        {   E_mem_Q_file_P_pos( device_file_id, file_pos );
-                            if( E_mem_Q_file_R_s( device_file_id, out_buf_2, len ))
-                                goto Error;
-                        }
-                    }
-                    out_buf.len += len;
-                    struct iovec bufs[2] =
-                    { { &out_buf, sizeof( out_buf ) }
-                    , { out_buf_2, len }
-                    };
-                    VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
-                        goto Error;
-                    W( out_buf_2 );
-End_read:           in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
-                    break;
-                }
-              case FUSE_RELEASE:
-              case FUSE_RELEASEDIR:
-                {   struct fuse_release_in *in_buf_2;
+              case FUSE_FLUSH:
+                {   struct fuse_flush_in *in_buf_2;
                     if( buffer_read < sizeof( *in_buf_2 ))
                         goto Error;
                     buffer_read -= sizeof( *in_buf_2 );
                     in_buf_2 = (P)( (Pc)in_buf + sizeof( *in_buf ));
                     if( !E_mem_Q_tab_T( file_handles, in_buf_2->fh ))
                         out_buf.error = -ENOENT;
-                    else
-                        E_mem_Q_tab_I_rem( file_handles, in_buf_2->fh );
                     struct iovec bufs[1] =
                     { { &out_buf, sizeof( out_buf ) }
                     };
@@ -579,7 +202,7 @@ End_read:           in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                         goto Error;
                     buffer_read -= sizeof( *in_buf_2 );
                     in_buf_2 = (P)( (Pc)in_buf + sizeof( *in_buf ));
-                    N inode = 1;
+                    N inode = FUSE_ROOT_ID + 1;
                     E_mem_Q_file_P_pos( device_file_id, S_inode_table_offset );
                     O{  if( inode == in_buf->nodeid )
                             break;
@@ -625,7 +248,7 @@ End_access:         ;struct iovec bufs[1] =
                     E_mem_Q_blk_P_fill_c( &out_buf_2, sizeof( out_buf_2 ), 0 );
                     out_buf_2.generation = time(0);
                     out_buf_2.entry_valid = out_buf_2.attr_valid = 1;
-                    N inode = 1;
+                    N inode = FUSE_ROOT_ID + 1;
                     E_mem_Q_file_P_pos( device_file_id, S_inode_table_offset );
                     O{  N file_pos;
                         if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
@@ -693,7 +316,7 @@ End_access:         ;struct iovec bufs[1] =
                                                 break;
                                         }
                                         if( parent_dir_inode == in_buf->nodeid )
-                                        {   out_buf_2.attr.size += E_simple_Z_n_I_align_up_to_v_2( sizeof( struct fuse_dirent ) + i, 8 );
+                                        {   out_buf_2.attr.size += device_n_size * 3 + i;
                                             out_buf_2.attr.nlink++;
                                         }
                                     }
@@ -724,137 +347,89 @@ End_access:         ;struct iovec bufs[1] =
 End_lookup:         in_buf = (P)( (Pc)in_buf + sizeof( *in_buf ));
                     break;
                 }
-              case FUSE_CREATE:
-                {   struct fuse_create_in *in_buf_2;
+              case FUSE_GETATTR:
+                {   struct fuse_getattr_in *in_buf_2;
                     if( buffer_read < sizeof( *in_buf_2 ))
                         goto Error;
-                    buffer_read -= in_buf->len - sizeof( *in_buf );
+                    buffer_read -= sizeof( *in_buf_2 );
                     in_buf_2 = (P)( (Pc)in_buf + sizeof( *in_buf ));
-                    E_mem_Q_file_P_pos( device_file_id, S_inode_table_offset );
-                    N file_pos;
-                    O{  if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
-                            goto Error;
-                        if( !file_pos )
-                            break;
-                        N file_size;
-                        if( E_mem_Q_file_R_N( device_file_id, &file_size, device_n_size ))
-                            goto Error;
-                        N parent_dir_inode;
-                        if( E_mem_Q_file_R_N( device_file_id, &parent_dir_inode, device_n_size ))
-                            goto Error;
-                        if( parent_dir_inode == in_buf->nodeid )
-                        {   N i = 0;
-                            Pc s = M(0);
-                            O{  if( !E_mem_Q_blk_I_append( &s, 1 ))
-                                {   W(s);
-                                    out_buf.error = -ENOMEM;
-                                    struct iovec bufs[1] =
-                                    { { &out_buf, sizeof( out_buf ) }
-                                    };
-                                    VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
-                                        goto Error;
-                                    goto End_create;
-                                }
-                                C c;
-                                if( E_mem_Q_file_R_c( device_file_id, &c ))
-                                    goto Error;
-                                s[i] = c;
-                                i++;
-                                if( !c )
-                                    break;
-                            }
-                            if( E_text_Z_s0_T_eq( (Pc)in_buf_2 + sizeof( *in_buf_2 ), s ))
-                            {   W(s);
-                                out_buf.error = -EEXIST;
-                                struct iovec bufs[1] =
-                                { { &out_buf, sizeof( out_buf ) }
-                                };
-                                VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
-                                    goto Error;
-                                goto End_create;
-                            }
-                            W(s);
-                        }else
-                            O{  C c;
-                                if( E_mem_Q_file_R_c( device_file_id, &c ))
-                                    goto Error;
-                                if( !c )
-                                    break;
-                            }
-                    }
-                    E_mem_Q_file_P_pos( device_file_id, S_inode_table_offset );
-                    O{  if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
-                            goto Error;
-                        if( !file_pos )
-                            break;
-                        if( file_pos == file_pos_S_empty )
-                        {   //NDFN obsługa błędów i przesuwanie danych
-                            E_mem_Q_file_P_pos( device_file_id, E_mem_Q_file_R_pos( device_file_id ) - device_n_size );
-                            E_mem_Q_file_P_N( device_file_id, ~0, device_n_size );
-                            E_mem_Q_file_P_N( device_file_id, 0, device_n_size );
-                            E_mem_Q_file_P_N( device_file_id, in_buf->nodeid, device_n_size );
-                            E_mem_Q_file_P_s( device_file_id, (Pc)in_buf_2 + sizeof( *in_buf_2 ), in_buf->len - sizeof( *in_buf ) - sizeof( *in_buf_2 ) - 1 );
-                            goto Ok_create;
-                        }
-                        N file_size;
-                        if( E_mem_Q_file_R_N( device_file_id, &file_size, device_n_size ))
-                            goto Error;
-                        N parent_dir_inode;
-                        if( E_mem_Q_file_R_N( device_file_id, &parent_dir_inode, device_n_size ))
-                            goto Error;
-                        if( parent_dir_inode == in_buf->nodeid )
-                        {   N i = 0;
-                            Pc s = M(0);
-                            O{  if( !E_mem_Q_blk_I_append( &s, 1 ))
-                                {   W(s);
-                                    out_buf.error = -ENOMEM;
-                                    struct iovec bufs[1] =
-                                    { { &out_buf, sizeof( out_buf ) }
-                                    };
-                                    VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
-                                        goto Error;
-                                    goto End_create;
-                                }
-                                C c;
-                                if( E_mem_Q_file_R_c( device_file_id, &c ))
-                                    goto Error;
-                                s[i] = c;
-                                i++;
-                                if( !c )
-                                    break;
-                            }
-                            if( E_text_Z_s0_T_eq( (Pc)in_buf_2 + sizeof( *in_buf_2 ), s ))
-                            {   W(s);
-                                out_buf.error = -EEXIST;
-                                struct iovec bufs[1] =
-                                { { &out_buf, sizeof( out_buf ) }
-                                };
-                                VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
-                                    goto Error;
-                                goto End_create;
-                            }
-                            W(s);
-                        }else
-                            O{  C c;
-                                if( E_mem_Q_file_R_c( device_file_id, &c ))
-                                    goto Error;
-                                if( !c )
-                                    break;
-                            }
-                    }
-                    //NDFN obsługa błędów
-                    E_mem_Q_file_P_pos( device_file_id, E_mem_Q_file_R_pos( device_file_id ) - device_n_size );
-                    E_mem_Q_file_P_N( device_file_id, ~0, device_n_size );
-                    E_mem_Q_file_P_N( device_file_id, 0, device_n_size );
-                    E_mem_Q_file_P_N( device_file_id, in_buf->nodeid, device_n_size );
-                    E_mem_Q_file_P_s( device_file_id, (Pc)in_buf_2 + sizeof( *in_buf_2 ), in_buf->len - sizeof( *in_buf ) - sizeof( *in_buf_2 ));
-                    E_mem_Q_file_P_N( device_file_id, 0, device_n_size );
-                    //NDFN przesuwanie danych
-Ok_create:          ;struct fuse_entry_out out_buf_2;
+                    struct fuse_attr_out out_buf_2;
                     E_mem_Q_blk_P_fill_c( &out_buf_2, sizeof( out_buf_2 ), 0 );
-                    if(no) //NDFN
+                    out_buf_2.attr_valid = 1;
+                    if( in_buf_2->getattr_flags & FUSE_GETATTR_FH )
+                    {   if( !E_mem_Q_tab_T( file_handles, in_buf_2->fh ))
+                        {   out_buf.error = -ENOENT;
+                            struct iovec bufs[1] =
+                            { { &out_buf, sizeof( out_buf ) }
+                            };
+                            VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                goto Error;
+                            in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
+                            break;
+                        }
+                        struct E_main_Z_file_handle *file_handle = E_mem_Q_tab_R( file_handles, in_buf_2->fh );
+                        out_buf_2.attr.ino = file_handle->inode;
+                    }else
+                    {   out_buf_2.attr.ino = in_buf->nodeid;
+                    }
+                    N file_pos;
+                    N file_size;
+                    if( out_buf_2.attr.ino != FUSE_ROOT_ID )
+                    {   N inode = FUSE_ROOT_ID + 1;
+                        E_mem_Q_file_P_pos( device_file_id, S_inode_table_offset );
+                        O{  if( inode == out_buf_2.attr.ino )
+                                break;
+                            N file_pos;
+                            if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
+                                goto Error;
+                            if( !file_pos )
+                                break;
+                            N file_size;
+                            if( E_mem_Q_file_R_N( device_file_id, &file_size, device_n_size ))
+                                goto Error;
+                            N parent_dir_inode;
+                            if( E_mem_Q_file_R_N( device_file_id, &parent_dir_inode, device_n_size ))
+                                goto Error;
+                            O{  C c;
+                                if( E_mem_Q_file_R_c( device_file_id, &c ))
+                                    goto Error;
+                                if( !c )
+                                    break;
+                            }
+                            inode++;
+                        }
+                        if( inode != out_buf_2.attr.ino )
+                        {   out_buf.error = -ENOENT;
+                            struct iovec bufs[1] =
+                            { { &out_buf, sizeof( out_buf ) }
+                            };
+                            VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                goto Error;
+                            in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
+                            break;
+                        }
+                        if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
+                            goto Error;
+                        if( !file_pos )
+                        {   out_buf.error = -ENOENT;
+                            struct iovec bufs[1] =
+                            { { &out_buf, sizeof( out_buf ) }
+                            };
+                            VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                goto Error;
+                            in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
+                            break;
+                        }
+                        if( E_mem_Q_file_R_N( device_file_id, &file_size, device_n_size ))
+                            goto Error;
+                        N parent_dir_inode;
+                        if( E_mem_Q_file_R_N( device_file_id, &parent_dir_inode, device_n_size ))
+                            goto Error;
+                    }else
+                        file_pos = file_pos_S_directory;
+                    if( file_pos == file_pos_S_directory )
                     {   out_buf_2.attr.mode = S_IFDIR | 0777;
-                        out_buf_2.attr.nlink = 1;
+                        out_buf_2.attr.nlink = 2;
                         E_mem_Q_file_P_pos( device_file_id, S_inode_table_offset );
                         O{  N file_pos;
                             if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
@@ -876,54 +451,39 @@ Ok_create:          ;struct fuse_entry_out out_buf_2;
                                     break;
                             }
                             if( parent_dir_inode == out_buf_2.attr.ino )
-                            {   out_buf_2.attr.size += E_simple_Z_n_I_align_up_to_v_2( sizeof( struct fuse_dirent ) + i, 8 );
+                            {   out_buf_2.attr.size += device_n_size * 3 + i;
                                 out_buf_2.attr.nlink++;
                             }
                         }
                     }else
-                    {   out_buf_2.attr.mode = S_IFREG | 0666;
+                    {   out_buf_2.attr.size = file_size;
+                        out_buf_2.attr.mode = S_IFREG | 0666;
                         out_buf_2.attr.nlink = 1;
                     }
-                    struct fuse_open_out out_buf_3;
-                    E_mem_Q_blk_P_fill_c( &out_buf_3, sizeof( out_buf_3 ), 0 );
-                    out_buf_3.fh = E_mem_Q_tab_I_add( file_handles );
-                    if( !~out_buf_3.fh )
-                    {   out_buf.error = -ENOMEM;
-                        struct iovec bufs[1] =
-                        { { &out_buf, sizeof( out_buf ) }
-                        };
-                        VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
-                            goto Error;
-                        in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
-                        break;
-                    }
-                    struct E_main_Z_file_handle *file_handle = E_mem_Q_tab_R( file_handles, out_buf_3.fh );
-                    file_handle->inode = in_buf->nodeid;
-                    out_buf.len += sizeof( out_buf_2 ) + sizeof( out_buf_3 );
-                    struct iovec bufs[3] =
+                    out_buf_2.attr.blocks = E_simple_Z_n_I_align_up_to_v_2( file_size, 512 ) / 512;
+                    out_buf.len += sizeof( out_buf_2 );
+                    struct iovec bufs[2] =
                     { { &out_buf, sizeof( out_buf ) }
                     , { &out_buf_2, sizeof( out_buf_2 ) }
-                    , { &out_buf_3, sizeof( out_buf_3 ) }
                     };
                     VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
                         goto Error;
-End_create:         in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
+                    in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                     break;
                 }
-              case FUSE_FLUSH:
-                {   struct fuse_flush_in *in_buf_2;
+              case FUSE_GETXATTR:
+                {   struct fuse_getxattr_in *in_buf_2;
                     if( buffer_read < sizeof( *in_buf_2 ))
                         goto Error;
-                    buffer_read -= sizeof( *in_buf_2 );
+                    buffer_read -= in_buf->len - sizeof( *in_buf );
                     in_buf_2 = (P)( (Pc)in_buf + sizeof( *in_buf ));
-                    if( !E_mem_Q_tab_T( file_handles, in_buf_2->fh ))
-                        out_buf.error = -ENOENT;
+                    out_buf.error = -ENOSYS;
                     struct iovec bufs[1] =
                     { { &out_buf, sizeof( out_buf ) }
                     };
                     VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
                         goto Error;
-                    in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
+                    in_buf = (P)( (Pc)in_buf + in_buf->len );
                     break;
                 }
               case FUSE_SETATTR:
@@ -934,7 +494,7 @@ End_create:         in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                     in_buf_2 = (P)( (Pc)in_buf + sizeof( *in_buf ));
                     if( E_mem_Q_tab_T( file_handles, in_buf_2->fh ))
                     {   struct E_main_Z_file_handle *file_handle = E_mem_Q_tab_R( file_handles, in_buf_2->fh );
-                        N inode = 1;
+                        N inode = FUSE_ROOT_ID + 1;
                         E_mem_Q_file_P_pos( device_file_id, S_inode_table_offset );
                         O{  if( inode == file_handle->inode )
                                 break;
@@ -1006,7 +566,7 @@ End_create:         in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                                     break;
                             }
                             if( parent_dir_inode == out_buf_2.attr.ino )
-                            {   out_buf_2.attr.size += E_simple_Z_n_I_align_up_to_v_2( sizeof( struct fuse_dirent ) + i, 8 );
+                            {   out_buf_2.attr.size += device_n_size * 3 + i;
                                 out_buf_2.attr.nlink++;
                             }
                         }
@@ -1024,13 +584,678 @@ End_create:         in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
 End_setattr:        in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                     break;
                 }
-              case FUSE_INTERRUPT:
-                {   struct fuse_interrupt_in *in_buf_2;
+              case FUSE_OPEN:
+              case FUSE_OPENDIR:
+                {   struct fuse_open_in *in_buf_2;
                     if( buffer_read < sizeof( *in_buf_2 ))
                         goto Error;
                     buffer_read -= sizeof( *in_buf_2 );
                     in_buf_2 = (P)( (Pc)in_buf + sizeof( *in_buf ));
+                    if( in_buf->nodeid != FUSE_ROOT_ID )
+                    {   N inode = FUSE_ROOT_ID + 1;
+                        E_mem_Q_file_P_pos( device_file_id, S_inode_table_offset );
+                        O{  if( inode == in_buf->nodeid )
+                                break;
+                            N file_pos;
+                            if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
+                                goto Error;
+                            if( !file_pos )
+                                break;
+                            N file_size;
+                            if( E_mem_Q_file_R_N( device_file_id, &file_size, device_n_size ))
+                                goto Error;
+                            N parent_dir_inode;
+                            if( E_mem_Q_file_R_N( device_file_id, &parent_dir_inode, device_n_size ))
+                                goto Error;
+                            O{  C c;
+                                if( E_mem_Q_file_R_c( device_file_id, &c ))
+                                    goto Error;
+                                if( !c )
+                                    break;
+                            }
+                            inode++;
+                        }
+                        if( inode != in_buf->nodeid )
+                        {   out_buf.error = -ENOENT;
+                            struct iovec bufs[1] =
+                            { { &out_buf, sizeof( out_buf ) }
+                            };
+                            VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                goto Error;
+                            in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
+                            break;
+                        }
+                        N file_pos;
+                        if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
+                            goto Error;
+                        if( !file_pos )
+                        {   out_buf.error = -ENOENT;
+                            struct iovec bufs[1] =
+                            { { &out_buf, sizeof( out_buf ) }
+                            };
+                            VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                goto Error;
+                            in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
+                            break;
+                        }
+                    }
+                    struct fuse_open_out out_buf_2;
+                    E_mem_Q_blk_P_fill_c( &out_buf_2, sizeof( out_buf_2 ), 0 );
+                    out_buf_2.fh = E_mem_Q_tab_I_add( file_handles );
+                    if( !~out_buf_2.fh )
+                    {   out_buf.error = -ENOMEM;
+                        struct iovec bufs[1] =
+                        { { &out_buf, sizeof( out_buf ) }
+                        };
+                        VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                            goto Error;
+                        in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
+                        break;
+                    }
+                    struct E_main_Z_file_handle *file_handle = E_mem_Q_tab_R( file_handles, out_buf_2.fh );
+                    file_handle->inode = in_buf->nodeid;
+                    out_buf.len += sizeof( out_buf_2 );
+                    struct iovec bufs[2] =
+                    { { &out_buf, sizeof( out_buf ) }
+                    , { &out_buf_2, sizeof( out_buf_2 ) }
+                    };
+                    VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                        goto Error;
                     in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
+                    break;
+                }
+              case FUSE_READ:
+              case FUSE_READDIR:
+                {   struct fuse_read_in *in_buf_2;
+                    if( buffer_read < sizeof( *in_buf_2 ))
+                        goto Error;
+                    buffer_read -= sizeof( *in_buf_2 );
+                    in_buf_2 = (P)( (Pc)in_buf + sizeof( *in_buf ));
+                    if( !E_mem_Q_tab_T( file_handles, in_buf_2->fh ))
+                    {   out_buf.error = -ENOENT;
+                        struct iovec bufs[1] =
+                        { { &out_buf, sizeof( out_buf ) }
+                        };
+                        VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                            goto Error;
+                        in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
+                        break;
+                    }
+                    struct E_main_Z_file_handle *file_handle = E_mem_Q_tab_R( file_handles, in_buf_2->fh );
+                    N file_pos;
+                    N file_size;
+                    N parent_dir_inode;
+                    if( file_handle->inode != FUSE_ROOT_ID )
+                    {   N inode = FUSE_ROOT_ID + 1;
+                        E_mem_Q_file_P_pos( device_file_id, S_inode_table_offset );
+                        O{  if( inode == file_handle->inode )
+                                break;
+                            N file_pos;
+                            if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
+                                goto Error;
+                            if( !file_pos )
+                                break;
+                            N file_size;
+                            if( E_mem_Q_file_R_N( device_file_id, &file_size, device_n_size ))
+                                goto Error;
+                            N parent_dir_inode;
+                            if( E_mem_Q_file_R_N( device_file_id, &parent_dir_inode, device_n_size ))
+                                goto Error;
+                            O{  C c;
+                                if( E_mem_Q_file_R_c( device_file_id, &c ))
+                                    goto Error;
+                                if( !c )
+                                    break;
+                            }
+                            inode++;
+                        }
+                        if( inode != file_handle->inode )
+                        {   out_buf.error = -ENOENT;
+                            struct iovec bufs[1] =
+                            { { &out_buf, sizeof( out_buf ) }
+                            };
+                            VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                goto Error;
+                            in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
+                            break;
+                        }
+                        if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
+                            goto Error;
+                        if( !file_pos )
+                        {   out_buf.error = -ENOENT;
+                            struct iovec bufs[1] =
+                            { { &out_buf, sizeof( out_buf ) }
+                            };
+                            VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                goto Error;
+                            in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
+                            break;
+                        }
+                        if( E_mem_Q_file_R_N( device_file_id, &file_size, device_n_size ))
+                            goto Error;
+                        if( E_mem_Q_file_R_N( device_file_id, &parent_dir_inode, device_n_size ))
+                            goto Error;
+                    }else
+                    {   file_pos = file_pos_S_directory;
+                        parent_dir_inode = file_handle->inode;
+                    }
+                    N len;
+                    P out_buf_2;
+                    if( file_pos == file_pos_S_directory )
+                    {   out_buf_2 = M( len = 0 );
+                        N node_offset = 0;
+                        N node_size = in_buf_2->size;
+                        N nodeid = FUSE_ROOT_ID + 1;
+                        E_mem_Q_file_P_pos( device_file_id, S_inode_table_offset );
+                        O{  N file_pos;
+                            if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
+                                goto Error;
+                            if( !file_pos )
+                                break;
+                            N file_size;
+                            if( E_mem_Q_file_R_N( device_file_id, &file_size, device_n_size ))
+                                goto Error;
+                            N parent_dir_inode;
+                            if( E_mem_Q_file_R_N( device_file_id, &parent_dir_inode, device_n_size ))
+                                goto Error;
+                            if( parent_dir_inode == file_handle->inode )
+                            {   N i = 0;
+                                Pc s = M(0);
+                                O{  if( !E_mem_Q_blk_I_append( &s, 1 ))
+                                    {   W(s);
+                                        W( out_buf_2 );
+                                        out_buf.error = -ENOMEM;
+                                        struct iovec bufs[1] =
+                                        { { &out_buf, sizeof( out_buf ) }
+                                        };
+                                        VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                            goto Error;
+                                        goto End_read;
+                                    }
+                                    C c;
+                                    if( E_mem_Q_file_R_c( device_file_id, &c ))
+                                        goto Error;
+                                    s[i] = c;
+                                    i++;
+                                    if( !c )
+                                        break;
+                                }
+                                N size = E_simple_Z_n_I_align_up_to_v_2( sizeof( struct fuse_dirent ) + i, 8 );
+                                if( node_offset >= in_buf_2->offset )
+                                {   if( node_size < size )
+                                    {   W(s);
+                                        W( out_buf_2 );
+                                        out_buf.error = -ENOBUFS;
+                                        struct iovec bufs[1] =
+                                        { { &out_buf, sizeof( out_buf ) }
+                                        };
+                                        VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                            goto Error;
+                                        goto End_read;
+                                    }
+                                    node_size -= size;
+                                    len += size;
+                                    if( !E_mem_Q_blk_I_append( &out_buf_2, size ))
+                                    {   W(s);
+                                        W( out_buf_2 );
+                                        out_buf.error = -ENOMEM;
+                                        struct iovec bufs[1] =
+                                        { { &out_buf, sizeof( out_buf ) }
+                                        };
+                                        VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                            goto Error;
+                                        goto End_read;
+                                    }
+                                    struct fuse_dirent *d = (P)( (Pc)out_buf_2 + len - size );
+                                    *d = ( struct fuse_dirent )
+                                    { nodeid
+                                    , node_offset + size
+                                    , i - 1
+                                    , ( file_pos == file_pos_S_directory ? S_IFDIR : S_IFREG ) >> 12
+                                    };
+                                    E_text_Z_s0_P_copy_0( d->name, s );
+                                    E_mem_Q_blk_P_fill_c( d->name + i, size - ( offsetof( struct fuse_dirent, name ) + i ), 0 );
+                                }
+                                W(s);
+                                node_offset += size;
+                                if( !node_size )
+                                    break;
+                            }else
+                                O{  C c;
+                                    if( E_mem_Q_file_R_c( device_file_id, &c ))
+                                        goto Error;
+                                    if( !c )
+                                        break;
+                                }
+                            if( nodeid == file_handle->inode
+                            && node_offset >= in_buf_2->offset
+                            ){  N i = 2;
+                                N size = E_simple_Z_n_I_align_up_to_v_2( sizeof( struct fuse_dirent ) + i, 8 );
+                                if( node_size < size )
+                                {   W( out_buf_2 );
+                                    out_buf.error = -ENOBUFS;
+                                    struct iovec bufs[1] =
+                                    { { &out_buf, sizeof( out_buf ) }
+                                    };
+                                    VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                        goto Error;
+                                    goto End_read;
+                                }
+                                node_size -= size;
+                                len += size;
+                                if( !E_mem_Q_blk_I_append( &out_buf_2, size ))
+                                {   W( out_buf_2 );
+                                    out_buf.error = -ENOMEM;
+                                    struct iovec bufs[1] =
+                                    { { &out_buf, sizeof( out_buf ) }
+                                    };
+                                    VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                        goto Error;
+                                    goto End_read;
+                                }
+                                struct fuse_dirent *d = (P)( (Pc)out_buf_2 + len - size );
+                                *d = ( struct fuse_dirent )
+                                { nodeid
+                                , node_offset + size
+                                , i - 1
+                                , S_IFDIR >> 12
+                                };
+                                E_text_Z_s0_P_copy_0( d->name, "." );
+                                E_mem_Q_blk_P_fill_c( d->name + i, size - ( offsetof( struct fuse_dirent, name ) + i ), 0 );
+                                node_offset += size;
+                                if( !node_size )
+                                    break;
+                            }
+                            nodeid++;
+                        }
+                        if( file_handle->inode == FUSE_ROOT_ID
+                        && node_size
+                        && node_offset >= in_buf_2->offset
+                        ){  N i = 2;
+                            N size = E_simple_Z_n_I_align_up_to_v_2( sizeof( struct fuse_dirent ) + i, 8 );
+                            if( node_size < size )
+                            {   W( out_buf_2 );
+                                out_buf.error = -ENOBUFS;
+                                struct iovec bufs[1] =
+                                { { &out_buf, sizeof( out_buf ) }
+                                };
+                                VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                    goto Error;
+                                goto End_read;
+                            }
+                            node_size -= size;
+                            len += size;
+                            if( !E_mem_Q_blk_I_append( &out_buf_2, size ))
+                            {   W( out_buf_2 );
+                                out_buf.error = -ENOMEM;
+                                struct iovec bufs[1] =
+                                { { &out_buf, sizeof( out_buf ) }
+                                };
+                                VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                    goto Error;
+                                goto End_read;
+                            }
+                            struct fuse_dirent *d = (P)( (Pc)out_buf_2 + len - size );
+                            *d = ( struct fuse_dirent )
+                            { file_handle->inode
+                            , node_offset + size
+                            , i - 1
+                            , S_IFDIR >> 12
+                            };
+                            E_text_Z_s0_P_copy_0( d->name, "." );
+                            E_mem_Q_blk_P_fill_c( d->name + i, size - ( offsetof( struct fuse_dirent, name ) + i ), 0 );
+                            node_offset += size;
+                        }
+                        if( node_size
+                        && node_offset >= in_buf_2->offset
+                        ){  N i = 3;
+                            N size = E_simple_Z_n_I_align_up_to_v_2( sizeof( struct fuse_dirent ) + i, 8 );
+                            if( node_size < size )
+                            {   W( out_buf_2 );
+                                out_buf.error = -ENOBUFS;
+                                struct iovec bufs[1] =
+                                { { &out_buf, sizeof( out_buf ) }
+                                };
+                                VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                    goto Error;
+                                goto End_read;
+                            }
+                            len += size;
+                            if( !E_mem_Q_blk_I_append( &out_buf_2, size ))
+                            {   W( out_buf_2 );
+                                out_buf.error = -ENOMEM;
+                                struct iovec bufs[1] =
+                                { { &out_buf, sizeof( out_buf ) }
+                                };
+                                VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                    goto Error;
+                                goto End_read;
+                            }
+                            struct fuse_dirent *d = (P)( (Pc)out_buf_2 + len - size );
+                            *d = ( struct fuse_dirent )
+                            { parent_dir_inode
+                            , node_offset + size
+                            , i - 1
+                            , S_IFDIR >> 12
+                            };
+                            E_text_Z_s0_P_copy_0( d->name, ".." );
+                            E_mem_Q_blk_P_fill_c( d->name + i, size - ( offsetof( struct fuse_dirent, name ) + i ), 0 );
+                        }
+                    }else
+                    {   if( in_buf_2->offset >= file_size )
+                            len = 0;
+                        else if( in_buf_2->offset + in_buf_2->size >= file_size )
+                            len = file_size - in_buf_2->offset;
+                        else
+                            len = in_buf_2->size;
+                        out_buf_2 = M(len);
+                        if(len)
+                        {   E_mem_Q_file_P_pos( device_file_id, file_pos + in_buf_2->offset );
+                            if( E_mem_Q_file_R_s( device_file_id, out_buf_2, len ))
+                                goto Error;
+                        }
+                    }
+                    out_buf.len += len;
+                    struct iovec bufs[2] =
+                    { { &out_buf, sizeof( out_buf ) }
+                    , { out_buf_2, len }
+                    };
+                    VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                        goto Error;
+                    W( out_buf_2 );
+End_read:           in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
+                    break;
+                }
+              case FUSE_RELEASE:
+              case FUSE_RELEASEDIR:
+                {   struct fuse_release_in *in_buf_2;
+                    if( buffer_read < sizeof( *in_buf_2 ))
+                        goto Error;
+                    buffer_read -= sizeof( *in_buf_2 );
+                    in_buf_2 = (P)( (Pc)in_buf + sizeof( *in_buf ));
+                    if( !E_mem_Q_tab_T( file_handles, in_buf_2->fh ))
+                        out_buf.error = -ENOENT;
+                    else
+                        E_mem_Q_tab_I_rem( file_handles, in_buf_2->fh );
+                    struct iovec bufs[1] =
+                    { { &out_buf, sizeof( out_buf ) }
+                    };
+                    VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                        goto Error;
+                    in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
+                    break;
+                }
+              case FUSE_CREATE:
+                {   struct fuse_create_in *in_buf_2;
+                    if( buffer_read < sizeof( *in_buf_2 ))
+                        goto Error;
+                    buffer_read -= in_buf->len - sizeof( *in_buf );
+                    in_buf_2 = (P)( (Pc)in_buf + sizeof( *in_buf ));
+                    N nodeid = FUSE_ROOT_ID + 1;
+                    E_mem_Q_file_P_pos( device_file_id, S_inode_table_offset );
+                    O{  N file_pos;
+                        if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
+                            goto Error;
+                        if( !file_pos )
+                            break;
+                        N file_size;
+                        if( E_mem_Q_file_R_N( device_file_id, &file_size, device_n_size ))
+                            goto Error;
+                        N parent_dir_inode;
+                        if( E_mem_Q_file_R_N( device_file_id, &parent_dir_inode, device_n_size ))
+                            goto Error;
+                        if( parent_dir_inode == in_buf->nodeid )
+                        {   N i = 0;
+                            Pc s = M(0);
+                            O{  if( !E_mem_Q_blk_I_append( &s, 1 ))
+                                {   W(s);
+                                    out_buf.error = -ENOMEM;
+                                    struct iovec bufs[1] =
+                                    { { &out_buf, sizeof( out_buf ) }
+                                    };
+                                    VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                        goto Error;
+                                    goto End_create;
+                                }
+                                C c;
+                                if( E_mem_Q_file_R_c( device_file_id, &c ))
+                                    goto Error;
+                                s[i] = c;
+                                i++;
+                                if( !c )
+                                    break;
+                            }
+                            if( E_text_Z_s0_T_eq( (Pc)in_buf_2 + sizeof( *in_buf_2 ), s ))
+                            {   W(s);
+                                out_buf.error = -EEXIST;
+                                struct iovec bufs[1] =
+                                { { &out_buf, sizeof( out_buf ) }
+                                };
+                                VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                    goto Error;
+                                goto End_create;
+                            }
+                            W(s);
+                        }else
+                            O{  C c;
+                                if( E_mem_Q_file_R_c( device_file_id, &c ))
+                                    goto Error;
+                                if( !c )
+                                    break;
+                            }
+                        nodeid++;
+                    }
+                    //NDFN obsługa błędów
+                    //NDFN przesuwanie danych
+                    G_(); Gh( in_buf_2->flags ); Gh( in_buf_2->mode );
+                    E_mem_Q_file_P_pos( device_file_id, E_mem_Q_file_R_pos( device_file_id ) - device_n_size );
+                    E_mem_Q_file_P_N( device_file_id, ~0, device_n_size );
+                    E_mem_Q_file_P_N( device_file_id, 0, device_n_size );
+                    E_mem_Q_file_P_N( device_file_id, in_buf->nodeid, device_n_size );
+                    E_mem_Q_file_P_s( device_file_id, (Pc)in_buf_2 + sizeof( *in_buf_2 ), in_buf->len - sizeof( *in_buf ) - sizeof( *in_buf_2 ));
+                    E_mem_Q_file_P_N( device_file_id, 0, device_n_size );
+                    struct fuse_entry_out out_buf_2;
+                    E_mem_Q_blk_P_fill_c( &out_buf_2, sizeof( out_buf_2 ), 0 );
+                    out_buf_2.nodeid = nodeid;
+                    out_buf_2.generation = time(0);
+                    out_buf_2.entry_valid = out_buf_2.attr_valid = 1;
+                    out_buf_2.attr.mode = S_IFREG | 0666;
+                    out_buf_2.attr.nlink = 1;
+                    struct fuse_open_out out_buf_3;
+                    E_mem_Q_blk_P_fill_c( &out_buf_3, sizeof( out_buf_3 ), 0 );
+                    out_buf_3.fh = E_mem_Q_tab_I_add( file_handles );
+                    if( !~out_buf_3.fh )
+                    {   out_buf.error = -ENOMEM;
+                        struct iovec bufs[1] =
+                        { { &out_buf, sizeof( out_buf ) }
+                        };
+                        VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                            goto Error;
+                        in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
+                        break;
+                    }
+                    struct E_main_Z_file_handle *file_handle = E_mem_Q_tab_R( file_handles, out_buf_3.fh );
+                    file_handle->inode = in_buf->nodeid;
+                    out_buf.len += sizeof( out_buf_2 ) + sizeof( out_buf_3 );
+                    struct iovec bufs[3] =
+                    { { &out_buf, sizeof( out_buf ) }
+                    , { &out_buf_2, sizeof( out_buf_2 ) }
+                    , { &out_buf_3, sizeof( out_buf_3 ) }
+                    };
+                    VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                        goto Error;
+End_create:         in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
+                    break;
+                }
+              case FUSE_MKDIR:
+                {   struct fuse_mkdir_in *in_buf_2;
+                    if( buffer_read < sizeof( *in_buf_2 ))
+                        goto Error;
+                    buffer_read -= in_buf->len - sizeof( *in_buf );
+                    in_buf_2 = (P)( (Pc)in_buf + sizeof( *in_buf ));
+                    N nodeid = FUSE_ROOT_ID + 1;
+                    E_mem_Q_file_P_pos( device_file_id, S_inode_table_offset );
+                    O{  N file_pos;
+                        if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
+                            goto Error;
+                        if( !file_pos )
+                            break;
+                        N file_size;
+                        if( E_mem_Q_file_R_N( device_file_id, &file_size, device_n_size ))
+                            goto Error;
+                        N parent_dir_inode;
+                        if( E_mem_Q_file_R_N( device_file_id, &parent_dir_inode, device_n_size ))
+                            goto Error;
+                        if( parent_dir_inode == in_buf->nodeid )
+                        {   N i = 0;
+                            Pc s = M(0);
+                            O{  if( !E_mem_Q_blk_I_append( &s, 1 ))
+                                {   W(s);
+                                    out_buf.error = -ENOMEM;
+                                    struct iovec bufs[1] =
+                                    { { &out_buf, sizeof( out_buf ) }
+                                    };
+                                    VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                        goto Error;
+                                    goto End_mkdir;
+                                }
+                                C c;
+                                if( E_mem_Q_file_R_c( device_file_id, &c ))
+                                    goto Error;
+                                s[i] = c;
+                                i++;
+                                if( !c )
+                                    break;
+                            }
+                            if( E_text_Z_s0_T_eq( (Pc)in_buf_2 + sizeof( *in_buf_2 ), s ))
+                            {   W(s);
+                                out_buf.error = -EEXIST;
+                                struct iovec bufs[1] =
+                                { { &out_buf, sizeof( out_buf ) }
+                                };
+                                VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                    goto Error;
+                                goto End_mkdir;
+                            }
+                            W(s);
+                        }else
+                            O{  C c;
+                                if( E_mem_Q_file_R_c( device_file_id, &c ))
+                                    goto Error;
+                                if( !c )
+                                    break;
+                            }
+                        nodeid++;
+                    }
+                    //NDFN obsługa błędów
+                    //NDFN przesuwanie danych
+                    G_(); Gh( in_buf_2->mode );
+                    E_mem_Q_file_P_pos( device_file_id, E_mem_Q_file_R_pos( device_file_id ) - device_n_size );
+                    E_mem_Q_file_P_N( device_file_id, file_pos_S_directory, device_n_size );
+                    E_mem_Q_file_P_N( device_file_id, 0, device_n_size );
+                    E_mem_Q_file_P_N( device_file_id, in_buf->nodeid, device_n_size );
+                    E_mem_Q_file_P_s( device_file_id, (Pc)in_buf_2 + sizeof( *in_buf_2 ), in_buf->len - sizeof( *in_buf ) - sizeof( *in_buf_2 ));
+                    E_mem_Q_file_P_N( device_file_id, 0, device_n_size );
+                    struct fuse_entry_out out_buf_2;
+                    E_mem_Q_blk_P_fill_c( &out_buf_2, sizeof( out_buf_2 ), 0 );
+                    out_buf_2.nodeid = nodeid;
+                    out_buf_2.generation = time(0);
+                    out_buf_2.entry_valid = out_buf_2.attr_valid = 1;
+                    out_buf_2.attr.mode = S_IFDIR | 0777;
+                    out_buf_2.attr.nlink = 1;
+                    E_mem_Q_file_P_pos( device_file_id, S_inode_table_offset );
+                    O{  N file_pos;
+                        if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
+                            goto Error;
+                        if( !file_pos )
+                            break;
+                        N file_size;
+                        if( E_mem_Q_file_R_N( device_file_id, &file_size, device_n_size ))
+                            goto Error;
+                        N parent_dir_inode;
+                        if( E_mem_Q_file_R_N( device_file_id, &parent_dir_inode, device_n_size ))
+                            goto Error;
+                        N i = 0;
+                        O{  C c;
+                            if( E_mem_Q_file_R_c( device_file_id, &c ))
+                                goto Error;
+                            i++;
+                            if( !c )
+                                break;
+                        }
+                        if( parent_dir_inode == out_buf_2.attr.ino )
+                        {   out_buf_2.attr.size += device_n_size * 3 + i;
+                            out_buf_2.attr.nlink++;
+                        }
+                    }
+                    out_buf.len += sizeof( out_buf_2 );
+                    struct iovec bufs[2] =
+                    { { &out_buf, sizeof( out_buf ) }
+                    , { &out_buf_2, sizeof( out_buf_2 ) }
+                    };
+                    VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                        goto Error;
+End_mkdir:          in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
+                    break;
+                }
+              case FUSE_UNLINK:
+                {   buffer_read -= in_buf->len - sizeof( *in_buf );
+                    E_mem_Q_file_P_pos( device_file_id, S_inode_table_offset );
+                    O{  N file_pos;
+                        if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
+                            goto Error;
+                        if( !file_pos )
+                        {   out_buf.error = -ENOENT;
+                            goto End_unlink;
+                        }
+                        N file_size;
+                        if( E_mem_Q_file_R_N( device_file_id, &file_size, device_n_size ))
+                            goto Error;
+                        N parent_dir_inode;
+                        if( E_mem_Q_file_R_N( device_file_id, &parent_dir_inode, device_n_size ))
+                            goto Error;
+                        if( parent_dir_inode == in_buf->nodeid )
+                        {   N i = 0;
+                            Pc s = M(0);
+                            O{  if( !E_mem_Q_blk_I_append( &s, 1 ))
+                                {   W(s);
+                                    out_buf.error = -ENOMEM;
+                                    goto End_unlink;
+                                }
+                                C c;
+                                if( E_mem_Q_file_R_c( device_file_id, &c ))
+                                    goto Error;
+                                s[i] = c;
+                                i++;
+                                if( !c )
+                                    break;
+                            }
+                            if( E_text_Z_s0_T_eq( (Pc)in_buf + sizeof( *in_buf ), s ))
+                            {   W(s);
+                                if( file_pos == file_pos_S_directory )
+                                {
+                                }else
+                                {
+                                }
+                                E_mem_Q_file_P_pos( device_file_id, E_mem_Q_file_R_pos( device_file_id ) - ( device_n_size * 3 + i ));
+                                //NDFN przesunąć zawartość
+                                goto End_unlink;
+                            }
+                            W(s);
+                        }else
+                            O{  C c;
+                                if( E_mem_Q_file_R_c( device_file_id, &c ))
+                                    goto Error;
+                                if( !c )
+                                    break;
+                            }
+                    }
+End_unlink:         ;struct iovec bufs[1] =
+                    { { &out_buf, sizeof( out_buf ) }
+                    };
+                    VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                        goto Error;
+                    in_buf = (P)( (Pc)in_buf + sizeof( *in_buf ));
                     break;
                 }
               default:

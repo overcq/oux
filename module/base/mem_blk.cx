@@ -752,7 +752,10 @@ P
 E_mem_Q_blk_M_replace_tab( P p
 , N u ///!= 0
 , N n
-){  _single_thread_begin;
+){  if(!p)
+    {   GV_(NXP); V();
+    }
+    _single_thread_begin;
     for_n( allocated_i, E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].n )
         if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p == p )
         {   if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n )
@@ -761,7 +764,7 @@ E_mem_Q_blk_M_replace_tab( P p
                     return 0;
             }
             if( !E_mem_Q_blk_Q_table_M_from_free_or_map_0( allocated_i, u, n, 0, 0, 0 ))
-                E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p = 0;
+                E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p = E_mem_Q_blk_R_new_0();
             else
                 E_mem_Q_blk_P_fill_c( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p, E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u, 0xa5 ); ///TODO procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
             P p_ = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p;
@@ -776,7 +779,10 @@ __attribute__ ((__malloc__))
 P
 E_mem_Q_blk_M_split( P p
 , N i
-){  _single_thread_begin;
+){  if( !p )
+    {   GV_(NXP); V();
+    }
+    _single_thread_begin;
     struct E_mem_Q_blk_Z_allocated allocated_p;
     N allocated_i = E_mem_Q_blk_Q_sys_table_R_new_id( E_base_S->E_mem_Q_blk_S_table_allocated_id, (Pc)&allocated_p.p - (Pc)&allocated_p, (Pc)&allocated_p.n - (Pc)&allocated_p, 0, 0 );
     if( !~allocated_i )
@@ -802,6 +808,8 @@ N
 E_mem_Q_blk_W( P p
 ){  if( U_R( E_base_S->E_flow_S_signal, exit_all )) //NDFN to sprawdzenie raczej umieszczać tylko w funkcjach wysokopoziomowych.
         return 0;
+    if( !p )
+        return ~0;
     _single_thread_begin;
     for_n( allocated_i, E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].n )
         if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p == p )
@@ -825,7 +833,9 @@ E_mem_Q_blk_I_add_( P p
 , N n
 , N *n_prepended
 , N *n_appended
-){  for_n( allocated_i, E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].n )
+){  if( !*( P * )p )
+        return (P)~0;
+    for_n( allocated_i, E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].n )
         if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p == *( P * )p )
         {   Pc p_0 = 0;
             N l_0 = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u;
@@ -912,7 +922,9 @@ P
 E_mem_Q_blk_I_prepend_append_( P p
 , N n_prepend
 , N n_append
-){  for_n( allocated_i, E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].n )
+){  if( !*( P * )p )
+        return (P)~0;
+    for_n( allocated_i, E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].n )
         if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p == *( P * )p )
         {   Pc p_0 = 0;
             N l_0 = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u;
@@ -983,7 +995,9 @@ _internal
 P
 E_mem_Q_blk_I_append_( P p
 , N n
-){  for_n( allocated_i, E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].n )
+){  if( !*( P * )p )
+        return (P)~0;
+    for_n( allocated_i, E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].n )
         if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p == *( P * )p )
         {   N l = n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u;
             Pc p_0 = 0;
@@ -1059,7 +1073,9 @@ _internal
 P
 E_mem_Q_blk_I_prepend_( P p
 , N n
-){  for_n( allocated_i, E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].n )
+){  if( !*( P * )p )
+        return (P)~0;
+    for_n( allocated_i, E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].n )
         if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p == *( P * )p )
         {   N l = n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u;
             Pc p_0 = 0;
@@ -1135,7 +1151,9 @@ P
 E_mem_Q_blk_I_insert_( P p
 , N i
 , N n
-){  for_n( allocated_i, E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].n )
+){  if( !*( P * )p )
+        return (P)~0;
+    for_n( allocated_i, E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].n )
         if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p == *( P * )p )
         {   Pc p_0 = 0;
             N l_0 = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u;
@@ -1229,7 +1247,9 @@ P
 E_mem_Q_blk_I_rem_( P p
 , N i
 , N n
-){  for_n( allocated_i, E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].n )
+){  if( !*( P * )p )
+        return (P)~0;
+    for_n( allocated_i, E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].n )
         if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p == *( P * )p )
         {   N l = n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u;
             N l_0 = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u;
