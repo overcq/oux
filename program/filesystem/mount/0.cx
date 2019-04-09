@@ -202,38 +202,40 @@ main(
                         goto Error;
                     buffer_read -= sizeof( *in_buf_2 );
                     in_buf_2 = (P)( (Pc)in_buf + sizeof( *in_buf ));
-                    N inode = FUSE_ROOT_ID + 1;
-                    E_mem_Q_file_P_pos( device_file_id, S_inode_table_offset );
-                    O{  if( inode == in_buf->nodeid )
-                            break;
+                    if( in_buf->nodeid != FUSE_ROOT_ID )
+                    {   N inode = FUSE_ROOT_ID + 1;
+                        E_mem_Q_file_P_pos( device_file_id, S_inode_table_offset );
+                        O{  if( inode == in_buf->nodeid )
+                                break;
+                            N file_pos;
+                            if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
+                                goto Error;
+                            if( !file_pos )
+                                break;
+                            N file_size;
+                            if( E_mem_Q_file_R_N( device_file_id, &file_size, device_n_size ))
+                                goto Error;
+                            N parent_dir_inode;
+                            if( E_mem_Q_file_R_N( device_file_id, &parent_dir_inode, device_n_size ))
+                                goto Error;
+                            O{  C c;
+                                if( E_mem_Q_file_R_c( device_file_id, &c ))
+                                    goto Error;
+                                if( !c )
+                                    break;
+                            }
+                            inode++;
+                        }
+                        if( inode != in_buf->nodeid )
+                        {   out_buf.error = -ENOENT;
+                            goto End_access;
+                        }
                         N file_pos;
                         if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
                             goto Error;
                         if( !file_pos )
-                            break;
-                        N file_size;
-                        if( E_mem_Q_file_R_N( device_file_id, &file_size, device_n_size ))
-                            goto Error;
-                        N parent_dir_inode;
-                        if( E_mem_Q_file_R_N( device_file_id, &parent_dir_inode, device_n_size ))
-                            goto Error;
-                        O{  C c;
-                            if( E_mem_Q_file_R_c( device_file_id, &c ))
-                                goto Error;
-                            if( !c )
-                                break;
-                        }
-                        inode++;
+                            out_buf.error = -ENOENT;
                     }
-                    if( inode != in_buf->nodeid )
-                    {   out_buf.error = -ENOENT;
-                        goto End_access;
-                    }
-                    N file_pos;
-                    if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
-                        goto Error;
-                    if( !file_pos )
-                        out_buf.error = -ENOENT;
 End_access:         ;struct iovec bufs[1] =
                     { { &out_buf, sizeof( out_buf ) }
                     };
@@ -494,43 +496,45 @@ End_lookup:         in_buf = (P)( (Pc)in_buf + sizeof( *in_buf ));
                     in_buf_2 = (P)( (Pc)in_buf + sizeof( *in_buf ));
                     if( E_mem_Q_tab_T( file_handles, in_buf_2->fh ))
                     {   struct E_main_Z_file_handle *file_handle = E_mem_Q_tab_R( file_handles, in_buf_2->fh );
-                        N inode = FUSE_ROOT_ID + 1;
-                        E_mem_Q_file_P_pos( device_file_id, S_inode_table_offset );
-                        O{  if( inode == file_handle->inode )
-                                break;
+                        if( file_handle->inode != FUSE_ROOT_ID )
+                        {   N inode = FUSE_ROOT_ID + 1;
+                            E_mem_Q_file_P_pos( device_file_id, S_inode_table_offset );
+                            O{  if( inode == file_handle->inode )
+                                    break;
+                                N file_pos;
+                                if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
+                                    goto Error;
+                                if( !file_pos )
+                                    break;
+                                N file_size;
+                                if( E_mem_Q_file_R_N( device_file_id, &file_size, device_n_size ))
+                                    goto Error;
+                                N parent_dir_inode;
+                                if( E_mem_Q_file_R_N( device_file_id, &parent_dir_inode, device_n_size ))
+                                    goto Error;
+                                O{  C c;
+                                    if( E_mem_Q_file_R_c( device_file_id, &c ))
+                                        goto Error;
+                                    if( !c )
+                                        break;
+                                }
+                                inode++;
+                            }
+                            if( inode != file_handle->inode )
+                            {   out_buf.error = -ENOENT;
+                                struct iovec bufs[1] =
+                                { { &out_buf, sizeof( out_buf ) }
+                                };
+                                VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                    goto Error;
+                                goto End_setattr;
+                            }
                             N file_pos;
                             if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
                                 goto Error;
                             if( !file_pos )
-                                break;
-                            N file_size;
-                            if( E_mem_Q_file_R_N( device_file_id, &file_size, device_n_size ))
-                                goto Error;
-                            N parent_dir_inode;
-                            if( E_mem_Q_file_R_N( device_file_id, &parent_dir_inode, device_n_size ))
-                                goto Error;
-                            O{  C c;
-                                if( E_mem_Q_file_R_c( device_file_id, &c ))
-                                    goto Error;
-                                if( !c )
-                                    break;
-                            }
-                            inode++;
+                                out_buf.error = -ENOENT;
                         }
-                        if( inode != file_handle->inode )
-                        {   out_buf.error = -ENOENT;
-                            struct iovec bufs[1] =
-                            { { &out_buf, sizeof( out_buf ) }
-                            };
-                            VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
-                                goto Error;
-                            goto End_setattr;
-                        }
-                        N file_pos;
-                        if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
-                            goto Error;
-                        if( !file_pos )
-                            out_buf.error = -ENOENT;
                     }else
                     {   out_buf.error = -ENOENT;
                         struct iovec bufs[1] =
@@ -538,6 +542,7 @@ End_lookup:         in_buf = (P)( (Pc)in_buf + sizeof( *in_buf ));
                         };
                         VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
                             goto Error;
+                        goto End_setattr;
                     }
                     struct fuse_attr_out out_buf_2;
                     E_mem_Q_blk_P_fill_c( &out_buf_2, sizeof( out_buf_2 ), 0 );
@@ -1048,11 +1053,12 @@ End_read:           in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                     //NDFN obsługa błędów
                     //NDFN przesuwanie danych
                     G_(); Gh( in_buf_2->flags ); Gh( in_buf_2->mode );
+                    N i = in_buf->len - sizeof( *in_buf ) - sizeof( *in_buf_2 );
                     E_mem_Q_file_P_pos( device_file_id, E_mem_Q_file_R_pos( device_file_id ) - device_n_size );
                     E_mem_Q_file_P_N( device_file_id, ~0, device_n_size );
                     E_mem_Q_file_P_N( device_file_id, 0, device_n_size );
                     E_mem_Q_file_P_N( device_file_id, in_buf->nodeid, device_n_size );
-                    E_mem_Q_file_P_s( device_file_id, (Pc)in_buf_2 + sizeof( *in_buf_2 ), in_buf->len - sizeof( *in_buf ) - sizeof( *in_buf_2 ));
+                    E_mem_Q_file_P_s( device_file_id, (Pc)in_buf_2 + sizeof( *in_buf_2 ), i );
                     E_mem_Q_file_P_N( device_file_id, 0, device_n_size );
                     struct fuse_entry_out out_buf_2;
                     E_mem_Q_blk_P_fill_c( &out_buf_2, sizeof( out_buf_2 ), 0 );
@@ -1199,6 +1205,7 @@ End_mkdir:          in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                     break;
                 }
               case FUSE_UNLINK:
+              case FUSE_RMDIR:
                 {   buffer_read -= in_buf->len - sizeof( *in_buf );
                     E_mem_Q_file_P_pos( device_file_id, S_inode_table_offset );
                     O{  N file_pos;
@@ -1232,14 +1239,41 @@ End_mkdir:          in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                             }
                             if( E_text_Z_s0_T_eq( (Pc)in_buf + sizeof( *in_buf ), s ))
                             {   W(s);
-                                if( file_pos == file_pos_S_directory )
-                                {
-                                }else
-                                {
+                                N file_pos = E_mem_Q_file_R_pos( device_file_id );
+                                N len = 0;
+                                O{  N file_pos;
+                                    if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
+                                        goto Error;
+                                    if( !file_pos )
+                                        break;
+                                    N file_size;
+                                    if( E_mem_Q_file_R_N( device_file_id, &file_size, device_n_size ))
+                                        goto Error;
+                                    N parent_dir_inode;
+                                    if( E_mem_Q_file_R_N( device_file_id, &parent_dir_inode, device_n_size ))
+                                        goto Error;
+                                    N i = 0;
+                                    O{  C c;
+                                        if( E_mem_Q_file_R_c( device_file_id, &c ))
+                                            goto Error;
+                                        i++;
+                                        if( !c )
+                                            break;
+                                    }
+                                    len += device_n_size * 3 + i;
                                 }
-                                E_mem_Q_file_P_pos( device_file_id, E_mem_Q_file_R_pos( device_file_id ) - ( device_n_size * 3 + i ));
-                                //NDFN przesunąć zawartość
-                                goto End_unlink;
+                                len += device_n_size;
+                                E_mem_Q_file_P_pos( device_file_id, file_pos );
+                                Pc buf = M(len);
+                                if( E_mem_Q_file_R_s( device_file_id, buf, len ))
+                                {   W(buf);
+                                    out_buf.error = -ENOMEM;
+                                    goto End_unlink;
+                                }
+                                E_mem_Q_file_P_pos( device_file_id, file_pos - ( device_n_size * 3 + i ));
+                                E_mem_Q_file_P_s( device_file_id, buf, len );
+                                W(buf);
+                                break;
                             }
                             W(s);
                         }else
