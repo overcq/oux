@@ -9,6 +9,7 @@
 //obsługę plików zrobić jako obiekt pamięci implementujący niegdyś wymyślone pojęcie dostępu do bloków pamięci masowej bez obecności tzw. “wymiatania na dysk”. teraz byłby to raczej obiekt pamięci operacyjnej do umieszczania w nim danych zachowywanych w postaci integralnej pomiędzy ‘wywaleniami’ programu. czyli bazować na automatycznych mechanizmach systemu operacyjnego zapisujących zawartość pamięci do wcześniej gwarantowanego miejsca na dysku— dopiero w momencie konieczności, np. ‘wywalenia’ programu.
 //trzeba podjąć decyzje strukturalne co do sposobu bezpośredniego indeksowania bloków, bloku bieżącego— w przepływie wykonania funkcji ‹modułu›.
 //odczyt dostępnego bloku pamięci do podanej wielkości rozmiaru danych.
+//obsługa urządzeń blokowych —o skończonym rozmiarze.
 //==============================================================================
 struct E_mem_Q_rel_map_blk_Z
 { N pos;
@@ -65,28 +66,45 @@ N
 E_mem_Q_file_W( I id
 ){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
     struct E_mem_Z_range *range = file->unsaved;
-        #ifdef __gnu_linux__
-    V0( fcntl( file->fd, F_SETFL, 0 ))
-        return ~0;
-        #endif
     struct stat st;
-    V1( fstat( file->fd, &st )){} //NDFN być może przenieść do sprawdzania po otwarciu pliku.
+    V1( fstat( file->fd, &st )){} //TODO przenieść do sprawdzania po otwarciu pliku.
     if(( st.st_mode & S_IFMT ) == S_IFREG )
     {   VO1( ftruncate( file->fd, file->l ))
             return ~0;
     }
-    for_n( unsaved_i, file->unsaved_n )
-    {   for_n( blk_i, file->blk_n )
-            if( range->pos >= file->blk[ blk_i ].pos )
-                break;
-        N l = E_mem_Q_file_I_write_pos( file->fd
-        , range->pos
-        , file->blk[ blk_i ].data + range->pos - file->blk[ blk_i ].pos
-        , range->pos_end - range->pos
-        );
-        if( !~l )
+    if(( st.st_mode & S_IFMT ) == S_IFBLK )
+    {   for_n( unsaved_i, file->unsaved_n )
+        {   for_n( blk_i, file->blk_n )
+                if( range->pos >= file->blk[ blk_i ].pos )
+                    break;
+            N l = E_mem_Q_file_I_write_pos( file->fd
+            , E_simple_Z_n_I_align_down_to_v_2( range->pos, E_base_S->E_mem_Q_file_S_buffer_l )
+            , E_simple_Z_p_I_align_down_to_v_2( file->blk[ blk_i ].data + range->pos - file->blk[ blk_i ].pos, E_base_S->E_mem_Q_file_S_buffer_l )
+            , E_simple_Z_n_I_align_up_to_v_2( range->pos_end - range->pos, E_base_S->E_mem_Q_file_S_buffer_l )
+            );
+            if( !~l )
+                return l;
+            range++;
+        }
+    }else
+    {
+            #ifdef __gnu_linux__
+        V0( fcntl( file->fd, F_SETFL, 0 ))
             return ~0;
-        range++;
+            #endif
+        for_n( unsaved_i, file->unsaved_n )
+        {   for_n( blk_i, file->blk_n )
+                if( range->pos >= file->blk[ blk_i ].pos )
+                    break;
+            N l = E_mem_Q_file_I_write_pos( file->fd
+            , range->pos
+            , file->blk[ blk_i ].data + range->pos - file->blk[ blk_i ].pos
+            , range->pos_end - range->pos
+            );
+            if( !~l )
+                return l;
+            range++;
+        }
     }
     W( file->unsaved );
     for_n( blk_i, file->blk_n )
@@ -105,36 +123,53 @@ E_mem_Q_file_I_save( I id
     if( !file->unsaved_n )
         return 0;
     struct E_mem_Z_range *range = file->unsaved;
-        #ifdef __gnu_linux__
-    V0( fcntl( file->fd, F_SETFL, 0 ))
-        return ~0;
-        #endif
     struct stat st;
-    V1( fstat( file->fd, &st )){} //NDFN być może przenieść do sprawdzania po otwarciu pliku.
+    V1( fstat( file->fd, &st )){} //TODO przenieść do sprawdzania po otwarciu pliku.
     if(( st.st_mode & S_IFMT ) == S_IFREG )
     {   VO1( ftruncate( file->fd, file->l ))
             return ~0;
     }
-    for_n( unsaved_i, file->unsaved_n )
-    {   for_n( blk_i, file->blk_n )
-            if( range->pos >= file->blk[ blk_i ].pos )
-                break;
-        N l = E_mem_Q_file_I_write_pos( file->fd
-        , range->pos
-        , file->blk[ blk_i ].data + range->pos - file->blk[ blk_i ].pos
-        , range->pos_end - range->pos
-        );
-        if( !~l )
-            return l;
-        range++;
+    if(( st.st_mode & S_IFMT ) == S_IFBLK )
+    {   for_n( unsaved_i, file->unsaved_n )
+        {   for_n( blk_i, file->blk_n )
+                if( range->pos >= file->blk[ blk_i ].pos )
+                    break;
+            N l = E_mem_Q_file_I_write_pos( file->fd
+            , E_simple_Z_n_I_align_down_to_v_2( range->pos, E_base_S->E_mem_Q_file_S_buffer_l )
+            , E_simple_Z_p_I_align_down_to_v_2( file->blk[ blk_i ].data + range->pos - file->blk[ blk_i ].pos, E_base_S->E_mem_Q_file_S_buffer_l )
+            , E_simple_Z_n_I_align_up_to_v_2( range->pos_end - range->pos, E_base_S->E_mem_Q_file_S_buffer_l )
+            );
+            if( !~l )
+                return l;
+            range++;
+        }
+    }else
+    {
+            #ifdef __gnu_linux__
+        V0( fcntl( file->fd, F_SETFL, 0 ))
+            return ~0;
+            #endif
+        for_n( unsaved_i, file->unsaved_n )
+        {   for_n( blk_i, file->blk_n )
+                if( range->pos >= file->blk[ blk_i ].pos )
+                    break;
+            N l = E_mem_Q_file_I_write_pos( file->fd
+            , range->pos
+            , file->blk[ blk_i ].data + range->pos - file->blk[ blk_i ].pos
+            , range->pos_end - range->pos
+            );
+            if( !~l )
+                return l;
+            range++;
+        }
+            #ifdef __gnu_linux__
+        V0( fcntl( file->fd, F_SETFL, O_DIRECT ))
+            return ~0;
+            #endif
     }
     if( !E_mem_Q_blk_I_rem( &file->unsaved, 0, file->unsaved_n ))
         return ~0;
     file->unsaved_n = 0;
-        #ifdef __gnu_linux__
-    V0( fcntl( file->fd, F_SETFL, O_DIRECT ))
-        return ~0;
-        #endif
     return 0;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -331,14 +366,17 @@ E_mem_Q_file_R_pos( I id
 ){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
     return file->pos;
 }
-void
+N
 E_mem_Q_file_P_pos( I id
 , N pos
 ){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
+    if( file->pos > file->l )
+        return ~0;
     file->pos = pos;
     U_L( file->current_blk, valid );
     U_L( file->current_blk, valid_sob );
     U_L( file->current_blk, valid_eob );
+    return 0;
 }
 N
 E_mem_Q_file_R_c( I id
