@@ -31,6 +31,7 @@ main(
 , char *argv[]
 ){  E_base_M( argc, argv );
     device = 0;
+    directory = 0;
     for( int i = 1; i != argc; i++ )
     {   if( *argv[i] == '-' )
         {   E_base_W();
@@ -46,8 +47,9 @@ main(
             device = argv[i];
     }
 
-    if( !device )
-    {   E_base_W();
+    if( !device
+    || !directory
+    ){  E_base_W();
         return 1;
     }
     if( !~( device_file_id = E_mem_Q_file_M(device) ))
@@ -207,6 +209,8 @@ main(
                     in_buf_2 = (P)( (Pc)in_buf + sizeof( *in_buf ));
                     if( !E_mem_Q_tab_T( file_handles, in_buf_2->fh ))
                         out_buf.error = -ENOENT;
+                    else
+                        E_mem_Q_file_I_save( device_file_id );
                     struct iovec bufs[1] =
                     { { &out_buf, sizeof( out_buf ) }
                     };
@@ -507,6 +511,17 @@ End_lookup:         in_buf = (P)( (Pc)in_buf + sizeof( *in_buf ));
                     in_buf = (P)( (Pc)in_buf + in_buf->len );
                     break;
                 }
+              case FUSE_LISTXATTR:
+                {   buffer_read -= in_buf->len - sizeof( *in_buf );
+                    out_buf.error = -ENOSYS;
+                    struct iovec bufs[1] =
+                    { { &out_buf, sizeof( out_buf ) }
+                    };
+                    VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                        goto Error;
+                    in_buf = (P)( (Pc)in_buf + in_buf->len );
+                    break;
+                }
               case FUSE_SETATTR:
                 {   struct fuse_setattr_in *in_buf_2;
                     if( buffer_read < sizeof( *in_buf_2 ))
@@ -695,6 +710,7 @@ End_setattr:        in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                         goto Error;
                     buffer_read -= sizeof( *in_buf_2 );
                     in_buf_2 = (P)( (Pc)in_buf + sizeof( *in_buf ));
+                    G_(); Gd( in_buf_2->fh ); Gd( in_buf_2->offset ); Gh( in_buf_2->size );
                     if( !E_mem_Q_tab_T( file_handles, in_buf_2->fh ))
                     {   out_buf.error = -ENOENT;
                         struct iovec bufs[1] =
@@ -706,6 +722,7 @@ End_setattr:        in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                         break;
                     }
                     struct E_main_Z_file_handle *file_handle = E_mem_Q_tab_R( file_handles, in_buf_2->fh );
+                    G_(); Gd( file_handle->inode );
                     N file_pos;
                     N file_size;
                     N parent_dir_inode;
@@ -1075,14 +1092,13 @@ End_read:           in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                     N i = in_buf->len - sizeof( *in_buf ) - sizeof( *in_buf_2 );
                     E_mem_Q_file_P_pos( device_file_id, E_mem_Q_file_R_pos( device_file_id ) - device_n_size );
                     N rec_pos = E_mem_Q_file_R_pos( device_file_id );
+                    G_(); Gs( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                     if( E_mem_Q_file_P_N( device_file_id, ~0, device_n_size )
                     || E_mem_Q_file_P_N( device_file_id, 0, device_n_size )
                     || E_mem_Q_file_P_N( device_file_id, in_buf->nodeid, device_n_size )
                     || E_mem_Q_file_P_s( device_file_id, (Pc)in_buf_2 + sizeof( *in_buf_2 ), i )
                     || E_mem_Q_file_P_N( device_file_id, 0, device_n_size )
-                    ){  G_();
-                        goto Error;
-                        E_mem_Q_file_P_pos( device_file_id, rec_pos );
+                    ){  E_mem_Q_file_P_pos( device_file_id, rec_pos );
                         if( E_mem_Q_file_P_N( device_file_id, 0, device_n_size ))
                             goto Error;
                         out_buf.error = -ENOSPC;

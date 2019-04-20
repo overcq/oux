@@ -9,7 +9,6 @@
 //obsługę plików zrobić jako obiekt pamięci implementujący niegdyś wymyślone pojęcie dostępu do bloków pamięci masowej bez obecności tzw. “wymiatania na dysk”. teraz byłby to raczej obiekt pamięci operacyjnej do umieszczania w nim danych zachowywanych w postaci integralnej pomiędzy ‘wywaleniami’ programu. czyli bazować na automatycznych mechanizmach systemu operacyjnego zapisujących zawartość pamięci do wcześniej gwarantowanego miejsca na dysku— dopiero w momencie konieczności, np. ‘wywalenia’ programu.
 //trzeba podjąć decyzje strukturalne co do sposobu bezpośredniego indeksowania bloków, bloku bieżącego— w przepływie wykonania funkcji ‹modułu›.
 //odczyt dostępnego bloku pamięci do podanej wielkości rozmiaru danych.
-//obsługa urządzeń blokowych —o skończonym rozmiarze.
 //==============================================================================
 struct E_mem_Q_rel_map_blk_Z
 { N pos;
@@ -30,6 +29,7 @@ struct E_mem_Q_file_Z
   N current_blk_pos;
   int fd;
   N l;
+  N st_mode;
   unsigned U_R( current_blk, valid )    :1;
   unsigned U_R( current_blk, valid_sob ):1;
   unsigned U_R( current_blk, valid_eob ):1;
@@ -57,6 +57,15 @@ E_mem_Q_file_M( Pc path
         E_mem_Q_tab_I_rem( E_base_S->E_mem_Q_file_S, id );
         return ~0;
     }
+    struct stat st;
+    V1( fstat( file->fd, &st ))
+    {   W( file->unsaved );
+        W( file->blk );
+        V0( close( file->fd )){}
+        E_mem_Q_tab_I_rem( E_base_S->E_mem_Q_file_S, id );
+        return ~0;
+    }
+    file->st_mode = st.st_mode;
     U_L( file->current_blk, valid );
     U_L( file->current_blk, valid_sob );
     U_L( file->current_blk, valid_eob );
@@ -66,13 +75,11 @@ N
 E_mem_Q_file_W( I id
 ){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
     struct E_mem_Z_range *range = file->unsaved;
-    struct stat st;
-    V1( fstat( file->fd, &st )){} //TODO przenieść do sprawdzania po otwarciu pliku.
-    if(( st.st_mode & S_IFMT ) == S_IFREG )
+    if(( file->st_mode & S_IFMT ) == S_IFREG )
     {   VO1( ftruncate( file->fd, file->l ))
             return ~0;
     }
-    if(( st.st_mode & S_IFMT ) == S_IFBLK )
+    if(( file->st_mode & S_IFMT ) == S_IFBLK )
     {   for_n( unsaved_i, file->unsaved_n )
         {   for_n( blk_i, file->blk_n )
                 if( range->pos >= file->blk[ blk_i ].pos )
@@ -123,13 +130,11 @@ E_mem_Q_file_I_save( I id
     if( !file->unsaved_n )
         return 0;
     struct E_mem_Z_range *range = file->unsaved;
-    struct stat st;
-    V1( fstat( file->fd, &st )){} //TODO przenieść do sprawdzania po otwarciu pliku.
-    if(( st.st_mode & S_IFMT ) == S_IFREG )
+    if(( file->st_mode & S_IFMT ) == S_IFREG )
     {   VO1( ftruncate( file->fd, file->l ))
             return ~0;
     }
-    if(( st.st_mode & S_IFMT ) == S_IFBLK )
+    if(( file->st_mode & S_IFMT ) == S_IFBLK )
     {   for_n( unsaved_i, file->unsaved_n )
         {   for_n( blk_i, file->blk_n )
                 if( range->pos >= file->blk[ blk_i ].pos )
@@ -241,7 +246,10 @@ E_mem_Q_file_R_current_blk( struct E_mem_Q_file_Z *file
         }
         else if( U_E( file->current_blk, valid_eob ))
         {   blk_i = file->current_blk + 1;
-            pos = file->blk[ blk_i ].pos;
+            if( blk_i != file->blk_n )
+                pos = file->blk[ blk_i ].pos;
+            else
+                pos = 0;
         }
         else
         {   blk_i = 0;
@@ -370,8 +378,13 @@ N
 E_mem_Q_file_P_pos( I id
 , N pos
 ){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
-    if( file->pos > file->l )
-        return ~0;
+    if(( file->st_mode & S_IFMT ) == S_IFBLK )
+    {   if( file->pos >= file->l )
+            return ~0;
+    }else
+    {   if( file->pos > file->l )
+            return ~0;
+    }
     file->pos = pos;
     U_L( file->current_blk, valid );
     U_L( file->current_blk, valid_sob );
@@ -464,6 +477,9 @@ E_mem_Q_file_P_s( I id
 , Pc s
 , N n
 ){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
+    if(( file->st_mode & S_IFMT ) == S_IFBLK )
+        if( file->pos + n >= file->l )
+            return ~0;
     N ret = E_mem_Q_file_R_current_blk(file);
     if( !~ret
     || ret == E_mem_Q_file_S_eof
@@ -625,6 +641,8 @@ E_mem_Q_file_P_insert_s( I id
 , Pc s
 , N n
 ){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
+    if(( file->st_mode & S_IFMT ) == S_IFBLK )
+        return ~0;
     U_L( file->current_blk, valid );
     U_L( file->current_blk, valid_sob );
     U_L( file->current_blk, valid_eob );
@@ -708,6 +726,8 @@ N
 E_mem_Q_file_P_rem_s( I id
 , N n
 ){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
+    if(( file->st_mode & S_IFMT ) == S_IFBLK )
+        return ~0;
     U_L( file->current_blk, valid );
     U_L( file->current_blk, valid_sob );
     U_L( file->current_blk, valid_eob );

@@ -48,12 +48,36 @@ E_flow_Z_line_report_I_write_Z_c( C c
 }
 //------------------------------------------------------------------------------
 void
+E_flow_Z_line_report_Z_date_I_sync( struct timeval *tv
+){  struct tm *tm;
+    Vp( tm = gmtime( &tv->tv_sec ))
+        return;
+    N l = 16 + 6 + 1;
+    C s[l];
+    strftime( &s[0], l, "%Y%m%dT%H%M%S.", tm );
+    E_text_Z_n_N_s( &s[ l - 1 ], tv->tv_usec, 6, 10 );
+    E_text_Z_s_P_0( &s[ l - 1 ] );
+    E_flow_Z_line_report_I_write_Z_s( s, l - 1 );
+}
+void
 E_flow_Z_line_report_Z_s_I_sync( Pc s
 , N l
 ){  E_flow_Z_line_report_I_write_Z_c( '|' );
     if( !l )
         l = E_text_Z_s0_R_0_l(s);
     E_flow_Z_line_report_I_write_Z_s( s, l );
+}
+void
+E_flow_Z_line_report_Z_date_I( struct timeval *tv
+){  struct tm *tm;
+    Vp( tm = gmtime( &tv->tv_sec ))
+        return;
+    N l = 16 + 6 + 1;
+    C s[l];
+    strftime( &s[0], l, "%Y%m%dT%H%M%S.", tm );
+    E_text_Z_n_N_s( &s[ l - 1 ], tv->tv_usec, 6, 10 );
+    E_text_Z_s_P_0( &s[ l - 1 ] );
+    E_io_Q_stream_out_P( 0, s, l - 1 );
 }
 void
 E_flow_Z_line_report_Z_s_I( Pc s
@@ -145,8 +169,14 @@ void
 E_flow_Z_line_report_Z_line_I_sync( Pc file
 , N line
 , Pc s
-){  file = E_flow_Z_line_report_N_source_filename(file);
+){  struct timeval tv;
+    B U_F( b, tv );
+    V1( gettimeofday( &tv, 0 ))
+        U_L( b, tv );
+    file = E_flow_Z_line_report_N_source_filename(file);
     E_flow_Z_line_report_I_write_Z_c( '\n' );
+    if( U_R( b, tv ))
+        E_flow_Z_line_report_Z_date_I_sync( &tv );
     E_flow_Z_line_report_Z_s_I_sync( E_base_S->E_flow_S_exe_name, 0 );
     E_flow_Z_line_report_Z_n_I_sync( E_base_S->E_flow_S_exe_pid, sizeof( E_base_S->E_flow_S_exe_pid ), 10 );
     E_flow_Z_line_report_Z_s_I_sync( file, 0 );
@@ -163,8 +193,14 @@ void
 E_flow_Z_line_report_Z_line_I( Pc file
 , N line
 , Pc s
-){  file = E_flow_Z_line_report_N_source_filename(file);
+){  struct timeval tv;
+    B U_F( b, tv );
+    V1( gettimeofday( &tv, 0 ))
+        U_L( b, tv );
+    file = E_flow_Z_line_report_N_source_filename(file);
     E_io_Q_stream_out_P_c( 0, '\n' );
+    if( U_R( b, tv ))
+        E_flow_Z_line_report_Z_date_I( &tv );
     E_flow_Z_line_report_Z_s_I( E_base_S->E_flow_S_exe_name, 0 );
     E_flow_Z_line_report_Z_n_I( E_base_S->E_flow_S_exe_pid, sizeof( E_base_S->E_flow_S_exe_pid ), 10 );
     E_flow_Z_line_report_Z_s_I( file, 0 );
