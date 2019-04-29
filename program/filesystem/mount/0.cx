@@ -1217,6 +1217,11 @@ End_read:           in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                             {   W(buf);
                                 W( free_blocks );
                                 out_buf.error = -ENOMEM;
+                                struct iovec bufs[1] =
+                                { { &out_buf, sizeof( out_buf ) }
+                                };
+                                VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                    goto Error;
                                 goto End_create;
                             }
                             E_mem_Q_file_P_pos( device_file_id, free_blocks[ free_blocks_n - 1 ].begin );
@@ -1224,6 +1229,11 @@ End_read:           in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                             {   W(buf);
                                 W( free_blocks );
                                 out_buf.error = -ENOMEM;
+                                struct iovec bufs[1] =
+                                { { &out_buf, sizeof( out_buf ) }
+                                };
+                                VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                    goto Error;
                                 goto End_create;
                             }
                             free_blocks[ free_blocks_n - 1 ].begin += file->l - free_blocks[ free_blocks_n - 1 ].end;
@@ -1253,6 +1263,11 @@ End_read:           in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                             {   W(buf);
                                 W( free_blocks );
                                 out_buf.error = -ENOMEM;
+                                struct iovec bufs[1] =
+                                { { &out_buf, sizeof( out_buf ) }
+                                };
+                                VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                    goto Error;
                                 goto End_create;
                             }
                             E_mem_Q_file_P_pos( device_file_id, free_blocks[ free_blocks_i ].begin );
@@ -1260,6 +1275,11 @@ End_read:           in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                             {   W(buf);
                                 W( free_blocks );
                                 out_buf.error = -ENOMEM;
+                                struct iovec bufs[1] =
+                                { { &out_buf, sizeof( out_buf ) }
+                                };
+                                VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                    goto Error;
                                 goto End_create;
                             }
                             free_blocks[ free_blocks_i ].begin += free_blocks[ free_blocks_i + 1 ].begin - free_blocks[ free_blocks_i ].end;
@@ -1441,7 +1461,7 @@ End_create:         in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                                 };
                                 VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
                                     goto Error;
-                                goto End_create;
+                                goto End_mkdir;
                             }
                             free_blocks[ free_blocks_n ].nodeid = nodeid;
                             free_blocks[ free_blocks_n ].begin = file_pos;
@@ -1472,21 +1492,31 @@ End_create:         in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                                 };
                                 VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
                                     goto Error;
-                                goto End_create;
+                                goto End_mkdir;
                             }
                             Pc buf = M( free_blocks[ free_blocks_n - 1 ].end - free_blocks[ free_blocks_n - 1 ].begin );
                             if( !buf )
                             {   W(buf);
                                 W( free_blocks );
                                 out_buf.error = -ENOMEM;
-                                goto End_create;
+                                struct iovec bufs[1] =
+                                { { &out_buf, sizeof( out_buf ) }
+                                };
+                                VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                    goto Error;
+                                goto End_mkdir;
                             }
                             E_mem_Q_file_P_pos( device_file_id, free_blocks[ free_blocks_n - 1 ].begin );
                             if( E_mem_Q_file_R_s( device_file_id, buf, free_blocks[ free_blocks_n - 1 ].end - free_blocks[ free_blocks_n - 1 ].begin ))
                             {   W(buf);
                                 W( free_blocks );
                                 out_buf.error = -ENOMEM;
-                                goto End_create;
+                                struct iovec bufs[1] =
+                                { { &out_buf, sizeof( out_buf ) }
+                                };
+                                VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                    goto Error;
+                                goto End_mkdir;
                             }
                             free_blocks[ free_blocks_n - 1 ].begin += file->l - free_blocks[ free_blocks_n - 1 ].end;
                             free_blocks[ free_blocks_n - 1 ].end = file->l;
@@ -1515,14 +1545,24 @@ End_create:         in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                             {   W(buf);
                                 W( free_blocks );
                                 out_buf.error = -ENOMEM;
-                                goto End_create;
+                                struct iovec bufs[1] =
+                                { { &out_buf, sizeof( out_buf ) }
+                                };
+                                VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                    goto Error;
+                                goto End_mkdir;
                             }
                             E_mem_Q_file_P_pos( device_file_id, free_blocks[ free_blocks_i ].begin );
                             if( E_mem_Q_file_R_s( device_file_id, buf, free_blocks[ free_blocks_i ].end - free_blocks[ free_blocks_i ].begin ))
                             {   W(buf);
                                 W( free_blocks );
                                 out_buf.error = -ENOMEM;
-                                goto End_create;
+                                struct iovec bufs[1] =
+                                { { &out_buf, sizeof( out_buf ) }
+                                };
+                                VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                    goto Error;
+                                goto End_mkdir;
                             }
                             free_blocks[ free_blocks_i ].begin += free_blocks[ free_blocks_i + 1 ].begin - free_blocks[ free_blocks_i ].end;
                             free_blocks[ free_blocks_i ].end = free_blocks[ free_blocks_i + 1 ].begin;
