@@ -84,13 +84,16 @@ E_mem_Q_file_W( I id
         {   for_n( blk_i, file->blk_n )
                 if( range->pos >= file->blk[ blk_i ].pos )
                     break;
-            N l = E_mem_Q_file_I_write_pos( file->fd
-            , E_simple_Z_n_I_align_down_to_v_2( range->pos, E_base_S->E_mem_Q_file_S_buffer_l )
-            , E_simple_Z_p_I_align_down_to_v_2( file->blk[ blk_i ].data + range->pos - file->blk[ blk_i ].pos, E_base_S->E_mem_Q_file_S_buffer_l )
-            , E_simple_Z_n_I_align_up_to_v_2( range->pos_end - range->pos, E_base_S->E_mem_Q_file_S_buffer_l )
-            );
-            if( !~l )
-                return l;
+            for( N pos = E_simple_Z_n_I_align_down_to_v_2( range->pos, E_base_S->E_mem_Q_file_S_buffer_l ); pos != E_simple_Z_n_I_align_up_to_v_2( range->pos_end, E_base_S->E_mem_Q_file_S_buffer_l ); pos += E_base_S->E_mem_Q_file_S_buffer_l )
+            {   E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_file_S_buffer, file->blk[ blk_i ].data + pos - file->blk[ blk_i ].pos, E_base_S->E_mem_Q_file_S_buffer_l );
+                N l = E_mem_Q_file_I_write_pos( file->fd
+                , pos
+                , E_base_S->E_mem_Q_file_S_buffer
+                , E_base_S->E_mem_Q_file_S_buffer_l
+                );
+                if( !~l )
+                    return l;
+            }
             range++;
         }
     }else
@@ -129,23 +132,26 @@ E_mem_Q_file_I_save( I id
 ){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
     if( !file->unsaved_n )
         return 0;
-    struct E_mem_Z_range *range = file->unsaved;
     if(( file->st_mode & S_IFMT ) == S_IFREG )
     {   VO1( ftruncate( file->fd, file->l ))
             return ~0;
     }
+    struct E_mem_Z_range *range = file->unsaved;
     if(( file->st_mode & S_IFMT ) == S_IFBLK )
     {   for_n( unsaved_i, file->unsaved_n )
         {   for_n( blk_i, file->blk_n )
                 if( range->pos >= file->blk[ blk_i ].pos )
                     break;
-            N l = E_mem_Q_file_I_write_pos( file->fd
-            , E_simple_Z_n_I_align_down_to_v_2( range->pos, E_base_S->E_mem_Q_file_S_buffer_l )
-            , E_simple_Z_p_I_align_down_to_v_2( file->blk[ blk_i ].data + range->pos - file->blk[ blk_i ].pos, E_base_S->E_mem_Q_file_S_buffer_l )
-            , E_simple_Z_n_I_align_up_to_v_2( range->pos_end - range->pos, E_base_S->E_mem_Q_file_S_buffer_l )
-            );
-            if( !~l )
-                return l;
+            for( N pos = E_simple_Z_n_I_align_down_to_v_2( range->pos, E_base_S->E_mem_Q_file_S_buffer_l ); pos != E_simple_Z_n_I_align_up_to_v_2( range->pos_end, E_base_S->E_mem_Q_file_S_buffer_l ); pos += E_base_S->E_mem_Q_file_S_buffer_l )
+            {   E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_file_S_buffer, file->blk[ blk_i ].data + pos - file->blk[ blk_i ].pos, E_base_S->E_mem_Q_file_S_buffer_l );
+                N l = E_mem_Q_file_I_write_pos( file->fd
+                , pos
+                , E_base_S->E_mem_Q_file_S_buffer
+                , E_base_S->E_mem_Q_file_S_buffer_l
+                );
+                if( !~l )
+                    return l;
+            }
             range++;
         }
     }else
@@ -270,7 +276,7 @@ E_mem_Q_file_R_current_blk( struct E_mem_Q_file_Z *file
     N data_pos = E_simple_Z_n_I_align_down_to_v_2( file->pos, E_base_S->E_mem_Q_file_S_buffer_l );
     l = E_mem_Q_file_I_read_pos( file->fd, data_pos );
     if( !~l )
-        return ~0;
+        return l;
     if( l
     && data_pos + l > file->l )
         l = file->l - data_pos;
@@ -379,10 +385,10 @@ E_mem_Q_file_P_pos( I id
 , N pos
 ){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
     if(( file->st_mode & S_IFMT ) == S_IFBLK )
-    {   if( file->pos >= file->l )
+    {   if( pos >= file->l )
             return ~0;
     }else
-    {   if( file->pos > file->l )
+    {   if( pos > file->l )
             return ~0;
     }
     file->pos = pos;
@@ -470,15 +476,9 @@ E_mem_Q_file_R_64( I id
 N
 E_mem_Q_file_P_c( I id
 , C c
-){  return E_mem_Q_file_P_s( id, &(( C[] ){ c })[0], 1 );
-}
-N
-E_mem_Q_file_P_s( I id
-, Pc s
-, N n
 ){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
     if(( file->st_mode & S_IFMT ) == S_IFBLK )
-        if( file->pos + n >= file->l )
+        if( file->pos >= file->l )
             return ~0;
     N ret = E_mem_Q_file_R_current_blk(file);
     if( !~ret
@@ -489,11 +489,11 @@ E_mem_Q_file_P_s( I id
     B blk_exists = no;
     for_n( unsaved_i, file->unsaved_n )
     {   if( file->pos < file->unsaved[ unsaved_i ].pos
-        && file->pos + n >= file->unsaved[ unsaved_i ].pos
+        && file->pos + 1 >= file->unsaved[ unsaved_i ].pos
         ) ///przed blokiem
         {   blk_exists = yes;
             if( unsaved_i
-            && file->unsaved[ unsaved_i - 1 ].pos_end + n >= file->unsaved[ unsaved_i ].pos
+            && file->unsaved[ unsaved_i - 1 ].pos_end + 1 >= file->unsaved[ unsaved_i ].pos
             )
             {   file->unsaved[ unsaved_i - 1 ].pos_end = file->unsaved[ unsaved_i ].pos_end;
                 if( !E_mem_Q_blk_I_rem( &file->unsaved, unsaved_i, 1 ))
@@ -512,34 +512,37 @@ E_mem_Q_file_P_s( I id
         if( file->pos == file->unsaved[ unsaved_i ].pos_end ) ///po bloku
         {   blk_exists = yes;
             if( unsaved_i + 1 != file->unsaved_n
-            && file->unsaved[ unsaved_i + 1 ].pos <= file->unsaved[ unsaved_i ].pos_end + n
+            && file->unsaved[ unsaved_i + 1 ].pos <= file->unsaved[ unsaved_i ].pos_end + 1
             )
             {   file->unsaved[ unsaved_i ].pos_end = file->unsaved[ unsaved_i + 1 ].pos_end;
                 if( !E_mem_Q_blk_I_rem( &file->unsaved, unsaved_i + 1, 1 ))
                     return ~0;
                 file->unsaved_n--;
             }else
-                file->unsaved[ unsaved_i ].pos_end += n;
+                file->unsaved[ unsaved_i ].pos_end++;
             break;
         }
         if( file->pos > file->unsaved[ unsaved_i ].pos_end )
             break;
     }
     if( !blk_exists )
-    {   E_mem_Q_blk_I_insert( &file->unsaved, unsaved_i, 1 );
+    {   for_n( unsaved_i, file->unsaved_n )
+            if( file->unsaved[ unsaved_i ].pos > file->pos )
+                break;
+        E_mem_Q_blk_I_insert( &file->unsaved, unsaved_i, 1 );
         file->unsaved_n++;
         file->unsaved[ unsaved_i ].pos = file->pos;
-        file->unsaved[ unsaved_i ].pos_end = file->pos + n;
+        file->unsaved[ unsaved_i ].pos_end = file->pos + 1;
     }
     ///ustawienie nowej pozycji w pliku.
     if( U_R( file->current_blk, valid ))
-    {   if( file->current_blk_pos + n == file->blk[ file->current_blk ].l )
+    {   if( file->current_blk_pos + 1 == file->blk[ file->current_blk ].l )
         {   U_L( file->current_blk, valid );
             U_F( file->current_blk, valid_eob );
         }
     }else if( U_R( file->current_blk, valid_eob ))
     {   if( file->current_blk != file->blk_n
-        && file->blk[ file->current_blk + 1 ].pos - ( file->blk[ file->current_blk ].pos + file->blk[ file->current_blk ].l ) <= n
+        && file->blk[ file->current_blk + 1 ].pos - ( file->blk[ file->current_blk ].pos + file->blk[ file->current_blk ].l ) <= 1
         )
         {   N l = file->blk[ file->current_blk + 1 ].pos - ( file->blk[ file->current_blk ].pos + file->blk[ file->current_blk ].l );
             Pc pos = E_mem_Q_blk_I_append( &file->blk[ file->current_blk ].data, l + file->blk[ file->current_blk + 1 ].l );
@@ -554,13 +557,13 @@ E_mem_Q_file_P_s( I id
             U_F( file->current_blk, valid );
             U_L( file->current_blk, valid_eob );
         }else
-        {   if( !E_mem_Q_blk_I_append( &file->blk[ file->current_blk ].data, n ))
+        {   if( !E_mem_Q_blk_I_append( &file->blk[ file->current_blk ].data, 1 ))
                 return ~0;
-            file->blk[ file->current_blk ].l += n;
+            file->blk[ file->current_blk ].l++;
         }
     }else if( U_R( file->current_blk, valid_sob ))
     {   if( file->current_blk
-        && file->blk[ file->current_blk ].pos - ( file->blk[ file->current_blk - 1 ].pos + file->blk[ file->current_blk - 1 ].l ) <= n
+        && file->blk[ file->current_blk ].pos - ( file->blk[ file->current_blk - 1 ].pos + file->blk[ file->current_blk - 1 ].l ) <= 1
         )
         {   N l = file->blk[ file->current_blk ].pos - ( file->blk[ file->current_blk - 1 ].pos + file->blk[ file->current_blk - 1 ].l );
             file->current_blk--;
@@ -576,9 +579,9 @@ E_mem_Q_file_P_s( I id
             file->blk_n--;
             U_F( file->current_blk, valid );
         }else
-        {   E_mem_Q_blk_I_prepend( &file->blk[ file->current_blk ].data, n );
-            file->blk[ file->current_blk ].l += n;
-            if( file->current_blk_pos + n == file->blk[ file->current_blk ].l )
+        {   E_mem_Q_blk_I_prepend( &file->blk[ file->current_blk ].data, 1 );
+            file->blk[ file->current_blk ].l++;
+            if( file->current_blk_pos + 1 == file->blk[ file->current_blk ].l )
                 U_F( file->current_blk, valid_eob );
             else
                 U_F( file->current_blk, valid );
@@ -598,13 +601,24 @@ E_mem_Q_file_P_s( I id
         file->blk_n++;
         file->current_blk = blk_i;
         file->current_blk_pos = 0;
-        file->blk[ file->current_blk ].data = M( file->blk[ file->current_blk ].l = n );
+        file->blk[ file->current_blk ].data = M( file->blk[ file->current_blk ].l = 1 );
         file->blk[ file->current_blk ].pos = file->pos;
         U_F( file->current_blk, valid_eob );
     }
-    file->pos += n;
-    E_mem_Q_blk_I_copy( file->blk[ file->current_blk ].data + file->current_blk_pos, s, n );
-    file->current_blk_pos += n;
+    file->pos++;
+    *( file->blk[ file->current_blk ].data + file->current_blk_pos ) = c;
+    file->current_blk_pos++;
+    return 0;
+}
+N
+E_mem_Q_file_P_s( I id
+, Pc s
+, N n
+){  for( N i = 0; i != n; i++ )
+    {   N ret;
+        if( ret = E_mem_Q_file_P_c( id, s[i] ))
+            return ret;
+    }
     return 0;
 }
 N
