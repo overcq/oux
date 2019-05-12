@@ -529,7 +529,15 @@ E_mem_Q_file_P_c( I id
     {   for_n( unsaved_i, file->unsaved_n )
             if( file->unsaved[ unsaved_i ].pos > file->pos )
                 break;
-        E_mem_Q_blk_I_insert( &file->unsaved, unsaved_i, 1 );
+        if( unsaved_i != file->unsaved_n )
+        {   P new_blk = E_mem_Q_blk_I_insert( &file->unsaved, unsaved_i, 1 );
+            if( !new_blk )
+                return ~0;
+        }else
+        {   P new_blk = E_mem_Q_blk_I_append( &file->unsaved, 1 );
+            if( !new_blk )
+                return ~0;
+        }
         file->unsaved_n++;
         file->unsaved[ unsaved_i ].pos = file->pos;
         file->unsaved[ unsaved_i ].pos_end = file->pos + 1;

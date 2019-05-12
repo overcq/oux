@@ -257,6 +257,24 @@ main(
                     in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                     break;
                 }
+              case FUSE_FSYNC:
+                {   struct fuse_fsync_in *in_buf_2;
+                    if( buffer_read < sizeof( *in_buf_2 ))
+                        goto Error;
+                    buffer_read -= sizeof( *in_buf_2 );
+                    in_buf_2 = (P)( (Pc)in_buf + sizeof( *in_buf ));
+                    if( !E_mem_Q_tab_T( file_handles, in_buf_2->fh ))
+                        out_buf.error = -ENOENT;
+                    else
+                        E_mem_Q_file_I_save( device_file_id );
+                    struct iovec bufs[1] =
+                    { { &out_buf, sizeof( out_buf ) }
+                    };
+                    VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                        goto Error;
+                    in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
+                    break;
+                }
               case FUSE_ACCESS:
                 {   struct fuse_access_in *in_buf_2;
                     if( buffer_read < sizeof( *in_buf_2 ))
@@ -2460,6 +2478,57 @@ Send_write:         out_buf.len += sizeof( out_buf_2 );
                     VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
                         goto Error;
 End_write:          in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
+                    break;
+                }
+              case FUSE_SYMLINK:
+                {   buffer_read -= in_buf->len - sizeof( *in_buf );
+                    out_buf.error = -ENOSYS;
+                    struct iovec bufs[1] =
+                    { { &out_buf, sizeof( out_buf ) }
+                    };
+                    VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                        goto Error;
+                    in_buf = (P)( (Pc)in_buf + in_buf->len );
+                    break;
+                }
+              case FUSE_LINK:
+                {   struct fuse_link_in *in_buf_2;
+                    if( buffer_read < sizeof( *in_buf_2 ))
+                        goto Error;
+                    buffer_read -= in_buf->len - sizeof( *in_buf );
+                    in_buf_2 = (P)( (Pc)in_buf + sizeof( *in_buf ));
+                    out_buf.error = -ENOSYS;
+                    struct iovec bufs[1] =
+                    { { &out_buf, sizeof( out_buf ) }
+                    };
+                    VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                        goto Error;
+                    in_buf = (P)( (Pc)in_buf + in_buf->len );
+                    break;
+                }
+              case FUSE_STATFS:
+                {   out_buf.error = -ENOSYS;
+                    struct iovec bufs[1] =
+                    { { &out_buf, sizeof( out_buf ) }
+                    };
+                    VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                        goto Error;
+                    in_buf = (P)( (Pc)in_buf + in_buf->len );
+                    break;
+                }
+              case FUSE_MKNOD:
+                {   struct fuse_mknod_in *in_buf_2;
+                    if( buffer_read < sizeof( *in_buf_2 ))
+                        goto Error;
+                    buffer_read -= in_buf->len - sizeof( *in_buf );
+                    in_buf_2 = (P)( (Pc)in_buf + sizeof( *in_buf ));
+                    out_buf.error = -ENOSYS;
+                    struct iovec bufs[1] =
+                    { { &out_buf, sizeof( out_buf ) }
+                    };
+                    VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                        goto Error;
+                    in_buf = (P)( (Pc)in_buf + in_buf->len );
                     break;
                 }
             }
