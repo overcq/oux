@@ -156,25 +156,28 @@ CFLAGS += -DC_pthreads -pthread
 H_make_S_c_std_alt := gnu
     endif
     ifeq (clang,$(H_make_S_cc))
-CFLAGS += -std=$(H_make_S_c_std_alt)11 -O1 -Qunused-arguments -Wno-incompatible-pointer-types-discards-qualifiers
+CFLAGS += -std=$(H_make_S_c_std_alt)17 -O1 -Qunused-arguments -Wno-incompatible-pointer-types-discards-qualifiers
     else #nie “clang”.
         ifeq (gcc,$(H_make_S_cc))
 H_make_S_words := $(subst ., ,$(H_make_S_cc_version))
 H_make_S_number := $(word 1,$(H_make_S_words)).$(word 2,$(H_make_S_words))
-            ifneq (0,$(shell expr $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_number) > 4.6)))
+            ifneq (0,$(shell expr $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_number) >= 8.3)))
+CFLAGS += -std=$(H_make_S_c_std_alt)17
+            else ifneq (0,$(shell expr $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_number) >= 4.7)))
 CFLAGS += -std=$(H_make_S_c_std_alt)11
 CFLAGS += -fno-signed-zeros
             else ifneq (0,$(shell expr $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_number) = 4.6))) #“gcc” z “c1x”
 CFLAGS += -std=$(H_make_S_c_std_alt)1x
             else ifneq (0,$(shell expr $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_number) >= 2.95))) #“gcc” bez “c11”
 CFLAGS += -std=$(H_make_S_c_std_alt)99
-#TODO uzależnić od wersji ‘kompilatora’.
-CFLAGS += -D_unreachable=no
                 ifneq (0,$(shell expr $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_number) >= 4.3)))
 CFLAGS += -fno-signed-zeros
                 endif
             else #“gcc” bez “c99”
 $(error gcc too old)
+            endif
+            ifneq (0,$(shell expr $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_number) <= 4.4)))
+CFLAGS += -D_unreachable=no
             endif
 undefine H_make_S_words
 undefine H_make_S_number
