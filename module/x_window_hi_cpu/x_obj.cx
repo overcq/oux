@@ -278,12 +278,12 @@ E_x_Q_object_I_draw_Z_arcs(
     E_x_Q_window_I_draw_Z_arcs( display, screen, window, n, arcs );
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-void
+N
 E_x_Q_object_I_lay(
   struct E_x_Q_display_Z *display
 , struct E_x_Q_window_Z *window
 ){  if( !E_mem_Q_tab_R_n( window->object ))
-        return;
+        return 0;
     struct Z_stack
     { struct E_x_Q_object_Z *object;
       N i;
@@ -296,6 +296,8 @@ E_x_Q_object_I_lay(
         }
 Restart:;
         struct Z_stack *stack = Mt( sizeof( struct Z_stack ), 0 );
+        if( !stack )
+            return ~0;
         N stack_i = ~0;
         S16 next_x = E_x_Q_object_S_layout_dx;
         S16 next_y = E_x_Q_object_S_layout_dy;
@@ -311,6 +313,10 @@ Restart:;
                     }else
                         after_y = next_y + E_x_Q_object_S_layout_dy;
                 struct Z_stack *stack_top = E_mem_Q_blk_I_append( &stack, 1 );
+                if( !stack_top )
+                {   W(stack);
+                    return ~0;
+                }
                 stack_i++;
                 stack_top->object = object;
                 stack_top->i = 0;
@@ -392,6 +398,10 @@ Restart:;
                     N stack_i_ = stack_i;
                     O{  if( object->child_n )
                         {   struct Z_stack *stack_top = E_mem_Q_blk_I_append( &stack, 1 );
+                            if( !stack_top )
+                            {   W(stack);
+                                return ~0;
+                            }
                             stack_i_++;
                             stack_top->object = object;
                             stack_top->i = object->child_n;
@@ -441,6 +451,7 @@ Cont:               do
         }
         W(stack);
     }
+    return 0;
 }
 //------------------------------------------------------------------------------
 I
@@ -463,8 +474,7 @@ E_x_Q_object_Z_button_I_draw(
 , struct E_x_Q_screen_Z *screen
 , struct E_x_Q_window_Z *window
 , struct E_x_Q_object_Z *object
-){  E_x_Q_object_I_draw_P_color_( E_x_theme_Q_theme.object_bg );
-    E_x_Q_object_I_draw_P_color_( E_x_theme_Q_theme.line );
+){  E_x_Q_object_I_draw_P_color_( E_x_theme_Q_theme.line );
     E_x_Q_object_I_draw_Z_rectangles_((
       ( xcb_rectangle_t[] )
       { { .x = 0
@@ -474,6 +484,7 @@ E_x_Q_object_Z_button_I_draw(
         }
       }
     ));
+    E_x_Q_object_I_draw_P_color_( E_x_theme_Q_theme.object_bg );
     E_x_Q_object_I_fill_Z_points_((
       ( xcb_point_t[] )
       { { 1, 1 }

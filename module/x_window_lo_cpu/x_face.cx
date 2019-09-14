@@ -645,4 +645,21 @@ E_x_Q_window_W( I display_id
     }
     U_F( display->req, flush );
 }
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+N32
+E_x_Q_image_R_pixel( struct E_x_Q_display_Z *display
+, xcb_pixmap_t pixmap
+, S16 x
+, S16 y
+){  xcb_get_image_cookie_t ret_id = xcb_get_image_unchecked( display->x_display
+    , XCB_IMAGE_FORMAT_Z_PIXMAP
+    , pixmap
+    , x, y, 1, 1
+    , ~0 //NDFN
+    );
+    xcb_get_image_reply_t *ret = xcb_get_image_reply( display->x_display, ret_id, 0 );
+    N32 pixel = *( N32 * )xcb_get_image_data(ret);
+    free(ret);
+    return pixel;
+}
 /******************************************************************************/
