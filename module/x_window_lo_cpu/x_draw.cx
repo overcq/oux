@@ -115,6 +115,32 @@ E_x_Q_window_I_fill_Z_points(
     );
 }
 void
+E_x_Q_window_I_fill_Z_rectangles(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_screen_Z *screen
+, struct E_x_Q_window_Z *window
+, N32 n
+, xcb_rectangle_t *rectangles
+){  xcb_poly_fill_rectangle( display->x_display
+    , window->drawable
+    , screen->drawable_gc
+    , n
+    , rectangles
+    );
+    xcb_poly_fill_rectangle( display->x_display
+    , window->drawable_mask
+    , screen->bitmask_1_gc
+    , n
+    , rectangles
+    );
+    xcb_poly_fill_rectangle( display->x_display
+    , window->object_mask
+    , screen->object_mask_gc
+    , n
+    , rectangles
+    );
+}
+void
 E_x_Q_window_I_draw_Z_points(
   struct E_x_Q_display_Z *display
 , struct E_x_Q_screen_Z *screen
@@ -272,6 +298,19 @@ E_x_Q_window_I_draw_Z_arcs(
     
 }
 //==============================================================================
+struct E_x_Z_points
+{ F x, y;
+};
+F
+E_x_I_pole_wielokata(
+  N n
+, struct E_x_Z_points *points
+){  F pole = 0;
+    for_n( i, n - 1 )
+        pole += points[i].x * points[ i + 1 ].y - points[ i + 1 ].x * points[i].y;
+    pole += points[ n - 1 ].x * points[0].y - points[0].x * points[ n - 1 ].y;
+    return 0.5 * fabs(pole);
+}
 void
 E_x_Q_window_I_draw_aa_Z_pixel(
   struct E_x_Q_display_Z *display
@@ -280,6 +319,7 @@ E_x_Q_window_I_draw_aa_Z_pixel(
 , N x
 , N y
 , N32 color
+, F brightness
 , N get_pixel
 ){  N p[8];
     p[0] = ( get_pixel & Z_aa_pixel_S_e ) && x + 1 < (N) window->width ? E_x_Q_image_R_pixel( display, window->drawable, x + 1, y ) : color;
@@ -290,274 +330,568 @@ E_x_Q_window_I_draw_aa_Z_pixel(
     p[5] = ( get_pixel & Z_aa_pixel_S_nw ) && x > 1 && y > 1 ? E_x_Q_image_R_pixel( display, window->drawable, x - 1, y - 1 ) : color;
     p[6] = ( get_pixel & Z_aa_pixel_S_n ) && y > 1 ? E_x_Q_image_R_pixel( display, window->drawable, x, y - 1 ) : color;
     p[7] = ( get_pixel & Z_aa_pixel_S_ne ) && x + 1 < (N) window->width && y > 1 ? E_x_Q_image_R_pixel( display, window->drawable, x + 1, y - 1 ) : color;
-    N red = 0;
-    N green = 0;
-    N blue = 0;
+    N background_red = 0, background_green = 0, background_blue = 0;
     N n = 0;
     for_n( i, 8 )
         if( p[i] != color )
-        {   red += E_x_Z_color_R_red( p[i] ) + E_x_Z_color_R_red(color);
-            green += E_x_Z_color_R_green( p[i] ) + E_x_Z_color_R_green(color);
-            blue += E_x_Z_color_R_red( p[i] ) + E_x_Z_color_R_blue(color);
-            n += 2;
+        {   background_red += E_x_Z_color_R_red( p[i] );
+            background_green += E_x_Z_color_R_green( p[i] );
+            background_blue += E_x_Z_color_R_red( p[i] );
+            n++;
         }
     if( !n )
+    {   background_red = E_x_Z_color_R_red( E_x_theme_Q_theme.window_bg );
+        background_green = E_x_Z_color_R_green( E_x_theme_Q_theme.window_bg );
+        background_blue = E_x_Z_color_R_blue( E_x_theme_Q_theme.window_bg );
         n = 1;
-    E_x_Q_window_I_draw_P_color( display, screen, E_x_Z_color_M( red / n, green / n, blue / n ));
+    }
+    background_red /= n;
+    background_green /= n;
+    background_blue /= n;
+    N red = E_x_Z_color_R_red(color);
+    N green = E_x_Z_color_R_green(color);
+    N blue = E_x_Z_color_R_blue(color);
+    //G_(); fprintf( stderr, "|brightness = %f", brightness );
+    if( red > background_red )
+        red = background_red + ( red - background_red ) * brightness;
+    else
+        red = background_red - ( background_red - red ) * brightness;
+    if( green > background_green )
+        green = background_green + ( green - background_green ) * brightness;
+    else
+        green = background_green - ( background_green - green ) * brightness;
+    if( blue > background_blue )
+        blue = background_blue + ( blue - background_blue ) * brightness;
+    else
+        blue = background_blue - ( background_blue - blue ) * brightness;
+    E_x_Q_window_I_draw_P_color( display, screen, E_x_Z_color_M( red, green, blue ));
     E_x_Q_window_I_draw_Z_points_(
       (( xcb_point_t[] )
       { x, y
       })
     );
 }
-//NDFN rysować linię tej samej szerokości niezależnie od kąta.
-void
+N
 E_x_Q_window_I_draw_aa_Z_line(
   struct E_x_Q_display_Z *display
 , struct E_x_Q_screen_Z *screen
 , struct E_x_Q_window_Z *window
 , N n
 , xcb_point_t *points
+, F thickness
 , N32 color
-){  for_n( i, n - 1 )
-    {   if( points[ i + 1 ].x > points[i].x )
-            if( points[ i + 1 ].y > points[i].y )
-                if( points[ i + 1 ].x - points[i].x >= points[ i + 1 ].y - points[i].y )
-                {   S16 x = points[i].x;
-                    S16 y = points[i].y;
-                    S16 next_y = points[i].y + round( (F)( points[ i + 1 ].y - points[i].y ) * ( x + 1 - points[i].x ) / ( points[ i + 1 ].x - points[i].x ));
+){  F a = screen->pixel_width;
+    F b = screen->pixel_height;
+    F pole_pixela = a * b;
+    for_n( i, n - 1 )
+    {   F alfa = atan( (F)( points[ i + 1 ].y - points[i].y ) / ( points[ i + 1 ].x - points[i].x ));
+        if( points[ i + 1 ].x > points[i].x )
+        {   if( points[ i + 1 ].y < points[i].y )
+                alfa += M_PI_2;
+            else if( points[i].y == points[ i + 1 ].y )
+            {   xcb_rectangle_t rectangle;
+                rectangle.x = points[i].x;
+                rectangle.y = points[i].y - (S16)( 0.5 * thickness / b );
+                rectangle.width = points[ i + 1 ].x - points[i].x + 1;
+                rectangle.height = (N16)( thickness / b );
+                F pole = fmod( 0.5 * thickness, b );
+                if(pole)
+                {   pole *= a;
                     E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
-                    , x, y
+                    , rectangle.x, rectangle.y - 1
                     , color
-                    , Z_aa_pixel_S_n | Z_aa_pixel_S_ne | ( y != next_y ? Z_aa_pixel_S_e : Z_aa_pixel_S_se ) | Z_aa_pixel_S_s | Z_aa_pixel_S_sw | Z_aa_pixel_S_w | Z_aa_pixel_S_nw
+                    , pole / pole_pixela
+                    , Z_aa_pixel_S_w | Z_aa_pixel_S_nw | Z_aa_pixel_S_n
                     );
-                    S16 last_y = y;
-                    while( ++x != points[ i + 1 ].x )
-                    {   y = next_y;
-                        next_y = points[i].y + round( (F)( points[ i + 1 ].y - points[i].y ) * ( x + 1 - points[i].x ) / ( points[ i + 1 ].x - points[i].x ));
-                        E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
-                        , x, y
-                        , color
-                        , Z_aa_pixel_S_n | Z_aa_pixel_S_ne | ( y != next_y ? Z_aa_pixel_S_e : Z_aa_pixel_S_se ) | Z_aa_pixel_S_s | Z_aa_pixel_S_sw | ( y != last_y ? Z_aa_pixel_S_w : Z_aa_pixel_S_nw )
-                        );
-                        last_y = y;
+                    E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
+                    , rectangle.x + rectangle.width - 1, rectangle.y - 1
+                    , color
+                    , pole / pole_pixela
+                    , Z_aa_pixel_S_n | Z_aa_pixel_S_ne | Z_aa_pixel_S_e
+                    );
+                    E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
+                    , rectangle.x, rectangle.y + rectangle.height
+                    , color
+                    , pole / pole_pixela
+                    , Z_aa_pixel_S_w | Z_aa_pixel_S_se | Z_aa_pixel_S_s
+                    );
+                    E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
+                    , rectangle.x + rectangle.width - 1, rectangle.y + rectangle.height
+                    , color
+                    , pole / pole_pixela
+                    , Z_aa_pixel_S_s | Z_aa_pixel_S_se | Z_aa_pixel_S_e
+                    );
+                    if( points[i].x + 1 < points[ i + 1 ].x )
+                        for( S16 x = points[i].x + 1; x != points[ i + 1 ].x; x++ )
+                        {   E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
+                            , x, rectangle.y - 1
+                            , color
+                            , pole / pole_pixela
+                            , Z_aa_pixel_S_n
+                            );
+                            E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
+                            , x, rectangle.y + rectangle.height
+                            , color
+                            , pole / pole_pixela
+                            , Z_aa_pixel_S_s
+                            );
+                        }
+                }
+                if( rectangle.height )
+                {   E_x_Q_window_I_draw_P_color( display, screen, color );
+                    E_x_Q_window_I_fill_Z_rectangles( display, screen, window, 1, &rectangle );
+                }
+                continue;
+            }
+        }else if( points[ i + 1 ].x < points[i].x )
+        {   if( points[ i + 1 ].y > points[i].y )
+                alfa += M_PI_2;
+            else if( points[i].y == points[ i + 1 ].y )
+            {   xcb_rectangle_t rectangle;
+                rectangle.x = points[ i + 1 ].x;
+                rectangle.y = points[i].y - (S16)( 0.5 * thickness / b );
+                rectangle.width = points[i].x - points[ i + 1 ].x + 1;
+                rectangle.height = (N16)( thickness / b );
+                F pole = fmod( 0.5 * thickness, b );
+                if(pole)
+                {   pole *= a;
+                    E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
+                    , rectangle.x, rectangle.y - 1
+                    , color
+                    , pole / pole_pixela
+                    , Z_aa_pixel_S_w | Z_aa_pixel_S_nw | Z_aa_pixel_S_n
+                    );
+                    E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
+                    , rectangle.x + rectangle.width - 1, rectangle.y - 1
+                    , color
+                    , pole / pole_pixela
+                    , Z_aa_pixel_S_n | Z_aa_pixel_S_ne | Z_aa_pixel_S_e
+                    );
+                    E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
+                    , rectangle.x, rectangle.y + rectangle.height
+                    , color
+                    , pole / pole_pixela
+                    , Z_aa_pixel_S_w | Z_aa_pixel_S_sw | Z_aa_pixel_S_s
+                    );
+                    E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
+                    , rectangle.x + rectangle.width - 1, rectangle.y + rectangle.height
+                    , color
+                    , pole / pole_pixela
+                    , Z_aa_pixel_S_s | Z_aa_pixel_S_se | Z_aa_pixel_S_e
+                    );
+                    if( points[ i + 1 ].x + 1 < points[i].x )
+                        for( S16 x = points[ i + 1 ].x + 1; x != points[i].x; x++ )
+                        {   E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
+                            , x, rectangle.y - 1
+                            , color
+                            , pole / pole_pixela
+                            , Z_aa_pixel_S_n
+                            );
+                            E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
+                            , x, rectangle.y + rectangle.height
+                            , color
+                            , pole / pole_pixela
+                            , Z_aa_pixel_S_s
+                            );
+                        }
+                }
+                if( rectangle.height )
+                {   E_x_Q_window_I_draw_P_color( display, screen, color );
+                    E_x_Q_window_I_fill_Z_rectangles( display, screen, window, 1, &rectangle );
+                }
+                continue;
+            }
+        }else
+        {   if( points[ i + 1 ].y > points[i].y )
+            {   xcb_rectangle_t rectangle;
+                rectangle.x = points[i].x - (S16)( 0.5 * thickness / a );
+                rectangle.y = points[i].y;
+                rectangle.width = (N16)( thickness / a );
+                rectangle.height = points[ i + 1 ].y - points[i].y + 1;
+                F pole = fmod( 0.5 * thickness, a );
+                if(pole)
+                {   pole *= b;
+                    E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
+                    , rectangle.x - 1, rectangle.y
+                    , color
+                    , pole / pole_pixela
+                    , Z_aa_pixel_S_w | Z_aa_pixel_S_nw | Z_aa_pixel_S_n
+                    );
+                    E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
+                    , rectangle.x + rectangle.width, rectangle.y
+                    , color
+                    , pole / pole_pixela
+                    , Z_aa_pixel_S_n | Z_aa_pixel_S_ne | Z_aa_pixel_S_e
+                    );
+                    E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
+                    , rectangle.x - 1, rectangle.y + rectangle.height - 1
+                    , color
+                    , pole / pole_pixela
+                    , Z_aa_pixel_S_w | Z_aa_pixel_S_sw | Z_aa_pixel_S_s
+                    );
+                    E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
+                    , rectangle.x + rectangle.width, rectangle.y + rectangle.height - 1
+                    , color
+                    , pole / pole_pixela
+                    , Z_aa_pixel_S_s | Z_aa_pixel_S_se | Z_aa_pixel_S_e
+                    );
+                    if( points[i].y + 1 < points[ i + 1 ].y )
+                        for( S16 y = points[i].y + 1; y != points[ i + 1 ].y; y++ )
+                        {   E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
+                            , rectangle.x - 1, y
+                            , color
+                            , pole / pole_pixela
+                            , Z_aa_pixel_S_w
+                            );
+                            E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
+                            , rectangle.x + rectangle.width, y
+                            , color
+                            , pole / pole_pixela
+                            , Z_aa_pixel_S_e
+                            );
+                        }
+                }
+                if( rectangle.height )
+                {   E_x_Q_window_I_draw_P_color( display, screen, color );
+                    E_x_Q_window_I_fill_Z_rectangles( display, screen, window, 1, &rectangle );
+                }
+            }else if( points[ i + 1 ].y < points[i].y )
+            {   xcb_rectangle_t rectangle;
+                rectangle.x = points[i].x - (S16)( 0.5 * thickness / a );
+                rectangle.y = points[ i + 1 ].y;
+                rectangle.width = (N16)( thickness / a );
+                rectangle.height = points[i].y - points[ i + 1 ].y + 1;
+                F pole = fmod( 0.5 * thickness, a );
+                if(pole)
+                {   pole *= b;
+                    E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
+                    , rectangle.x - 1, rectangle.y
+                    , color
+                    , pole / pole_pixela
+                    , Z_aa_pixel_S_w | Z_aa_pixel_S_nw | Z_aa_pixel_S_n
+                    );
+                    E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
+                    , rectangle.x + rectangle.width, rectangle.y
+                    , color
+                    , pole / pole_pixela
+                    , Z_aa_pixel_S_n | Z_aa_pixel_S_ne | Z_aa_pixel_S_e
+                    );
+                    E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
+                    , rectangle.x - 1, rectangle.y + rectangle.height - 1
+                    , color
+                    , pole / pole_pixela
+                    , Z_aa_pixel_S_w | Z_aa_pixel_S_sw | Z_aa_pixel_S_s
+                    );
+                    E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
+                    , rectangle.x + rectangle.width, rectangle.y + rectangle.height - 1
+                    , color
+                    , pole / pole_pixela
+                    , Z_aa_pixel_S_s | Z_aa_pixel_S_se | Z_aa_pixel_S_e
+                    );
+                    if( points[ i + 1 ].y + 1 < points[i].y )
+                        for( S16 y = points[ i + 1 ].y + 1; y != points[i].y; y++ )
+                        {   E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
+                            , rectangle.x - 1, y
+                            , color
+                            , pole / pole_pixela
+                            , Z_aa_pixel_S_w
+                            );
+                            E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
+                            , rectangle.x + rectangle.width, y
+                            , color
+                            , pole / pole_pixela
+                            , Z_aa_pixel_S_e
+                            );
+                        }
+                }
+                if( rectangle.height )
+                {   E_x_Q_window_I_draw_P_color( display, screen, color );
+                    E_x_Q_window_I_fill_Z_rectangles( display, screen, window, 1, &rectangle );
+                }
+            }else
+            {   GV( "point instead of line" );
+            }
+            continue;
+        }
+        F sin_alfa, cos_alfa, tan_alfa;
+        S16 dx_direction, dy_direction;
+        F pixel_dx, pixel_dy;
+        B prawoskretny;
+        xcb_rectangle_t rectangle;
+        for_n( j, 6 )
+        {   F length;
+            S16 x, y;
+            switch(j)
+            { case 0:
+                  prawoskretny = no;
+                  alfa = M_PI_2 - alfa;
+                  sin_alfa = sin(alfa);
+                  cos_alfa = cos(alfa);
+                  tan_alfa = tan(alfa);
+                  length = 0.5 * thickness;
+                  x = points[i].x;
+                  y = points[i].y;
+                  if( points[ i + 1 ].x > points[i].x )
+                      if( points[ i + 1 ].y > points[i].y )
+                      {   dx_direction = 1;
+                          dy_direction = -1;
+                      }else
+                      {   dx_direction = -1;
+                          dy_direction = -1;
+                      }
+                  else if( points[ i + 1 ].x < points[i].x )
+                      if( points[ i + 1 ].y > points[i].y )
+                      {   dx_direction = 1;
+                          dy_direction = 1;
+                      }else
+                      {   dx_direction = -1;
+                          dy_direction = 1;
+                      }
+                  pixel_dx = 0.5 * a;
+                  pixel_dy = 0.5 * b;
+                  break;
+              case 1:
+                  length = hypot(( points[ i + 1 ].x - points[i].x + 1 ) * screen->pixel_width, ( points[ i + 1 ].y - points[i].y + 1 ) * screen->pixel_height );
+                  if( points[ i + 1 ].x > points[i].x )
+                      if( points[ i + 1 ].y > points[i].y )
+                      {   dx_direction = 1;
+                          dy_direction = 1;
+                      }else
+                      {   dx_direction = 1;
+                          dy_direction = -1;
+                      }
+                  else if( points[ i + 1 ].x < points[i].x )
+                      if( points[ i + 1 ].y > points[i].y )
+                      {   dx_direction = -1;
+                          dy_direction = 1;
+                      }else
+                      {   dx_direction = -1;
+                          dy_direction = -1;
+                      }
+                  break;
+              case 2:
+                  prawoskretny = yes;
+                  alfa = M_PI_2 - alfa;
+                  sin_alfa = sin(alfa);
+                  cos_alfa = cos(alfa);
+                  tan_alfa = tan(alfa);
+                  length = 0.5 * thickness;
+                  x = points[ i + 1 ].x;
+                  y = points[ i + 1 ].y;
+                  if( points[ i + 1 ].x > points[i].x )
+                      if( points[ i + 1 ].y > points[i].y )
+                      {   dx_direction = 1;
+                          dy_direction = -1;
+                      }else
+                      {   dx_direction = -1;
+                          dy_direction = -1;
+                      }
+                  else if( points[ i + 1 ].x < points[i].x )
+                      if( points[ i + 1 ].y > points[i].y )
+                      {   dx_direction = 1;
+                          dy_direction = 1;
+                      }else
+                      {   dx_direction = -1;
+                          dy_direction = 1;
+                      }
+                  pixel_dx = 0.5 * a;
+                  pixel_dy = 0.5 * b;
+                  break;
+              case 3:
+                  prawoskretny = no;
+                  alfa = M_PI_2 - alfa;
+                  sin_alfa = sin(alfa);
+                  cos_alfa = cos(alfa);
+                  tan_alfa = tan(alfa);
+                  length = 0.5 * thickness;
+                  x = points[ i + 1 ].x;
+                  y = points[ i + 1 ].y;
+                  dx_direction = -dx_direction;
+                  dy_direction = -dy_direction;
+                  pixel_dx = 0.5 * a;
+                  pixel_dy = 0.5 * b;
+                  break;
+              case 4:
+                  prawoskretny = yes;
+                  alfa = M_PI_2 - alfa;
+                  sin_alfa = sin(alfa);
+                  cos_alfa = cos(alfa);
+                  tan_alfa = tan(alfa);
+                  length = 0.5 * thickness;
+                  x = points[i].x;
+                  y = points[i].y;
+                  pixel_dx = 0.5 * a;
+                  pixel_dy = 0.5 * b;
+                  break;
+              case 5:
+                  length = hypot(( points[ i + 1 ].x - points[i].x + 1 ) * screen->pixel_width, ( points[ i + 1 ].y - points[i].y + 1 ) * screen->pixel_height );
+                  if( points[ i + 1 ].x > points[i].x )
+                      if( points[ i + 1 ].y > points[i].y )
+                      {   dx_direction = 1;
+                          dy_direction = 1;
+                      }else
+                      {   dx_direction = 1;
+                          dy_direction = -1;
+                      }
+                  else if( points[ i + 1 ].x < points[i].x )
+                      if( points[ i + 1 ].y > points[i].y )
+                      {   dx_direction = -1;
+                          dy_direction = 1;
+                      }else
+                      {   dx_direction = -1;
+                          dy_direction = -1;
+                      }
+                  break;
+            }
+            G_(); fprintf( stderr, "|alfa = %f", alfa * 180 / M_PI );
+            B wariant_0 = ( prawoskretny && (( dx_direction > 0 && dy_direction > 0 ) || ( dx_direction < 0 && dy_direction < 0 )))
+                || ( !prawoskretny && (( dx_direction > 0 && dy_direction < 0 ) || ( dx_direction < 0 && dy_direction > 0 )));
+            G_(); Gd( wariant_0 );
+            if( !wariant_0 )
+            {   J_swap( F, a, b );
+                J_swap( F, pixel_dx, pixel_dy );
+            }
+            S16 dx = dx_direction;
+            S16 dy = dy_direction;
+            while( length > 0 )
+            {   F alfa_przekatnej = atan(( b - pixel_dy ) / ( a - pixel_dx ));
+                G_(); fprintf( stderr, "|alfa przekątnej = %f", alfa_przekatnej * 180 / M_PI );
+                struct E_x_Z_points *pixel_points;
+                N n_;
+                if( alfa <= alfa_przekatnej )
+                {   if( length >= ( a - pixel_dx ) / cos_alfa )
+                    {   Mt_( pixel_points, n_ = 3 );
+                        if( !pixel_points )
+                            return ~0;
+                        pixel_points[1].x = a;
+                        pixel_points[1].y = pixel_dy + ( a - pixel_dx ) * tan_alfa;
+                        pixel_points[2].x = a;
+                        pixel_points[2].y = pixel_dy;
+                    }else if( length <= ( a - pixel_dx ) * cos_alfa )
+                    {   Mt_( pixel_points, n_ = 3 );
+                        if( !pixel_points )
+                            return ~0;
+                        pixel_points[1].x = pixel_dx + length * cos_alfa;
+                        pixel_points[1].y = pixel_dy + length * sin_alfa;
+                        pixel_points[2].x = pixel_dx + length / cos_alfa;
+                        pixel_points[2].y = pixel_dy;
+                    }else
+                    {   Mt_( pixel_points, n_ = 4 );
+                        if( !pixel_points )
+                            return ~0;
+                        pixel_points[1].x = pixel_dx + length * cos_alfa;
+                        pixel_points[1].y = pixel_dy + length * sin_alfa;
+                        pixel_points[2].x = a;
+                        pixel_points[2].y = pixel_dy + ( length / cos_alfa - ( a - pixel_dx )) / tan_alfa;
+                        pixel_points[3].x = a;
+                        pixel_points[3].y = pixel_dy;
+                    }
+                    length -= ( a - pixel_dx ) / cos_alfa;
+                    if( wariant_0 )
+                    {   dx = dx_direction;
+                        dy = alfa == alfa_przekatnej ? dy_direction : 0;
+                    }else
+                    {   dx = alfa == alfa_przekatnej ? dx_direction : 0;
+                        dy = dy_direction;
                     }
                 }else
-                {   S16 x = points[i].x;
-                    S16 y = points[i].y;
-                    S16 next_x = points[i].x + round( (F)( points[ i + 1 ].x - points[i].x ) * ( y + 1 - points[i].y ) / ( points[ i + 1 ].y - points[i].y ));
-                    E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
-                    , x, y
-                    , color
-                    , Z_aa_pixel_S_n | Z_aa_pixel_S_ne | Z_aa_pixel_S_e | ( x != next_x ? Z_aa_pixel_S_s : Z_aa_pixel_S_se ) | Z_aa_pixel_S_sw | Z_aa_pixel_S_w | Z_aa_pixel_S_nw
-                    );
-                    S16 last_x = x;
-                    while( ++y != points[ i + 1 ].y )
-                    {   x = next_x;
-                        next_x = points[i].x + round( (F)( points[ i + 1 ].x - points[i].x ) * ( y + 1 - points[i].y ) / ( points[ i + 1 ].y - points[i].y ));
-                        E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
-                        , x, y
-                        , color
-                        , Z_aa_pixel_S_ne | Z_aa_pixel_S_e | ( x != next_x ? Z_aa_pixel_S_s : Z_aa_pixel_S_se ) | Z_aa_pixel_S_sw | Z_aa_pixel_S_w | ( x != last_x ? Z_aa_pixel_S_n : Z_aa_pixel_S_nw )
-                        );
-                        last_x = x;
+                {   if( length >= ( b - pixel_dy ) / sin_alfa + ( a - pixel_dx - ( b - pixel_dy ) / tan_alfa ) * cos_alfa )
+                    {   Mt_( pixel_points, n_ = 4 );
+                        if( !pixel_points )
+                            return ~0;
+                        pixel_points[1].x = pixel_dx + ( b - pixel_dy ) / tan_alfa;
+                        pixel_points[1].y = b;
+                        pixel_points[2].x = a;
+                        pixel_points[2].y = b;
+                        pixel_points[3].x = a;
+                        pixel_points[3].y = pixel_dy;
+                    }else if( length <= ( a - pixel_dx ) * cos_alfa )
+                    {   Mt_( pixel_points, n_ = 3 );
+                        if( !pixel_points )
+                            return ~0;
+                        pixel_points[1].x = pixel_dx + length * cos_alfa;
+                        pixel_points[1].y = pixel_dy + length * sin_alfa;
+                        pixel_points[2].x = pixel_dx + length / cos_alfa;
+                        pixel_points[2].y = pixel_dy;
+                    }else if( length > ( b - pixel_dy ) / sin_alfa )
+                    {   Mt_( pixel_points, n_ = 5 );
+                        if( !pixel_points )
+                            return ~0;
+                        pixel_points[1].x = pixel_dx + ( b - pixel_dy ) / tan_alfa;
+                        pixel_points[1].y = b;
+                        pixel_points[2].x = pixel_dx + ( b - pixel_dy ) / tan_alfa + ( length - ( b - pixel_dy ) / sin_alfa ) / cos_alfa;
+                        pixel_points[2].y = b;
+                        pixel_points[3].x = a;
+                        pixel_points[3].y = b - ( a - ( pixel_dx + ( b - pixel_dy ) / tan_alfa + ( length - ( b - pixel_dy ) / sin_alfa ) / cos_alfa )) / tan_alfa;
+                        pixel_points[4].x = a;
+                        pixel_points[4].y = pixel_dy;
+                    }else
+                    {   Mt_( pixel_points, n_ = 4 );
+                        if( !pixel_points )
+                            return ~0;
+                        pixel_points[1].x = pixel_dx + length * cos_alfa;
+                        pixel_points[1].y = pixel_dy + length * sin_alfa;
+                        pixel_points[2].x = a;
+                        pixel_points[2].y = pixel_dy + ( pixel_dx + length / cos_alfa - a ) / tan_alfa;
+                        pixel_points[3].x = a;
+                        pixel_points[3].y = pixel_dy;
+                    }
+                    length -= ( b - pixel_dy ) / sin_alfa;
+                    if( wariant_0 )
+                    {   dx = 0;
+                        dy = dy_direction;
+                    }else
+                    {   dx = dx_direction;
+                        dy = 0;
                     }
                 }
-            else if( points[ i + 1 ].y < points[i].y )
-                if( points[ i + 1 ].x - points[i].x >= points[i].y - points[ i + 1 ].y )
-                {   S16 x = points[i].x;
-                    S16 y = points[i].y;
-                    S16 next_y = points[i].y - round( (F)( points[i].y - points[ i + 1 ].y ) * ( x + 1 - points[i].x ) / ( points[ i + 1 ].x - points[i].x ));
-                    E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
-                    , x, y
-                    , color
-                    , Z_aa_pixel_S_n | ( y != next_y ? Z_aa_pixel_S_e : Z_aa_pixel_S_ne ) | Z_aa_pixel_S_se | Z_aa_pixel_S_s | Z_aa_pixel_S_sw | Z_aa_pixel_S_w | Z_aa_pixel_S_nw
-                    );
-                    S16 last_y = y;
-                    while( ++x != points[ i + 1 ].x )
-                    {   y = next_y;
-                        next_y = points[i].y - round( (F)( points[i].y - points[ i + 1 ].y ) * ( x + 1 - points[i].x ) / ( points[ i + 1 ].x - points[i].x ));
-                        E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
-                        , x, y
-                        , color
-                        , Z_aa_pixel_S_n | ( y != next_y ? Z_aa_pixel_S_e : Z_aa_pixel_S_ne ) | Z_aa_pixel_S_se | Z_aa_pixel_S_s | ( y != last_y ? Z_aa_pixel_S_w : Z_aa_pixel_S_sw ) | Z_aa_pixel_S_nw
-                        );
-                        last_y = y;
-                    }
+                G_(); fprintf( stderr, "|length = %f", length );
+                pixel_points[0].x = pixel_dx;
+                pixel_points[0].y = pixel_dy;
+                if( alfa <= alfa_przekatnej )
+                {   pixel_dy = alfa == alfa_przekatnej ? 0 : pixel_dy + ( a - pixel_dx ) * tan_alfa;
+                    if( pixel_dy >= b )
+                        pixel_dy = 0;
+                    pixel_dx = 0;
                 }else
-                {   S16 x = points[i].x;
-                    S16 y = points[i].y;
-                    S16 next_x = points[i].x + round( (F)( points[ i + 1 ].x - points[i].x ) * ( points[i].y - y - 1 ) / ( points[i].y - points[ i + 1 ].y ));
-                    E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
-                    , x, y
-                    , color
-                    , ( x != next_x ? Z_aa_pixel_S_n : Z_aa_pixel_S_ne ) | Z_aa_pixel_S_e | Z_aa_pixel_S_se | Z_aa_pixel_S_s | Z_aa_pixel_S_sw | Z_aa_pixel_S_w | Z_aa_pixel_S_nw
-                    );
-                    S16 last_x = x;
-                    while( --y != points[ i + 1 ].y )
-                    {   x = next_x;
-                        next_x = points[i].x + round( (F)( points[ i + 1 ].x - points[i].x ) * ( points[i].y - y - 1 ) / ( points[i].y - points[ i + 1 ].y ));
-                        E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
-                        , x, y
-                        , color
-                        , ( x != next_x ? Z_aa_pixel_S_n : Z_aa_pixel_S_ne ) | Z_aa_pixel_S_e | Z_aa_pixel_S_se | ( x != last_x ? Z_aa_pixel_S_s : Z_aa_pixel_S_sw ) | Z_aa_pixel_S_w | Z_aa_pixel_S_nw
-                        );
-                        last_x = x;
+                {   pixel_dx += ( b - pixel_dy ) / tan_alfa;
+                    if( pixel_dx >= a )
+                        pixel_dx = 0;
+                    pixel_dy = 0;
+                }
+                if( !wariant_0 )
+                {   for_n( i, n_ - 1 )
+                        J_swap( F, pixel_points[ i + 1 ].x, pixel_points[ i + 1 ].y );
+                }
+                for_n( i, n_ )
+                {   //G_(); Gd(i); fprintf( stderr, "|x = %f, y = %f", pixel_points[i].x, pixel_points[i].y );
+                    if( pixel_points[i].x < 0 || pixel_points[i].y < 0 )
+                    {   G_(); Gs_( "błąd" );
+                        U_F( E_base_S->E_flow_S_signal, exit );
+                        I_B(){}
                     }
                 }
-            else
-            {   S16 x = points[i].x;
-                E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
-                , x, points[i].y
-                , color
-                , Z_aa_pixel_S_n | Z_aa_pixel_S_ne | Z_aa_pixel_S_se | Z_aa_pixel_S_s | Z_aa_pixel_S_sw | Z_aa_pixel_S_w | Z_aa_pixel_S_nw
-                );
-                while( ++x != points[ i + 1 ].x )
-                    E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
-                    , x, points[i].y
-                    , color
-                    , Z_aa_pixel_S_n | Z_aa_pixel_S_ne | Z_aa_pixel_S_se | Z_aa_pixel_S_s | Z_aa_pixel_S_sw | Z_aa_pixel_S_nw
-                    );
-            }
-        else if( points[ i + 1 ].x < points[i].x )
-            if( points[ i + 1 ].y > points[i].y )
-                if( points[i].x - points[ i + 1 ].x >= points[ i + 1 ].y - points[i].y )
-                {   S16 x = points[i].x;
-                    S16 y = points[i].y;
-                    S16 next_y = points[i].y + round( (F)( points[ i + 1 ].y - points[i].y ) * ( points[i].x - x - 1 ) / ( points[i].x - points[ i + 1 ].x ));
-                    E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
-                    , x, y
-                    , color
-                    , Z_aa_pixel_S_n | Z_aa_pixel_S_e | Z_aa_pixel_S_ne | Z_aa_pixel_S_se | Z_aa_pixel_S_s | ( y != next_y ? Z_aa_pixel_S_w : Z_aa_pixel_S_sw ) | Z_aa_pixel_S_nw
-                    );
-                    S16 last_y = y;
-                    while( --x != points[ i + 1 ].x )
-                    {   y = next_y;
-                        next_y = points[i].y + round( (F)( points[ i + 1 ].y - points[i].y ) * ( points[i].x - x - 1 ) / ( points[i].x - points[ i + 1 ].x ));
-                        E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
-                        , x, y
-                        , color
-                        , Z_aa_pixel_S_n | ( y != last_y ? Z_aa_pixel_S_e : Z_aa_pixel_S_ne ) | Z_aa_pixel_S_se | Z_aa_pixel_S_s | ( y != next_y ? Z_aa_pixel_S_w : Z_aa_pixel_S_sw ) | Z_aa_pixel_S_nw
-                        );
-                        last_y = y;
-                    }
-                }else
-                {   S16 x = points[i].x;
-                    S16 y = points[i].y;
-                    S16 next_x = points[i].x - round( (F)( points[i].x - points[ i + 1 ].x ) * ( y + 1 - points[i].y ) / ( points[ i + 1 ].y - points[i].y ));
-                    E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
-                    , x, y
-                    , color
-                    , Z_aa_pixel_S_n | Z_aa_pixel_S_ne | Z_aa_pixel_S_e | Z_aa_pixel_S_se | ( x != next_x ? Z_aa_pixel_S_s : Z_aa_pixel_S_sw ) | Z_aa_pixel_S_w | Z_aa_pixel_S_nw
-                    );
-                    S16 last_x = x;
-                    while( ++y != points[ i + 1 ].y )
-                    {   x = next_x;
-                        next_x = points[i].x - round( (F)( points[i].x - points[ i + 1 ].x ) * ( y + 1 - points[i].y ) / ( points[ i + 1 ].y - points[i].y ));
-                        E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
-                        , x, y
-                        , color
-                        , ( x != last_x ? Z_aa_pixel_S_n : Z_aa_pixel_S_ne ) | Z_aa_pixel_S_e | Z_aa_pixel_S_se | ( x != next_x ? Z_aa_pixel_S_s : Z_aa_pixel_S_sw ) | Z_aa_pixel_S_w | Z_aa_pixel_S_nw
-                        );
-                        last_x = x;
-                    }
+                F pole = E_x_I_pole_wielokata( n_, pixel_points );
+                W( pixel_points );
+                //G_(); fprintf( stderr, "|pole = %f, prostokąta = %f", pole, pole_pixela );
+                if( pole > pole_pixela )
+                {   G_(); Gs_( "błąd" );
+                    U_F( E_base_S->E_flow_S_signal, exit );
+                    I_B(){}
                 }
-            else if( points[ i + 1 ].y < points[i].y )
-                if( points[i].x - points[ i + 1 ].x >= points[i].y - points[ i + 1 ].y )
-                {   S16 x = points[i].x;
-                    S16 y = points[i].y;
-                    S16 next_y = points[i].y - round( (F)( points[i].y - points[ i + 1 ].y ) * ( points[i].x - x - 1 ) / ( points[i].x - points[ i + 1 ].x ));
-                    E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
-                    , x, y
-                    , color
-                    , Z_aa_pixel_S_n | Z_aa_pixel_S_ne | Z_aa_pixel_S_e | Z_aa_pixel_S_se | Z_aa_pixel_S_s | Z_aa_pixel_S_sw | ( y != next_y ? Z_aa_pixel_S_w : Z_aa_pixel_S_nw )
-                    );
-                    S16 last_y = y;
-                    while( --x != points[ i + 1 ].x )
-                    {   y = next_y;
-                        next_y = points[i].y - round( (F)( points[i].y - points[ i + 1 ].y ) * ( points[i].x - x - 1 ) / ( points[i].x - points[ i + 1 ].x ));
-                        E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
-                        , x, y
-                        , color
-                        , Z_aa_pixel_S_n | Z_aa_pixel_S_ne | ( y != last_y ? Z_aa_pixel_S_e : Z_aa_pixel_S_se ) | Z_aa_pixel_S_s | Z_aa_pixel_S_sw | ( y != next_y ? Z_aa_pixel_S_w : Z_aa_pixel_S_nw )
-                        );
-                        last_y = y;
-                    }
-                }else
-                {   S16 x = points[i].x;
-                    S16 y = points[i].y;
-                    S16 next_x = points[i].x - round( (F)( points[i].x - points[ i + 1 ].x ) * ( points[i].y - y - 1 ) / ( points[i].y - points[ i + 1 ].y ));
-                    E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
-                    , x, y
-                    , color
-                    , ( x != next_x ? Z_aa_pixel_S_n : Z_aa_pixel_S_nw ) | Z_aa_pixel_S_ne | Z_aa_pixel_S_e | Z_aa_pixel_S_se | Z_aa_pixel_S_s | Z_aa_pixel_S_sw | Z_aa_pixel_S_w
-                    );
-                    S16 last_x = x;
-                    while( --y != points[ i + 1 ].y )
-                    {   x = next_x;
-                        next_x = points[i].x - round( (F)( points[i].x - points[ i + 1 ].x ) * ( points[i].y - y - 1 ) / ( points[i].y - points[ i + 1 ].y ));
-                        E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
-                        , x, y
-                        , color
-                        , ( x != next_x ? Z_aa_pixel_S_n : Z_aa_pixel_S_nw ) | Z_aa_pixel_S_ne | Z_aa_pixel_S_e | ( x != last_x ? Z_aa_pixel_S_s : Z_aa_pixel_S_se ) | Z_aa_pixel_S_sw | Z_aa_pixel_S_w
-                        );
-                        last_x = x;
-                    }
-                }
-            else
-            {   S16 x = points[i].x;
                 E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
-                , x, points[i].y
+                , x, y
                 , color
-                , Z_aa_pixel_S_n | Z_aa_pixel_S_ne | Z_aa_pixel_S_e | Z_aa_pixel_S_se | Z_aa_pixel_S_s | Z_aa_pixel_S_sw | Z_aa_pixel_S_nw
+                , pole / pole_pixela
+                , 0 //TODO
                 );
-                while( --x != points[ i + 1 ].x )
-                    E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
-                    , x, points[i].y
-                    , color
-                    , Z_aa_pixel_S_n | Z_aa_pixel_S_ne | Z_aa_pixel_S_se | Z_aa_pixel_S_s | Z_aa_pixel_S_sw | Z_aa_pixel_S_nw
-                    );
+                x += dx;
+                y += dy;
             }
-        else
-            if( points[ i + 1 ].y > points[i].y )
-            {   S16 y = points[i].y;
-                E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
-                , points[i].x, y
-                , color
-                , Z_aa_pixel_S_n | Z_aa_pixel_S_ne | Z_aa_pixel_S_e | Z_aa_pixel_S_se | Z_aa_pixel_S_sw | Z_aa_pixel_S_w | Z_aa_pixel_S_nw
-                );
-                while( ++y != points[ i + 1 ].y )
-                    E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
-                    , points[i].x, y
-                    , color
-                    , Z_aa_pixel_S_ne | Z_aa_pixel_S_e | Z_aa_pixel_S_se | Z_aa_pixel_S_sw | Z_aa_pixel_S_w | Z_aa_pixel_S_nw
-                    );
-            }
-            else if( points[ i + 1 ].y < points[i].y )
-            {   S16 y = points[i].y;
-                E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
-                , points[i].x, y
-                , color
-                , Z_aa_pixel_S_ne | Z_aa_pixel_S_e | Z_aa_pixel_S_se | Z_aa_pixel_S_s | Z_aa_pixel_S_sw | Z_aa_pixel_S_w | Z_aa_pixel_S_nw
-                );
-                while( --y != points[ i + 1 ].y )
-                    E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
-                    , points[i].x, y
-                    , color
-                    , Z_aa_pixel_S_ne | Z_aa_pixel_S_e | Z_aa_pixel_S_se | Z_aa_pixel_S_sw | Z_aa_pixel_S_w | Z_aa_pixel_S_nw
-                    );
-            }
-            else
-                E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
-                , points[i].x, points[i].y
-                , color
-                , Z_aa_pixel_S_n | Z_aa_pixel_S_ne | Z_aa_pixel_S_e | Z_aa_pixel_S_se | Z_aa_pixel_S_s | Z_aa_pixel_S_sw | Z_aa_pixel_S_w | Z_aa_pixel_S_nw
-                );
+        }
+        //E_x_Q_window_I_draw_P_color( display, screen, color );
+        //E_x_Q_window_I_fill_Z_rectangles( display, screen, window, 1, &rectangle );
     }
-    E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
-    , points[ n - 1 ].x, points[ n - 1 ].y
-    , color
-    , Z_aa_pixel_S_n | Z_aa_pixel_S_ne | Z_aa_pixel_S_e | Z_aa_pixel_S_se | Z_aa_pixel_S_s | Z_aa_pixel_S_sw | Z_aa_pixel_S_w | Z_aa_pixel_S_nw
-    );
+    return 0;
 }
 /******************************************************************************/
