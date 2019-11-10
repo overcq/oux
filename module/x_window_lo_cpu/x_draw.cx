@@ -351,7 +351,6 @@ E_x_Q_window_I_draw_aa_Z_pixel(
     N red = E_x_Z_color_R_red(color);
     N green = E_x_Z_color_R_green(color);
     N blue = E_x_Z_color_R_blue(color);
-    //G_(); fprintf( stderr, "|brightness = %f", brightness );
     if( red > background_red )
         red = background_red + ( red - background_red ) * brightness;
     else
@@ -617,12 +616,19 @@ E_x_Q_window_I_draw_aa_Z_line(
         S16 dx_direction, dy_direction;
         F pixel_dx, pixel_dy;
         B prawoskretny;
-        xcb_rectangle_t rectangle;
+        struct
+        { S16 dx, dy;
+        } *Mt_( dx_dy, 0 );
+        if( !dx_dy )
+            return ~0;
+        N dx_dy_n = 0;
         for_n( j, 6 )
         {   F length;
             S16 x, y;
+            B U_R( first_pixel, overdrawn );
             switch(j)
             { case 0:
+                  U_F( first_pixel, overdrawn );
                   prawoskretny = no;
                   alfa = M_PI_2 - alfa;
                   sin_alfa = sin(alfa);
@@ -651,7 +657,8 @@ E_x_Q_window_I_draw_aa_Z_line(
                   pixel_dy = 0.5 * b;
                   break;
               case 1:
-                  length = hypot(( points[ i + 1 ].x - points[i].x + 1 ) * screen->pixel_width, ( points[ i + 1 ].y - points[i].y + 1 ) * screen->pixel_height );
+                  U_F( first_pixel, overdrawn );
+                  length = hypot(( points[ i + 1 ].x - points[i].x + 1 ) * a, ( points[ i + 1 ].y - points[i].y + 1 ) * b );
                   if( points[ i + 1 ].x > points[i].x )
                       if( points[ i + 1 ].y > points[i].y )
                       {   dx_direction = 1;
@@ -670,6 +677,7 @@ E_x_Q_window_I_draw_aa_Z_line(
                       }
                   break;
               case 2:
+                  U_F( first_pixel, overdrawn );
                   prawoskretny = yes;
                   alfa = M_PI_2 - alfa;
                   sin_alfa = sin(alfa);
@@ -698,6 +706,7 @@ E_x_Q_window_I_draw_aa_Z_line(
                   pixel_dy = 0.5 * b;
                   break;
               case 3:
+                  U_L( first_pixel, overdrawn );
                   prawoskretny = no;
                   alfa = M_PI_2 - alfa;
                   sin_alfa = sin(alfa);
@@ -712,6 +721,7 @@ E_x_Q_window_I_draw_aa_Z_line(
                   pixel_dy = 0.5 * b;
                   break;
               case 4:
+                  U_L( first_pixel, overdrawn );
                   prawoskretny = yes;
                   alfa = M_PI_2 - alfa;
                   sin_alfa = sin(alfa);
@@ -724,7 +734,8 @@ E_x_Q_window_I_draw_aa_Z_line(
                   pixel_dy = 0.5 * b;
                   break;
               case 5:
-                  length = hypot(( points[ i + 1 ].x - points[i].x + 1 ) * screen->pixel_width, ( points[ i + 1 ].y - points[i].y + 1 ) * screen->pixel_height );
+                  U_F( first_pixel, overdrawn );
+                  length = hypot(( points[ i + 1 ].x - points[i].x + 1 ) * a, ( points[ i + 1 ].y - points[i].y + 1 ) * b );
                   if( points[ i + 1 ].x > points[i].x )
                       if( points[ i + 1 ].y > points[i].y )
                       {   dx_direction = 1;
@@ -743,26 +754,28 @@ E_x_Q_window_I_draw_aa_Z_line(
                       }
                   break;
             }
-            G_(); fprintf( stderr, "|alfa = %f", alfa * 180 / M_PI );
+            //G_(); fprintf( stderr, "|alfa = %f", alfa * 180 / M_PI );
             B wariant_0 = ( prawoskretny && (( dx_direction > 0 && dy_direction > 0 ) || ( dx_direction < 0 && dy_direction < 0 )))
                 || ( !prawoskretny && (( dx_direction > 0 && dy_direction < 0 ) || ( dx_direction < 0 && dy_direction > 0 )));
-            G_(); Gd( wariant_0 );
+            //G_(); Gd( wariant_0 );
             if( !wariant_0 )
             {   J_swap( F, a, b );
                 J_swap( F, pixel_dx, pixel_dy );
             }
-            S16 dx = dx_direction;
-            S16 dy = dy_direction;
+            S16 dx, dy;
+            B U_F( first_pixel, computed );
             while( length > 0 )
             {   F alfa_przekatnej = atan(( b - pixel_dy ) / ( a - pixel_dx ));
-                G_(); fprintf( stderr, "|alfa przekątnej = %f", alfa_przekatnej * 180 / M_PI );
+                //G_(); fprintf( stderr, "|alfa przekątnej = %f", alfa_przekatnej * 180 / M_PI );
                 struct E_x_Z_points *pixel_points;
                 N n_;
                 if( alfa <= alfa_przekatnej )
                 {   if( length >= ( a - pixel_dx ) / cos_alfa )
                     {   Mt_( pixel_points, n_ = 3 );
                         if( !pixel_points )
+                        {   W( dx_dy );
                             return ~0;
+                        }
                         pixel_points[1].x = a;
                         pixel_points[1].y = pixel_dy + ( a - pixel_dx ) * tan_alfa;
                         pixel_points[2].x = a;
@@ -770,7 +783,9 @@ E_x_Q_window_I_draw_aa_Z_line(
                     }else if( length <= ( a - pixel_dx ) * cos_alfa )
                     {   Mt_( pixel_points, n_ = 3 );
                         if( !pixel_points )
+                        {   W( dx_dy );
                             return ~0;
+                        }
                         pixel_points[1].x = pixel_dx + length * cos_alfa;
                         pixel_points[1].y = pixel_dy + length * sin_alfa;
                         pixel_points[2].x = pixel_dx + length / cos_alfa;
@@ -778,7 +793,9 @@ E_x_Q_window_I_draw_aa_Z_line(
                     }else
                     {   Mt_( pixel_points, n_ = 4 );
                         if( !pixel_points )
+                        {   W( dx_dy );
                             return ~0;
+                        }
                         pixel_points[1].x = pixel_dx + length * cos_alfa;
                         pixel_points[1].y = pixel_dy + length * sin_alfa;
                         pixel_points[2].x = a;
@@ -798,7 +815,9 @@ E_x_Q_window_I_draw_aa_Z_line(
                 {   if( length >= ( b - pixel_dy ) / sin_alfa + ( a - pixel_dx - ( b - pixel_dy ) / tan_alfa ) * cos_alfa )
                     {   Mt_( pixel_points, n_ = 4 );
                         if( !pixel_points )
+                        {   W( dx_dy );
                             return ~0;
+                        }
                         pixel_points[1].x = pixel_dx + ( b - pixel_dy ) / tan_alfa;
                         pixel_points[1].y = b;
                         pixel_points[2].x = a;
@@ -808,7 +827,9 @@ E_x_Q_window_I_draw_aa_Z_line(
                     }else if( length <= ( a - pixel_dx ) * cos_alfa )
                     {   Mt_( pixel_points, n_ = 3 );
                         if( !pixel_points )
+                        {   W( dx_dy );
                             return ~0;
+                        }
                         pixel_points[1].x = pixel_dx + length * cos_alfa;
                         pixel_points[1].y = pixel_dy + length * sin_alfa;
                         pixel_points[2].x = pixel_dx + length / cos_alfa;
@@ -816,7 +837,9 @@ E_x_Q_window_I_draw_aa_Z_line(
                     }else if( length > ( b - pixel_dy ) / sin_alfa )
                     {   Mt_( pixel_points, n_ = 5 );
                         if( !pixel_points )
+                        {   W( dx_dy );
                             return ~0;
+                        }
                         pixel_points[1].x = pixel_dx + ( b - pixel_dy ) / tan_alfa;
                         pixel_points[1].y = b;
                         pixel_points[2].x = pixel_dx + ( b - pixel_dy ) / tan_alfa + ( length - ( b - pixel_dy ) / sin_alfa ) / cos_alfa;
@@ -828,7 +851,9 @@ E_x_Q_window_I_draw_aa_Z_line(
                     }else
                     {   Mt_( pixel_points, n_ = 4 );
                         if( !pixel_points )
+                        {   W( dx_dy );
                             return ~0;
+                        }
                         pixel_points[1].x = pixel_dx + length * cos_alfa;
                         pixel_points[1].y = pixel_dy + length * sin_alfa;
                         pixel_points[2].x = a;
@@ -845,7 +870,6 @@ E_x_Q_window_I_draw_aa_Z_line(
                         dy = 0;
                     }
                 }
-                G_(); fprintf( stderr, "|length = %f", length );
                 pixel_points[0].x = pixel_dx;
                 pixel_points[0].y = pixel_dy;
                 if( alfa <= alfa_przekatnej )
@@ -873,24 +897,64 @@ E_x_Q_window_I_draw_aa_Z_line(
                 }
                 F pole = E_x_I_pole_wielokata( n_, pixel_points );
                 W( pixel_points );
-                //G_(); fprintf( stderr, "|pole = %f, prostokąta = %f", pole, pole_pixela );
+                if( j == 0 )
+                {   if( !E_mem_Q_blk_I_append( &dx_dy, 1 ))
+                        return ~0;
+                    dx_dy[ dx_dy_n ].dx = dx;
+                    dx_dy[ dx_dy_n ].dy = dy;
+                    dx_dy_n++;
+                }else if( j == 4 )
+                {   if( !U_R( first_pixel, computed ))
+                    {   if( !E_mem_Q_blk_I_append( &dx_dy, 1 ))
+                            return ~0;
+                        dx_dy[ dx_dy_n ].dx = dx;
+                        dx_dy[ dx_dy_n ].dy = dy;
+                        dx_dy_n++;
+                    }
+                }else if( j == 1 || j == 5 )
+                {   if( !U_R( first_pixel, computed )
+                    && length >= 0
+                    ){  E_x_Q_window_I_draw_P_color( display, screen, color );
+                        S16 x_ = x, y_ = y;
+                        for_n_rev( i, dx_dy_n )
+                        {   x_ -= dx_dy[i].dx;
+                            y_ -= dx_dy[i].dy;
+                            xcb_point_t point = { x_, y_ };
+                            E_x_Q_window_I_draw_Z_points( display, screen, window, 1, &point );
+                        }
+                    }
+                }else if( j == 2 )
+                {   E_mem_Q_blk_I_rem( &dx_dy, 0, dx_dy_n );
+                    dx_dy_n = 0;
+                }
+                if( U_E( first_pixel, computed )
+                && ( j == 3 || j == 4 )
+                )
+                    pole *= 2;
+                //G_(); fprintf( stderr, "|pole = %f, prostokąta = %f, brightness = %f", pole, pole_pixela, pole / pole_pixela );
                 if( pole > pole_pixela )
                 {   G_(); Gs_( "błąd" );
                     U_F( E_base_S->E_flow_S_signal, exit );
                     I_B(){}
                 }
-                E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
-                , x, y
-                , color
-                , pole / pole_pixela
-                , 0 //TODO
-                );
+                if( U_E( first_pixel, overdrawn ))
+                    ;
+                else
+                    E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
+                    , x, y
+                    , color
+                    , pole / pole_pixela
+                    , 0 //TODO
+                    );
                 x += dx;
                 y += dy;
             }
+            if( j != 5 && !wariant_0 )
+            {   J_swap( F, a, b );
+                J_swap( F, pixel_dx, pixel_dy );
+            }
         }
-        //E_x_Q_window_I_draw_P_color( display, screen, color );
-        //E_x_Q_window_I_fill_Z_rectangles( display, screen, window, 1, &rectangle );
+        W( dx_dy );
     }
     return 0;
 }
