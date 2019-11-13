@@ -50,9 +50,9 @@ E_x_Z_color_P_luminance( struct E_x_Q_display_Z *display
     N8 blue = E_x_Z_color_R_blue(color);
     F color_luminance = E_x_Z_color_R_luminance( display, color );
     if( luminance < color_luminance )
-    {   red = round( red * luminance / color_luminance );
-        green = round( green * luminance / color_luminance );
-        blue = round( blue * luminance / color_luminance );
+    {   red = lround( red * luminance / color_luminance );
+        green = lround( green * luminance / color_luminance );
+        blue = lround( blue * luminance / color_luminance );
     }else if( luminance > color_luminance )
     {   red += lround(( 0xff - red ) * ( luminance - color_luminance ) / ( 1 - color_luminance ));
         green += lround(( 0xff - green ) * ( luminance - color_luminance ) / ( 1 - color_luminance ));
@@ -754,10 +754,10 @@ E_x_Q_window_I_draw_aa_Z_line(
                       }
                   break;
             }
-            //G_(); fprintf( stderr, "|alfa = %f", alfa * 180 / M_PI );
+            G_(); fprintf( stderr, "|alfa = %f", alfa * 180 / M_PI );
             B wariant_0 = ( prawoskretny && (( dx_direction > 0 && dy_direction > 0 ) || ( dx_direction < 0 && dy_direction < 0 )))
                 || ( !prawoskretny && (( dx_direction > 0 && dy_direction < 0 ) || ( dx_direction < 0 && dy_direction > 0 )));
-            //G_(); Gd( wariant_0 );
+            G_(); Gd( wariant_0 ); Gd(prawoskretny); Gd( dx_direction ); Gd( dy_direction );
             if( !wariant_0 )
             {   J_swap( F, a, b );
                 J_swap( F, pixel_dx, pixel_dy );
@@ -766,7 +766,9 @@ E_x_Q_window_I_draw_aa_Z_line(
             B U_F( first_pixel, computed );
             while( length > 0 )
             {   F alfa_przekatnej = atan(( b - pixel_dy ) / ( a - pixel_dx ));
-                //G_(); fprintf( stderr, "|alfa przekątnej = %f", alfa_przekatnej * 180 / M_PI );
+                if( j == 1 )
+                {   G_(); fprintf( stderr, "|alfa przekątnej = %f", alfa_przekatnej * 180 / M_PI );
+                }
                 struct E_x_Z_points *pixel_points;
                 N n_;
                 if( alfa <= alfa_przekatnej )
@@ -870,6 +872,12 @@ E_x_Q_window_I_draw_aa_Z_line(
                         dy = 0;
                     }
                 }
+                if( j == 1 )
+                {   if( U_R( first_pixel, computed ))
+                    {   G_();
+                    }
+                    G_(); Gd(dx); Gd(dy); fprintf( stderr, "|pixel_dx = %f, pixel_dy = %f", pixel_dx, pixel_dy );
+                }
                 pixel_points[0].x = pixel_dx;
                 pixel_points[0].y = pixel_dy;
                 if( alfa <= alfa_przekatnej )
@@ -931,7 +939,11 @@ E_x_Q_window_I_draw_aa_Z_line(
                 && ( j == 3 || j == 4 )
                 )
                     pole *= 2;
-                //G_(); fprintf( stderr, "|pole = %f, prostokąta = %f, brightness = %f", pole, pole_pixela, pole / pole_pixela );
+                if( !wariant_0 )
+                    pole = pole_pixela - pole;
+                if( j == 1 )
+                {   G_(); fprintf( stderr, "|pole = %f, prostokąta = %f, brightness = %f", pole, pole_pixela, pole / pole_pixela );
+                }
                 if( pole > pole_pixela )
                 {   G_(); Gs_( "błąd" );
                     U_F( E_base_S->E_flow_S_signal, exit );

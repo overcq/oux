@@ -27,7 +27,7 @@
 , _( _NET_WM_WINDOW_TYPE ) \
 , _( _NET_WM_WINDOW_TYPE_DND ) \
 , _( _NET_WM_WINDOW_TYPE_NORMAL ) \
-//tutaj kolejne potrzebne ‘atomy’ ‘x’.
+//tutaj kolejne używane ‘atomy’ ‘x’.
 //==============================================================================
 #define _(atom) J_ab( XCB_ATOM_, atom )
 enum E_x_Q_display_Z_atom

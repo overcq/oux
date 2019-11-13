@@ -156,7 +156,17 @@ CFLAGS += -DC_pthreads -pthread
 H_make_S_c_std_alt := gnu
     endif
     ifeq (clang,$(H_make_S_cc))
-CFLAGS += -std=$(H_make_S_c_std_alt)17 -O1 -Qunused-arguments -Wno-incompatible-pointer-types-discards-qualifiers
+H_make_S_words := $(subst ., ,$(H_make_S_cc_version))
+H_make_S_number := $(word 1,$(H_make_S_words)).$(word 2,$(H_make_S_words))
+#tylko spekulacje wersji “clang” obsługujących standardy ‟C”.
+		ifneq (0,$(shell expr $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_number) >= 9.0)))
+CFLAGS += -std=$(H_make_S_c_std_alt)17
+		else ifneq (0,$(shell expr $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_number) >= 5.0)))
+CFLAGS += -std=$(H_make_S_c_std_alt)14
+		else ifneq (0,$(shell expr $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_number) >= 4.0)))
+CFLAGS += -std=$(H_make_S_c_std_alt)11
+		endif
+CFLAGS += -O1 -Qunused-arguments -Wno-incompatible-pointer-types-discards-qualifiers
     else #nie “clang”.
         ifeq (gcc,$(H_make_S_cc))
 H_make_S_words := $(subst ., ,$(H_make_S_cc_version))
