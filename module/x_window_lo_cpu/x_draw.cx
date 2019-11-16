@@ -766,9 +766,7 @@ E_x_Q_window_I_draw_aa_Z_line(
             B U_F( first_pixel, computed );
             while( length > 0 )
             {   F alfa_przekatnej = atan(( b - pixel_dy ) / ( a - pixel_dx ));
-                if( j == 1 )
-                {   G_(); fprintf( stderr, "|alfa przekątnej = %f", alfa_przekatnej * 180 / M_PI );
-                }
+                G_(); fprintf( stderr, "|alfa przekątnej = %f", alfa_przekatnej * 180 / M_PI );
                 struct E_x_Z_points *pixel_points;
                 N n_;
                 if( alfa <= alfa_przekatnej )
@@ -782,6 +780,7 @@ E_x_Q_window_I_draw_aa_Z_line(
                         pixel_points[1].y = pixel_dy + ( a - pixel_dx ) * tan_alfa;
                         pixel_points[2].x = a;
                         pixel_points[2].y = pixel_dy;
+                        G_();
                     }else if( length <= ( a - pixel_dx ) * cos_alfa )
                     {   Mt_( pixel_points, n_ = 3 );
                         if( !pixel_points )
@@ -792,6 +791,7 @@ E_x_Q_window_I_draw_aa_Z_line(
                         pixel_points[1].y = pixel_dy + length * sin_alfa;
                         pixel_points[2].x = pixel_dx + length / cos_alfa;
                         pixel_points[2].y = pixel_dy;
+                        G_();
                     }else
                     {   Mt_( pixel_points, n_ = 4 );
                         if( !pixel_points )
@@ -804,6 +804,7 @@ E_x_Q_window_I_draw_aa_Z_line(
                         pixel_points[2].y = pixel_dy + ( length / cos_alfa - ( a - pixel_dx )) / tan_alfa;
                         pixel_points[3].x = a;
                         pixel_points[3].y = pixel_dy;
+                        G_();
                     }
                     length -= ( a - pixel_dx ) / cos_alfa;
                     if( wariant_0 )
@@ -826,16 +827,7 @@ E_x_Q_window_I_draw_aa_Z_line(
                         pixel_points[2].y = b;
                         pixel_points[3].x = a;
                         pixel_points[3].y = pixel_dy;
-                    }else if( length <= ( a - pixel_dx ) * cos_alfa )
-                    {   Mt_( pixel_points, n_ = 3 );
-                        if( !pixel_points )
-                        {   W( dx_dy );
-                            return ~0;
-                        }
-                        pixel_points[1].x = pixel_dx + length * cos_alfa;
-                        pixel_points[1].y = pixel_dy + length * sin_alfa;
-                        pixel_points[2].x = pixel_dx + length / cos_alfa;
-                        pixel_points[2].y = pixel_dy;
+                        G_();
                     }else if( length > ( b - pixel_dy ) / sin_alfa )
                     {   Mt_( pixel_points, n_ = 5 );
                         if( !pixel_points )
@@ -848,8 +840,31 @@ E_x_Q_window_I_draw_aa_Z_line(
                         pixel_points[2].y = b;
                         pixel_points[3].x = a;
                         pixel_points[3].y = b - ( a - ( pixel_dx + ( b - pixel_dy ) / tan_alfa + ( length - ( b - pixel_dy ) / sin_alfa ) / cos_alfa )) / tan_alfa;
-                        pixel_points[4].x = a;
-                        pixel_points[4].y = pixel_dy;
+                        if( pixel_points[3].y <= pixel_dy )
+                        {   if( pixel_points[3].y < pixel_dy )
+                            {   pixel_points[3].x = a - ( pixel_dy - pixel_points[3].y ) * tan_alfa;
+                                pixel_points[3].y = pixel_dy;
+                            }else
+                            {   pixel_points[3].x = a;
+                                pixel_points[3].y = pixel_dy;
+                            }
+                            n_--;
+                        }else
+                        {   pixel_points[4].x = a;
+                            pixel_points[4].y = pixel_dy;
+                        }
+                        G_();
+                    }else if( length <= ( a - pixel_dx ) * cos_alfa )
+                    {   Mt_( pixel_points, n_ = 3 );
+                        if( !pixel_points )
+                        {   W( dx_dy );
+                            return ~0;
+                        }
+                        pixel_points[1].x = pixel_dx + length * cos_alfa;
+                        pixel_points[1].y = pixel_dy + length * sin_alfa;
+                        pixel_points[2].x = pixel_dx + length / cos_alfa;
+                        pixel_points[2].y = pixel_dy;
+                        G_();
                     }else
                     {   Mt_( pixel_points, n_ = 4 );
                         if( !pixel_points )
@@ -862,6 +877,7 @@ E_x_Q_window_I_draw_aa_Z_line(
                         pixel_points[2].y = pixel_dy + ( pixel_dx + length / cos_alfa - a ) / tan_alfa;
                         pixel_points[3].x = a;
                         pixel_points[3].y = pixel_dy;
+                        G_();
                     }
                     length -= ( b - pixel_dy ) / sin_alfa;
                     if( wariant_0 )
@@ -872,14 +888,33 @@ E_x_Q_window_I_draw_aa_Z_line(
                         dy = 0;
                     }
                 }
-                if( j == 1 )
-                {   if( U_R( first_pixel, computed ))
-                    {   G_();
-                    }
-                    G_(); Gd(dx); Gd(dy); fprintf( stderr, "|pixel_dx = %f, pixel_dy = %f", pixel_dx, pixel_dy );
+                if( U_R( first_pixel, computed ))
+                {   G_();
                 }
+                G_(); Gd(dx); Gd(dy); fprintf( stderr, "|a = %f, b = %f, pixel_dx = %f, pixel_dy = %f", a, b, pixel_dx, pixel_dy );
                 pixel_points[0].x = pixel_dx;
                 pixel_points[0].y = pixel_dy;
+                F pole = 0;
+                if( !pixel_dx || !pixel_dy )
+                {   G_(); Gd( wariant_0 ); Gd(prawoskretny);
+                    if( wariant_0 )
+                    {   if( !prawoskretny && pixel_dx )
+                        {   //G_(); fprintf( stderr, "|pixel_dx = %f, pixel_dy = %f, pole_1 = %f", pixel_dx, pixel_dy, pixel_dx * b );
+                            //pole = pixel_dx * b;
+                        }else if( prawoskretny && pixel_dy ) //punkt oparcia
+                        {   G_(); fprintf( stderr, "|pixel_dx = %f, pixel_dy = %f, pole_1 = %f", pixel_dx, pixel_dy, pixel_dy * a );
+                            pole = pixel_dy * a;
+                        }
+                    }else
+                    {   if( !prawoskretny && pixel_dy ) //punkt oparcia
+                        {   G_(); fprintf( stderr, "|pixel_dx = %f, pixel_dy = %f, pole_1 = %f", pixel_dy, pixel_dx, pixel_dy * a );
+                            pole = pixel_dy * a;
+                        //}else if( prawoskretny && pixel_dx )
+                        //{   G_(); fprintf( stderr, "|pixel_dx = %f, pixel_dy = %f, pole_1 = %f", pixel_dy, pixel_dx, pixel_dx * b );
+                            //pole = pixel_dx * b;
+                        }
+                    }
+                }
                 if( alfa <= alfa_przekatnej )
                 {   pixel_dy = alfa == alfa_przekatnej ? 0 : pixel_dy + ( a - pixel_dx ) * tan_alfa;
                     if( pixel_dy >= b )
@@ -891,19 +926,30 @@ E_x_Q_window_I_draw_aa_Z_line(
                         pixel_dx = 0;
                     pixel_dy = 0;
                 }
-                if( !wariant_0 )
-                {   for_n( i, n_ - 1 )
-                        J_swap( F, pixel_points[ i + 1 ].x, pixel_points[ i + 1 ].y );
-                }
                 for_n( i, n_ )
-                {   //G_(); Gd(i); fprintf( stderr, "|x = %f, y = %f", pixel_points[i].x, pixel_points[i].y );
-                    if( pixel_points[i].x < 0 || pixel_points[i].y < 0 )
+                {   if( wariant_0 )
+                    {   G_(); Gd(i); fprintf( stderr, "|x = %f, y = %f", pixel_points[i].x, pixel_points[i].y );
+                    }else
+                    {   G_(); Gd(i); fprintf( stderr, "|x = %f, y = %f", pixel_points[i].y, pixel_points[i].x );
+                    }
+                    if( pixel_points[i].x > a || pixel_points[i].y > b )
                     {   G_(); Gs_( "błąd" );
                         U_F( E_base_S->E_flow_S_signal, exit );
                         I_B(){}
                     }
                 }
-                F pole = E_x_I_pole_wielokata( n_, pixel_points );
+                if( !wariant_0 )
+                {   for_n( i, n_ )
+                        J_swap( F, pixel_points[i].x, pixel_points[i].y );
+                }
+                for_n_( i, n_ )
+                {   if( pixel_points[i].x < 0 || pixel_points[i].y < 0 )
+                    {   G_(); Gs_( "błąd" );
+                        U_F( E_base_S->E_flow_S_signal, exit );
+                        I_B(){}
+                    }
+                }
+                pole += E_x_I_pole_wielokata( n_, pixel_points );
                 W( pixel_points );
                 if( j == 0 )
                 {   if( !E_mem_Q_blk_I_append( &dx_dy, 1 ))
@@ -928,7 +974,7 @@ E_x_Q_window_I_draw_aa_Z_line(
                         {   x_ -= dx_dy[i].dx;
                             y_ -= dx_dy[i].dy;
                             xcb_point_t point = { x_, y_ };
-                            E_x_Q_window_I_draw_Z_points( display, screen, window, 1, &point );
+                            //E_x_Q_window_I_draw_Z_points( display, screen, window, 1, &point );
                         }
                     }
                 }else if( j == 2 )
@@ -939,11 +985,7 @@ E_x_Q_window_I_draw_aa_Z_line(
                 && ( j == 3 || j == 4 )
                 )
                     pole *= 2;
-                if( !wariant_0 )
-                    pole = pole_pixela - pole;
-                if( j == 1 )
-                {   G_(); fprintf( stderr, "|pole = %f, prostokąta = %f, brightness = %f", pole, pole_pixela, pole / pole_pixela );
-                }
+                G_(); fprintf( stderr, "|pole = %f, prostokąta = %f, brightness = %f", pole, pole_pixela, pole / pole_pixela );
                 if( pole > pole_pixela )
                 {   G_(); Gs_( "błąd" );
                     U_F( E_base_S->E_flow_S_signal, exit );
