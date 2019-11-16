@@ -65,13 +65,13 @@ main(
                         E_x_Q_object_I_add( window, id, id_2 );
                     }
                 }
-                //E_x_Q_object_M( display, window
-                //, 0
-                //, 5, 5
-                //, 61, 61
-                //, E_main_Q_timer_I_draw
-                //, 0
-                //);
+                E_x_Q_object_M( display, window
+                , 0
+                , 5, 5
+                , 61, 61
+                , E_main_Q_timer_I_draw
+                , 0
+                );
                 E_x_Q_object_M( display, window
                 , 0
                 , 55, 53
@@ -79,13 +79,13 @@ main(
                 , E_main_Q_timer_I_draw
                 , 0
                 );
-                //E_x_Q_object_M( display, window
-                //, 0
-                //, 151, 191
-                //, 21, 21
-                //, E_main_Q_timer_I_draw
-                //, 0
-                //);
+                E_x_Q_object_M( display, window
+                , 0
+                , 151, 191
+                , 21, 21
+                , E_main_Q_timer_I_draw
+                , 0
+                );
                 E_x_Q_object_I_lay( display, window );
             }
         }
@@ -144,7 +144,7 @@ D( main, timer_draw )
         E_main_Q_timer_S_second %= 3600;
         E_main_Q_timer_S_minute += E_main_Q_timer_S_second / 60;
         E_main_Q_timer_S_second %= 60;
-        //E_main_Q_timer_S_second = 4;
+        //E_main_Q_timer_S_second = 0;
         E_main_Q_timer_S_hour += E_main_Q_timer_S_minute / 60;
         E_main_Q_timer_S_minute %= 60;
         E_main_Q_timer_S_hour %= 12;
@@ -153,7 +153,6 @@ D( main, timer_draw )
     Y_W(timer);
 }
 #define E_main_I_draw_Z_angle_line_(arc_i,arc_n,line_length_i,line_length_n,color)    E_main_I_draw_Z_angle_line( display, screen, window, object, arc_i, arc_n, line_length_i, line_length_n, color )
-//#define E_main_I_draw_Z_angle_line_(arc_i,arc_n,line_length_i,line_length_n)    E_main_I_draw_Z_angle_line( display, screen, window, object, arc_i, arc_n, line_length_i, line_length_n )
 void
 E_main_I_draw_Z_angle_line(
   struct E_x_Q_display_Z *display
@@ -166,16 +165,6 @@ E_main_I_draw_Z_angle_line(
 , N line_length_n
 , N32 color
 ){
-#if 0    
-    E_x_Q_window_I_angle_line( display, screen, window
-    , arc_i * 360 / arc_n
-    , object->x + object->width / 2 - 1
-    , object->y + object->height / 2 - 1
-    , line_length_i * object->width / ( 2 * line_length_n )
-    , line_length_i * object->height / ( 2 * line_length_n )
-    , color
-    );
-#endif
     N x = line_length_i * ( object->width / 2 - 1 ) / line_length_n;
     N y = line_length_i * ( object->height / 2 - 1 ) / line_length_n;
     N l = 2 * ( object->width + object->height );
@@ -223,18 +212,8 @@ E_main_I_draw_Z_angle_line(
       }
     )
     , color
-    , 0.4
+    , 0.001 * object->width * line_length_n / line_length_i
     );
-#if 0
-    E_x_Q_object_I_draw_Z_line_((
-      ( xcb_point_t[] )
-      { object->width / 2
-      , object->height / 2
-      , object->width / 2 + x
-      , object->height / 2 + y
-      }
-    ));
-#endif
 }
 //NDFN konkretne stany wyglądu obiektów mające konkretne znaczenia.
 //NDFN rysowanie uproszczone, gdy brak czasu.
@@ -282,22 +261,22 @@ E_main_Q_timer_I_draw(
     , sizeof( struct Z_font_item )
     , ( N8 * )( struct Z_font_item[] ){ 14, 0, "czas, czasy..." }
     );
-    //E_x_Q_object_I_draw_P_color_( E_x_Z_color_M( 0, 0, 0x9f ));
-    //E_main_I_draw_Z_angle_line_(
-      //E_main_Q_timer_S_hour
-    //, 12
-    //, 1
-    //, 2
-    //, E_x_Z_color_M( 0, 0, 0x9f )
-    //);
-    //E_x_Q_object_I_draw_P_color_( E_x_Z_color_M( 0, 0xbf, 0 ));
-    //E_main_I_draw_Z_angle_line_(
-      //E_main_Q_timer_S_minute
-    //, 60
-    //, 3
-    //, 4
-    //, E_x_Z_color_M( 0, 0xbf, 0 )
-    //);
+    E_x_Q_object_I_draw_P_color_( E_x_Z_color_M( 0, 0, 0x9f ));
+    E_main_I_draw_Z_angle_line_(
+      E_main_Q_timer_S_hour
+    , 12
+    , 1
+    , 2
+    , E_x_Z_color_M( 0, 0, 0x9f )
+    );
+    E_x_Q_object_I_draw_P_color_( E_x_Z_color_M( 0, 0xbf, 0 ));
+    E_main_I_draw_Z_angle_line_(
+      E_main_Q_timer_S_minute
+    , 60
+    , 3
+    , 4
+    , E_x_Z_color_M( 0, 0xbf, 0 )
+    );
     E_x_Q_object_I_draw_P_color_( E_x_Z_color_M( 0, 0, 0 ));
     E_main_I_draw_Z_angle_line_(
       E_main_Q_timer_S_second
