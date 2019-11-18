@@ -352,11 +352,11 @@ E_x_Q_window_I_draw_aa_Z_pixel(
     p[0] = ( get_pixel & Z_aa_pixel_S_e ) && x + 1 < (N) window->width ? E_x_Q_image_R_pixel( display, window->drawable, x + 1, y ) : color;
     p[1] = ( get_pixel & Z_aa_pixel_S_se ) && x + 1 < (N) window->width && y + 1 < (N) window->height ? E_x_Q_image_R_pixel( display, window->drawable, x + 1, y + 1 ) : color;
     p[2] = ( get_pixel & Z_aa_pixel_S_s ) && y + 1 < (N) window->height ? E_x_Q_image_R_pixel( display, window->drawable, x, y + 1 ) : color;
-    p[3] = ( get_pixel & Z_aa_pixel_S_sw ) && x > 1 && y + 1 < (N) window->height ? E_x_Q_image_R_pixel( display, window->drawable, x - 1, y + 1 ) : color;
-    p[4] = ( get_pixel & Z_aa_pixel_S_w ) && x > 1 ? E_x_Q_image_R_pixel( display, window->drawable, x - 1, y ) : color;
-    p[5] = ( get_pixel & Z_aa_pixel_S_nw ) && x > 1 && y > 1 ? E_x_Q_image_R_pixel( display, window->drawable, x - 1, y - 1 ) : color;
-    p[6] = ( get_pixel & Z_aa_pixel_S_n ) && y > 1 ? E_x_Q_image_R_pixel( display, window->drawable, x, y - 1 ) : color;
-    p[7] = ( get_pixel & Z_aa_pixel_S_ne ) && x + 1 < (N) window->width && y > 1 ? E_x_Q_image_R_pixel( display, window->drawable, x + 1, y - 1 ) : color;
+    p[3] = ( get_pixel & Z_aa_pixel_S_sw ) && x > 0 && y + 1 < (N) window->height ? E_x_Q_image_R_pixel( display, window->drawable, x - 1, y + 1 ) : color;
+    p[4] = ( get_pixel & Z_aa_pixel_S_w ) && x > 0 ? E_x_Q_image_R_pixel( display, window->drawable, x - 1, y ) : color;
+    p[5] = ( get_pixel & Z_aa_pixel_S_nw ) && x > 0 && y > 0 ? E_x_Q_image_R_pixel( display, window->drawable, x - 1, y - 1 ) : color;
+    p[6] = ( get_pixel & Z_aa_pixel_S_n ) && y > 0 ? E_x_Q_image_R_pixel( display, window->drawable, x, y - 1 ) : color;
+    p[7] = ( get_pixel & Z_aa_pixel_S_ne ) && x + 1 < (N) window->width && y > 0 ? E_x_Q_image_R_pixel( display, window->drawable, x + 1, y - 1 ) : color;
     N background_red = 0, background_green = 0, background_blue = 0;
     N n = 0;
     for_n( i, 8 )
@@ -1035,6 +1035,11 @@ E_x_Q_window_I_draw_aa_Z_line(
                         for_n_rev( i, dx_dy_n )
                         {   x_ -= dx_dy[i].dx;
                             y_ -= dx_dy[i].dy;
+                            if( i == dx_dy_n - 1
+                            && (( prev_dx && dx_dy[i].dx )
+                              || ( prev_dy && dx_dy[i].dy )
+                            ))
+                                continue;
                             xcb_point_t point = { x_, y_ };
                             E_x_Q_window_I_draw_Z_points( display, screen, window, 1, &point );
                         }
@@ -1050,6 +1055,8 @@ E_x_Q_window_I_draw_aa_Z_line(
                 }
                 if( !U_R( first_pixel, overdrawn ))
                 {   N get_pixel;
+//NDFN dla animacji czyta ‘piksele’ poprzedniej klatki filmu, a powinien tła.
+#if 0
                     if( dx_direction > 0 && dy_direction > 0 )
                     {   get_pixel = prawoskretny ? Z_aa_pixel_S_sw : Z_aa_pixel_S_ne;
                         if( prawoskretny && prev_dy )
@@ -1091,6 +1098,9 @@ E_x_Q_window_I_draw_aa_Z_line(
                         if( !prawoskretny && !dx )
                             get_pixel |= Z_aa_pixel_S_w;
                     }
+#else
+                    get_pixel = 0;
+#endif
                     E_x_Q_window_I_draw_aa_Z_pixel_(
                       x, y
                     , color
