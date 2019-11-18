@@ -27,7 +27,7 @@ struct E_io_Q_stream_out_Z
   struct aiocb *aiocb;
     #if defined( E_io_C_aio ) || defined( E_io_C_sig_has_fd )
   unsigned U_R( state, io_ready )       :1;
-  unsigned U_R( state, closeing )       :1;
+  unsigned U_R( state, closing )       :1;
     #endif
   unsigned U_R( type, opened )          :1;
 };
@@ -150,7 +150,7 @@ E_io_Q_stream_out_M_fd( int fd
     U_L( stream->type, opened );
         #if defined( E_io_C_aio ) || defined( E_io_C_sig_has_fd )
     U_L( stream->state, io_ready );
-    U_L( stream->state, closeing );
+    U_L( stream->state, closing );
     _sigprocmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_io_ready, 0 );
         #endif
     stream->data = M( stream->data_l = 0 );
@@ -233,7 +233,7 @@ E_io_Q_stream_out_W_( I id
             if( E_text_Z_s0_T_eq( stream->tty, tty ))
             {
                     #ifdef E_io_C_sig_has_fd
-                if( U_R( stream->state, closeing ))
+                if( U_R( stream->state, closing ))
                 {   found = no;
                     break;
                 }
@@ -256,7 +256,7 @@ E_io_Q_stream_out_W_( I id
     }
         #endif
         #if defined( E_io_C_aio ) || defined( E_io_C_sig_has_fd )
-    U_F( stream->state, closeing );
+    U_F( stream->state, closing );
     U_L( stream->state, io_ready );
     Yi_M( io, aiocb_w_before_rem ); //NDFN niedocelowe zastosowanie ‹impulsatora›, tutaj wymagające tworzenia i usuwania przy każdym użyciu— potrzebuje być rozwiązane projektowo przez utworzenie czegoś w rodzaju 〈opóźnienia〉, które korzystałoby z wpisu bez unikalnej nazwy na cały program.
     Yi_F( io, aiocb_w_before_rem, E_io_Q_stream_out_S_delay );
@@ -277,7 +277,7 @@ E_io_Q_stream_out_W_( I id
         //{   for_each( id, E_base_S->E_io_Q_stream_out_S, E_mem_Q_tab )
             //{   struct E_io_Q_stream_out_Z *stream = E_mem_Q_tab_R( E_base_S->E_io_Q_stream_out_S, id );
                 //if( stream->aiocb->aio_fildes == si.si_fd )
-                //{   if( !U_R( stream->state, closeing )
+                //{   if( !U_R( stream->state, closing )
                     //&& ( stream->aiocb->aio_nbytes
                       //|| stream->data_l
                     //))
@@ -290,7 +290,7 @@ E_io_Q_stream_out_W_( I id
         //}
     //}
     //_sigprocmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_io_ready, 0 );
-    B closeing = no;
+    B closing = no;
     B found = no;
     if( stream->tty )
     {   Pc tty = stream->tty;
@@ -301,15 +301,15 @@ E_io_Q_stream_out_W_( I id
             )
                 continue;
             if( E_text_Z_s0_T_eq( stream->tty, tty ))
-            {   if( U_R( stream->state, closeing ))
-                {   closeing = yes;
+            {   if( U_R( stream->state, closing ))
+                {   closing = yes;
                     break;
                 }
                 found = yes;
             }
         }
     }
-    if( !closeing )
+    if( !closing )
     {   if( found )
         {   B next_ready = no;
             B flags_done = no;
@@ -373,7 +373,7 @@ E_io_Q_stream_out_P( I id
 , N l
 ){  struct E_io_Q_stream_out_Z *stream = E_mem_Q_tab_R( E_base_S->E_io_Q_stream_out_S, id );
         #if defined( E_io_C_aio ) || defined( E_io_C_sig_has_fd )
-    if( U_R( stream->state, closeing ))
+    if( U_R( stream->state, closing ))
         return yes;
         #endif
     if( !l )
@@ -398,7 +398,7 @@ E_io_Q_stream_out_P_c( I id
 , C c
 ){  struct E_io_Q_stream_out_Z *stream = E_mem_Q_tab_R( E_base_S->E_io_Q_stream_out_S, id );
         #if defined( E_io_C_aio ) || defined( E_io_C_sig_has_fd )
-    if( U_R( stream->state, closeing ))
+    if( U_R( stream->state, closing ))
         return yes;
         #endif
     Pc p_ = E_mem_Q_blk_I_append( &stream->data, 1 );
@@ -448,7 +448,7 @@ D( io, stream_write )
                         break;
                     stream = E_mem_Q_tab_R( E_base_S->E_io_Q_stream_out_S, id );
                     if( stream->aiocb->aio_fildes != fd
-                    || U_R( stream->state, closeing )
+                    || U_R( stream->state, closing )
                     )
                         continue;
                     int errno_;
@@ -520,7 +520,7 @@ D( io, stream_write )
                         break;
                     stream = E_mem_Q_tab_R( E_base_S->E_io_Q_stream_out_S, id );
                     if( stream->aiocb->aio_fildes != fd
-                    || U_R( stream->state, closeing )
+                    || U_R( stream->state, closing )
                     )
                         continue;
                     //B next_ready = no;
@@ -534,7 +534,7 @@ D( io, stream_write )
                         //{   for_each( id, E_base_S->E_io_Q_stream_out_S, E_mem_Q_tab )
                             //{   struct E_io_Q_stream_out_Z *stream = E_mem_Q_tab_R( E_base_S->E_io_Q_stream_out_S, id );
                                 //if( stream->aiocb->aio_fildes == si.si_fd )
-                                //{   if( !U_R( stream->state, closeing )
+                                //{   if( !U_R( stream->state, closing )
                                     //&& ( stream->aiocb->aio_nbytes
                                       //|| stream->data_l
                                     //))

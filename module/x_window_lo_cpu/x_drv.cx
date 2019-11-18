@@ -1158,6 +1158,27 @@ D( x_window, draw )
                           , window->height
                           }
                         );
+                        if( U_R( screen->mode, animation ))
+                        {   xcb_change_gc( display->x_display
+                            , screen->drawable_background_gc
+                            , XCB_GC_CLIP_MASK
+                            , ( N32[] )
+                              { window->drawable_mask_2
+                              }
+                            );
+                            ///rysuje narysowane poprzednio na tło.
+                            xcb_poly_fill_rectangle( display->x_display
+                            , window->drawable
+                            , screen->drawable_background_gc
+                            , 1
+                            , ( xcb_rectangle_t[] )
+                              { 0
+                              , 0
+                              , window->width
+                              , window->height
+                              }
+                            );
+                        }
                         for_each( object_id, window->object, E_mem_Q_tab ) //NDFN zakładana kolejność od na spodzie do na wierzchu. nie wiadomo, czy “_q” jest konieczne.
                         {   struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
                             xcb_change_gc( display->x_display
@@ -1166,37 +1187,22 @@ D( x_window, draw )
                             , ( N32[] )
                               { object_id
                               }
-                            ); //NDFN niepotrzebnie rysuje dwa razy tę maskę dla obiektu w poniższym trybie.
+                            );
                             if( U_R( object->mode, drag_src ))
-                            {   xcb_change_gc( display->x_display
-                                , screen->drawable_gc
-                                , XCB_GC_FILL_STYLE
-                                , ( N32[] )
-                                  { XCB_FILL_STYLE_TILED
-                                  }
-                                );
-                                object->draw( display, screen, window, object );
-                                N32 color = E_x_Z_color_M_gray( 0x3f );
-                                screen->draw_color = color;
-                                xcb_change_gc( display->x_display
-                                , screen->drawable_gc
-                                , XCB_GC_FUNCTION | XCB_GC_FOREGROUND | XCB_GC_FILL_STYLE
-                                , ( N32[] )
-                                  { XCB_GX_OR
-                                  , color
-                                  , XCB_FILL_STYLE_SOLID
-                                  }
-                                );
+                            {   N32 color = E_x_theme_Q_theme.current_brace;
+                                if( screen->draw_color != color )
+                                    xcb_change_gc( display->x_display
+                                    , screen->drawable_gc
+                                    , XCB_GC_FOREGROUND
+                                    , ( N32[] )
+                                      { screen->draw_color = color
+                                      }
+                                    );
+                                U_F( screen->state, draw_object_drag_src );
                             }
                             object->draw( display, screen, window, object ); //NDFN nieprzerysowywanie wszystkich obiektów dla każdej klatki animacji zrobić ewentualnie przy pomocy definiowania obiektów w karcie graficznej i ustawienia im wymiaru “z” w trybie 2‐wymiarowym.
                             if( U_R( object->mode, drag_src ))
-                                xcb_change_gc( display->x_display
-                                , screen->drawable_gc
-                                , XCB_GC_FUNCTION
-                                , ( N32[] )
-                                  { XCB_GX_COPY
-                                  }
-                                );
+                                U_L( screen->state, draw_object_drag_src );
                         }
                         ///oblicza maskę punktów zmienionych podczas rysowania z obiektów na tło.
                         xcb_copy_area( display->x_display
@@ -1317,6 +1323,7 @@ D( x_window, draw )
                       , window->height
                       }
                     );
+                    U_F( screen->state, draw_object_drag_move );
                     for_each( object_id, window->object, E_mem_Q_tab )
                     {   struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
                         xcb_change_gc( display->x_display
@@ -1328,6 +1335,7 @@ D( x_window, draw )
                         );
                         object->draw( display, screen, window, object );
                     }
+                    U_L( screen->state, draw_object_drag_move );
                         #ifndef C_xcb_shape
                     xcb_copy_area( display->x_display
                     , window->drawable_mask

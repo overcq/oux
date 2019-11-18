@@ -72,7 +72,9 @@ E_x_Q_window_I_draw_P_color(
   struct E_x_Q_display_Z *display
 , struct E_x_Q_screen_Z *screen
 , N32 color
-){  if( screen->draw_color != color )
+){  if( U_R( screen->state, draw_object_drag_src ))
+        return;
+    if( screen->draw_color != color )
         xcb_change_gc( display->x_display
         , screen->drawable_gc
         , XCB_GC_FOREGROUND
@@ -348,33 +350,36 @@ E_x_Q_window_I_draw_aa_Z_pixel(
 , N32 color
 , F brightness
 , N get_pixel
-){  N p[8];
-    p[0] = ( get_pixel & Z_aa_pixel_S_e ) && x + 1 < (N) window->width ? E_x_Q_image_R_pixel( display, window->drawable, x + 1, y ) : color;
-    p[1] = ( get_pixel & Z_aa_pixel_S_se ) && x + 1 < (N) window->width && y + 1 < (N) window->height ? E_x_Q_image_R_pixel( display, window->drawable, x + 1, y + 1 ) : color;
-    p[2] = ( get_pixel & Z_aa_pixel_S_s ) && y + 1 < (N) window->height ? E_x_Q_image_R_pixel( display, window->drawable, x, y + 1 ) : color;
-    p[3] = ( get_pixel & Z_aa_pixel_S_sw ) && x > 0 && y + 1 < (N) window->height ? E_x_Q_image_R_pixel( display, window->drawable, x - 1, y + 1 ) : color;
-    p[4] = ( get_pixel & Z_aa_pixel_S_w ) && x > 0 ? E_x_Q_image_R_pixel( display, window->drawable, x - 1, y ) : color;
-    p[5] = ( get_pixel & Z_aa_pixel_S_nw ) && x > 0 && y > 0 ? E_x_Q_image_R_pixel( display, window->drawable, x - 1, y - 1 ) : color;
-    p[6] = ( get_pixel & Z_aa_pixel_S_n ) && y > 0 ? E_x_Q_image_R_pixel( display, window->drawable, x, y - 1 ) : color;
-    p[7] = ( get_pixel & Z_aa_pixel_S_ne ) && x + 1 < (N) window->width && y > 0 ? E_x_Q_image_R_pixel( display, window->drawable, x + 1, y - 1 ) : color;
-    N background_red = 0, background_green = 0, background_blue = 0;
+){  N background_red, background_green, background_blue;
     N n = 0;
-    for_n( i, 8 )
-        if( p[i] != color )
-        {   background_red += E_x_Z_color_R_red( p[i] );
-            background_green += E_x_Z_color_R_green( p[i] );
-            background_blue += E_x_Z_color_R_red( p[i] );
-            n++;
-        }
-    if( !n )
+    if( !U_R( screen->state, draw_object_drag_move ))
+    {   N p[8];
+        p[0] = ( get_pixel & Z_aa_pixel_S_e ) && x + 1 < (N) window->width ? E_x_Q_image_R_pixel( display, window->drawable, x + 1, y ) : color;
+        p[1] = ( get_pixel & Z_aa_pixel_S_se ) && x + 1 < (N) window->width && y + 1 < (N) window->height ? E_x_Q_image_R_pixel( display, window->drawable, x + 1, y + 1 ) : color;
+        p[2] = ( get_pixel & Z_aa_pixel_S_s ) && y + 1 < (N) window->height ? E_x_Q_image_R_pixel( display, window->drawable, x, y + 1 ) : color;
+        p[3] = ( get_pixel & Z_aa_pixel_S_sw ) && x > 0 && y + 1 < (N) window->height ? E_x_Q_image_R_pixel( display, window->drawable, x - 1, y + 1 ) : color;
+        p[4] = ( get_pixel & Z_aa_pixel_S_w ) && x > 0 ? E_x_Q_image_R_pixel( display, window->drawable, x - 1, y ) : color;
+        p[5] = ( get_pixel & Z_aa_pixel_S_nw ) && x > 0 && y > 0 ? E_x_Q_image_R_pixel( display, window->drawable, x - 1, y - 1 ) : color;
+        p[6] = ( get_pixel & Z_aa_pixel_S_n ) && y > 0 ? E_x_Q_image_R_pixel( display, window->drawable, x, y - 1 ) : color;
+        p[7] = ( get_pixel & Z_aa_pixel_S_ne ) && x + 1 < (N) window->width && y > 0 ? E_x_Q_image_R_pixel( display, window->drawable, x + 1, y - 1 ) : color;
+        background_red = background_green = background_blue = 0;
+        for_n( i, 8 )
+            if( p[i] != color )
+            {   background_red += E_x_Z_color_R_red( p[i] );
+                background_green += E_x_Z_color_R_green( p[i] );
+                background_blue += E_x_Z_color_R_red( p[i] );
+                n++;
+            }
+    }
+    if(n)
+    {   background_red /= n;
+        background_green /= n;
+        background_blue /= n;
+    }else
     {   background_red = E_x_Z_color_R_red( E_x_theme_Q_theme.window_bg );
         background_green = E_x_Z_color_R_green( E_x_theme_Q_theme.window_bg );
         background_blue = E_x_Z_color_R_blue( E_x_theme_Q_theme.window_bg );
-        n = 1;
     }
-    background_red /= n;
-    background_green /= n;
-    background_blue /= n;
     N red = E_x_Z_color_R_red(color);
     N green = E_x_Z_color_R_green(color);
     N blue = E_x_Z_color_R_blue(color);
@@ -1055,52 +1060,50 @@ E_x_Q_window_I_draw_aa_Z_line(
                 }
                 if( !U_R( first_pixel, overdrawn ))
                 {   N get_pixel;
-//NDFN dla animacji czyta ‘piksele’ poprzedniej klatki filmu, a powinien tła.
-#if 0
-                    if( dx_direction > 0 && dy_direction > 0 )
-                    {   get_pixel = prawoskretny ? Z_aa_pixel_S_sw : Z_aa_pixel_S_ne;
-                        if( prawoskretny && prev_dy )
-                            get_pixel |= Z_aa_pixel_S_nw | Z_aa_pixel_S_w;
-                        if( !prawoskretny && prev_dx )
-                            get_pixel |= Z_aa_pixel_S_nw | Z_aa_pixel_S_n;
-                        if( prawoskretny && !dy )
-                            get_pixel |= Z_aa_pixel_S_s;
-                        if( !prawoskretny && !dx )
-                            get_pixel |= Z_aa_pixel_S_e;
-                    }else if( dx_direction > 0 && dy_direction < 0 )
-                    {   get_pixel = prawoskretny ? Z_aa_pixel_S_se : Z_aa_pixel_S_nw;
-                        if( prawoskretny && prev_dx )
-                            get_pixel |= Z_aa_pixel_S_sw | Z_aa_pixel_S_s;
-                        if( !prawoskretny && prev_dy )
-                            get_pixel |= Z_aa_pixel_S_sw | Z_aa_pixel_S_w;
-                        if( prawoskretny && !dx )
-                            get_pixel |= Z_aa_pixel_S_s;
-                        if( !prawoskretny && !dy )
-                            get_pixel |= Z_aa_pixel_S_w;
-                    }else if( dx_direction < 0 && dy_direction > 0 )
-                    {   get_pixel = prawoskretny ? Z_aa_pixel_S_nw : Z_aa_pixel_S_se;
-                        if( prawoskretny && prev_dx )
-                            get_pixel |= Z_aa_pixel_S_ne | Z_aa_pixel_S_n;
-                        if( !prawoskretny && prev_dy )
-                            get_pixel |= Z_aa_pixel_S_ne | Z_aa_pixel_S_e;
-                        if( prawoskretny && !dx )
-                            get_pixel |= Z_aa_pixel_S_e;
-                        if( !prawoskretny && !dy )
-                            get_pixel |= Z_aa_pixel_S_s;
-                    }else /// if( dx_direction < 0 && dy_direction < 0 )
-                    {   get_pixel = prawoskretny ? Z_aa_pixel_S_ne : Z_aa_pixel_S_sw;
-                        if( prawoskretny && prev_dy )
-                            get_pixel |= Z_aa_pixel_S_se | Z_aa_pixel_S_e;
-                        if( !prawoskretny && prev_dx )
-                            get_pixel |= Z_aa_pixel_S_se | Z_aa_pixel_S_s;
-                        if( prawoskretny && !dy )
-                            get_pixel |= Z_aa_pixel_S_n;
-                        if( !prawoskretny && !dx )
-                            get_pixel |= Z_aa_pixel_S_w;
-                    }
-#else
-                    get_pixel = 0;
-#endif
+                    if( U_R( screen->mode, animation ))
+                        if( dx_direction > 0 && dy_direction > 0 )
+                        {   get_pixel = prawoskretny ? Z_aa_pixel_S_sw : Z_aa_pixel_S_ne;
+                            if( prawoskretny && prev_dy )
+                                get_pixel |= Z_aa_pixel_S_nw | Z_aa_pixel_S_w;
+                            if( !prawoskretny && prev_dx )
+                                get_pixel |= Z_aa_pixel_S_nw | Z_aa_pixel_S_n;
+                            if( prawoskretny && !dy )
+                                get_pixel |= Z_aa_pixel_S_s;
+                            if( !prawoskretny && !dx )
+                                get_pixel |= Z_aa_pixel_S_e;
+                        }else if( dx_direction > 0 && dy_direction < 0 )
+                        {   get_pixel = prawoskretny ? Z_aa_pixel_S_se : Z_aa_pixel_S_nw;
+                            if( prawoskretny && prev_dx )
+                                get_pixel |= Z_aa_pixel_S_sw | Z_aa_pixel_S_s;
+                            if( !prawoskretny && prev_dy )
+                                get_pixel |= Z_aa_pixel_S_sw | Z_aa_pixel_S_w;
+                            if( prawoskretny && !dx )
+                                get_pixel |= Z_aa_pixel_S_s;
+                            if( !prawoskretny && !dy )
+                                get_pixel |= Z_aa_pixel_S_w;
+                        }else if( dx_direction < 0 && dy_direction > 0 )
+                        {   get_pixel = prawoskretny ? Z_aa_pixel_S_nw : Z_aa_pixel_S_se;
+                            if( prawoskretny && prev_dx )
+                                get_pixel |= Z_aa_pixel_S_ne | Z_aa_pixel_S_n;
+                            if( !prawoskretny && prev_dy )
+                                get_pixel |= Z_aa_pixel_S_ne | Z_aa_pixel_S_e;
+                            if( prawoskretny && !dx )
+                                get_pixel |= Z_aa_pixel_S_e;
+                            if( !prawoskretny && !dy )
+                                get_pixel |= Z_aa_pixel_S_s;
+                        }else /// if( dx_direction < 0 && dy_direction < 0 )
+                        {   get_pixel = prawoskretny ? Z_aa_pixel_S_ne : Z_aa_pixel_S_sw;
+                            if( prawoskretny && prev_dy )
+                                get_pixel |= Z_aa_pixel_S_se | Z_aa_pixel_S_e;
+                            if( !prawoskretny && prev_dx )
+                                get_pixel |= Z_aa_pixel_S_se | Z_aa_pixel_S_s;
+                            if( prawoskretny && !dy )
+                                get_pixel |= Z_aa_pixel_S_n;
+                            if( !prawoskretny && !dx )
+                                get_pixel |= Z_aa_pixel_S_w;
+                        }
+                    else
+                        get_pixel = 0;
                     E_x_Q_window_I_draw_aa_Z_pixel_(
                       x, y
                     , color
