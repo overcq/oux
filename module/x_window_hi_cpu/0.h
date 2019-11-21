@@ -101,7 +101,7 @@ enum E_x_Q_display_Z_atom
 #define E_x_Q_object_I_fill_Z_points_(points)           E_x_Q_object_I_fill_Z_points( display, screen, window, object, sizeof(points) / sizeof( xcb_point_t ), points )
 #define E_x_Q_object_I_draw_Z_points_(points)           E_x_Q_object_I_draw_Z_points( display, screen, window, object, sizeof(points) / sizeof( xcb_point_t ), points )
 #define E_x_Q_object_I_draw_Z_segments_(segments)       E_x_Q_object_I_draw_Z_segments( display, screen, window, object, sizeof(segments) / sizeof( xcb_segment_t ), segments )
-#define E_x_Q_object_I_draw_Z_line_(points)             E_x_Q_object_I_draw_Z_line( display, screen, window, object, sizeof(points) / sizeof( xcb_point_t ), points )
+#define E_x_Q_object_I_draw_Z_lines_(points)            E_x_Q_object_I_draw_Z_lines( display, screen, window, object, sizeof(points) / sizeof( xcb_point_t ), points )
 #define E_x_Q_object_I_draw_Z_rectangles_(rectangles)   E_x_Q_object_I_draw_Z_rectangles( display, screen, window, object, sizeof(rectangles) / sizeof( xcb_rectangle_t ), rectangles )
 #define E_x_Q_object_I_draw_Z_arcs_(arcs)               E_x_Q_object_I_draw_Z_arcs( display, screen, window, object, sizeof(arcs) / sizeof( xcb_arc_t ), arcs )
 //------------------------------------------------------------------------------

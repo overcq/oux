@@ -146,11 +146,11 @@ D( main, timer_draw )
         E_main_Q_timer_S_second %= 3600;
         E_main_Q_timer_S_minute += E_main_Q_timer_S_second / 60;
         E_main_Q_timer_S_second %= 60;
-        E_main_Q_timer_S_second = 31;
         E_main_Q_timer_S_hour += E_main_Q_timer_S_minute / 60;
         E_main_Q_timer_S_minute %= 60;
         E_main_Q_timer_S_hour %= 12;
-        E_x_Q_object_I_draw( E_main_Q_timer_I_draw );
+        G_();
+        E_x_Q_object_I_draw( E_main_Q_timer_I_draw, !!timer_lost_count );
     }
     Y_W(timer);
 }
@@ -202,20 +202,33 @@ E_main_I_draw_Z_angle_line(
             y = -y;
             break;
     }
-    E_x_Q_object_I_draw_aa_Z_line( display, screen, window, object
-    , 2
-    , (( xcb_point_t[] )
-      { { object->width / 2
-        , object->height / 2
-        }
-      , { object->width / 2 + x
-        , object->height / 2 + y
-        }
-      }
-    )
-    , color
-    , 0.01 * object->width * line_length_n / line_length_i
-    );
+    if( !U_R( display->mode, draw_simple ))
+        E_x_Q_object_I_draw_aa_Z_line( display, screen, window, object
+        , 2
+        , (( xcb_point_t[] )
+          { { object->width / 2
+            , object->height / 2
+            }
+          , { object->width / 2 + x
+            , object->height / 2 + y
+            }
+          }
+        )
+        , color
+        , 0.01 * object->width * line_length_n / line_length_i
+        );
+    else
+    {   xcb_point_t points[2] =
+        { { object->width / 2
+          , object->height / 2
+          }
+        , { object->width / 2 + x
+          , object->height / 2 + y
+          }
+        };
+        E_x_Q_object_I_draw_P_color_(color);
+        E_x_Q_object_I_draw_Z_lines_(points);
+    }
 }
 //NDFN konkretne stany wyglądu obiektów mające konkretne znaczenia.
 //NDFN rysowanie uproszczone, gdy brak czasu.
