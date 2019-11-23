@@ -326,7 +326,7 @@ E_x_Q_window_I_fill_Z_arcs(
     );
     
 }
-//==============================================================================
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 struct E_x_Z_points
 { F x, y;
 };
@@ -403,7 +403,7 @@ E_x_Q_window_I_draw_aa_Z_pixel(
     );
 }
 N
-E_x_Q_window_I_draw_aa_Z_line(
+E_x_Q_window_I_draw_aa_Z_lines(
   struct E_x_Q_display_Z *display
 , struct E_x_Q_screen_Z *screen
 , struct E_x_Q_window_Z *window
@@ -842,10 +842,8 @@ E_x_Q_window_I_draw_aa_Z_line(
                       }
                   break;
             }
-            //G_(); fprintf( stderr, "|alfa = %f", alfa * 180 / M_PI );
             B wariant_0 = ( prawoskretny && (( dx_direction > 0 && dy_direction > 0 ) || ( dx_direction < 0 && dy_direction < 0 )))
                 || ( !prawoskretny && (( dx_direction > 0 && dy_direction < 0 ) || ( dx_direction < 0 && dy_direction > 0 )));
-            //G_(); Gd( wariant_0 ); Gd(prawoskretny); Gd( dx_direction ); Gd( dy_direction );
             if( !wariant_0 )
             {   J_swap( F, a, b );
                 J_swap( F, pixel_dx, pixel_dy );
@@ -854,7 +852,6 @@ E_x_Q_window_I_draw_aa_Z_line(
             B U_F( first_pixel, computed );
             while( length > 0 )
             {   F alfa_przekatnej = atan(( b - pixel_dy ) / ( a - pixel_dx ));
-                //G_(); fprintf( stderr, "|alfa przekątnej = %f", alfa_przekatnej * 180 / M_PI );
                 S16 prev_dx, prev_dy;
                 if( !U_R( first_pixel, computed ))
                 {   prev_dx = dx;
@@ -974,10 +971,6 @@ E_x_Q_window_I_draw_aa_Z_line(
                         dy = 0;
                     }
                 }
-                //if( U_R( first_pixel, computed ))
-                //{   G_();
-                //}
-                //G_(); Gd(dx); Gd(dy); fprintf( stderr, "|a = %f, b = %f, pixel_dx = %f, pixel_dy = %f", a, b, pixel_dx, pixel_dy );
                 pixel_points[0].x = pixel_dx;
                 pixel_points[0].y = pixel_dy;
                 F pole = 0;
@@ -994,19 +987,6 @@ E_x_Q_window_I_draw_aa_Z_line(
                         pixel_dx = 0;
                     pixel_dy = 0;
                 }
-                for_n( i, pixel_points_n )
-                {   //if( wariant_0 )
-                    //{   G_(); Gd(i); fprintf( stderr, "|x = %f, y = %f", pixel_points[i].x, pixel_points[i].y );
-                    //}else
-                    //{   G_(); Gd(i); fprintf( stderr, "|x = %f, y = %f", pixel_points[i].y, pixel_points[i].x );
-                    //}
-                    if( pixel_points[i].x < 0 || pixel_points[i].y < 0
-                    || pixel_points[i].x > a || pixel_points[i].y > b
-                    ){  G_(); Gs_( "błąd" );
-                        U_F( E_base_S->E_flow_S_signal, exit );
-                        I_B(){}
-                    }
-                }
                 if( !wariant_0 )
                 {   for_n( i, pixel_points_n )
                         J_swap( F, pixel_points[i].x, pixel_points[i].y );
@@ -1017,7 +997,6 @@ E_x_Q_window_I_draw_aa_Z_line(
                 && ( j == 3 || j == 4 )
                 )
                     pole *= 2;
-                //G_(); fprintf( stderr, "|pole = %f, prostokąta = %f, brightness = %f", pole, pole_pixela, pole / pole_pixela );
                 if( j == 0 )
                 {   if( !E_mem_Q_blk_I_append( &dx_dy, 1 ))
                         return ~0;
@@ -1052,11 +1031,6 @@ E_x_Q_window_I_draw_aa_Z_line(
                 }else if( j == 2 )
                 {   E_mem_Q_blk_I_rem( &dx_dy, 0, dx_dy_n );
                     dx_dy_n = 0;
-                }
-                if( pole > pole_pixela )
-                {   G_(); Gs_( "błąd" );
-                    U_F( E_base_S->E_flow_S_signal, exit );
-                    I_B(){}
                 }
                 if( !U_R( first_pixel, overdrawn ))
                 {   N get_pixel;

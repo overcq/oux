@@ -33,6 +33,7 @@ typedef struct timeval Z_clock_time;
 #define Z_clock_time_minor_field        tv_usec
 #define Z_clock_time_minor_field_S_max  999999
 #define _gettime(tp)                    { V0_( gettimeofday( (tp), 0 )); }
+#warning uses "gettimeofday"; "settimeofday" or clock adjustment may interfere
     #else
 typedef struct timespec Z_clock_time;
 #define Z_clock_time_minor_field        tv_nsec

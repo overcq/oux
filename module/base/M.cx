@@ -215,6 +215,8 @@ _internal
 void
 E_mem_M_file( void
 ){  E_base_S->E_mem_Q_file_S = E_mem_Q_tab_M( sizeof( struct E_mem_Q_file_Z ), 0 );
+    if( !E_base_S->E_mem_Q_file_S )
+        V();
     E_base_S->E_mem_Q_file_S_buffer_l = E_base_S->E_mem_S_page_size; //CONF wartość optymalna, ale może być wymagana większa.
         #if defined( __gnu_linux__ )
     V1p_( E_base_S->E_mem_Q_file_S_buffer = mmap( 0
@@ -242,6 +244,8 @@ _internal
 void
 E_io_M_stream( void
 ){  E_base_S->E_io_Q_stream_out_S = E_mem_Q_tab_M( sizeof( struct E_io_Q_stream_out_Z ), 0 );
+    if( !E_base_S->E_io_Q_stream_out_S )
+        V();
         #if defined( E_io_C_aio ) || defined( E_io_C_sig_has_fd )
     E_mem_Q_tab_Q_iter_M( E_base_S->E_io_Q_stream_out_S, ~0 );
         #endif
@@ -267,6 +271,8 @@ E_base_M(
         #endif
     ///odblokowanie dostępu do tablicy ‹zadań›.
     E_base_S->E_flow_Q_task_S = E_mem_Q_tab_M( sizeof( struct E_flow_Q_task_Z ), 1 );
+    if( !E_base_S->E_flow_Q_task_S )
+        V();
     _tasks_table_end;
     struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, 0 );
     *task = ( struct E_flow_Q_task_Z )
@@ -409,11 +415,21 @@ E_base_M(
     E_base_S->E_flow_Z_task_stacks_S_granulation_u = E_base_S->E_flow_Z_task_stacks_S_n_pages * E_base_S->E_mem_S_page_size;
         #ifdef E_flow_C_thread_system_unblock_reports
     E_base_S->E_flow_Q_task_S_uid_subid = E_mem_Q_tab_M( sizeof( struct E_mem_Q_tab_Z * ), 0 );
+    if( !E_base_S->E_flow_Q_task_S_uid_subid )
+        V();
         #endif
     E_base_S->E_flow_Q_report_S = E_mem_Q_tab_M( sizeof( struct E_flow_Q_report_Z ), 0 );
+    if( !E_base_S->E_flow_Q_report_S )
+        V();
     E_base_S->E_flow_Q_timer_S = E_mem_Q_tab_M( sizeof( struct E_flow_Q_timer_Z ), 0 );
+    if( !E_base_S->E_flow_Q_timer_S )
+        V();
     E_base_S->E_flow_Q_process_call_srv_S = E_mem_Q_tab_M( sizeof( struct E_flow_Q_process_call_srv_Z ), 0 );
+    if( !E_base_S->E_flow_Q_process_call_srv_S )
+        V();
     E_base_S->E_flow_Q_process_call_cli_S = E_mem_Q_tab_M( sizeof( struct E_flow_Q_process_call_cli_Z ), 0 );
+    if( !E_base_S->E_flow_Q_process_call_cli_S )
+        V();
         #ifdef E_flow_Q_process_call_C_alt
     E_base_S->E_flow_Q_process_call_S_shm_key = ftok( E_base_S->E_flow_Q_process_call_S_service_path_guid, E_base_S->E_flow_S_exe_pid );
         #endif

@@ -14,7 +14,7 @@ E_x_M( void
     #else
     3;
     #endif
-    E_x_S_wm_icon = Mt( 4, E_x_S_wm_icon_S_n );
+    Mt_( E_x_S_wm_icon, E_x_S_wm_icon_S_n );
     N32 *E_x_S_wm_icon_ = &(( N32 [] )
     #if 1
 #include "wm_icon_data_1.h"
@@ -23,11 +23,54 @@ E_x_M( void
     }
     #endif
     )[0];
-    E_mem_Q_blk_I_copy( E_x_S_wm_icon, E_x_S_wm_icon_, E_x_S_wm_icon_S_n * 4 );
+    E_mem_Q_blk_I_copy( E_x_S_wm_icon, E_x_S_wm_icon_, E_x_S_wm_icon_S_n * sizeof( *E_x_S_wm_icon ));
     E_x_Q_window_S_hidden_x = E_x_Q_window_C_hidden_x;
     E_x_Q_window_S_hidden_y = E_x_Q_window_C_hidden_y;
     E_x_Q_display_S = E_mem_Q_tab_M( sizeof( struct E_x_Q_display_Z ), 0 );
+    if( !E_x_Q_display_S )
+    {   GV_( "" );
+    }
+    E_x_font_M();
     E_x_theme_M();
+}
+void
+E_x_font_M( void
+){  E_x_Q_font_S = E_mem_Q_tab_M( sizeof( struct E_mem_Q_tab_Z ), 1 );
+    if( !E_x_Q_font_S )
+    {   GV_( "" );
+    }
+    struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, 0 );
+    font->name = "default";
+    font->width = 5;
+    font->height = 8;
+    font->bitmaps_n = 1;
+    Mt_( font->bitmaps, font->bitmaps_n );
+    if( !font->bitmaps )
+    {   GV_( "" );
+    }
+    for_n( i, font->bitmaps_n )
+    {   Mt_( font->bitmaps[i].bitmap, font->width * font->height );
+        if( !font->bitmaps[i].bitmap )
+        {   GV_( "" );
+        }
+        N16 *bitmap;
+        switch(i)
+        { case 0:
+              font->bitmaps[i].unicode = 'a';
+              bitmap = &((N16 [])
+              { 0, 0, 0, 0, 0
+              , (N16)~0 >> 3, ~0, ~0, ~0, (N16)~0 >> 2
+              , 0, 0, 0, 0, ~0
+              , (N16)~0 >> 2, ~0, ~0, ~0, ~0
+              , ~0, 0, 0, 0, ~0
+              , (N16)~0 >> 2, ~0, ~0, (N16)~0 >> 1, ~0
+              , 0, 0, 0, 0, 0
+              , 0, 0, 0, 0, 0
+              })[0];
+              break;
+        }
+        E_mem_Q_blk_I_copy( font->bitmaps[i].bitmap, bitmap, font->width * font->height * sizeof( *bitmap ));
+    }
 }
 void
 E_x_theme_M( void

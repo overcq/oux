@@ -188,23 +188,9 @@ E_x_Q_object_I_draw_P_color(
 , struct E_x_Q_object_Z *object
 , N32 color
 ){  if( !U_R( object->mode, drag_src ))
-        E_x_Q_window_I_draw_P_color( display, screen, color );
+        E_x_Q_window_I_draw_P_color_(color);
 }
 //------------------------------------------------------------------------------
-void
-E_x_Q_object_I_fill_Z_points(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_screen_Z *screen
-, struct E_x_Q_window_Z *window
-, struct E_x_Q_object_Z *object
-, N32 n
-, xcb_point_t *points
-){  for_n( i, n )
-    {   points[i].x += object->x;
-        points[i].y += object->y;
-    }
-    E_x_Q_window_I_fill_Z_points( display, screen, window, n, points );
-}
 void
 E_x_Q_object_I_draw_Z_points(
   struct E_x_Q_display_Z *display
@@ -278,7 +264,67 @@ E_x_Q_object_I_draw_Z_arcs(
     E_x_Q_window_I_draw_Z_arcs( display, screen, window, n, arcs );
 }
 void
-E_x_Q_object_I_draw_aa_Z_line(
+E_x_Q_object_I_fill_Z_points(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_screen_Z *screen
+, struct E_x_Q_window_Z *window
+, struct E_x_Q_object_Z *object
+, N32 n
+, xcb_point_t *points
+){  for_n( i, n )
+    {   points[i].x += object->x;
+        points[i].y += object->y;
+    }
+    E_x_Q_window_I_fill_Z_points( display, screen, window, n, points );
+}
+void
+E_x_Q_object_I_fill_Z_rectangles(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_screen_Z *screen
+, struct E_x_Q_window_Z *window
+, struct E_x_Q_object_Z *object
+, N32 n
+, xcb_rectangle_t *rectangles
+){  for_n( i, n )
+    {   rectangles[i].x += object->x;
+        rectangles[i].y += object->y;
+    }
+    E_x_Q_window_I_fill_Z_rectangles( display, screen, window, n, rectangles );
+}
+void
+E_x_Q_object_I_fill_Z_arcs(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_screen_Z *screen
+, struct E_x_Q_window_Z *window
+, struct E_x_Q_object_Z *object
+, N32 n
+, xcb_arc_t *arcs
+){  for_n( i, n )
+    {   arcs[i].x += object->x;
+        arcs[i].y += object->y;
+    }
+    E_x_Q_window_I_fill_Z_arcs( display, screen, window, n, arcs );
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void
+E_x_Q_object_I_draw_aa_Z_pixel(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_screen_Z *screen
+, struct E_x_Q_window_Z *window
+, struct E_x_Q_object_Z *object
+, N x
+, N y
+, N32 color
+, F brightness
+, N get_pixel
+){  E_x_Q_window_I_draw_aa_Z_pixel_(
+      object->x + x
+    , object->y + y
+    , color, brightness, get_pixel
+    );
+}
+void
+E_x_Q_object_I_draw_aa_Z_lines(
   struct E_x_Q_display_Z *display
 , struct E_x_Q_screen_Z *screen
 , struct E_x_Q_window_Z *window
@@ -291,7 +337,7 @@ E_x_Q_object_I_draw_aa_Z_line(
     {   points[i].x += object->x;
         points[i].y += object->y;
     }
-    E_x_Q_window_I_draw_aa_Z_line( display, screen, window, n, points, thickness, color );
+    E_x_Q_window_I_draw_aa_Z_lines_( n, points, thickness, color );
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 N

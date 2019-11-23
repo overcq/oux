@@ -19,14 +19,16 @@ main(
 #ifndef C_line_report
     I out = E_io_Q_stream_out_M_fd( STDERR_FILENO );
 #else
-    I out = E_io_Q_stream_out_M_fd( STDOUT_FILENO );
+    I out = 0;
 #endif
     E_io_Q_stream_out_P( out
     , "\n\"OUX 2\" test sample (c)2017‐2019 overcq"
     , 0
     );
     I_B();
+#ifndef C_line_report
     E_io_Q_stream_out_W_(out);
+#endif
     I_V()
         goto End;
     X_M( x_window, close_window );
@@ -149,7 +151,6 @@ D( main, timer_draw )
         E_main_Q_timer_S_hour += E_main_Q_timer_S_minute / 60;
         E_main_Q_timer_S_minute %= 60;
         E_main_Q_timer_S_hour %= 12;
-        G_();
         E_x_Q_object_I_draw( E_main_Q_timer_I_draw, !!timer_lost_count );
     }
     Y_W(timer);
@@ -203,7 +204,7 @@ E_main_I_draw_Z_angle_line(
             break;
     }
     if( !U_R( display->mode, draw_simple ))
-        E_x_Q_object_I_draw_aa_Z_line( display, screen, window, object
+        E_x_Q_object_I_draw_aa_Z_lines( display, screen, window, object
         , 2
         , (( xcb_point_t[] )
           { { object->width / 2
@@ -231,7 +232,6 @@ E_main_I_draw_Z_angle_line(
     }
 }
 //NDFN konkretne stany wyglądu obiektów mające konkretne znaczenia.
-//NDFN rysowanie uproszczone, gdy brak czasu.
 void
 E_main_Q_timer_I_draw(
   struct E_x_Q_display_Z *display
@@ -252,30 +252,31 @@ E_main_Q_timer_I_draw(
       S8 delta;
       C s[14];
     };
-    xcb_poly_text_8( display->x_display
-    , window->drawable
-    , screen->drawable_gc
-    , object->x + 1
-    , object->y + 7
-    , sizeof( struct Z_font_item )
-    , ( N8 * )( struct Z_font_item[] ){ 14, 0, "czas, czasy..." }
-    );
-    xcb_poly_text_8( display->x_display
-    , window->object_mask
-    , screen->object_mask_gc
-    , object->x + 1
-    , object->y + 7
-    , sizeof( struct Z_font_item )
-    , ( N8 * )( struct Z_font_item[] ){ 14, 0, "czas, czasy..." }
-    );
-    xcb_poly_text_8( display->x_display
-    , window->drawable_mask
-    , screen->bitmask_1_gc
-    , object->x + 1
-    , object->y + 7
-    , sizeof( struct Z_font_item )
-    , ( N8 * )( struct Z_font_item[] ){ 14, 0, "czas, czasy..." }
-    );
+    E_x_Q_object_I_draw_Z_font_( 0, 'a', 1, 1, 0 );
+    //xcb_poly_text_8( display->x_display
+    //, window->drawable
+    //, screen->drawable_gc
+    //, object->x + 1
+    //, object->y + 7
+    //, sizeof( struct Z_font_item )
+    //, ( N8 * )( struct Z_font_item[] ){ 14, 0, "czas, czasy..." }
+    //);
+    //xcb_poly_text_8( display->x_display
+    //, window->object_mask
+    //, screen->object_mask_gc
+    //, object->x + 1
+    //, object->y + 7
+    //, sizeof( struct Z_font_item )
+    //, ( N8 * )( struct Z_font_item[] ){ 14, 0, "czas, czasy..." }
+    //);
+    //xcb_poly_text_8( display->x_display
+    //, window->drawable_mask
+    //, screen->bitmask_1_gc
+    //, object->x + 1
+    //, object->y + 7
+    //, sizeof( struct Z_font_item )
+    //, ( N8 * )( struct Z_font_item[] ){ 14, 0, "czas, czasy..." }
+    //);
     E_x_Q_object_I_draw_P_color_( E_x_Z_color_M( 0, 0, 0x9f ));
     E_main_I_draw_Z_angle_line_(
       E_main_Q_timer_S_hour

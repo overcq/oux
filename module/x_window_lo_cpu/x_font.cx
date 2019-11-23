@@ -1,0 +1,69 @@
+/*******************************************************************************
+*   ___   publicplace
+*  ¦OUX¦  ‟Coux”
+*  ¦Inc¦  component
+*   ---   ‟X window”
+*         bitmap font manager
+* ©overcq                on ‟Gentoo Linux 17.1” “x86_64”            2019‒11‒23 V
+*******************************************************************************/
+struct E_x_Q_font_Z
+{ Pc name;
+  N width, height;
+  N bitmaps_n;
+  struct E_x_Q_font_Z_bitmap *bitmaps;
+};
+struct E_x_Q_font_Z_bitmap
+{ U unicode;
+  N16 *bitmap;
+};
+//==============================================================================
+struct E_mem_Q_tab_Z *E_x_Q_font_S;
+//==============================================================================
+N
+E_x_Q_font_Q_window_I_draw( I id
+, U unicode
+, struct E_x_Q_display_Z *display
+, struct E_x_Q_screen_Z *screen
+, struct E_x_Q_window_Z *window
+, N x
+, N y
+, N color
+){  struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, id );
+    for_n( i, font->bitmaps_n )
+        if( font->bitmaps[i].unicode == unicode )
+        {   N x_, y_ = y;
+            for_n( font_y, font->height )
+            {   x_ = x;
+                for_n( font_x, font->width )
+                {   if( font->bitmaps[i].bitmap[ font_y * font->width + font_x ] )
+                        E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
+                        , x_, y_
+                        , color
+                        , (F)font->bitmaps[i].bitmap[ font_y * font->width + font_x ] / (N16)~0
+                        , 0
+                        );
+                    x_++;
+                }
+                y_++;
+            }
+            return 0;
+        }
+    return 1;
+}
+N
+E_x_Q_font_Q_object_I_draw( I id
+, U unicode
+, struct E_x_Q_display_Z *display
+, struct E_x_Q_screen_Z *screen
+, struct E_x_Q_window_Z *window
+, struct E_x_Q_object_Z *object
+, N x
+, N y
+, N color
+){  E_x_Q_window_I_draw_Z_font_( id, unicode
+    , object->x + x
+    , object->y + y
+    , color
+    );
+}
+/******************************************************************************/
