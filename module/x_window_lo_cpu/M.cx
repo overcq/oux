@@ -41,22 +41,34 @@ E_x_font_M( void
     }
     struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, 0 );
     font->name = "default";
-    font->width = 5;
     font->height = 8;
-    font->bitmaps_n = 1;
+    font->bitmaps_n = 3;
     Mt_( font->bitmaps, font->bitmaps_n );
     if( !font->bitmaps )
     {   GV_( "" );
     }
     for_n( i, font->bitmaps_n )
-    {   Mt_( font->bitmaps[i].bitmap, font->width * font->height );
+    {   switch(i)
+        { case 0:
+              font->bitmaps[i].u = 'a';
+              font->bitmaps[i].width = 5;
+              break;
+          case 1:
+              font->bitmaps[i].u = 'b';
+              font->bitmaps[i].width = 5;
+              break;
+          case 2:
+              font->bitmaps[i].u = 'c';
+              font->bitmaps[i].width = 4;
+              break;
+        }
+        Mt_( font->bitmaps[i].bitmap, font->bitmaps[i].width * font->height );
         if( !font->bitmaps[i].bitmap )
         {   GV_( "" );
         }
         N16 *bitmap;
         switch(i)
         { case 0:
-              font->bitmaps[i].unicode = 'a';
               bitmap = &((N16 [])
               { 0, 0, 0, 0, 0
               , (N16)~0 >> 3, ~0, ~0, ~0, (N16)~0 >> 2
@@ -68,8 +80,32 @@ E_x_font_M( void
               , 0, 0, 0, 0, 0
               })[0];
               break;
+          case 1:
+              bitmap = &((N16 [])
+              { ~0, 0, 0, 0, 0
+              , ~0, 0, 0, 0, 0
+              , ~0, ~0, ~0, ~0, (N16)~0 >> 2
+              , ~0, 0, 0, 0, ~0
+              , ~0, 0, 0, 0, ~0
+              , ~0, ~0, ~0, ~0, (N16)~0 >> 2
+              , 0, 0, 0, 0, 0
+              , 0, 0, 0, 0, 0
+              })[0];
+              break;
+          case 2:
+              bitmap = &((N16 [])
+              { 0, 0, 0, 0
+              , (N16)~0 >> 2, ~0, ~0, ~0
+              , ~0, 0, 0, 0
+              , ~0, 0, 0, 0
+              , ~0, 0, 0, 0
+              , (N16)~0 >> 2, ~0, ~0, ~0
+              , 0, 0, 0, 0
+              , 0, 0, 0, 0
+              })[0];
+              break;
         }
-        E_mem_Q_blk_I_copy( font->bitmaps[i].bitmap, bitmap, font->width * font->height * sizeof( *bitmap ));
+        E_mem_Q_blk_I_copy( font->bitmaps[i].bitmap, bitmap, font->bitmaps[i].width * font->height * sizeof( *bitmap ));
     }
 }
 void

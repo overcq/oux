@@ -8,12 +8,13 @@
 *******************************************************************************/
 struct E_x_Q_font_Z
 { Pc name;
-  N width, height;
+  N height;
   N bitmaps_n;
   struct E_x_Q_font_Z_bitmap *bitmaps;
 };
 struct E_x_Q_font_Z_bitmap
-{ U unicode;
+{ U u;
+  N width;
   N16 *bitmap;
 };
 //==============================================================================
@@ -21,7 +22,7 @@ struct E_mem_Q_tab_Z *E_x_Q_font_S;
 //==============================================================================
 N
 E_x_Q_font_Q_window_I_draw( I id
-, U unicode
+, U u
 , struct E_x_Q_display_Z *display
 , struct E_x_Q_screen_Z *screen
 , struct E_x_Q_window_Z *window
@@ -30,16 +31,16 @@ E_x_Q_font_Q_window_I_draw( I id
 , N color
 ){  struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, id );
     for_n( i, font->bitmaps_n )
-        if( font->bitmaps[i].unicode == unicode )
+        if( font->bitmaps[i].u == u )
         {   N x_, y_ = y;
             for_n( font_y, font->height )
             {   x_ = x;
-                for_n( font_x, font->width )
-                {   if( font->bitmaps[i].bitmap[ font_y * font->width + font_x ] )
+                for_n( font_x, font->bitmaps[i].width )
+                {   if( font->bitmaps[i].bitmap[ font_y * font->bitmaps[i].width + font_x ] )
                         E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
                         , x_, y_
                         , color
-                        , (F)font->bitmaps[i].bitmap[ font_y * font->width + font_x ] / (N16)~0
+                        , (F)font->bitmaps[i].bitmap[ font_y * font->bitmaps[i].width + font_x ] / (N16)~0
                         , 0
                         );
                     x_++;
@@ -51,8 +52,37 @@ E_x_Q_font_Q_window_I_draw( I id
     return 1;
 }
 N
+E_x_Q_font_Q_window_I_draw_Z_s( I id
+, Pc s
+, struct E_x_Q_display_Z *display
+, struct E_x_Q_screen_Z *screen
+, struct E_x_Q_window_Z *window
+, N x
+, N y
+, N color
+){  struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, id );
+    U u;
+    do
+    {   Pc s_ = E_text_Z_s_Z_utf8_R_u( s, &u );
+        if( s_ == s )
+        {   GV( "bad UTF-8 character" );
+            return ~0;
+        }
+        if( E_x_Q_font_Q_window_I_draw( id, u, display, screen, window, x, y, color ))
+            return 1;
+        s = s_;
+        for_n( i, font->bitmaps_n )
+            if( font->bitmaps[i].u == u )
+            {   x += font->bitmaps[i].width + 1;
+                break;
+            }
+    }while( *s );
+    return 0;
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+N
 E_x_Q_font_Q_object_I_draw( I id
-, U unicode
+, U u
 , struct E_x_Q_display_Z *display
 , struct E_x_Q_screen_Z *screen
 , struct E_x_Q_window_Z *window
@@ -60,7 +90,23 @@ E_x_Q_font_Q_object_I_draw( I id
 , N x
 , N y
 , N color
-){  E_x_Q_window_I_draw_Z_font_( id, unicode
+){  return E_x_Q_window_I_draw_Z_font_( id, u
+    , object->x + x
+    , object->y + y
+    , color
+    );
+}
+N
+E_x_Q_font_Q_object_I_draw_Z_s( I id
+, Pc s
+, struct E_x_Q_display_Z *display
+, struct E_x_Q_screen_Z *screen
+, struct E_x_Q_window_Z *window
+, struct E_x_Q_object_Z *object
+, N x
+, N y
+, N color
+){  return E_x_Q_window_I_draw_Z_font_Z_s_( id, s
     , object->x + x
     , object->y + y
     , color
