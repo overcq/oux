@@ -32,24 +32,45 @@ E_x_Q_font_Q_window_I_draw( I id
 ){  struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, id );
     for_n( i, font->bitmaps_n )
         if( font->bitmaps[i].u == u )
-        {   N x_, y_ = y;
+        {   N j = 0;
+            C c;
+            N x_, y_ = y;
             for_n( font_y, font->height )
             {   x_ = x;
                 for_n( font_x, font->bitmaps[i].width )
-                {   if( font->bitmaps[i].bitmap[ font_y * font->bitmaps[i].width + font_x ] )
+                {   if( j % 4 == 0 )
+                        c = font->bitmaps[i].bitmap[ j / 4 ];
+                    if(( c >> ( j % 4 * 2 )) & 3 )
+                    {   if( u == 'i' )
+                        {   G_(); Gd(( c >> ( j % 4 * 2 )) & 3 );
+                        }
+                        F brightness;
+                        switch(( c >> ( j % 4 * 2 )) & 3 )
+                        { case 1:
+                              brightness = (F)( (N8)~0 >> 2 ) / (N8)~0;
+                              break;
+                          case 2:
+                              brightness = (F)( (N8)~0 >> 1 ) / (N8)~0;
+                              break;
+                          case 3:
+                              brightness = 1;
+                              break;
+                        }
                         E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
                         , x_, y_
                         , color
-                        , (F)font->bitmaps[i].bitmap[ font_y * font->bitmaps[i].width + font_x ] / (N16)~0
+                        , brightness
                         , 0
                         );
+                    }
                     x_++;
+                    j++;
                 }
                 y_++;
             }
             return 0;
         }
-    return 1;
+    return ~0;
 }
 N
 E_x_Q_font_Q_window_I_draw_Z_s( I id
@@ -69,7 +90,7 @@ E_x_Q_font_Q_window_I_draw_Z_s( I id
             return ~0;
         }
         if( E_x_Q_font_Q_window_I_draw( id, u, display, screen, window, x, y, color ))
-            return 1;
+            return ~0;
         s = s_;
         for_n( i, font->bitmaps_n )
             if( font->bitmaps[i].u == u )
