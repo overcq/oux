@@ -26,15 +26,15 @@ E_x_Q_font_Q_window_I_draw( I id
 , struct E_x_Q_display_Z *display
 , struct E_x_Q_screen_Z *screen
 , struct E_x_Q_window_Z *window
-, N x
-, N y
+, S16 x
+, S16 y
 , N color
 ){  struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, id );
     for_n( i, font->bitmaps_n )
         if( font->bitmaps[i].u == u )
         {   N j = 0;
             C c;
-            N x_, y_ = y;
+            S16 x_, y_ = y;
             for_n( font_y, font->height )
             {   x_ = x;
                 for_n( font_x, font->bitmaps[i].width )
@@ -75,26 +75,33 @@ E_x_Q_font_Q_window_I_draw_Z_s( I id
 , struct E_x_Q_display_Z *display
 , struct E_x_Q_screen_Z *screen
 , struct E_x_Q_window_Z *window
-, N x
-, N y
+, S16 x
+, S16 y
 , N color
 ){  struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, id );
     U u;
-    do
-    {   Pc s_ = E_text_Z_s_Z_utf8_R_u( s, &u );
-        if( s_ == s )
+    S16 x_ = x;
+    while( *s )
+    {   u = ~0;
+        Pc s_ = E_text_Z_s_Z_utf8_R_u( s, &u );
+        if( !~u )
         {   GV( "bad UTF-8 character" );
             return ~0;
         }
-        if( E_x_Q_font_Q_window_I_draw( id, u, display, screen, window, x, y, color ))
-            return ~0;
         s = s_;
+        if( u == '\n' )
+        {   x_ = x;
+            y += font->height + 1;
+            continue;
+        }
+        if( E_x_Q_font_Q_window_I_draw( id, u, display, screen, window, x_, y, color ))
+            return ~0;
         for_n( i, font->bitmaps_n )
             if( font->bitmaps[i].u == u )
-            {   x += font->bitmaps[i].width + 1;
+            {   x_ += font->bitmaps[i].width + 1;
                 break;
             }
-    }while( *s );
+    }
     return 0;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -105,8 +112,8 @@ E_x_Q_font_Q_object_I_draw( I id
 , struct E_x_Q_screen_Z *screen
 , struct E_x_Q_window_Z *window
 , struct E_x_Q_object_Z *object
-, N x
-, N y
+, S16 x
+, S16 y
 , N color
 ){  return E_x_Q_window_I_draw_Z_font_( id, u
     , object->x + x
@@ -121,8 +128,8 @@ E_x_Q_font_Q_object_I_draw_Z_s( I id
 , struct E_x_Q_screen_Z *screen
 , struct E_x_Q_window_Z *window
 , struct E_x_Q_object_Z *object
-, N x
-, N y
+, S16 x
+, S16 y
 , N color
 ){  return E_x_Q_window_I_draw_Z_font_Z_s_( id, s
     , object->x + x
