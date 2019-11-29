@@ -40,6 +40,8 @@ struct E_x_Q_object_Z
   , N8
   , N8
   );
+  void
+  (*clear_data)(P);
   N child_n;
   I *child;
   P data;
@@ -63,6 +65,8 @@ E_x_Q_object_M(
 , N16 width
 , N16 height
 , void
+  (*clear_data)(P)
+, void
   (*draw)(
     struct E_x_Q_display_Z *
   , struct E_x_Q_screen_Z *
@@ -77,11 +81,18 @@ E_x_Q_object_M(
   , N8 seq
   )
 ){  I object_id = E_mem_Q_tab_I_add( window->object );
+    if( !~object_id )
+        return ~0;
     struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
     object->draw = draw;
     object->click = click;
+    object->clear_data = clear_data;
     object->child_n = child_n;
     Mt_( object->child, child_n );
+    if( !object->child )
+    {   E_mem_Q_tab_I_rem( window->object, object_id );
+        return ~0;
+    }
     object->data = 0;
     object->x = x;
     object->y = y;
@@ -100,7 +111,9 @@ E_x_Q_object_W(
 , I object_id
 ){  struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
     if( object->data )
+    {   object->clear_data( object->data );
         W( object->data );
+    }
     W( object->child );
     E_mem_Q_tab_I_rem( window->object, object_id );
 }
@@ -524,8 +537,9 @@ E_x_Q_object_Z_button_M(
     , 0
     , 0
     , 0
-    , 40
-    , 30
+    , 20
+    , 10
+    , 0
     , E_x_Q_object_Z_button_I_draw
     , E_x_Q_object_Z_button_I_click
     );
@@ -567,6 +581,81 @@ E_x_Q_object_Z_button_I_click(
     }
 }
 //------------------------------------------------------------------------------
+void
+E_x_Q_object_Z_font_field_I_clear_data( P data
+){  struct E_x_Q_font_Z_object_data *object_data = data;
+    W( object_data->label );
+}
+I
+E_x_Q_object_Z_font_field_M(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_window_Z *window
+, I font_id
+, Pc label
+){  struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, font_id );
+    N16 width = 0, width_ = 0;
+    N16 height = font->height;
+    Pc s = label;
+    while( *s )
+    {   if( *s == '\n' )
+        {   if( width_ > width )
+                width = width_;
+            width_ = 0;
+            height += 1 + font->height;
+            s++;
+        }else
+        {   U u = ~0;
+            s = E_text_Z_s_Z_utf8_R_u( s, &u );
+            if( !~u )
+                return ~0;
+            for_n( i, font->bitmap_n )
+                if( font->bitmap[i].u == u )
+                {   width_ += ( width_ != 0 ? 1 : 0 ) + font->bitmap[i].width;
+                    break;
+                }
+            if( i == font->bitmap_n )
+                return ~0;
+        }
+    }
+    if( width_ > width )
+        width = width_;
+    I object_id = E_x_Q_object_M( display, window
+    , 0
+    , 0
+    , 0
+    , width
+    , height
+    , E_x_Q_object_Z_font_field_I_clear_data
+    , E_x_Q_object_Z_font_field_I_draw
+    , 0
+    );
+    struct E_x_Q_font_Z_object_data *M_( object_data );
+    if( !object_data )
+    {   E_x_Q_object_W( display, window, object_id );
+        return ~0;
+    }
+    object_data->font = font_id;
+    object_data->label = M( E_text_Z_s0_R_l(label) );
+    if( !object_data->label )
+    {   E_x_Q_object_W( display, window, object_id );
+        return ~0;
+    }
+    E_text_Z_s0_P_copy_0( object_data->label, label );
+    struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
+    object->data = object_data;
+    return object_id;
+}
+void
+E_x_Q_object_Z_font_field_I_draw(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_screen_Z *screen
+, struct E_x_Q_window_Z *window
+, struct E_x_Q_object_Z *object
+){  struct E_x_Q_font_Z_object_data *object_data = object->data;
+    //G_(); Gh( object_data ); Gd( object_data->font ); Gs( object_data->label );
+    E_x_Q_object_I_draw_Z_font_Z_s_( 0, 0, E_x_theme_Q_theme.text, object_data->font, object_data->label );
+}
+//------------------------------------------------------------------------------
 I
 E_x_Q_object_Z_text_field_M(
   struct E_x_Q_display_Z *display
@@ -575,8 +664,9 @@ E_x_Q_object_Z_text_field_M(
     , 0
     , 0
     , 0
-    , 40
-    , 30
+    , 20
+    , 10
+    , 0
     , E_x_Q_object_Z_text_field_I_draw
     , 0
     );

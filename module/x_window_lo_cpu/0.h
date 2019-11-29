@@ -110,8 +110,8 @@ enum E_x_Q_display_Z_atom
 #define E_x_Q_window_I_draw_aa_Z_pixel_( x, y, color, brightness, get_pixel )   E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window, x, y, color, brightness, get_pixel )
 #define E_x_Q_window_I_draw_aa_Z_lines_( n, points, thickness, color )  E_x_Q_window_I_draw_aa_Z_lines( display, screen, window, n, points, thickness, color )
 //------------------------------------------------------------------------------
-#define E_x_Q_window_I_draw_Z_font_( id, u, x, y, color )       E_x_Q_font_Q_window_I_draw( id, u, display, screen, window, x, y, color )
-#define E_x_Q_window_I_draw_Z_font_Z_s_( id, s, x, y, color )   E_x_Q_font_Q_window_I_draw_Z_s( id, s, display, screen, window, x, y, color )
-#define E_x_Q_object_I_draw_Z_font_( id, u, x, y, color )       E_x_Q_font_Q_object_I_draw( id, u, display, screen, window, object, x, y, color )
-#define E_x_Q_object_I_draw_Z_font_Z_s_( id, s, x, y, color )   E_x_Q_font_Q_object_I_draw_Z_s( id, s, display, screen, window, object, x, y, color )
+#define E_x_Q_window_I_draw_Z_font_( x, y, color, id, u )       E_x_Q_window_I_draw_Z_font( display, screen, window, x, y, color, id, u )
+#define E_x_Q_window_I_draw_Z_font_Z_s_( x, y, color, id, s )   E_x_Q_window_I_draw_Z_font_Z_s( display, screen, window, x, y, color, id, s )
+#define E_x_Q_object_I_draw_Z_font_( x, y, color, id, u )       E_x_Q_object_I_draw_Z_font( display, screen, window, object, x, y, color, id, u )
+#define E_x_Q_object_I_draw_Z_font_Z_s_( x, y, color, id, s )   E_x_Q_object_I_draw_Z_font_Z_s( display, screen, window, object, x, y, color, id, s )
 /******************************************************************************/

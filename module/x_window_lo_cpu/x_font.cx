@@ -9,37 +9,42 @@
 struct E_x_Q_font_Z
 { Pc name;
   N height;
-  N bitmaps_n;
-  struct E_x_Q_font_Z_bitmap *bitmaps;
+  N bitmap_n;
+  struct E_x_Q_font_Z_bitmap *bitmap;
 };
 struct E_x_Q_font_Z_bitmap
 { U u;
   N width;
   N16 *bitmap;
 };
+struct E_x_Q_font_Z_object_data
+{ I font;
+  Pc label;
+};
 //==============================================================================
 struct E_mem_Q_tab_Z *E_x_Q_font_S;
 //==============================================================================
 N
-E_x_Q_font_Q_window_I_draw( I id
-, U u
-, struct E_x_Q_display_Z *display
+E_x_Q_window_I_draw_Z_font(
+  struct E_x_Q_display_Z *display
 , struct E_x_Q_screen_Z *screen
 , struct E_x_Q_window_Z *window
 , S16 x
 , S16 y
 , N color
-){  struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, id );
-    for_n( i, font->bitmaps_n )
-        if( font->bitmaps[i].u == u )
+, I font_id
+, U u
+){  struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, font_id );
+    for_n( i, font->bitmap_n )
+        if( font->bitmap[i].u == u )
         {   N j = 0;
             C c;
             S16 x_, y_ = y;
             for_n( font_y, font->height )
             {   x_ = x;
-                for_n( font_x, font->bitmaps[i].width )
+                for_n( font_x, font->bitmap[i].width )
                 {   if( j % 4 == 0 )
-                        c = font->bitmaps[i].bitmap[ j / 4 ];
+                        c = font->bitmap[i].bitmap[ j / 4 ];
                     if(( c >> ( j % 4 * 2 )) & 3 )
                     {   F brightness;
                         switch(( c >> ( j % 4 * 2 )) & 3 )
@@ -70,15 +75,16 @@ E_x_Q_font_Q_window_I_draw( I id
     return ~0;
 }
 N
-E_x_Q_font_Q_window_I_draw_Z_s( I id
-, Pc s
-, struct E_x_Q_display_Z *display
+E_x_Q_window_I_draw_Z_font_Z_s(
+  struct E_x_Q_display_Z *display
 , struct E_x_Q_screen_Z *screen
 , struct E_x_Q_window_Z *window
 , S16 x
 , S16 y
 , N color
-){  struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, id );
+, I font_id
+, Pc s
+){  struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, font_id );
     U u;
     S16 x_ = x;
     while( *s )
@@ -94,11 +100,11 @@ E_x_Q_font_Q_window_I_draw_Z_s( I id
             y += font->height + 1;
             continue;
         }
-        if( E_x_Q_font_Q_window_I_draw( id, u, display, screen, window, x_, y, color ))
+        if( E_x_Q_window_I_draw_Z_font( display, screen, window, x_, y, color, font_id, u ))
             return ~0;
-        for_n( i, font->bitmaps_n )
-            if( font->bitmaps[i].u == u )
-            {   x_ += font->bitmaps[i].width + 1;
+        for_n( i, font->bitmap_n )
+            if( font->bitmap[i].u == u )
+            {   x_ += font->bitmap[i].width + 1;
                 break;
             }
     }
@@ -106,35 +112,39 @@ E_x_Q_font_Q_window_I_draw_Z_s( I id
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 N
-E_x_Q_font_Q_object_I_draw( I id
-, U u
-, struct E_x_Q_display_Z *display
+E_x_Q_object_I_draw_Z_font(
+  struct E_x_Q_display_Z *display
 , struct E_x_Q_screen_Z *screen
 , struct E_x_Q_window_Z *window
 , struct E_x_Q_object_Z *object
 , S16 x
 , S16 y
 , N color
-){  return E_x_Q_window_I_draw_Z_font_( id, u
-    , object->x + x
+, I font_id
+, U u
+){  return E_x_Q_window_I_draw_Z_font_(
+      object->x + x
     , object->y + y
     , color
+    , font_id, u
     );
 }
 N
-E_x_Q_font_Q_object_I_draw_Z_s( I id
-, Pc s
-, struct E_x_Q_display_Z *display
+E_x_Q_object_I_draw_Z_font_Z_s(
+  struct E_x_Q_display_Z *display
 , struct E_x_Q_screen_Z *screen
 , struct E_x_Q_window_Z *window
 , struct E_x_Q_object_Z *object
 , S16 x
 , S16 y
 , N color
-){  return E_x_Q_window_I_draw_Z_font_Z_s_( id, s
-    , object->x + x
+, I font_id
+, Pc s
+){  return E_x_Q_window_I_draw_Z_font_Z_s_(
+      object->x + x
     , object->y + y
     , color
+    , font_id, s
     );
 }
 /******************************************************************************/
