@@ -690,23 +690,48 @@ Loop:           free( x_event );
                                 && display->pointer_button == 1
                                 ){  Mt_( display->drag_S_object_src, 1 );
                                     if( display->drag_S_object_src )
-                                    {   display->drag_S_object_src_n = 1;
-                                        U_F( window->req, draw );
-                                        screen = E_mem_Q_tab_R( display->screen, window->screen_id );
-                                        display->drag_S_pointer_button = display->pointer_button;
-                                        display->drag_S_dnd_window_screen_id = window->screen_id;
-                                        display->drag_S_object_src[0].window_id = display->pointer_button_S_window_id;
-                                        display->drag_S_object_src[0].object_id = xbutton_object_id;
-                                        display->drag_S_grab_x = display->pointer_button_S_x - object->x;
-                                        display->drag_S_grab_y = display->pointer_button_S_y - object->y;
-                                        U_F( object->mode, drag_src );
-                                        struct E_x_Q_window_Z *dnd_window = &screen->dnd_window;
+                                    {   struct E_x_Q_window_Z *dnd_window = &screen->dnd_window;
                                         dnd_window->width_new = dnd_window->width = object->width;
                                         dnd_window->height_new = dnd_window->height = object->height;
                                         dnd_window->object = E_mem_Q_tab_M( sizeof( struct E_x_Q_object_Z ), 0 );
                                         I dnd_window_object_id = E_x_Q_object_M( display, dnd_window, 0, 0, 0, object->width, object->height, 0, object->draw, 0 );
                                         struct E_x_Q_object_Z *dnd_window_object = E_mem_Q_tab_R( dnd_window->object, dnd_window_object_id );
                                         dnd_window_object->data = object->data;
+                                        U_F( object->mode, drag_src );
+                                        display->drag_S_object_src[0].window_id = display->pointer_button_S_window_id;
+                                        display->drag_S_object_src[0].object_id = xbutton_object_id;
+                                        display->drag_S_object_src_n = 1;
+                                        N child_expanded_n = 0;
+                                        struct E_x_Q_object_Z *parent_object = E_mem_Q_tab_R( window->object, display->drag_S_object_src[ child_expanded_n ].object_id );
+                                        while( child_expanded_n != display->drag_S_object_src_n )
+                                        {   struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->drag_S_object_src[ child_expanded_n ].object_id );
+                                            child_expanded_n++;
+                                            if( !object->child_n )
+                                                continue;
+                                            if( !E_mem_Q_blk_I_append( &display->drag_S_object_src, object->child_n ))
+                                            {   W( display->drag_S_object_src );
+                                                goto Drag_start_error;
+                                            }
+                                            I parent_id = dnd_window->object->index_n - 1;
+                                            for_n( i, object->child_n )
+                                            {   struct E_x_Q_object_Z *object_src = E_mem_Q_tab_R( window->object, object->child[i] );
+                                                U_F( object_src->mode, drag_src );
+                                                display->drag_S_object_src[ display->drag_S_object_src_n + i ].window_id = display->pointer_button_S_window_id;
+                                                display->drag_S_object_src[ display->drag_S_object_src_n + i ].object_id = object->child[i];
+                                                I dnd_window_object_id = E_x_Q_object_M( display, dnd_window, 0, object_src->x - parent_object->x, object_src->y - parent_object->y, object_src->width, object_src->height, 0, object_src->draw, 0 );
+                                                struct E_x_Q_object_Z *dnd_window_object = E_mem_Q_tab_R( dnd_window->object, dnd_window_object_id );
+                                                dnd_window_object->data = object_src->data;
+                                                G_(); Gd( display->drag_S_object_src[ child_expanded_n ].object_id ); Gd( dnd_window_object_id );
+                                                E_x_Q_object_I_add( dnd_window, parent_id, dnd_window_object_id );
+                                            }
+                                            display->drag_S_object_src_n += object->child_n;
+                                        }
+                                        U_F( window->req, draw );
+                                        screen = E_mem_Q_tab_R( display->screen, window->screen_id );
+                                        display->drag_S_pointer_button = display->pointer_button;
+                                        display->drag_S_dnd_window_screen_id = window->screen_id;
+                                        display->drag_S_grab_x = display->pointer_button_S_x - object->x;
+                                        display->drag_S_grab_y = display->pointer_button_S_y - object->y;
                                         xcb_grab_pointer_cookie_t ret_id = xcb_grab_pointer_unchecked( display->x_display
                                         , yes
                                         , dnd_window->x_window
@@ -790,7 +815,7 @@ Loop:           free( x_event );
                                         U_F( display->req, draw );
                                         U_F( display->req, flush );
                                     }else
-                                    {   GV_(NA);
+Drag_start_error:                   {   GV_(NA);
                                     }
                                 }else if( display->pointer_button_S_seq_i == 2 //TODO to testowe działanie będzie do usunięcia.
                                 && display->pointer_button == 2
