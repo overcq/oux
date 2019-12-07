@@ -54,6 +54,7 @@ D( x_window, events )
     I display_id = *( I * )thread_proc_arg;
         #endif
     Xh_A( E_x_window_D_events_I_unblock );
+    X_A( x_object, draw );
     X_A( x_window, draw );
     X_A( x_window, close_window );
     X_A( x_window, flush );
@@ -663,7 +664,18 @@ Loop:           free( x_event );
                         display->pointer_button_S_grab_time = grab_time;
                         G(); Gs_( "click" ); Gd( display->pointer_button ); Gd( display->pointer_button_S_seq_i );
                         if( !U_R( display->mode, drag ))
-                        {   N xbutton_object_id;
+                        {   if( ~display->cursor_window )
+                            {   D_W( x_window, cursor );
+                                struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->cursor_window );
+                                struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->cursor_object );
+                                struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
+                                if( U_E( object_data->state, visible ))
+                                {   U_F( object->req, draw );
+                                    X_F( x_object, draw );
+                                }
+                                display->cursor_window = ~0;
+                            }
+                            N xbutton_object_id;
                             if( display->pointer_button_S_x >= 0
                             && display->pointer_button_S_x < window->width
                             && display->pointer_button_S_y >= 0
@@ -694,7 +706,7 @@ Loop:           free( x_event );
                                         dnd_window->width_new = dnd_window->width = object->width;
                                         dnd_window->height_new = dnd_window->height = object->height;
                                         dnd_window->object = E_mem_Q_tab_M( sizeof( struct E_x_Q_object_Z ), 0 );
-                                        I dnd_window_object_id = E_x_Q_object_M( display, dnd_window, 0, 0, 0, object->width, object->height, 0, object->draw, 0 );
+                                        I dnd_window_object_id = E_x_Q_object_M( display, dnd_window, 0, 0, 0, object->width, object->height, object->type, 0, object->draw, 0 );
                                         struct E_x_Q_object_Z *dnd_window_object = E_mem_Q_tab_R( dnd_window->object, dnd_window_object_id );
                                         dnd_window_object->data = object->data;
                                         U_F( object->mode, drag_src );
@@ -718,7 +730,7 @@ Loop:           free( x_event );
                                                 U_F( object_src->mode, drag_src );
                                                 display->drag_S_object_src[ display->drag_S_object_src_n + i ].window_id = display->pointer_button_S_window_id;
                                                 display->drag_S_object_src[ display->drag_S_object_src_n + i ].object_id = object->child[i];
-                                                I dnd_window_object_id = E_x_Q_object_M( display, dnd_window, 0, object_src->x - parent_object->x, object_src->y - parent_object->y, object_src->width, object_src->height, 0, object_src->draw, 0 );
+                                                I dnd_window_object_id = E_x_Q_object_M( display, dnd_window, 0, object_src->x - parent_object->x, object_src->y - parent_object->y, object_src->width, object_src->height, object->type, 0, object_src->draw, 0 );
                                                 struct E_x_Q_object_Z *dnd_window_object = E_mem_Q_tab_R( dnd_window->object, dnd_window_object_id );
                                                 dnd_window_object->data = object_src->data;
                                                 G_(); Gd( display->drag_S_object_src[ child_expanded_n ].object_id ); Gd( dnd_window_object_id );
@@ -817,11 +829,46 @@ Loop:           free( x_event );
                                     }else
 Drag_start_error:                   {   GV_(NA);
                                     }
-                                }else if( display->pointer_button_S_seq_i == 2 //TODO to testowe działanie będzie do usunięcia.
-                                && display->pointer_button == 2
-                                ){  E_mem_Q_tab_I_rem( window->object, xbutton_object_id );
-                                    U_F( window->req, draw );
-                                    U_F( display->req, draw );
+                                }else if( display->pointer_button_S_seq_i == 2
+                                && display->pointer_button == 1
+                                && object->type == E_x_Q_object_Z_type_S_entry
+                                ){  if( !~display->cursor_window )
+                                    {   display->cursor_window = display->pointer_button_S_window_id;
+                                        display->cursor_object = xbutton_object_id;
+                                        struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
+                                        S16 click_x = display->pointer_button_S_x - object->x;
+                                        S16 click_y = display->pointer_button_S_y - object->y;
+                                        object_data->cursor_pos = 0;
+                                        struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, object_data->font );
+                                        S16 x = 0, y = 0;
+                                        Pc s = object_data->text;
+                                        while( *s )
+                                        {   if( *s == '\n' )
+                                            {   x = 0;
+                                                y += font->height + 1;
+                                                s++;
+                                            }else
+                                            {   U u = ~0;
+                                                s = E_text_Z_s_Z_utf8_R_u( s, &u );
+                                                //if( !~u )
+                                                    //return ~0;
+                                                for_n( i, font->bitmap_n )
+                                                    if( font->bitmap[i].u == u )
+                                                    {   x += ( x != 0 ? 1 : 0 ) + font->bitmap[i].width;
+                                                        break;
+                                                    }
+                                                //if( i == font->bitmap_n )
+                                                    //return ~0;
+                                            }
+                                            object_data->cursor_pos++;
+                                            if( y + font->height + 1 > click_y
+                                            && x > click_x
+                                            )
+                                                break;
+                                        }
+                                        G_(); Gd( object_data->cursor_pos );
+                                        D_M( x_window, cursor );
+                                    }
                                 }else if( object->click )
                                     object->click( window, object, display->pointer_button, display->pointer_button_S_seq_i );
                             }
@@ -1479,5 +1526,39 @@ D( x_window, flush )
         }
     }
     X_W( x_window, flush );
+}
+D( x_window, cursor )
+{   X_A( x_object, draw );
+    for_each( display_id, E_x_Q_display_S, E_mem_Q_tab )
+    {   struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
+        if( !~display->cursor_window )
+            continue;
+        struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->cursor_window );
+        struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->cursor_object );
+        struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
+        U_L( object_data->state, visible );
+    }
+    I timer = Y_M(182999);
+    I_D
+    {   N lost_count;
+        Y_B( timer, &lost_count )
+            break;
+        if( lost_count % 2 )
+            continue;
+        B U_L( x_object, draw );
+        for_each( display_id, E_x_Q_display_S, E_mem_Q_tab )
+        {   struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
+            if( !~display->cursor_window )
+                continue;
+            struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->cursor_window );
+            struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->cursor_object );
+            struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
+            U_R( object_data->state, visible ) = !U_R( object_data->state, visible );
+            U_F( object->req, draw );
+            U_F( x_object, draw );
+        }
+        X_U( x_object, draw );
+    }
+    Y_W(timer);
 }
 /******************************************************************************/

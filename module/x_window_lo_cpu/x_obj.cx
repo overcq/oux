@@ -25,6 +25,13 @@ void
 , N8
 , N8
 );
+enum E_x_Q_object_Z_type
+{ E_x_Q_object_Z_type_S_other
+, E_x_Q_object_Z_type_S_button
+, E_x_Q_object_Z_type_S_entry
+, E_x_Q_object_Z_type_S_font
+, E_x_Q_object_Z_type_S_frame
+};
 struct E_x_Q_object_Z
 { void ///ale obiekt zawiera punkty, które narysuje ta funkcja w czasie wywołania.
   (*draw)(
@@ -47,10 +54,17 @@ struct E_x_Q_object_Z
   P data;
   S16 x, y;
   N16 width, height; ///prostokąt oczekiwanej widoczności obiektu.
+  enum E_x_Q_object_Z_type type;
   unsigned U_R( mode, lay_height ):1;
   unsigned U_R( mode, draggable ) :1;
   unsigned U_R( mode, drag_src )  :1;
   unsigned U_R( req, draw )       :1;
+};
+struct E_x_Q_object_Z_data_Z_entry
+{ I font;
+  Pc text;
+  N cursor_pos;
+  unsigned U_R( state, visible )  :1;
 };
 //==============================================================================
 S16 E_x_Q_object_S_layout_dx = 4, E_x_Q_object_S_layout_dy = 4;
@@ -64,6 +78,7 @@ E_x_Q_object_M(
 , S16 y
 , N16 width
 , N16 height
+, enum E_x_Q_object_Z_type type
 , void
   (*clear_data)(P)
 , void
@@ -98,6 +113,7 @@ E_x_Q_object_M(
     object->y = y;
     object->width = width;
     object->height = height;
+    object->type = type;
     U_L( object->mode, lay_height );
     U_F( object->mode, draggable );
     U_L( object->mode, drag_src );
@@ -118,17 +134,22 @@ E_x_Q_object_W(
     E_mem_Q_tab_I_rem( window->object, object_id );
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-B
-E_x_Q_object_R_top( struct E_x_Q_window_Z *window
+I
+E_x_Q_object_R_parent( struct E_x_Q_window_Z *window
 , I id
 ){  for_each( object_id, window->object, E_mem_Q_tab )
     {   struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
         for_n( child_i, object->child_n )
         {   if( object->child[ child_i ] == id )
-                return no;
+                return object_id;
         }
     }
-    return yes;
+    return ~0;
+}
+B
+E_x_Q_object_R_top( struct E_x_Q_window_Z *window
+, I id
+){  return !~E_x_Q_object_R_parent( window, id );
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 N
@@ -204,6 +225,7 @@ E_x_Q_object_Z_button_M(
     , 0
     , 20
     , 10
+    , E_x_Q_object_Z_type_S_button
     , 0
     , E_x_Q_object_Z_button_I_draw
     , E_x_Q_object_Z_button_I_click
@@ -243,6 +265,99 @@ E_x_Q_object_Z_button_I_click(
 , N8 seq
 ){  if( button == 1 && seq == 2 )
     {   G();
+    }
+}
+//------------------------------------------------------------------------------
+void
+E_x_Q_object_Z_entry_I_clear_data( P data
+){  struct E_x_Q_object_Z_data_Z_entry *object_data = data;
+    W( object_data->text );
+}
+I
+E_x_Q_object_Z_entry_M(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_window_Z *window
+, I font_id
+, Pc text
+){  I object_id = E_x_Q_object_M( display, window
+    , 0
+    , 0
+    , 0
+    , 16
+    , 8
+    , E_x_Q_object_Z_type_S_entry
+    , E_x_Q_object_Z_font_I_clear_data
+    , E_x_Q_object_Z_entry_I_draw
+    , 0
+    );
+    struct E_x_Q_object_Z_data_Z_entry *M_( object_data );
+    if( !object_data )
+    {   E_x_Q_object_W( display, window, object_id );
+        return ~0;
+    }
+    object_data->font = font_id;
+    object_data->text = M( E_text_Z_s0_R_l(text) );
+    if( !object_data->text )
+    {   E_x_Q_object_W( display, window, object_id );
+        return ~0;
+    }
+    E_text_Z_s0_P_copy_0( object_data->text, text );
+    U_L( object_data->state, visible );
+    struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
+    object->data = object_data;
+    return object_id;
+}
+void
+E_x_Q_object_Z_entry_I_draw(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_screen_Z *screen
+, struct E_x_Q_window_Z *window
+, struct E_x_Q_object_Z *object
+){  E_x_Q_object_I_draw_P_color_( E_x_theme_Q_theme.window_bg );
+    E_x_Q_object_I_fill_Z_rectangles_((
+      ( xcb_rectangle_t[] )
+      { { .x = 0
+        , .y = 0
+        , .width = object->width
+        , .height = object->height
+        }
+      }
+    ));
+    struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
+    E_x_Q_object_I_draw_Z_font_Z_s_( 0, 0, E_x_theme_Q_theme.text, object_data->font, object_data->text );
+    if( U_R( object_data->state, visible ))
+    {   E_x_Q_object_I_draw_P_color_( E_x_theme_Q_theme.cursor );
+        struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, object_data->font );
+        S16 x = 0, y = 0;
+        Pc s = object_data->text;
+        N l = object_data->cursor_pos;
+        while( l && *s )
+        {   if( *s == '\n' )
+            {   x = 0;
+                y += font->height + 1;
+                s++;
+            }else
+            {   U u = ~0;
+                s = E_text_Z_s_Z_utf8_R_u( s, &u );
+                //if( !~u )
+                    //return ~0;
+                for_n( i, font->bitmap_n )
+                    if( font->bitmap[i].u == u )
+                    {   x += ( x != 0 ? 1 : 0 ) + font->bitmap[i].width;
+                        break;
+                    }
+                //if( i == font->bitmap_n )
+                    //return ~0;
+            }
+            l--;
+        }
+        xcb_segment_t segments[1] =
+        { x
+        , y
+        , x
+        , y + object->height - 1
+        };
+        E_x_Q_object_I_draw_Z_segments_(segments);
     }
 }
 //------------------------------------------------------------------------------
@@ -290,6 +405,7 @@ E_x_Q_object_Z_font_M(
     , 0
     , width
     , height
+    , E_x_Q_object_Z_type_S_font
     , E_x_Q_object_Z_font_I_clear_data
     , E_x_Q_object_Z_font_I_draw
     , 0
@@ -328,8 +444,9 @@ E_x_Q_object_Z_frame_M(
     , 0
     , 0
     , 0
-    , 20
-    , 10
+    , 16
+    , 8
+    , E_x_Q_object_Z_type_S_frame
     , 0
     , E_x_Q_object_Z_frame_I_draw
     , 0
@@ -530,7 +647,7 @@ Cont:               do
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 void
-E_x_Q_object_I_draw( void (*draw_object_proc)( struct E_x_Q_display_Z *, struct E_x_Q_screen_Z *, struct E_x_Q_window_Z *, struct E_x_Q_object_Z * )
+E_x_Q_object_I_draw_Z_draw_proc( void (*draw_object_proc)( struct E_x_Q_display_Z *, struct E_x_Q_screen_Z *, struct E_x_Q_window_Z *, struct E_x_Q_object_Z * )
 , B draw_simple
 ){  X_A( x_object, draw );
     for_each( display_id, E_x_Q_display_S, E_mem_Q_tab )
