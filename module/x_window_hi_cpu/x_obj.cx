@@ -63,6 +63,7 @@ struct E_x_Q_object_Z
 struct E_x_Q_object_Z_data_Z_entry
 { I font;
   Pc text;
+  N text_start;
   N cursor_pos;
   unsigned U_R( state, visible )  :1;
 };
@@ -297,6 +298,7 @@ E_x_Q_object_Z_entry_M(
     }
     object_data->font = font_id;
     object_data->text = M( E_text_Z_s0_R_l(text) );
+    object_data->text_start = 0;
     if( !object_data->text )
     {   E_x_Q_object_W( display, window, object_id );
         return ~0;
@@ -324,12 +326,42 @@ E_x_Q_object_Z_entry_I_draw(
       }
     ));
     struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
+    struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, object_data->font );
+    S16 x = 0, y = 0;
+    Pc s = object_data->text + object_data->text_start;
+    while( *s )
+    {   if( *s == '\n' )
+        {   y += font->height + 1;
+            if( y + font->height > object->height )
+                break;
+            x = 0;
+            s++;
+        }else
+        {   U u = ~0;
+            s = E_text_Z_s_Z_utf8_R_u( s, &u );
+            if( !~u )
+            {   GV_( "bad UTF-8 character" ); V();
+            }
+            for_n( i, font->bitmap_n )
+                if( font->bitmap[i].u == u )
+                {   x += ( x != 0 ? 1 : 0 ) + font->bitmap[i].width;
+                    break;
+                }
+            if( i == font->bitmap_n )
+                x += ( x != 0 ? 1 : 0 ) + font->bitmap[0].width;
+            if( x > object->width )
+                break;
+        }
+    }
+    C c = *s;
+    *s = '\0';
     E_x_Q_object_I_draw_Z_font_Z_s_( 0, 0, E_x_theme_Q_theme.text, object_data->font, object_data->text );
+    *s = c;
     if( U_R( object_data->state, visible ))
     {   E_x_Q_object_I_draw_P_color_( E_x_theme_Q_theme.cursor );
         struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, object_data->font );
         S16 x = 0, y = 0;
-        Pc s = object_data->text;
+        Pc s = object_data->text + object_data->text_start;
         N l = object_data->cursor_pos;
         while( l && *s )
         {   if( *s == '\n' )
@@ -339,15 +371,16 @@ E_x_Q_object_Z_entry_I_draw(
             }else
             {   U u = ~0;
                 s = E_text_Z_s_Z_utf8_R_u( s, &u );
-                //if( !~u )
-                    //return ~0;
+                if( !~u )
+                {   GV_( "bad UTF-8 character" ); V();
+                }
                 for_n( i, font->bitmap_n )
                     if( font->bitmap[i].u == u )
                     {   x += ( x != 0 ? 1 : 0 ) + font->bitmap[i].width;
                         break;
                     }
-                //if( i == font->bitmap_n )
-                    //return ~0;
+                if( i == font->bitmap_n )
+                    x += ( x != 0 ? 1 : 0 ) + font->bitmap[0].width;
             }
             l--;
         }
