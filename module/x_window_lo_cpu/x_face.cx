@@ -87,6 +87,7 @@ struct E_x_Q_display_Z
   F red_luminance_ratio;
   F green_luminance_ratio;
   F blue_luminance_ratio;
+  xcb_setup_t *setup;
   xcb_get_keyboard_mapping_reply_t *keyboard_mapping;
   struct E_mem_Q_tab_Z *screen; ///indeksy wyświetlaczy ‘servera’ ‟X” są utożsamione z indeksami tablicy; w protokole ‟X” jest “N8” dla numeru wyświetlacza, co wystarcza, by “(I)~0” było różne od “(N8)~0”.
   struct E_mem_Q_tab_Z *window;
@@ -148,7 +149,7 @@ E_x_Q_display_M( void
     for_n( i, XCB_ATOM_AFTER_LAST - XCB_ATOM_FIRST_DEFINED )
         atom_req_id[i] = xcb_intern_atom_unchecked( display->x_display
         , no
-        , E_text_Z_s0_R_0_l( atom_name[i] )
+        , E_text_Z_s0_R_l( atom_name[i] )
         , atom_name[i]
         );
     for_n_( i, XCB_ATOM_AFTER_LAST - XCB_ATOM_FIRST_DEFINED )
@@ -201,7 +202,7 @@ E_x_Q_display_M( void
     , 5
     , "fixed"
     );
-    display->class_name_l = E_text_Z_s0_R_l( E_base_S->E_flow_S_exe_name ) + E_text_Z_s0_R_l( E_base_S->E_flow_S_system_name );
+    display->class_name_l = E_text_Z_s0_R_0_l( E_base_S->E_flow_S_exe_name ) + E_text_Z_s0_R_0_l( E_base_S->E_flow_S_system_name );
     display->class_name = M( display->class_name_l );
     if( !display->class_name )
     {   W( display->atom );
@@ -210,10 +211,10 @@ E_x_Q_display_M( void
         return ~0;
     }
     E_text_Z_s0_P_copy_0( E_text_Z_s0_P_copy_0( display->class_name, E_base_S->E_flow_S_exe_name ), E_base_S->E_flow_S_system_name );
-    xcb_setup_t *setup = xcb_get_setup( display->x_display );
-    xcb_get_keyboard_mapping_cookie_t keyboard_mapping_req_id = xcb_get_keyboard_mapping_unchecked( display->x_display, setup->min_keycode, 105 );
+    display->setup = xcb_get_setup( display->x_display );
+    xcb_get_keyboard_mapping_cookie_t keyboard_mapping_req_id = xcb_get_keyboard_mapping_unchecked( display->x_display, display->setup->min_keycode, 135 ); //NDFN maksymalna wartość
     display->keyboard_mapping = xcb_get_keyboard_mapping_reply( display->x_display, keyboard_mapping_req_id, 0 );
-    xcb_screen_iterator_t screen_iter = xcb_setup_roots_iterator(setup);
+    xcb_screen_iterator_t screen_iter = xcb_setup_roots_iterator( display->setup );
     display->screen = E_mem_Q_tab_M( sizeof( struct E_x_Q_screen_Z ), screen_iter.rem );
     I screen_id = 0;
     do
@@ -668,7 +669,7 @@ E_x_Q_display_R_keysym( struct E_x_Q_display_Z *display
 , xcb_keycode_t keycode
 , N keysym_pos
 ){  xcb_keysym_t *keysyms = (P)( display->keyboard_mapping + 1 );
-    return keysyms[ keycode * display->keyboard_mapping->keysyms_per_keycode + keysym_pos ];
+    return keysyms[ ( keycode - display->setup->min_keycode ) * display->keyboard_mapping->keysyms_per_keycode + keysym_pos ];
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 N32

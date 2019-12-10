@@ -265,7 +265,7 @@ $(H_make_Z_shell_cmd_N_cx_to_c) \
 $(addprefix $(H_make_S_compile_path)/,1.mak 2.mak Makefile) \
 0.mak $(foreach module,$(H_make_S_modules),$(H_make_S_module_path)/$(module)/0.mak)
 	{   $(if $(H_make_S_headers) $(E_main_S_headers) $(E_module_S_headers), \
-        for include in $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_headers) $(E_main_S_headers) $(E_module_S_headers)); do \
+        for include in $(call H_make_Z_shell_cmd_arg_I_quote_for,$(sort $(H_make_S_headers) $(E_main_S_headers) $(E_module_S_headers))); do \
             echo "#include <$${include}>" ;\
         done ;\
         ) \
@@ -295,12 +295,13 @@ $(addprefix $(H_make_S_compile_path)/,1.mak 2.mak Makefile) \
     ifneq (,$(H_make_C_to_libs))
 $(H_make_S_module_path)/E_coux_S_0_to_libs.h: \
 $(H_make_Z_shell_cmd_N_cx_to_c) \
-$(addprefix $(H_make_S_compile_path)/,1.mak 2.mak Makefile)
+$(addprefix $(H_make_S_compile_path)/,1.mak 2.mak Makefile) \
+0.mak $(foreach module,$(H_make_S_modules),$(addprefix $(H_make_S_module_path)/$(module)/,0.mak))
 	{   $(if $(H_make_C_to_libs_C_replace_c_alloc), \
         echo "#define C_to_libs_C_replace_c_alloc_S_libc_filename J_s($(shell ldd $$( which $(MAKE) ) | grep -Fw libc.so | head -n 1 | sed -e 's`^.*\(libc\.so[0-9A-Za-z.-]*\).*`\1`' ))" ;\
         ) \
         $(if $(H_make_S_headers) $(E_module_S_headers), \
-        for include in $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_headers) $(E_module_S_headers)); do \
+        for include in $(call H_make_Z_shell_cmd_arg_I_quote_for,$(sort $(H_make_S_headers) $(E_module_S_headers))); do \
             echo "#include <$${include}>" ;\
         done ;\
         ) \

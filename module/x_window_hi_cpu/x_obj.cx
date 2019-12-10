@@ -297,7 +297,7 @@ E_x_Q_object_Z_entry_M(
         return ~0;
     }
     object_data->font = font_id;
-    object_data->text = M( E_text_Z_s0_R_l(text) );
+    object_data->text = M( E_text_Z_s0_R_0_l(text) );
     object_data->text_start = 0;
     if( !object_data->text )
     {   E_x_Q_object_W( display, window, object_id );
@@ -327,16 +327,49 @@ E_x_Q_object_Z_entry_I_draw(
     ));
     struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
     struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, object_data->font );
-    S16 x = 0, y = 0;
-    Pc s = object_data->text + object_data->text_start;
+    S16 x = 0;
+    Pc s = object_data->text;
+    for_n( i, object_data->text_start )
+    {   U u = ~0;
+        s = E_text_Z_s_Z_utf8_R_u( s, &u );
+        if( !~u )
+        {   GV_( "bad UTF-8 character" ); V();
+        }
+    }
+    Pc s_ = s;
     while( *s )
-    {   if( *s == '\n' )
-        {   y += font->height + 1;
-            if( y + font->height > object->height )
+    {   U u = ~0;
+        s = E_text_Z_s_Z_utf8_R_u( s, &u );
+        if( !~u )
+        {   GV_( "bad UTF-8 character" ); V();
+        }
+        for_n( i, font->bitmap_n )
+            if( font->bitmap[i].u == u )
+            {   x += ( x != 0 ? 1 : 0 ) + font->bitmap[i].width;
                 break;
-            x = 0;
-            s++;
-        }else
+            }
+        if( i == font->bitmap_n )
+            x += ( x != 0 ? 1 : 0 ) + font->bitmap[0].width;
+        if( x > object->width )
+            break;
+    }
+    C c = *s;
+    *s = '\0';
+    E_x_Q_object_I_draw_Z_font_Z_s_( 0, 0, E_x_theme_Q_theme.text, object_data->font, s_ );
+    *s = c;
+    if( U_R( object_data->state, visible ))
+    {   struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, object_data->font );
+        S16 x = 0;
+        Pc s = object_data->text;
+        for_n( i, object_data->text_start )
+        {   U u = ~0;
+            s = E_text_Z_s_Z_utf8_R_u( s, &u );
+            if( !~u )
+            {   GV_( "bad UTF-8 character" ); V();
+            }
+        }
+        N l = object_data->cursor_pos - object_data->text_start;
+        while( l && *s )
         {   U u = ~0;
             s = E_text_Z_s_Z_utf8_R_u( s, &u );
             if( !~u )
@@ -349,46 +382,14 @@ E_x_Q_object_Z_entry_I_draw(
                 }
             if( i == font->bitmap_n )
                 x += ( x != 0 ? 1 : 0 ) + font->bitmap[0].width;
-            if( x > object->width )
-                break;
-        }
-    }
-    C c = *s;
-    *s = '\0';
-    E_x_Q_object_I_draw_Z_font_Z_s_( 0, 0, E_x_theme_Q_theme.text, object_data->font, object_data->text );
-    *s = c;
-    if( U_R( object_data->state, visible ))
-    {   E_x_Q_object_I_draw_P_color_( E_x_theme_Q_theme.cursor );
-        struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, object_data->font );
-        S16 x = 0, y = 0;
-        Pc s = object_data->text + object_data->text_start;
-        N l = object_data->cursor_pos;
-        while( l && *s )
-        {   if( *s == '\n' )
-            {   x = 0;
-                y += font->height + 1;
-                s++;
-            }else
-            {   U u = ~0;
-                s = E_text_Z_s_Z_utf8_R_u( s, &u );
-                if( !~u )
-                {   GV_( "bad UTF-8 character" ); V();
-                }
-                for_n( i, font->bitmap_n )
-                    if( font->bitmap[i].u == u )
-                    {   x += ( x != 0 ? 1 : 0 ) + font->bitmap[i].width;
-                        break;
-                    }
-                if( i == font->bitmap_n )
-                    x += ( x != 0 ? 1 : 0 ) + font->bitmap[0].width;
-            }
             l--;
         }
+        E_x_Q_object_I_draw_P_color_( E_x_theme_Q_theme.cursor );
         xcb_segment_t segments[1] =
         { x
-        , y
+        , 0
         , x
-        , y + object->height - 1
+        , object->height - 1
         };
         E_x_Q_object_I_draw_Z_segments_(segments);
     }
@@ -449,7 +450,7 @@ E_x_Q_object_Z_font_M(
         return ~0;
     }
     object_data->font = font_id;
-    object_data->label = M( E_text_Z_s0_R_l(label) );
+    object_data->label = M( E_text_Z_s0_R_0_l(label) );
     if( !object_data->label )
     {   E_x_Q_object_W( display, window, object_id );
         return ~0;

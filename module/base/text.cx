@@ -69,14 +69,14 @@ E_text_Z_s_T_eq( Pc s
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Pc
-E_text_Z_s0_R_0_end( Pc s
+E_text_Z_s0_R_end( Pc s
 ){  while( *s )
         s++;
     return s;
 }
 N
-E_text_Z_s0_R_0_l( Pc s
-){  return E_text_Z_s0_R_0_end(s) - s;
+E_text_Z_s0_R_l( Pc s
+){  return E_text_Z_s0_R_end(s) - s;
 }
 //------------------------------------------------------------------------------
 Pc
@@ -101,12 +101,12 @@ E_text_Z_s0_T_l_le( Pc s
 }
 //------------------------------------------------------------------------------
 Pc
-E_text_Z_s0_R_end( Pc s
-){  return E_text_Z_s0_R_0_end(s) + 1;
+E_text_Z_s0_R_0_end( Pc s
+){  return E_text_Z_s0_R_end(s) + 1;
 }
 N
-E_text_Z_s0_R_l( Pc s
-){  return E_text_Z_s0_R_end(s) - s;
+E_text_Z_s0_R_0_l( Pc s
+){  return E_text_Z_s0_R_0_end(s) - s;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Pc
@@ -149,7 +149,7 @@ E_text_Z_s_R_search_last_c( Pc s
 Pc
 E_text_Z_s0_R_search_last_c( Pc s
 , C c
-){  return E_text_Z_s_R_search_last_c( s, E_text_Z_s0_R_end(s), c );
+){  return E_text_Z_s_R_search_last_c( s, E_text_Z_s0_R_0_end(s), c );
 }
 Pc
 E_text_Z_s0_R_search_last_c_( Pc s_end
@@ -557,7 +557,7 @@ E_text_Z_s_Z_cmdline_N_quote( Pc cmdline
                 }
             if( arg == args->argv[i] ) ///nie znalazł żadnego cudzysłowu.
             {   if( arg == args->argv[i] )
-                    arg_ = E_text_Z_s0_R_0_end( args->argv[i] );
+                    arg_ = E_text_Z_s0_R_end( args->argv[i] );
                 N arg_quote = 0;
                 if( *E_text_Z_s_Z_cmdline_T_quote_n( arg, arg_ ))
                 {   if(inside)
@@ -572,7 +572,7 @@ E_text_Z_s_Z_cmdline_N_quote( Pc cmdline
                     E_text_Z_s_Z_cmdline_N_quote_I_close( cmdline, &l, &inside, level + arg_quote );
             }else if( *arg ) ///znalazł i na końcu jest jeszcze coś oprócz zastąpionego cudzysłowu.
             {   if( arg == args->argv[i] )
-                    arg_ = E_text_Z_s0_R_0_end( args->argv[i] );
+                    arg_ = E_text_Z_s0_R_end( args->argv[i] );
                 N arg_quote = 0;
                 if( *E_text_Z_s_Z_cmdline_T_quote_n( arg, arg_ ))
                 {   arg_quote = 1;
@@ -670,7 +670,7 @@ E_text_Z_s_Z_cmdline_N_quote_G(
                 }
             if( arg == args->argv[i] )
             {   if( arg == args->argv[i] )
-                    arg_ = E_text_Z_s0_R_0_end( args->argv[i] );
+                    arg_ = E_text_Z_s0_R_end( args->argv[i] );
                 N arg_quote = 0;
                 if( *E_text_Z_s_Z_cmdline_T_quote_n( arg, arg_ ))
                 {   if(inside)
@@ -684,7 +684,7 @@ E_text_Z_s_Z_cmdline_N_quote_G(
                     E_text_Z_s_Z_cmdline_N_quote_G_close( &l, &inside, level + arg_quote );
             }else if( *arg )
             {   if( arg == args->argv[i] )
-                    arg_ = E_text_Z_s0_R_0_end( args->argv[i] );
+                    arg_ = E_text_Z_s0_R_end( args->argv[i] );
                 N arg_quote = 0;
                 if( *E_text_Z_s_Z_cmdline_T_quote_n( arg, arg_ ))
                 {   arg_quote = 1;
@@ -768,6 +768,18 @@ E_text_Z_s_Z_utf8_R_rev_u( Pc s
     v |= ( *s & (( _v( v, 1 ) << n ) - 1 )) << (( i + 1 ) * 6 );
     *u = v;
     return s;
+}
+N
+E_text_Z_s0_Z_utf8_R_l( Pc s
+){  N i = 0;
+    while( *s )
+    {   U u = ~0;
+        s = E_text_Z_s_Z_utf8_R_u( s, &u );
+        if( !~u )
+            return ~0;
+        i++;
+    }
+    return i;
 }
 N ///ile bajtów przeczytano lub błąd.
 E_text_Z_getter_Z_c_R_u( N (*getter)(void)

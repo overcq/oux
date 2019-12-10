@@ -83,7 +83,7 @@ enum E_x_Q_display_Z_atom
     , property \
     , type \
     , 8 \
-    , ~(l) ? (l) : E_text_Z_s0_R_0_l(text) \
+    , ~(l) ? (l) : E_text_Z_s0_R_l(text) \
     , (text) \
     )
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

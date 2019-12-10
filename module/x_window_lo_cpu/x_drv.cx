@@ -236,7 +236,228 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                         xcb_key_press_event_t *x_key = (P)x_event;
                         window->user_activity_time = x_key->time;
                         U_F( window, postproc );
-                        G(); Gd( E_x_Q_display_R_keysym( display, x_key->detail, 0 )); Gd( x_key->state );
+                        N modifier = x_key->state ? E_asm_I_bsr( x_key->state ) + 1 : 0;
+                        xcb_keysym_t keysym = E_x_Q_display_R_keysym( display, x_key->detail, modifier );
+                        G(); Gd( x_key->detail ); Gd( x_key->state ); Gh(keysym); Gd(modifier);
+                        if( display->pointer_button_S_seq_i )
+                            break;
+                        if( ~display->cursor_window )
+                        {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->cursor_window );
+                            struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->cursor_object );
+                            if( object->type == E_x_Q_object_Z_type_S_entry )
+                            {   struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
+                                switch(keysym)
+                                { case XK_Return:
+                                  case XK_KP_Enter:
+                                        if( U_E( object_data->state, visible ))
+                                        {   U_F( object->req, draw );
+                                            U_F( x_object, draw );
+                                        }
+                                        D_W( x_window, cursor );
+                                        display->cursor_window = ~0;
+                                        break;
+                                  case XK_Home:
+                                  case XK_KP_Home:
+                                        object_data->text_start = 0;
+                                        object_data->cursor_pos = 0;
+                                        break;
+                                  case XK_Left:
+                                  case XK_KP_Left:
+                                        if( !object_data->cursor_pos )
+                                            break;
+                                        object_data->cursor_pos--;
+                                        if( object_data->cursor_pos
+                                        && object_data->text_start > object_data->cursor_pos - 1
+                                        )
+                                            object_data->text_start = object_data->cursor_pos - 1;
+                                        break;
+                                  case XK_Right:
+                                  case XK_KP_Right:
+                                    {   if( object_data->cursor_pos == E_text_Z_s0_Z_utf8_R_l( object_data->text ) )
+                                            break;
+                                        object_data->cursor_pos++;
+                                        struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, object_data->font );
+                                        Pc s = object_data->text;
+                                        for_n( i, object_data->text_start )
+                                        {   U u = ~0;
+                                            s = E_text_Z_s_Z_utf8_R_u( s, &u );
+                                            if( !~u )
+                                            {   GV_( "bad UTF-8 character" ); V();
+                                            }
+                                        }
+                                        S16 x = 0;
+                                        for_n_( i, object_data->cursor_pos - object_data->text_start )
+                                        {   U u = ~0;
+                                            s = E_text_Z_s_Z_utf8_R_u( s, &u );
+                                            if( !~u )
+                                            {   GV_( "bad UTF-8 character" ); V();
+                                            }
+                                            for_n( i, font->bitmap_n )
+                                                if( font->bitmap[i].u == u )
+                                                {   x += ( x != 0 ? 1 : 0 ) + font->bitmap[i].width;
+                                                    break;
+                                                }
+                                            if( i == font->bitmap_n )
+                                                x += ( x != 0 ? 1 : 0 ) + font->bitmap[0].width;
+                                        }
+                                        if( x >= object->width )
+                                        {   x = object->width;
+                                            object_data->text_start = object_data->cursor_pos;
+                                            O{  U u = ~0;
+                                                s = E_text_Z_s_Z_utf8_R_rev_u( s, &u );
+                                                if( !~u )
+                                                {   GV_( "bad UTF-8 character" ); V();
+                                                }
+                                                for_n( i, font->bitmap_n )
+                                                    if( font->bitmap[i].u == u )
+                                                    {   x -= ( x != object->width ? 1 : 0 ) + font->bitmap[i].width;
+                                                        break;
+                                                    }
+                                                if( i == font->bitmap_n )
+                                                    x -= ( x != object->width ? 1 : 0 ) + font->bitmap[0].width;
+                                                if( x < 0 )
+                                                    break;
+                                                object_data->text_start--;
+                                            }
+                                        }
+                                        break;
+                                    }
+                                  case XK_End:
+                                  case XK_KP_End:
+                                    {   object_data->text_start = E_text_Z_s0_Z_utf8_R_l( object_data->text );
+                                        struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, object_data->font );
+                                        S16 x = object->width;
+                                        Pc s = E_text_Z_s0_R_end( object_data->text );
+                                        while( object_data->text_start )
+                                        {   U u = ~0;
+                                            s = E_text_Z_s_Z_utf8_R_rev_u( s, &u );
+                                            if( !~u )
+                                            {   GV_( "bad UTF-8 character" ); V();
+                                            }
+                                            for_n( i, font->bitmap_n )
+                                                if( font->bitmap[i].u == u )
+                                                {   x -= ( x != object->width ? 1 : 0 ) + font->bitmap[i].width;
+                                                    break;
+                                                }
+                                            if( i == font->bitmap_n )
+                                                x -= ( x != object->width ? 1 : 0 ) + font->bitmap[0].width;
+                                            if( x < 0 )
+                                                break;
+                                            object_data->text_start--;
+                                        }
+                                        object_data->cursor_pos = E_text_Z_s0_Z_utf8_R_l( object_data->text );
+                                        break;
+                                    }
+                                  case XK_BackSpace:
+                                    {   if( !object_data->cursor_pos )
+                                            break;
+                                        object_data->cursor_pos--;
+                                        if( object_data->cursor_pos
+                                        && object_data->text_start > object_data->cursor_pos - 1
+                                        )
+                                            object_data->text_start = object_data->cursor_pos - 1;
+                                        Pc s = object_data->text;
+                                        for_n( i, object_data->cursor_pos )
+                                        {   U u = ~0;
+                                            s = E_text_Z_s_Z_utf8_R_u( s, &u );
+                                            if( !~u )
+                                            {   GV_( "bad UTF-8 character" ); V();
+                                            }
+                                        }
+                                        U u = ~0;
+                                        Pc s_ = E_text_Z_s_Z_utf8_R_u( s, &u );
+                                        if( !~u )
+                                        {   GV_( "bad UTF-8 character" ); V();
+                                        }
+                                        E_mem_Q_blk_I_rem( &object_data->text, s - object_data->text, s_ - s );
+                                        break;
+                                    }
+                                  case XK_Delete:
+                                  case XK_KP_Delete:
+                                    {   if( object_data->cursor_pos == E_text_Z_s0_Z_utf8_R_l( object_data->text ))
+                                            break;
+                                        Pc s = object_data->text;
+                                        for_n( i, object_data->cursor_pos )
+                                        {   U u = ~0;
+                                            s = E_text_Z_s_Z_utf8_R_u( s, &u );
+                                            if( !~u )
+                                            {   GV_( "bad UTF-8 character" ); V();
+                                            }
+                                        }
+                                        U u = ~0;
+                                        Pc s_ = E_text_Z_s_Z_utf8_R_u( s, &u );
+                                        if( !~u )
+                                        {   GV_( "bad UTF-8 character" ); V();
+                                        }
+                                        E_mem_Q_blk_I_rem( &object_data->text, s - object_data->text, s_ - s );
+                                        break;
+                                    }
+                                  default:
+                                        if( keysym >= XK_space && keysym <= XK_asciitilde ) //TODO translacja ‛keysym to unicode’.
+                                        {   Pc s = object_data->text;
+                                            for_n( i, object_data->cursor_pos )
+                                            {   U u = ~0;
+                                                s = E_text_Z_s_Z_utf8_R_u( s, &u );
+                                                if( !~u )
+                                                {   GV_( "bad UTF-8 character" ); V();
+                                                }
+                                            }
+                                            C s_[7];
+                                            N n = E_text_Z_s_Z_u_R_utf8( keysym, &s_[0] );
+                                            s_[n] = '\0';
+                                            i = s - object_data->text;
+                                            E_mem_Q_blk_I_insert( &object_data->text, i, n );
+                                            E_text_Z_s_P_copy_l( object_data->text + i, &s_[0], n );
+                                            object_data->cursor_pos++;
+                                            s = object_data->text;
+                                            for_n_( i, object_data->text_start )
+                                            {   U u = ~0;
+                                                s = E_text_Z_s_Z_utf8_R_u( s, &u );
+                                                if( !~u )
+                                                {   GV_( "bad UTF-8 character" ); V();
+                                                }
+                                            }
+                                            struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, object_data->font );
+                                            S16 x = 0;
+                                            for_n_( i, object_data->cursor_pos - object_data->text_start )
+                                            {   U u = ~0;
+                                                s = E_text_Z_s_Z_utf8_R_u( s, &u );
+                                                if( !~u )
+                                                {   GV_( "bad UTF-8 character" ); V();
+                                                }
+                                                for_n( i, font->bitmap_n )
+                                                    if( font->bitmap[i].u == u )
+                                                    {   x += ( x != 0 ? 1 : 0 ) + font->bitmap[i].width;
+                                                        break;
+                                                    }
+                                                if( i == font->bitmap_n )
+                                                    x += ( x != 0 ? 1 : 0 ) + font->bitmap[0].width;
+                                            }
+                                            if( x >= object->width )
+                                            {   x = object->width;
+                                                object_data->text_start = object_data->cursor_pos;
+                                                O{  U u = ~0;
+                                                    s = E_text_Z_s_Z_utf8_R_rev_u( s, &u );
+                                                    if( !~u )
+                                                    {   GV_( "bad UTF-8 character" ); V();
+                                                    }
+                                                    for_n( i, font->bitmap_n )
+                                                        if( font->bitmap[i].u == u )
+                                                        {   x -= ( x != object->width ? 1 : 0 ) + font->bitmap[i].width;
+                                                            break;
+                                                        }
+                                                    if( i == font->bitmap_n )
+                                                        x -= ( x != object->width ? 1 : 0 ) + font->bitmap[0].width;
+                                                    if( x < 0 )
+                                                        break;
+                                                    object_data->text_start--;
+                                                }
+                                            }
+                                        }
+                                        break;
+                                }
+                            }
+                        }
                         break;
                     }
                   case XCB_KEY_RELEASE:
@@ -840,34 +1061,25 @@ Drag_start_error:                   {   GV_(NA);
                                     display->cursor_object = xbutton_object_id;
                                     struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
                                     S16 click_x = display->pointer_button_S_x - object->x;
-                                    S16 click_y = display->pointer_button_S_y - object->y;
                                     object_data->cursor_pos = 0;
                                     struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, object_data->font );
-                                    S16 x = 0, y = 0;
+                                    S16 x = 0;
                                     Pc s = object_data->text + object_data->text_start;
                                     while( *s )
-                                    {   if( *s == '\n' )
-                                        {   x = 0;
-                                            y += font->height + 1;
-                                            s++;
-                                        }else
-                                        {   U u = ~0;
-                                            s = E_text_Z_s_Z_utf8_R_u( s, &u );
-                                            if( !~u )
-                                            {   GV_( "bad UTF-8 character" ); V();
-                                            }
-                                            for_n( i, font->bitmap_n )
-                                                if( font->bitmap[i].u == u )
-                                                {   x += ( x != 0 ? 1 : 0 ) + font->bitmap[i].width;
-                                                    break;
-                                                }
-                                            if( i == font->bitmap_n )
-                                                x += ( x != 0 ? 1 : 0 ) + font->bitmap[0].width;
+                                    {   U u = ~0;
+                                        s = E_text_Z_s_Z_utf8_R_u( s, &u );
+                                        if( !~u )
+                                        {   GV_( "bad UTF-8 character" ); V();
                                         }
+                                        for_n( i, font->bitmap_n )
+                                            if( font->bitmap[i].u == u )
+                                            {   x += ( x != 0 ? 1 : 0 ) + font->bitmap[i].width;
+                                                break;
+                                            }
+                                        if( i == font->bitmap_n )
+                                            x += ( x != 0 ? 1 : 0 ) + font->bitmap[0].width;
                                         object_data->cursor_pos++;
-                                        if( y + font->height + 1 > click_y
-                                        && x > click_x
-                                        )
+                                        if( x > click_x )
                                             break;
                                     }
                                     if( !~cursor_window )
