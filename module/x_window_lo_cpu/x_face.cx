@@ -28,6 +28,11 @@ _internal
 N E_x_S_wm_icon_S_n;
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 _internal
+struct E_x_Z_keysym_to_unicode *E_x_S_keysym_to_unicode;
+_internal
+N E_x_S_keysym_to_unicode_n;
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+_internal
 S16 E_x_Q_window_S_hidden_x;
 _internal
 S16 E_x_Q_window_S_hidden_y;
@@ -74,6 +79,10 @@ struct E_x_Q_screen_Z
 struct E_x_Z_drag_object_src
 { I window_id;
   I object_id;
+};
+struct E_x_Z_keysym_to_unicode
+{ xcb_keysym_t keysym;
+  U u;
 };
 //------------------------------------------------------------------------------
 ///“pointer”– rozszerzenie “zdarzeń” ‘x’ dla przesuwania wskazania.
@@ -670,6 +679,22 @@ E_x_Q_display_R_keysym( struct E_x_Q_display_Z *display
 , N keysym_pos
 ){  xcb_keysym_t *keysyms = (P)( display->keyboard_mapping + 1 );
     return keysyms[ ( keycode - display->setup->min_keycode ) * display->keyboard_mapping->keysyms_per_keycode + keysym_pos ];
+}
+U
+E_x_Q_display_I_keysym_to_unicode( struct E_x_Q_display_Z *display
+, xcb_keysym_t keysym
+){  S first = 0, last = E_x_S_keysym_to_unicode_n;
+    S i;
+    do
+    {   i = first + ( last - first ) / 2;
+        if( keysym == E_x_S_keysym_to_unicode[i].keysym )
+            return E_x_S_keysym_to_unicode[i].u;
+        if( keysym < E_x_S_keysym_to_unicode[i].keysym )
+            last = i - 1;
+        else
+            first = i + 1;
+    }while( first <= last );
+    return ~0;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 N32
