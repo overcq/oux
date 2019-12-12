@@ -683,7 +683,13 @@ E_x_Q_display_R_keysym( struct E_x_Q_display_Z *display
 U
 E_x_Q_display_I_keysym_to_unicode( struct E_x_Q_display_Z *display
 , xcb_keysym_t keysym
-){  S first = 0, last = E_x_S_keysym_to_unicode_n;
+){  if(( keysym >= 0x20 && keysym <= 0x7e )
+    || ( keysym >= 0xa0 && keysym <= 0xff )
+    )
+        return keysym;
+    if(( keysym & 0xff000000 ) == 0x1000000 )
+        return keysym & 0xffffff;
+    S first = 0, last = E_x_S_keysym_to_unicode_n;
     S i;
     do
     {   i = first + ( last - first ) / 2;
