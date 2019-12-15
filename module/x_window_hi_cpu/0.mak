@@ -20,4 +20,7 @@ S_packages += xcb-glx
 S_headers += xcb/glx.h
 CFLAGS += -DC_xcb_glx
     endif
+.SECONDARY: $(H_make_S_module_path)/x_window_lo_cpu/M.cx
+$(H_make_S_module_path)/x_window_lo_cpu/M.cx: $(H_make_S_module_path)/x_window_lo_cpu/_keysym_data.h \
+$(wildcard $(H_make_S_module_path)/x_window_lo_cpu/_wm_icon_data_*.h )
 ################################################################################
