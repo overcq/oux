@@ -669,12 +669,17 @@ E_mem_Q_file_P_insert_s( I id
     U_L( file->current_blk, valid_sob );
     U_L( file->current_blk, valid_eob );
     N ret = E_mem_Q_file_R_current_blk(file);
-    if( !~ret
-    || ret == E_mem_Q_file_S_eof
-    )
+    if( !~ret )
         return ret;
-    if( !file->blk_n
-    || file->blk[ file->blk_n - 1 ].pos > file->pos
+    if( ret == E_mem_Q_file_S_eof )
+    {   file->current_blk = 0;
+        file->current_blk_pos = 0;
+        struct E_mem_Q_rel_map_blk_Z *new_blk = E_mem_Q_blk_I_append( &file->blk, file->blk_n = 1 );
+        if( !new_blk )
+            return ~0;
+        new_blk->pos = file->l;
+        new_blk->data = M( new_blk->l = 0 );
+    }else if( file->blk[ file->blk_n - 1 ].pos > file->pos
     || file->blk[ file->blk_n - 1 ].pos + file->blk[ file->blk_n - 1 ].l != file->l
     )
     {   N pos = file->pos;
@@ -718,6 +723,7 @@ E_mem_Q_file_P_insert_s( I id
         unsaved->pos = file->pos;
         unsaved->pos_end = file->pos + file->blk[ file->current_blk ].l - file->current_blk_pos;
     }
+    file->current_blk_pos += n;
     return 0;
 }
 N

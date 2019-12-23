@@ -11,7 +11,7 @@ S_libraries := ncurses
 	else
 S_packages := ncursesw
 	endif
-_ := E_coux_S_0_main_not_to_libs.h
+_ := test
 #===============================================================================
 install:
 	{ $(CMP) /usr/bin/direct_oux /usr/bin/tept \
