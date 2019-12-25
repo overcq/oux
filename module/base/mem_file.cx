@@ -137,12 +137,16 @@ E_mem_Q_file_M( Pc path
         #endif
         return ~0;
     I id = E_mem_Q_tab_I_add( E_base_S->E_mem_Q_file_S );
+    if( !~id )
+    {   V0( close(fd) ){}
+        return id;
+    }
     struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
     Mt_( file->blk, file->blk_n = 0 );
     Mt_( file->unsaved, file->unsaved_n = 0 );
     file->pos = 0;
     file->fd = fd;
-    V1( file->l = lseek( file->fd, 0, SEEK_END ))
+    V1( file->l = lseek( fd, 0, SEEK_END ))
     {   W( file->unsaved );
         W( file->blk );
         V0( close( file->fd )){}

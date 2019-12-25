@@ -2,7 +2,7 @@
 *   ___   publicplace
 *  ¦OUX¦  ‟Coux”
 *  ¦Inc¦  component
-*   ---   ‟Xorg”
+*   ---   ‟Xorg” —low ‘cpu’
 *         global defines
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”              2015‒9‒4 *
 *******************************************************************************/

@@ -2,11 +2,15 @@
 *   ___   publicplace
 *  ¦OUX¦  ‟Coux”
 *  ¦Inc¦  component
-*   ---   ‟Xorg”
+*   ---   ‟Xorg” —high ‘cpu’
 *         global defines
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”              2015‒9‒4 *
 *******************************************************************************/
+    #ifdef C_id_small
 #define E_x_Q_obj_C_id_bits         16
+    #else
+#define E_x_Q_obj_C_id_bits         32
+    #endif
 #define E_x_Q_window_C_hidden_x     -1
 #define E_x_Q_window_C_hidden_y     -1
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

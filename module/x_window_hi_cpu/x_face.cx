@@ -14,7 +14,7 @@
 //co jest jako “data” procedur “xcb”*“_reply”, gdy wystąpi błąd przy “unchecked”?
 //utworzyć okna “InputOnly” do różnych celów i na nich ustawiać właściwości okna zamiast na widzialnych, monitorowanych przez menedżera okien i inne programy.
 //zintegrować —jeśli się da— ‹zdarzenia› z błędami z ‘servera’ ‟X” wynikającymi z niezdefiniowanego zasobu ‘x’ usuniętego przez obcy program, by opuścić najszerszy blok przetwarzania danego zasobu, wyrzucić go i kontynuować.
-//kolory w nowo utworzonej części “draw” modułu obsługiwać uniwersalnie jak dla przyszłej obsługi wszystkich “visuali”.
+//kolory w nowo utworzonej części “draw” modułu obsługiwać uniwersalnie, jak dla przyszłej obsługi wszystkich “visuali”.
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //skróty do dokumentacji:
 //‘state’– stan obiektu.
@@ -22,34 +22,29 @@
 //‘req’– żądanie realizacji funkcji zbiorczej.
 //‘ex’– uzupełnienie rodzaju następującej zmiany (np. ‘mode’).
 //==============================================================================
-#if defined( __clang__ ) || defined( __gnu_linux__ )
-    N32 E_x_S_wm_icon[] =
-#else
-#if 0
-    N32 E_x_S_wm_icon[ 4 * 2 + 16*16 + 32*32 + 64*64 + 128*128 ] =
-#else
-    N32 E_x_S_wm_icon[3] =
-#endif
-#endif
-#if 0
-#include "../wm_icon_data.h"
-#else
-    { 1, 1, 0xff00007f
-    };
-#endif
+_internal
+N32 *E_x_S_wm_icon;
+_internal
+N E_x_S_wm_icon_S_n;
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-S16 E_x_Q_window_S_hidden_x = -1; //CONF
-S16 E_x_Q_window_S_hidden_y = -1; //CONF
+_internal
+struct E_x_Z_keysym_to_unicode *E_x_S_keysym_to_unicode;
+_internal
+N E_x_S_keysym_to_unicode_n;
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+_internal
+S16 E_x_Q_window_S_hidden_x;
+_internal
+S16 E_x_Q_window_S_hidden_y;
 //==============================================================================
 struct E_x_Q_window_Z
 { struct E_mem_Q_tab_Z *object;
   xcb_window_t x_window;
-#ifdef C_xcb_glx
+    #ifdef C_xcb_glx
   xcb_glx_window_t glx_window;
-#endif
-  xcb_pixmap_t drawable;
-  xcb_pixmap_t drawable_mask, drawable_mask_2;
-  xcb_pixmap_t object_mask;
+    #endif
+  N32 *drawable;
+  I *object_mask;
   xcb_timestamp_t last_user_activity_time, user_activity_time;
   S16 x, y; //NDFN niekoniecznie jest poprawne, bo “configure_notify” względem “root” nie muszą być przysyłane. ale narazie nie jest niezbędne.
   N16 width, height, width_new, height_new;
@@ -58,27 +53,31 @@ struct E_x_Q_window_Z
   unsigned U_R( mode, resize )                          :1;
   unsigned U_R( req, resize )                           :1;
   unsigned U_R( req, draw )                             :1;
-  unsigned U_R( req_ex, draw_S_set_background_pixmap )  :1;
   unsigned U_R( req, close )                            :1;
 };
 struct E_x_Q_screen_Z
-{ N32 draw_color;
+{ F dpi_x, dpi_y;
+  F pixel_width, pixel_height;
+  N32 draw_color;
   xcb_window_t x_root_window;
-#ifdef C_xcb_glx
+    #ifdef C_xcb_glx
   xcb_glx_fbconfig_t glx_fbconfig;
-#endif
+    #endif
   xcb_gcontext_t drawable_gc;
-  xcb_gcontext_t object_mask_gc;
-  xcb_gcontext_t drawable_background_gc;
-  xcb_gcontext_t bitmask_0_gc, bitmask_1_gc, bitmask_not_and_gc, bitmask_or_gc;
   //S16 pointer_button_drag_copy_x_delta, pointer_button_drag_copy_y_delta;
   N8 depth; //NDFN w trakcie przeprojektowywania “screen”.
   struct E_x_Q_window_Z dnd_window; ///używane dane obecne w całości tylko w trybie “drag”.
+  unsigned U_R( state, draw_object_drag_move )          :1;
+  unsigned U_R( mode, animation )                       :1;
 };
 //------------------------------------------------------------------------------
 struct E_x_Z_drag_object_src
 { I window_id;
   I object_id;
+};
+struct E_x_Z_keysym_to_unicode
+{ xcb_keysym_t keysym;
+  U u;
 };
 //------------------------------------------------------------------------------
 ///“pointer”– rozszerzenie “zdarzeń” ‘x’ dla przesuwania wskazania.
@@ -87,14 +86,21 @@ struct E_x_Z_drag_object_src
 struct E_x_Q_display_Z
 { xcb_connection_t *x_display;
   xcb_atom_t *atom;
-  struct E_mem_Q_tab_Z *screen; ///indeksy wyświetlaczy ‘servera’ ‟X” są utożsamione z indeksami tablicy; w protokole ‟X” jest “N8” dla numeru wyświetlacza, więc “(I)empty” jest różne od “(N8)~0”.
+  Pc class_name;
+  N class_name_l;
+  F red_luminance_ratio;
+  F green_luminance_ratio;
+  F blue_luminance_ratio;
+  xcb_setup_t *setup;
+  xcb_get_keyboard_mapping_reply_t *keyboard_mapping;
+  struct E_mem_Q_tab_Z *screen; ///indeksy wyświetlaczy ‘servera’ ‟X” są utożsamione z indeksami tablicy; w protokole ‟X” jest “N8” dla numeru wyświetlacza, co wystarcza, by “(I)~0” było różne od “(N8)~0”.
   struct E_mem_Q_tab_Z *window;
   struct E_x_Z_drag_object_src *drag_S_object_src; //NDFN przed zaprojektowaniem ‘drop’.
   N drag_S_object_src_n; //NDFN przed zaprojektowaniem ‘drop’.
   xcb_timestamp_t pointer_button_S_time, pointer_button_S_start_time, pointer_button_S_grab_time; ///‘grabnięcie’ jest rozszerzeniem “zdarzeń” “pointer_button”.
-#ifdef E_flow_C_threads_for_system_unblock_reports
+    #ifdef E_flow_C_thread_system_unblock_reports
   xcb_timestamp_t pointer_button_S_impulser_time;
-#endif
+    #endif
   xcb_timestamp_t pointer_button_C_release_timeout, pointer_button_C_seq_timeout, pointer_button_C_restart_delay;
   xcb_cursor_t drag_S_cursor, drag_S_copy_cursor;
   S16 pointer_button_S_root_x, pointer_button_S_root_y;
@@ -105,31 +111,26 @@ struct E_x_Q_display_Z
   I drag_S_dnd_window_screen_id;
   I Z_screen_id_S_default;
   N8 pointer_button;
-  N8 pointer_button_S_seq_i; ///“== 0” to stan oczekiwania przeciwny do stanu ‛klikania do czasu oznaczenia “zdarzenia” kliknięcia’.
-  //NDFN nie dokonuje ‘wrap around’ na bajcie struktury?
+  N8 pointer_button_S_seq_i; ///“== 0” to stan oczekiwania przeciwny do stanu ‛klikania przycisku do czasu oznaczenia “zdarzenia” kliknięcia’.
   N8 drag_S_pointer_button;
+  I cursor_window;
+  I cursor_object;
+  I current_object;
   unsigned U_R( state, pointer_S_in_window )        :1;
   unsigned U_R( state, pointer_button_S_pressing )  :1;
   unsigned U_R( mode, drag )                        :1;
   unsigned U_R( mode_ex, drag_S_copy )              :1;
   unsigned U_R( mode, drag_stop )                   :1;
   unsigned U_R( mode_ex, drag_stop_S_cancel )       :1;
+  unsigned U_R( mode, draw_simple )                 :1;
   unsigned U_R( req, pointer_S_ungrab )             :1;
   unsigned U_R( req, draw )                         :1;
   //unsigned U_R( req, draw_click )                   :1;
   unsigned U_R( req, flush )                        :1;
+  unsigned U_R( req, restart )                      :1; //TODO wymagana obsługa.
 };
 struct E_mem_Q_tab_Z *E_x_Q_display_S;
 //==============================================================================
-void
-E_x_M( void
-){  E_x_Q_display_S = E_mem_Q_tab_M( sizeof( struct E_x_Q_display_Z ), 0 );
-}
-void
-E_x_W( void
-){  E_mem_Q_tab_W( E_x_Q_display_S );
-}
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 I
 E_x_Q_display_M( void
 ){  I display_id = E_mem_Q_tab_I_add( E_x_Q_display_S );
@@ -138,8 +139,13 @@ E_x_Q_display_M( void
     int x_screen_id_default_;
     display->x_display = xcb_connect( 0, &x_screen_id_default_ );
     display->Z_screen_id_S_default = x_screen_id_default_;
+    Mt_( display->atom, XCB_ATOM_AFTER_LAST - XCB_ATOM_FIRST_DEFINED );
+    if( !display->atom )
+    {   E_mem_Q_tab_I_rem( E_x_Q_display_S, display_id );
+        return ~0;
+    }
 #define _(atom) J_s(atom)
-    char *atom_name[ XCB_ATOM_AFTER_LAST - XCB_ATOM_FIRST_DEFINED ] =
+    Pc atom_name[ XCB_ATOM_AFTER_LAST - XCB_ATOM_FIRST_DEFINED ] =
     { _( XCB_ATOM_FIRST_DEFINED_ )
       E_x_Z_atom_J_atoms_
     };
@@ -148,23 +154,26 @@ E_x_Q_display_M( void
     for_n( i, XCB_ATOM_AFTER_LAST - XCB_ATOM_FIRST_DEFINED )
         atom_req_id[i] = xcb_intern_atom_unchecked( display->x_display
         , no
-        , E_text_Z_s0_R_0_l( atom_name[i] )
+        , E_text_Z_s0_R_l( atom_name[i] )
         , atom_name[i]
         );
-    display->atom = E_mem_Q_blk_M_tab( sizeof( xcb_atom_t ), XCB_ATOM_AFTER_LAST - XCB_ATOM_FIRST_DEFINED );
     for_n_( i, XCB_ATOM_AFTER_LAST - XCB_ATOM_FIRST_DEFINED )
     {   xcb_intern_atom_reply_t *ret = xcb_intern_atom_reply( display->x_display, atom_req_id[i], 0 );
         display->atom[i] = ret->atom;
-        __real_free(ret);
+        free(ret);
     }
+    display->red_luminance_ratio = 0.2126; //CONF
+    display->green_luminance_ratio = 0.7152; //CONF
+    display->blue_luminance_ratio = 0.0722; //CONF
     display->pointer_button_C_release_timeout = 183; //CONF
     display->pointer_button_C_seq_timeout = 183; //CONF
     display->pointer_button_C_restart_delay = 360; //CONF
     display->pointer_button_S_time = 0;
-#ifdef E_flow_C_threads_for_system_unblock_reports
+        #ifdef E_flow_C_thread_system_unblock_reports
     display->pointer_button_S_impulser_time = 0;
-#endif
+        #endif
     display->pointer_button_S_seq_i = 0;
+    display->drag_S_dnd_window_screen_id = 0;
     xcb_font_t font = xcb_generate_id( display->x_display );
     xcb_open_font( display->x_display
     , font
@@ -192,18 +201,28 @@ E_x_Q_display_M( void
     , 0, 0, 0
     );
     xcb_close_font( display->x_display, font );
-    font = xcb_generate_id( display->x_display );
-    xcb_open_font( display->x_display
-    , font
-    , 5
-    , "fixed"
-    );
-    xcb_screen_iterator_t screen_iter = xcb_setup_roots_iterator( xcb_get_setup( display->x_display ));
+    display->class_name_l = E_text_Z_s0_R_0_l( E_base_S->E_flow_S_exe_name ) + E_text_Z_s0_R_0_l( E_base_S->E_flow_S_system_name );
+    display->class_name = M( display->class_name_l );
+    if( !display->class_name )
+    {   W( display->atom );
+        xcb_disconnect( display->x_display );
+        E_mem_Q_tab_I_rem( E_x_Q_display_S, display_id );
+        return ~0;
+    }
+    E_text_Z_s0_P_copy_0( E_text_Z_s0_P_copy_0( display->class_name, E_base_S->E_flow_S_exe_name ), E_base_S->E_flow_S_system_name );
+    display->setup = xcb_get_setup( display->x_display );
+    xcb_get_keyboard_mapping_cookie_t keyboard_mapping_req_id = xcb_get_keyboard_mapping_unchecked( display->x_display, display->setup->min_keycode, 135 ); //NDFN maksymalna wartość
+    display->keyboard_mapping = xcb_get_keyboard_mapping_reply( display->x_display, keyboard_mapping_req_id, 0 );
+    xcb_screen_iterator_t screen_iter = xcb_setup_roots_iterator( display->setup );
     display->screen = E_mem_Q_tab_M( sizeof( struct E_x_Q_screen_Z ), screen_iter.rem );
     I screen_id = 0;
     do
     {   G(); Gd( screen_id );
         struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, screen_id );
+        screen->dpi_x = 25.4 * screen_iter.data->width_in_pixels / screen_iter.data->width_in_millimeters;
+        screen->dpi_y = 25.4 * screen_iter.data->height_in_pixels / screen_iter.data->height_in_millimeters;
+        screen->pixel_width = (F)screen_iter.data->width_in_millimeters / screen_iter.data->width_in_pixels;
+        screen->pixel_height = (F)screen_iter.data->height_in_millimeters / screen_iter.data->height_in_pixels;
         screen->draw_color = 0;
         screen->x_root_window = screen_iter.data->root;
         screen->depth = screen_iter.data->root_depth;
@@ -211,111 +230,11 @@ E_x_Q_display_M( void
         xcb_create_gc( display->x_display
         , screen->drawable_gc
         , screen_iter.data->root
-        , XCB_GC_FONT | XCB_GC_GRAPHICS_EXPOSURES
+        , XCB_GC_GRAPHICS_EXPOSURES
         , ( N32[] )
-          { font
-          , no
+          { no
           }
         );
-        xcb_pixmap_t drawable_background = xcb_generate_id( display->x_display );
-        xcb_create_pixmap( display->x_display
-        , screen_iter.data->root_depth
-        , drawable_background
-        , screen_iter.data->root
-        , 254, 254
-        );
-        for_n( x, 254 )
-        {   for_n( y, 254 )
-            {   E_x_Q_window_I_draw_P_color( display, screen, E_x_Z_color_M(( x + 2 ) % 256, ( y + 2 ) % 256, (( x + 2 ) * ( y + 2 )) % 256 ));
-                xcb_poly_point( display->x_display
-                , XCB_COORD_MODE_ORIGIN
-                , drawable_background
-                , screen->drawable_gc
-                , 1
-                , ( xcb_point_t [] ){ x, y }
-                );
-            }
-        }
-        screen->drawable_background_gc = xcb_generate_id( display->x_display );
-        xcb_create_gc( display->x_display
-        , screen->drawable_background_gc
-        , screen_iter.data->root
-        , XCB_GC_FILL_STYLE | XCB_GC_TILE | XCB_GC_GRAPHICS_EXPOSURES
-        , ( N32[] )
-          { XCB_FILL_STYLE_TILED
-          , drawable_background
-          , no
-          }
-        );
-        xcb_free_pixmap( display->x_display, drawable_background );
-        xcb_copy_gc( display->x_display, screen->drawable_background_gc, screen->drawable_gc, XCB_GC_TILE );
-        xcb_pixmap_t pixmap_obj_wa = xcb_generate_id( display->x_display );
-        xcb_create_pixmap( display->x_display
-        , E_x_Q_obj_C_id_bits
-        , pixmap_obj_wa
-        , screen_iter.data->root
-        , 1, 1
-        );
-        screen->object_mask_gc = xcb_generate_id( display->x_display );
-        xcb_create_gc( display->x_display
-        , screen->object_mask_gc
-        , pixmap_obj_wa
-        , XCB_GC_FONT | XCB_GC_GRAPHICS_EXPOSURES
-        , ( N32[] )
-          { font
-          , no
-          }
-        );
-        xcb_free_pixmap( display->x_display, pixmap_obj_wa );
-        xcb_pixmap_t pixmap_1_wa = xcb_generate_id( display->x_display );
-        xcb_create_pixmap( display->x_display
-        , 1
-        , pixmap_1_wa
-        , screen_iter.data->root
-        , 1, 1
-        );
-        screen->bitmask_1_gc = xcb_generate_id( display->x_display );
-        xcb_create_gc( display->x_display
-        , screen->bitmask_1_gc
-        , pixmap_1_wa
-        , XCB_GC_FUNCTION | XCB_GC_FONT | XCB_GC_GRAPHICS_EXPOSURES
-        , ( N32[] )
-          { XCB_GX_SET
-          , font
-          , no
-          }
-        );
-        screen->bitmask_0_gc = xcb_generate_id( display->x_display );
-        xcb_create_gc( display->x_display
-        , screen->bitmask_0_gc
-        , pixmap_1_wa
-        , XCB_GC_FUNCTION | XCB_GC_GRAPHICS_EXPOSURES
-        , ( N32[] )
-          { XCB_GX_CLEAR
-          , no
-          }
-        );
-        screen->bitmask_not_and_gc = xcb_generate_id( display->x_display );
-        xcb_create_gc( display->x_display
-        , screen->bitmask_not_and_gc
-        , pixmap_1_wa
-        , XCB_GC_FUNCTION | XCB_GC_GRAPHICS_EXPOSURES
-        , ( N32[] )
-          { XCB_GX_AND_INVERTED
-          , no
-          }
-        );
-        screen->bitmask_or_gc = xcb_generate_id( display->x_display );
-        xcb_create_gc( display->x_display
-        , screen->bitmask_or_gc
-        , pixmap_1_wa
-        , XCB_GC_FUNCTION | XCB_GC_GRAPHICS_EXPOSURES
-        , ( N32[] )
-          { XCB_GX_OR
-          , no
-          }
-        );
-        xcb_free_pixmap( display->x_display, pixmap_1_wa );
         //screen->xbutton_drag_copy_x_delta = 20; //CONF
         //screen->xbutton_drag_copy_y_delta = 20; //CONF
         struct E_x_Q_window_Z *dnd_window = &screen->dnd_window;
@@ -331,17 +250,18 @@ E_x_Q_display_M( void
         , 0
         , XCB_WINDOW_CLASS_INPUT_OUTPUT
         , XCB_COPY_FROM_PARENT
-        , XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK
+        , XCB_CW_BIT_GRAVITY | XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK
         , ( N32[] )
-          { yes
+          { XCB_GRAVITY_STATIC
+          , yes
           , XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_RESIZE_REDIRECT
           }
         );
-#ifdef C_xcb_glx
+            #ifdef C_xcb_glx
         xcb_glx_get_fb_configs_cookie_t ret_id = xcb_glx_get_fb_configs_unchecked( display->x_display, screen_id );
         xcb_glx_get_fb_configs_reply_t *ret = xcb_glx_get_fb_configs_reply( display->x_display, ret_id, 0 );
-        __real_free(ret);
         screen->glx_fbconfig = ; //NDFN
+        free(ret);
         dnd_window->glx_window = xcb_generate_id( display->x_display );
         xcb_glx_create_window( display->x_display
         , screen_id
@@ -351,7 +271,7 @@ E_x_Q_display_M( void
         , 0
         , 0
         );
-#endif
+            #endif
         E_x_Z_property_P( display, dnd_window, WM_HINTS
         , WM_HINTS
         , (( xcb_icccm_wm_hints_t )
@@ -360,14 +280,10 @@ E_x_Q_display_M( void
           , .initial_state = XCB_ICCCM_WM_STATE_NORMAL
           })
         );
-        N l = E_text_Z_s0_R_l( E_flow_S_exe_name ) + E_text_Z_s0_R_l( E_flow_S_system_name );
-        Pc s = E_mem_Q_blk_M(l);
-        E_text_Z_s0_P_copy_0( E_text_Z_s0_P_copy_0( s, E_flow_S_exe_name ), E_flow_S_system_name );
         E_x_Z_property_P_text( display, dnd_window, WM_CLASS
         , STRING
-        , s, l
+        , display->class_name, display->class_name_l
         );
-        E_mem_Q_blk_W(s);
         E_x_Z_property_P( display, dnd_window, WM_PROTOCOLS
         , ATOM
         , (( xcb_atom_t[] )
@@ -380,11 +296,11 @@ E_x_Q_display_M( void
         );
         E_x_Z_property_P_text( display, dnd_window, WM_CLIENT_MACHINE
         , STRING
-        , E_flow_S_hostname, ~0
+        , E_base_S->E_flow_S_hostname, ~0
         );
         E_x_Z_property_P_v( display, dnd_window, _NET_WM_PID
         , CARDINAL
-        , E_flow_S_pid
+        , E_base_S->E_flow_S_exe_pid
         );
         E_x_Z_property_P_v( display, dnd_window, _NET_WM_BYPASS_COMPOSITOR
         , CARDINAL
@@ -392,35 +308,66 @@ E_x_Q_display_M( void
         );
         xcb_map_window( display->x_display, dnd_window->x_window );
         U_L( dnd_window->req, close );
+        U_L( screen->state, draw_object_drag_move );
+        U_L( screen->mode, animation );
     }while( screen_iter.rem != 1
     && ( xcb_screen_next( &screen_iter ), screen_id++, yes ));
-    xcb_close_font( display->x_display, font );
     display->window = E_mem_Q_tab_M( sizeof( struct E_x_Q_window_Z ), 0 );
-    if( E_mem_Q_tab_R_l( E_x_Q_display_S ) == 1 )
+    if( E_mem_Q_tab_R_n( E_x_Q_display_S ) == 1 )
     {   D_M( x_window, flush );
         D_M( x_window, draw );
-        Dh_M( x_window, events );
+            #ifndef E_flow_C_thread_system_unblock_reports
+        D_M( x_window, events );
+            #endif
+        D_M( x_object, draw );
     }
+        #ifdef E_flow_C_thread_system_unblock_reports
+    I *M_( thread_proc_arg );
+    if( !thread_proc_arg )
+    {   if( E_mem_Q_tab_R_n( E_x_Q_display_S ) == 1 )
+        {   D_W( x_window, draw );
+            D_W( x_window, flush );
+        }
+        E_mem_Q_tab_W( display->window );
+        E_mem_Q_tab_W( display->screen );
+        W( display->class_name );
+        W( display->atom );
+        xcb_disconnect( display->x_display );
+        E_mem_Q_tab_I_rem( E_x_Q_display_S, display_id );
+        return ~0;
+    }
+    *thread_proc_arg = display_id;
+    Dh_M( x_window, events, display_id, thread_proc_arg );
+        #endif
+    display->cursor_window = ~0;
     U_L( display->state, pointer_S_in_window );
     U_L( display->mode, drag );
     U_L( display->mode, drag_stop );
+    U_L( display->mode, draw_simple );
     U_L( display->req, pointer_S_ungrab );
     U_L( display->req, draw );
     //U_L( display->req, draw_click );
     U_F( display->req, flush );
+    U_L( display->req, restart );
     return display_id;
 }
 void
 E_x_Q_display_W( I id
 ){  struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, id );
-    if( E_mem_Q_tab_R_l( E_x_Q_display_S ) == 1 )
-    {   D_W( x_window, events );
+        #ifdef E_flow_C_thread_system_unblock_reports
+    Dh_W( x_window, events, id );
+        #endif
+    if( E_mem_Q_tab_R_n( E_x_Q_display_S ) == 1 )
+    {   D_W( x_object, draw );
+            #ifndef E_flow_C_thread_system_unblock_reports
+        D_W( x_window, events );
+            #endif
         D_W( x_window, draw );
         D_W( x_window, flush );
     }
     xcb_disconnect( display->x_display );
     if( U_R( display->mode, drag ))
-    {   E_mem_Q_blk_W( display->drag_S_object_src );
+    {   W( display->drag_S_object_src );
         struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, display->drag_S_dnd_window_screen_id );
         E_mem_Q_tab_W( screen->dnd_window.object );
     }
@@ -430,16 +377,19 @@ E_x_Q_display_W( I id
     }
     E_mem_Q_tab_W( display->window );
     E_mem_Q_tab_W( display->screen );
-    E_mem_Q_blk_W( display->atom );
+    free( display->keyboard_mapping );
+    W( display->class_name );
+    W( display->atom );
     E_mem_Q_tab_I_rem( E_x_Q_display_S, id );
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 I
-E_x_Q_window_M( struct E_x_Q_display_Z *display
+E_x_Q_window_M( I display_id
 , I screen_id
 , N width
 , N height
-){  I window_id = E_mem_Q_tab_I_add( display->window );
+){  struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
+    I window_id = E_mem_Q_tab_I_add( display->window );
     struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
     window->screen_id = ~screen_id ? screen_id : display->Z_screen_id_S_default;
     struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, window->screen_id );
@@ -448,46 +398,8 @@ E_x_Q_window_M( struct E_x_Q_display_Z *display
     window->width_new = window->width = width;
     window->height_new = window->height = height;
     window->object = E_mem_Q_tab_M( sizeof( struct E_x_Q_object_Z ), 0 );
-    E_mem_Q_tab_Q_iter_M( window->object, ~0 );
-    window->drawable = xcb_generate_id( display->x_display );
-    xcb_create_pixmap( display->x_display
-    , screen->depth
-    , window->drawable
-    , screen->x_root_window
-    , window->width, window->height
-    );
-    window->drawable_mask = xcb_generate_id( display->x_display );
-    xcb_create_pixmap( display->x_display
-    , 1
-    , window->drawable_mask
-    , screen->x_root_window
-    , window->width, window->height
-    );
-    window->drawable_mask_2 = xcb_generate_id( display->x_display );
-    xcb_create_pixmap( display->x_display
-    , 1
-    , window->drawable_mask_2
-    , screen->x_root_window
-    , window->width, window->height
-    );
-    xcb_poly_fill_rectangle( display->x_display
-    , window->drawable_mask_2
-    , screen->bitmask_1_gc
-    , 1
-    , ( xcb_rectangle_t[] )
-      { 0
-      , 0
-      , window->width
-      , window->height
-      }
-    );
-    window->object_mask = xcb_generate_id( display->x_display );
-    xcb_create_pixmap( display->x_display
-    , E_x_Q_obj_C_id_bits
-    , window->object_mask
-    , screen->x_root_window
-    , window->width, window->height
-    );
+    Mt_( window->drawable, window->width * window->height );
+    Mt_( window->object_mask, window->width * window->height );
     window->user_activity_time = window->last_user_activity_time = 0;
     window->x_window = xcb_generate_id( display->x_display );
     xcb_create_window( display->x_display
@@ -500,10 +412,10 @@ E_x_Q_window_M( struct E_x_Q_display_Z *display
     , XCB_CW_BIT_GRAVITY | XCB_CW_EVENT_MASK
     , ( N32[] )
       { XCB_GRAVITY_STATIC
-      , XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_VISIBILITY_CHANGE | XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_RESIZE_REDIRECT | XCB_EVENT_MASK_FOCUS_CHANGE
+      , XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_VISIBILITY_CHANGE | XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_RESIZE_REDIRECT | XCB_EVENT_MASK_FOCUS_CHANGE
       }
     );
-#ifdef C_xcb_glx
+        #ifdef C_xcb_glx
     window->glx_window = xcb_generate_id( display->x_display );
     xcb_glx_create_window( display->x_display
     , window->screen_id
@@ -513,22 +425,22 @@ E_x_Q_window_M( struct E_x_Q_display_Z *display
     , 0
     , 0
     );
-#endif
+        #endif
     E_x_Z_property_P_text( display, window, WM_NAME
-    , C_STRING
-    , E_flow_S_exe_name, ~0
+    , C_STRING // ‘window manager’ “twm” ? STRING : C_STRING
+    , E_base_S->E_flow_S_exe_name, ~0
     );
     E_x_Z_property_P_text( display, window, _NET_WM_NAME
     , UTF8_STRING
-    , E_flow_S_exe_name, ~0
+    , E_base_S->E_flow_S_exe_name, ~0
     );
     E_x_Z_property_P_text( display, window, WM_ICON_NAME
-    , C_STRING
-    , E_flow_S_exe_name, ~0
+    , C_STRING // ‘window manager’ “twm” ? STRING : C_STRING
+    , E_base_S->E_flow_S_exe_name, ~0
     );
     E_x_Z_property_P_text( display, window, _NET_WM_ICON_NAME
     , UTF8_STRING
-    , E_flow_S_exe_name, ~0
+    , E_base_S->E_flow_S_exe_name, ~0
     );
     E_x_Z_property_P( display, window, WM_NORMAL_HINTS
     , WM_SIZE_HINTS
@@ -546,14 +458,10 @@ E_x_Q_window_M( struct E_x_Q_display_Z *display
       , .initial_state = XCB_ICCCM_WM_STATE_NORMAL
       })
     );
-    N l = E_text_Z_s0_R_l( E_flow_S_exe_name ) + E_text_Z_s0_R_l( E_flow_S_system_name );
-    Pc s = E_mem_Q_blk_M(l);
-    E_text_Z_s0_P_copy_0( E_text_Z_s0_P_copy_0( s, E_flow_S_exe_name ), E_flow_S_system_name );
     E_x_Z_property_P_text( display, window, WM_CLASS
     , STRING
-    , s, l //NDFN do konwersji stratnej do wymaganego typu ‘x’ “STRING”?
+    , display->class_name, display->class_name_l //NDFN do konwersji stratnej do wymaganego typu ‘x’ “STRING”?
     );
-    E_mem_Q_blk_W(s);
     ///“_NET_WM_SYNC_REQUEST” nie jest używane, ponieważ jest sprzeczne z automatycznym doregulowywaniem do dostępnych zasobów obliczeniowych— przez wymuszanie kolejkowania kolejnych zmian raz rozpoczętego zmieniania rozmiaru okna, nie pozwalając na szybkie dopasowanie do odległego od początku żądania bieżącego. sprawdzone w “menedżerze okien” ‟Enlightenment 16”.
     E_x_Z_property_P( display, window, WM_PROTOCOLS
     , ATOM
@@ -565,17 +473,19 @@ E_x_Q_window_M( struct E_x_Q_display_Z *display
     E_x_Z_property_P_atom( display, window, _NET_WM_WINDOW_TYPE
     , _NET_WM_WINDOW_TYPE_NORMAL
     );
-    E_x_Z_property_P( display, window, _NET_WM_ICON
+    E_x_Z_property_P_( display, window, _NET_WM_ICON
     , CARDINAL
+    , 32
+    , E_x_S_wm_icon_S_n
     , E_x_S_wm_icon
-    ); //NDFN zrobić ładowanie z pamięci masowej; tak jak ogólnie dane w menedżerze danych.
+    );
     E_x_Z_property_P_text( display, window, WM_CLIENT_MACHINE
     , STRING
-    , E_flow_S_hostname, ~0
+    , E_base_S->E_flow_S_hostname, ~0
     );
     E_x_Z_property_P_v( display, window, _NET_WM_PID
     , CARDINAL
-    , E_flow_S_pid
+    , E_base_S->E_flow_S_exe_pid
     );
     E_x_Z_property_P_v( display, window, _NET_WM_BYPASS_COMPOSITOR
     , CARDINAL
@@ -586,36 +496,72 @@ E_x_Q_window_M( struct E_x_Q_display_Z *display
     U_L( window->mode, resize );
     U_L( window->req, resize );
     U_F( window->req, draw );
-    U_F( window->req_ex, draw_S_set_background_pixmap );
     U_L( window->req, close );
     U_F( display->req, draw );
-    U_F( display->req, flush );
+    U_L( display->req, flush );
     return window_id;
 }
 void
-E_x_Q_window_W( struct E_x_Q_display_Z *display
+E_x_Q_window_W( I display_id
 , I window_id
-){  struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
-#ifdef C_xcb_glx
+){  struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
+    struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
+        #ifdef C_xcb_glx
     xcb_glx_delete_window( display->x_display, window->glx_window );
-#endif
+        #endif
     xcb_destroy_window( display->x_display, window->x_window );
-    xcb_free_pixmap( display->x_display, window->object_mask );
-    xcb_free_pixmap( display->x_display, window->drawable_mask_2 );
-    xcb_free_pixmap( display->x_display, window->drawable_mask );
-    xcb_free_pixmap( display->x_display, window->drawable );
+    W( window->object_mask );
+    W( window->drawable );
     E_mem_Q_tab_W( window->object );
     E_mem_Q_tab_I_rem( display->window, window_id );
     if( U_R( display->mode, drag ))
     {   for_n( i, display->drag_S_object_src_n )
             if( display->drag_S_object_src[i].window_id == window_id )
             {   U_F( display->mode, drag_stop );
-#ifdef E_flow_C_threads_for_system_unblock_reports
-                E_x_window_D_events_I_unblock();
-#endif
+                    #ifdef E_flow_C_thread_system_unblock_reports
+                E_flow_Q_thread_system_unblock_report_I_unblock( D_id(x_window,events), display_id );
+                    #endif
                 break;
             }
     }
     U_F( display->req, flush );
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+xcb_keysym_t
+E_x_Q_display_R_keysym( struct E_x_Q_display_Z *display
+, xcb_keycode_t keycode
+, N keysym_pos
+){  xcb_keysym_t *keysyms = (P)( display->keyboard_mapping + 1 );
+    return keysyms[ ( keycode - display->setup->min_keycode ) * display->keyboard_mapping->keysyms_per_keycode + keysym_pos ];
+}
+U
+E_x_Q_display_I_keysym_to_unicode( struct E_x_Q_display_Z *display
+, xcb_keysym_t keysym
+){  if(( keysym >= 0x20 && keysym <= 0x7e )
+    || ( keysym >= 0xa0 && keysym <= 0xff )
+    )
+        return keysym;
+    if(( keysym & 0xff000000 ) == 0x1000000 )
+        return keysym & 0xffffff;
+    S first = 0, last = E_x_S_keysym_to_unicode_n;
+    S i;
+    do
+    {   i = first + ( last - first ) / 2;
+        if( keysym == E_x_S_keysym_to_unicode[i].keysym )
+            return E_x_S_keysym_to_unicode[i].u;
+        if( keysym < E_x_S_keysym_to_unicode[i].keysym )
+            last = i - 1;
+        else
+            first = i + 1;
+    }while( first <= last );
+    return ~0;
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+N32
+E_x_Q_image_R_pixel( struct E_x_Q_window_Z *window
+, N32 *pixmap
+, S16 x
+, S16 y
+){  return pixmap[ x + y * window->width ];
 }
 /******************************************************************************/
