@@ -64,6 +64,10 @@ struct E_x_Q_screen_Z
   xcb_glx_fbconfig_t glx_fbconfig;
     #endif
   xcb_gcontext_t drawable_gc;
+    #ifdef C_xcb_shape
+  xcb_pixmap_t dnd_window_shape_pixmap;
+  xcb_gcontext_t bitmask_0_gc, bitmask_1_gc;
+    #endif
   //S16 pointer_button_drag_copy_x_delta, pointer_button_drag_copy_y_delta;
   N8 depth; //NDFN w trakcie przeprojektowywania “screen”.
   struct E_x_Q_window_Z dnd_window; ///używane dane obecne w całości tylko w trybie “drag”.
@@ -134,6 +138,8 @@ struct E_mem_Q_tab_Z *E_x_Q_display_S;
 I
 E_x_Q_display_M( void
 ){  I display_id = E_mem_Q_tab_I_add( E_x_Q_display_S );
+    if( !~display_id )
+        return ~0;
     struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
     //NDFN można szukać innych dostępnych połączeń z serwerem ‟X” na lokalnej maszynie i wykrywać nie połączenie już tutaj.
     int x_screen_id_default_;
@@ -235,6 +241,36 @@ E_x_Q_display_M( void
           { no
           }
         );
+            #ifdef C_xcb_shape
+        xcb_pixmap_t pixmap_1_wa = xcb_generate_id( display->x_display );
+        xcb_create_pixmap( display->x_display
+        , 1
+        , pixmap_1_wa
+        , screen_iter.data->root
+        , 1, 1
+        );
+        screen->bitmask_1_gc = xcb_generate_id( display->x_display );
+        xcb_create_gc( display->x_display
+        , screen->bitmask_1_gc
+        , pixmap_1_wa
+        , XCB_GC_FUNCTION | XCB_GC_GRAPHICS_EXPOSURES
+        , ( N32[] )
+          { XCB_GX_SET
+          , no
+          }
+        );
+        screen->bitmask_0_gc = xcb_generate_id( display->x_display );
+        xcb_create_gc( display->x_display
+        , screen->bitmask_0_gc
+        , pixmap_1_wa
+        , XCB_GC_FUNCTION | XCB_GC_GRAPHICS_EXPOSURES
+        , ( N32[] )
+          { XCB_GX_CLEAR
+          , no
+          }
+        );
+        xcb_free_pixmap( display->x_display, pixmap_1_wa );
+            #endif
         //screen->xbutton_drag_copy_x_delta = 20; //CONF
         //screen->xbutton_drag_copy_y_delta = 20; //CONF
         struct E_x_Q_window_Z *dnd_window = &screen->dnd_window;
@@ -386,10 +422,12 @@ E_x_Q_display_W( I id
 I
 E_x_Q_window_M( I display_id
 , I screen_id
-, N width
-, N height
+, N16 width
+, N16 height
 ){  struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
     I window_id = E_mem_Q_tab_I_add( display->window );
+    if( !~window_id )
+        return ~0;
     struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
     window->screen_id = ~screen_id ? screen_id : display->Z_screen_id_S_default;
     struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, window->screen_id );

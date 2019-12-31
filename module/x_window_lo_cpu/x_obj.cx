@@ -7,7 +7,7 @@
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2015‒4‒28 *
 *******************************************************************************/
 ///są to obiekty wizualne.
-//każdy obiekt okna jest jednokrotny w konkretnym oknie. typy obiektów w celu przypisania referencyjnego funkcji obiektu ewentualnie do zrobienia później, jeśli to rozwiązanie okaże się potrzebne zamiast zwykłego ustawiania wskaźników do procedur.
+//każdy obiekt okna jest jednokrotny w konkretnym oknie.
 //==============================================================================
 typedef
 void
@@ -25,13 +25,6 @@ void
 , N8
 , N8
 );
-enum E_x_Q_object_Z_type
-{ E_x_Q_object_Z_type_S_other
-, E_x_Q_object_Z_type_S_button
-, E_x_Q_object_Z_type_S_entry
-, E_x_Q_object_Z_type_S_font
-, E_x_Q_object_Z_type_S_frame
-};
 struct E_x_Q_object_Z
 { void ///ale obiekt zawiera punkty, które narysuje ta funkcja w czasie wywołania.
   (*draw)(
@@ -54,7 +47,6 @@ struct E_x_Q_object_Z
   P data;
   S16 x, y;
   N16 width, height; ///prostokąt oczekiwanej widoczności obiektu.
-  enum E_x_Q_object_Z_type type;
   unsigned U_R( mode, lay_height ):1;
   unsigned U_R( mode, draggable ) :1;
   unsigned U_R( mode, drag_src )  :1;
@@ -79,7 +71,6 @@ E_x_Q_object_M(
 , S16 y
 , N16 width
 , N16 height
-, enum E_x_Q_object_Z_type type
 , void
   (*clear_data)(P)
 , void
@@ -114,11 +105,10 @@ E_x_Q_object_M(
     object->y = y;
     object->width = width;
     object->height = height;
-    object->type = type;
     U_L( object->mode, lay_height );
     U_F( object->mode, draggable );
     U_L( object->mode, drag_src );
-    U_R( object->req, draw );
+    U_L( object->req, draw );
     return object_id;
 }
 void
@@ -226,7 +216,6 @@ E_x_Q_object_Z_button_M(
     , 0
     , 20
     , 10
-    , E_x_Q_object_Z_type_S_button
     , 0
     , E_x_Q_object_Z_button_I_draw
     , E_x_Q_object_Z_button_I_click
@@ -238,7 +227,7 @@ E_x_Q_object_Z_button_I_draw(
 , struct E_x_Q_screen_Z *screen
 , struct E_x_Q_window_Z *window
 , struct E_x_Q_object_Z *object
-){  E_x_Q_object_I_draw_P_color_( E_x_theme_Q_theme.line );
+){  E_x_Q_object_I_draw_P_color_( E_x_Q_theme.line );
     E_x_Q_object_I_draw_Z_rectangles_((
       ( xcb_rectangle_t[] )
       { { .x = 0
@@ -248,7 +237,7 @@ E_x_Q_object_Z_button_I_draw(
         }
       }
     ));
-    E_x_Q_object_I_draw_P_color_( E_x_theme_Q_theme.object_bg );
+    E_x_Q_object_I_draw_P_color_( E_x_Q_theme.object_bg );
     E_x_Q_object_I_fill_Z_points_((
       ( xcb_point_t[] )
       { { 1, 1 }
@@ -286,7 +275,6 @@ E_x_Q_object_Z_entry_M(
     , 0
     , 16
     , 8
-    , E_x_Q_object_Z_type_S_entry
     , E_x_Q_object_Z_font_I_clear_data
     , E_x_Q_object_Z_entry_I_draw
     , 0
@@ -315,7 +303,7 @@ E_x_Q_object_Z_entry_I_draw(
 , struct E_x_Q_screen_Z *screen
 , struct E_x_Q_window_Z *window
 , struct E_x_Q_object_Z *object
-){  E_x_Q_object_I_draw_P_color_( E_x_theme_Q_theme.window_bg );
+){  E_x_Q_object_I_draw_P_color_( E_x_Q_theme.window_bg );
     E_x_Q_object_I_fill_Z_rectangles_((
       ( xcb_rectangle_t[] )
       { { .x = 0
@@ -355,7 +343,7 @@ E_x_Q_object_Z_entry_I_draw(
     }
     C c = *s;
     *s = '\0';
-    E_x_Q_object_I_draw_Z_font_Z_s_( 0, 0, E_x_theme_Q_theme.text, object_data->font, s_ );
+    E_x_Q_object_I_draw_Z_font_Z_s_( 0, 0, E_x_Q_theme.text, object_data->font, s_ );
     *s = c;
     if( U_R( object_data->state, visible ))
     {   struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, object_data->font );
@@ -384,7 +372,7 @@ E_x_Q_object_Z_entry_I_draw(
                 x += ( x != 0 ? 1 : 0 ) + font->bitmap[0].width;
             l--;
         }
-        E_x_Q_object_I_draw_P_color_( E_x_theme_Q_theme.cursor );
+        E_x_Q_object_I_draw_P_color_( E_x_Q_theme.cursor );
         xcb_segment_t segments[1] =
         { x
         , 0
@@ -439,7 +427,6 @@ E_x_Q_object_Z_font_M(
     , 0
     , width
     , height
-    , E_x_Q_object_Z_type_S_font
     , E_x_Q_object_Z_font_I_clear_data
     , E_x_Q_object_Z_font_I_draw
     , 0
@@ -467,7 +454,7 @@ E_x_Q_object_Z_font_I_draw(
 , struct E_x_Q_window_Z *window
 , struct E_x_Q_object_Z *object
 ){  struct E_x_Q_object_Z_data_Z_font *object_data = object->data;
-    E_x_Q_object_I_draw_Z_font_Z_s_( 0, 0, E_x_theme_Q_theme.text, object_data->font, object_data->label );
+    E_x_Q_object_I_draw_Z_font_Z_s_( 0, 0, E_x_Q_theme.text, object_data->font, object_data->label );
 }
 //------------------------------------------------------------------------------
 I
@@ -480,7 +467,6 @@ E_x_Q_object_Z_frame_M(
     , 0
     , 16
     , 8
-    , E_x_Q_object_Z_type_S_frame
     , 0
     , E_x_Q_object_Z_frame_I_draw
     , 0
@@ -492,7 +478,7 @@ E_x_Q_object_Z_frame_I_draw(
 , struct E_x_Q_screen_Z *screen
 , struct E_x_Q_window_Z *window
 , struct E_x_Q_object_Z *object
-){  E_x_Q_object_I_draw_P_color_( E_x_theme_Q_theme.line );
+){  E_x_Q_object_I_draw_P_color_( E_x_Q_theme.line );
     E_x_Q_object_I_draw_Z_rectangles_((
       ( xcb_rectangle_t[] )
       { { .x = 0

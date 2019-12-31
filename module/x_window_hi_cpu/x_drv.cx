@@ -287,7 +287,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                         if( ~display->cursor_window )
                         {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->cursor_window );
                             struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->cursor_object );
-                            if( object->type == E_x_Q_object_Z_type_S_entry )
+                            if( object->draw == E_x_Q_object_Z_entry_I_draw )
                             {   struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
                                 if( ~u && iswprint(u) )
                                 {   Pc s = object_data->text;
@@ -982,6 +982,9 @@ Loop:           free( x_event );
                 W( display->drag_S_object_src );
                 struct E_x_Q_window_Z *dnd_window = &screen->dnd_window;
                 E_mem_Q_tab_W( dnd_window->object );
+                    #ifdef C_xcb_shape
+                xcb_free_pixmap( display->x_display, screen->dnd_window_shape_pixmap );
+                    #endif
                 xcb_configure_window( display->x_display
                 , dnd_window->x_window
                 , XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT
@@ -1086,7 +1089,7 @@ Loop:           free( x_event );
                                         dnd_window->width_new = dnd_window->width = object->width;
                                         dnd_window->height_new = dnd_window->height = object->height;
                                         dnd_window->object = E_mem_Q_tab_M( sizeof( struct E_x_Q_object_Z ), 0 );
-                                        I dnd_window_object_id = E_x_Q_object_M( display, dnd_window, 0, 0, 0, object->width, object->height, object->type, 0, object->draw, 0 );
+                                        I dnd_window_object_id = E_x_Q_object_M( display, dnd_window, 0, 0, 0, object->width, object->height, 0, object->draw, 0 );
                                         struct E_x_Q_object_Z *dnd_window_object = E_mem_Q_tab_R( dnd_window->object, dnd_window_object_id );
                                         dnd_window_object->data = object->data;
                                         U_F( object->mode, drag_src );
@@ -1110,7 +1113,7 @@ Loop:           free( x_event );
                                                 U_F( object_src->mode, drag_src );
                                                 display->drag_S_object_src[ display->drag_S_object_src_n + i ].window_id = display->pointer_button_S_window_id;
                                                 display->drag_S_object_src[ display->drag_S_object_src_n + i ].object_id = object->child[i];
-                                                I dnd_window_object_id = E_x_Q_object_M( display, dnd_window, 0, object_src->x - parent_object->x, object_src->y - parent_object->y, object_src->width, object_src->height, object->type, 0, object_src->draw, 0 );
+                                                I dnd_window_object_id = E_x_Q_object_M( display, dnd_window, 0, object_src->x - parent_object->x, object_src->y - parent_object->y, object_src->width, object_src->height, 0, object_src->draw, 0 );
                                                 struct E_x_Q_object_Z *dnd_window_object = E_mem_Q_tab_R( dnd_window->object, dnd_window_object_id );
                                                 dnd_window_object->data = object_src->data;
                                                 G_(); Gd( display->drag_S_object_src[ child_expanded_n ].object_id ); Gd( dnd_window_object_id );
@@ -1137,7 +1140,13 @@ Loop:           free( x_event );
                                         xcb_grab_pointer_reply_t *ret = xcb_grab_pointer_reply( display->x_display, ret_id, 0 );
                                         free(ret);
                                         Mt_( dnd_window->drawable, dnd_window->width * dnd_window->height );
+                                        if( !dnd_window->drawable )
+                                        {   GV(NA); V();
+                                        }
                                         Mt_( dnd_window->object_mask, dnd_window->width * dnd_window->height );
+                                        if( !dnd_window->object_mask )
+                                        {   GV(NA); V();
+                                        }
                                         xcb_configure_window( display->x_display
                                         , dnd_window->x_window
                                         , XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT | XCB_CONFIG_WINDOW_STACK_MODE
@@ -1149,6 +1158,19 @@ Loop:           free( x_event );
                                           , XCB_STACK_MODE_ABOVE
                                           }
                                         );
+                                            #ifdef C_xcb_shape
+                                        screen->dnd_window_shape_pixmap = xcb_generate_id( display->x_display );
+                                        xcb_create_pixmap( display->x_display
+                                        , 1
+                                        , screen->dnd_window_shape_pixmap
+                                        , screen->x_root_window
+                                        , dnd_window->width, dnd_window->height
+                                        );
+                                        //M( dnd_window->width * dnd_window->height / 8 + ( dnd_window->width * dnd_window->height % 8 ? 1 : 0 ));
+                                        //if( !screen->dnd_window_shape_pixmap )
+                                        //{   GV(NA); V();
+                                        //}
+                                            #endif
                                         U_L( dnd_window->mode, resize );
                                         U_L( dnd_window->req, resize );
                                         U_F( dnd_window->req, draw );
@@ -1162,7 +1184,7 @@ Drag_start_error:                   {   GV_(NA);
                                     }
                                 }else if( display->pointer_button_S_seq_i == 2
                                 && display->pointer_button == 1
-                                && object->type == E_x_Q_object_Z_type_S_entry
+                                && object->draw == E_x_Q_object_Z_entry_I_draw
                                 ){  I cursor_window = display->cursor_window;
                                     display->cursor_window = display->pointer_button_S_window_id;
                                     display->cursor_object = xbutton_object_id;
@@ -1299,7 +1321,13 @@ Drag_start_error:                   {   GV_(NA);
                     W( dnd_window->drawable );
                     dnd_window = &screen->dnd_window;
                     Mt_( dnd_window->drawable, dnd_window->width * dnd_window->height );
+                    if( !dnd_window->drawable )
+                    {   GV(NA); V();
+                    }
                     Mt_( dnd_window->object_mask, dnd_window->width * dnd_window->height );
+                    if( !dnd_window->object_mask )
+                    {   GV(NA); V();
+                    }
                     xcb_configure_window( display->x_display
                     , dnd_window->x_window
                     , XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT
@@ -1338,7 +1366,13 @@ Drag_start_error:                   {   GV_(NA);
                         W( window->object_mask );
                         W( window->drawable );
                         Mt_( window->drawable, window->width * window->height );
+                        if( !window->drawable )
+                        {   GV(NA); V();
+                        }
                         Mt_( window->object_mask, window->width * window->height );
+                        if( !window->object_mask )
+                        {   GV(NA); V();
+                        }
                         U_F( window->req, draw );
                         U_F( display->req, draw );
                     }
@@ -1364,7 +1398,13 @@ Drag_start_error:                   {   GV_(NA);
                             W( window->object_mask );
                             W( window->drawable );
                             Mt_( window->drawable, window->width * window->height );
+                            if( !window->drawable )
+                            {   GV(NA); V();
+                            }
                             Mt_( window->object_mask, window->width * window->height );
+                            if( !window->object_mask )
+                            {   GV(NA); V();
+                            }
                             U_F( window->req, draw );
                             U_F( display->req, draw );
                             E_x_Q_object_I_lay( display, window );
@@ -1417,14 +1457,14 @@ D( x_window, draw )
                     )
                     {   struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, window->screen_id );
                         for_n( i, window->width * window->height )
-                        {   window->drawable[i] = E_x_theme_Q_theme.window_bg;
+                            window->drawable[i] = E_x_Q_theme.window_bg;
+                        for_n_( i, window->width * window->height / 8 + ( window->width * window->height % 8 ? 1 : 0 ))
                             window->object_mask[i] = ~0;
-                        }
                         for_each( object_id, window->object, E_mem_Q_tab ) //NDFN zakładana kolejność od na spodzie do na wierzchu. nie wiadomo, czy “_q” jest konieczne.
                         {   display->current_object = object_id;
                             struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
                             if( U_R( object->mode, drag_src ))
-                            {   N32 color = E_x_theme_Q_theme.current_brace;
+                            {   N32 color = E_x_Q_theme.current_brace;
                                 if( screen->draw_color != color )
                                     screen->draw_color = color;
                             }
@@ -1452,13 +1492,33 @@ D( x_window, draw )
                 && U_E( window->req, draw )
                 )
                 {   for_n( i, window->width * window->height )
-                        window->drawable[i] = E_x_theme_Q_theme.window_bg;
+                        window->drawable[i] = E_x_Q_theme.window_bg;
+                        #ifdef C_xcb_shape
+                    xcb_poly_fill_rectangle( display->x_display
+                    , screen->dnd_window_shape_pixmap
+                    , screen->bitmask_0_gc
+                    , 1
+                    , ( xcb_rectangle_t [] )
+                      { 0, 0
+                      , window->width, window->height
+                      }
+                    );
+                        #endif
                     U_F( screen->state, draw_object_drag_move );
                     for_each( object_id, window->object, E_mem_Q_tab )
                     {   struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
                         object->draw( display, screen, window, object );
                     }
                     U_L( screen->state, draw_object_drag_move );
+                        #ifdef C_xcb_shape
+                    xcb_shape_mask( display->x_display
+                    , XCB_SHAPE_SO_SET
+                    , XCB_SHAPE_SK_BOUNDING
+                    , window->x_window
+                    , 0, 0
+                    , screen->dnd_window_shape_pixmap
+                    );
+                        #endif
                     xcb_put_image( display->x_display
                     , XCB_IMAGE_FORMAT_Z_PIXMAP
                     , window->x_window
@@ -1470,15 +1530,6 @@ D( x_window, draw )
                     , window->width * window->height * sizeof(N32)
                     , (P)window->drawable
                     );
-                        //#ifdef C_xcb_shape
-                    //xcb_shape_mask( display->x_display
-                    //, XCB_SHAPE_SO_SET
-                    //, XCB_SHAPE_SK_BOUNDING
-                    //, window->x_window
-                    //, 0, 0
-                    //, window->drawable_mask
-                    //);
-                        //#endif
                     U_F( display->req, flush );
                 }
             }

@@ -282,7 +282,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                         if( ~display->cursor_window )
                         {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->cursor_window );
                             struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->cursor_object );
-                            if( object->type == E_x_Q_object_Z_type_S_entry )
+                            if( object->draw == E_x_Q_object_Z_entry_I_draw )
                             {   struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
                                 if( ~u && iswprint(u) )
                                 {   Pc s = object_data->text;
@@ -1067,25 +1067,17 @@ Loop:           free( x_event );
                                     U_F( x_object, draw );
                                 }
                             }
-                            N xbutton_object_id;
+                            I xbutton_object_id;
                             if( display->pointer_button_S_x >= 0
                             && display->pointer_button_S_x < window->width
                             && display->pointer_button_S_y >= 0
                             && display->pointer_button_S_y < window->height
                             )
-                            {   xcb_get_image_cookie_t ret_id = xcb_get_image_unchecked( display->x_display
-                                , XCB_IMAGE_FORMAT_Z_PIXMAP
+                                xbutton_object_id = E_x_Q_image_R_pixel( display
                                 , window->object_mask
                                 , display->pointer_button_S_x, display->pointer_button_S_y
-                                , 1, 1
-                                , ~0 //NDFN
                                 );
-                                xcb_get_image_reply_t *ret = xcb_get_image_reply( display->x_display, ret_id, 0 );
-                                xbutton_object_id = *( N32 * )xcb_get_image_data(ret);
-                                free(ret);
-                                if( xbutton_object_id == ~( _v( xbutton_object_id, ~0 ) << E_x_Q_obj_C_id_bits ))
-                                    xbutton_object_id = ~0;
-                            }else
+                            else
                                 xbutton_object_id = ~0;
                             if( ~xbutton_object_id )
                             {   struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, xbutton_object_id );
@@ -1102,7 +1094,7 @@ Loop:           free( x_event );
                                         dnd_window->width_new = dnd_window->width = object->width;
                                         dnd_window->height_new = dnd_window->height = object->height;
                                         dnd_window->object = E_mem_Q_tab_M( sizeof( struct E_x_Q_object_Z ), 0 );
-                                        I dnd_window_object_id = E_x_Q_object_M( display, dnd_window, 0, 0, 0, object->width, object->height, object->type, 0, object->draw, 0 );
+                                        I dnd_window_object_id = E_x_Q_object_M( display, dnd_window, 0, 0, 0, object->width, object->height, 0, object->draw, 0 );
                                         struct E_x_Q_object_Z *dnd_window_object = E_mem_Q_tab_R( dnd_window->object, dnd_window_object_id );
                                         dnd_window_object->data = object->data;
                                         U_F( object->mode, drag_src );
@@ -1126,7 +1118,7 @@ Loop:           free( x_event );
                                                 U_F( object_src->mode, drag_src );
                                                 display->drag_S_object_src[ display->drag_S_object_src_n + i ].window_id = display->pointer_button_S_window_id;
                                                 display->drag_S_object_src[ display->drag_S_object_src_n + i ].object_id = object->child[i];
-                                                I dnd_window_object_id = E_x_Q_object_M( display, dnd_window, 0, object_src->x - parent_object->x, object_src->y - parent_object->y, object_src->width, object_src->height, object->type, 0, object_src->draw, 0 );
+                                                I dnd_window_object_id = E_x_Q_object_M( display, dnd_window, 0, object_src->x - parent_object->x, object_src->y - parent_object->y, object_src->width, object_src->height, 0, object_src->draw, 0 );
                                                 struct E_x_Q_object_Z *dnd_window_object = E_mem_Q_tab_R( dnd_window->object, dnd_window_object_id );
                                                 dnd_window_object->data = object_src->data;
                                                 G_(); Gd( display->drag_S_object_src[ child_expanded_n ].object_id ); Gd( dnd_window_object_id );
@@ -1227,7 +1219,7 @@ Drag_start_error:                   {   GV_(NA);
                                     }
                                 }else if( display->pointer_button_S_seq_i == 2
                                 && display->pointer_button == 1
-                                && object->type == E_x_Q_object_Z_type_S_entry
+                                && object->draw == E_x_Q_object_Z_entry_I_draw
                                 ){  I cursor_window = display->cursor_window;
                                     display->cursor_window = display->pointer_button_S_window_id;
                                     display->cursor_object = xbutton_object_id;
@@ -1670,7 +1662,7 @@ D( x_window, draw )
                             );
                             struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
                             if( U_R( object->mode, drag_src ))
-                            {   N32 color = E_x_theme_Q_theme.current_brace;
+                            {   N32 color = E_x_Q_theme.current_brace;
                                 if( screen->draw_color != color )
                                     xcb_change_gc( display->x_display
                                     , screen->drawable_gc

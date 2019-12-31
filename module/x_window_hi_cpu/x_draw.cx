@@ -7,14 +7,14 @@
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2015‒4‒28 *
 *******************************************************************************/
 enum E_x_Z_aa_pixel
-{ Z_aa_pixel_S_e = 1 << 0,
-  Z_aa_pixel_S_se = 1 << 1,
-  Z_aa_pixel_S_s = 1 << 2,
-  Z_aa_pixel_S_sw = 1 << 3,
-  Z_aa_pixel_S_w = 1 << 4,
-  Z_aa_pixel_S_nw = 1 << 5,
-  Z_aa_pixel_S_n = 1 << 6,
-  Z_aa_pixel_S_ne = 1 << 7
+{ E_x_Z_aa_pixel_S_e = 1 << 0,
+  E_x_Z_aa_pixel_S_se = 1 << 1,
+  E_x_Z_aa_pixel_S_s = 1 << 2,
+  E_x_Z_aa_pixel_S_sw = 1 << 3,
+  E_x_Z_aa_pixel_S_w = 1 << 4,
+  E_x_Z_aa_pixel_S_nw = 1 << 5,
+  E_x_Z_aa_pixel_S_n = 1 << 6,
+  E_x_Z_aa_pixel_S_ne = 1 << 7
 };
 //==============================================================================
 N32
@@ -87,7 +87,19 @@ E_x_Q_window_I_draw_Z_points(
     {   window->drawable[ points[i].x + points[i].y * window->width ] = screen->draw_color;
         if( !U_R( screen->state, draw_object_drag_move ))
             window->object_mask[ points[i].x + points[i].y * window->width ] = display->current_object;
+        //else
+            
+            //screen->dnd_window_shape_pixmap[ ( points[i].x + points[i].y * window->width ) / 8 ] |= 1 << (( points[i].x + points[i].y * window->width ) % 8 );
     }
+    if( U_R( screen->state, draw_object_drag_move ))
+        xcb_poly_point( display->x_display
+        , XCB_COORD_MODE_ORIGIN
+        , screen->dnd_window_shape_pixmap
+        , screen->bitmask_1_gc
+        , n
+        , points
+        );
+        
 }
 void
 E_x_Q_window_I_draw_Z_segments(
@@ -242,14 +254,14 @@ E_x_Q_window_I_draw_aa_Z_pixel(
     N n = 0;
     if( !U_R( screen->state, draw_object_drag_move ))
     {   N p[8];
-        p[0] = ( get_pixel & Z_aa_pixel_S_e ) && x + 1 < window->width ? E_x_Q_image_R_pixel( window, window->drawable, x + 1, y ) : color;
-        p[1] = ( get_pixel & Z_aa_pixel_S_se ) && x + 1 < window->width && y + 1 < window->height ? E_x_Q_image_R_pixel( window, window->drawable, x + 1, y + 1 ) : color;
-        p[2] = ( get_pixel & Z_aa_pixel_S_s ) && y + 1 < window->height ? E_x_Q_image_R_pixel( window, window->drawable, x, y + 1 ) : color;
-        p[3] = ( get_pixel & Z_aa_pixel_S_sw ) && x > 0 && y + 1 < window->height ? E_x_Q_image_R_pixel( window, window->drawable, x - 1, y + 1 ) : color;
-        p[4] = ( get_pixel & Z_aa_pixel_S_w ) && x > 0 ? E_x_Q_image_R_pixel( window, window->drawable, x - 1, y ) : color;
-        p[5] = ( get_pixel & Z_aa_pixel_S_nw ) && x > 0 && y > 0 ? E_x_Q_image_R_pixel( window, window->drawable, x - 1, y - 1 ) : color;
-        p[6] = ( get_pixel & Z_aa_pixel_S_n ) && y > 0 ? E_x_Q_image_R_pixel( window, window->drawable, x, y - 1 ) : color;
-        p[7] = ( get_pixel & Z_aa_pixel_S_ne ) && x + 1 < window->width && y > 0 ? E_x_Q_image_R_pixel( window, window->drawable, x + 1, y - 1 ) : color;
+        p[0] = ( get_pixel & E_x_Z_aa_pixel_S_e ) && x + 1 < window->width ? E_x_Q_image_R_pixel( window, window->drawable, x + 1, y ) : color;
+        p[1] = ( get_pixel & E_x_Z_aa_pixel_S_se ) && x + 1 < window->width && y + 1 < window->height ? E_x_Q_image_R_pixel( window, window->drawable, x + 1, y + 1 ) : color;
+        p[2] = ( get_pixel & E_x_Z_aa_pixel_S_s ) && y + 1 < window->height ? E_x_Q_image_R_pixel( window, window->drawable, x, y + 1 ) : color;
+        p[3] = ( get_pixel & E_x_Z_aa_pixel_S_sw ) && x > 0 && y + 1 < window->height ? E_x_Q_image_R_pixel( window, window->drawable, x - 1, y + 1 ) : color;
+        p[4] = ( get_pixel & E_x_Z_aa_pixel_S_w ) && x > 0 ? E_x_Q_image_R_pixel( window, window->drawable, x - 1, y ) : color;
+        p[5] = ( get_pixel & E_x_Z_aa_pixel_S_nw ) && x > 0 && y > 0 ? E_x_Q_image_R_pixel( window, window->drawable, x - 1, y - 1 ) : color;
+        p[6] = ( get_pixel & E_x_Z_aa_pixel_S_n ) && y > 0 ? E_x_Q_image_R_pixel( window, window->drawable, x, y - 1 ) : color;
+        p[7] = ( get_pixel & E_x_Z_aa_pixel_S_ne ) && x + 1 < window->width && y > 0 ? E_x_Q_image_R_pixel( window, window->drawable, x + 1, y - 1 ) : color;
         background_red = background_green = background_blue = 0;
         for_n( i, 8 )
             if( p[i] != color )
@@ -264,9 +276,9 @@ E_x_Q_window_I_draw_aa_Z_pixel(
         background_green /= n;
         background_blue /= n;
     }else
-    {   background_red = E_x_Z_color_R_red( E_x_theme_Q_theme.window_bg );
-        background_green = E_x_Z_color_R_green( E_x_theme_Q_theme.window_bg );
-        background_blue = E_x_Z_color_R_blue( E_x_theme_Q_theme.window_bg );
+    {   background_red = E_x_Z_color_R_red( E_x_Q_theme.window_bg );
+        background_green = E_x_Z_color_R_green( E_x_Q_theme.window_bg );
+        background_blue = E_x_Z_color_R_blue( E_x_Q_theme.window_bg );
     }
     N red = E_x_Z_color_R_red(color);
     N green = E_x_Z_color_R_green(color);
@@ -324,25 +336,25 @@ E_x_Q_window_I_draw_aa_Z_lines(
                       rectangle[0].x, rectangle[0].y - 1
                     , color
                     , pole / pole_pixela
-                    , Z_aa_pixel_S_w | Z_aa_pixel_S_nw | Z_aa_pixel_S_n
+                    , E_x_Z_aa_pixel_S_w | E_x_Z_aa_pixel_S_nw | E_x_Z_aa_pixel_S_n
                     );
                     E_x_Q_window_I_draw_aa_Z_pixel_(
                       rectangle[0].x + rectangle[0].width - 1, rectangle[0].y - 1
                     , color
                     , pole / pole_pixela
-                    , Z_aa_pixel_S_n | Z_aa_pixel_S_ne | Z_aa_pixel_S_e
+                    , E_x_Z_aa_pixel_S_n | E_x_Z_aa_pixel_S_ne | E_x_Z_aa_pixel_S_e
                     );
                     E_x_Q_window_I_draw_aa_Z_pixel_(
                       rectangle[0].x, rectangle[0].y + rectangle[0].height
                     , color
                     , pole / pole_pixela
-                    , Z_aa_pixel_S_w | Z_aa_pixel_S_se | Z_aa_pixel_S_s
+                    , E_x_Z_aa_pixel_S_w | E_x_Z_aa_pixel_S_se | E_x_Z_aa_pixel_S_s
                     );
                     E_x_Q_window_I_draw_aa_Z_pixel_(
                       rectangle[0].x + rectangle[0].width - 1, rectangle[0].y + rectangle[0].height
                     , color
                     , pole / pole_pixela
-                    , Z_aa_pixel_S_s | Z_aa_pixel_S_se | Z_aa_pixel_S_e
+                    , E_x_Z_aa_pixel_S_s | E_x_Z_aa_pixel_S_se | E_x_Z_aa_pixel_S_e
                     );
                     if( points[i].x + 1 < points[ i + 1 ].x )
                         for( S16 x = points[i].x + 1; x != points[ i + 1 ].x; x++ )
@@ -350,13 +362,13 @@ E_x_Q_window_I_draw_aa_Z_lines(
                               x, rectangle[0].y - 1
                             , color
                             , pole / pole_pixela
-                            , Z_aa_pixel_S_n
+                            , E_x_Z_aa_pixel_S_n
                             );
                             E_x_Q_window_I_draw_aa_Z_pixel_(
                               x, rectangle[0].y + rectangle[0].height
                             , color
                             , pole / pole_pixela
-                            , Z_aa_pixel_S_s
+                            , E_x_Z_aa_pixel_S_s
                             );
                         }
                 }
@@ -395,25 +407,25 @@ E_x_Q_window_I_draw_aa_Z_lines(
                       rectangle[0].x, rectangle[0].y - 1
                     , color
                     , pole / pole_pixela
-                    , Z_aa_pixel_S_w | Z_aa_pixel_S_nw | Z_aa_pixel_S_n
+                    , E_x_Z_aa_pixel_S_w | E_x_Z_aa_pixel_S_nw | E_x_Z_aa_pixel_S_n
                     );
                     E_x_Q_window_I_draw_aa_Z_pixel_(
                       rectangle[0].x + rectangle[0].width - 1, rectangle[0].y - 1
                     , color
                     , pole / pole_pixela
-                    , Z_aa_pixel_S_n | Z_aa_pixel_S_ne | Z_aa_pixel_S_e
+                    , E_x_Z_aa_pixel_S_n | E_x_Z_aa_pixel_S_ne | E_x_Z_aa_pixel_S_e
                     );
                     E_x_Q_window_I_draw_aa_Z_pixel_(
                       rectangle[0].x, rectangle[0].y + rectangle[0].height
                     , color
                     , pole / pole_pixela
-                    , Z_aa_pixel_S_w | Z_aa_pixel_S_sw | Z_aa_pixel_S_s
+                    , E_x_Z_aa_pixel_S_w | E_x_Z_aa_pixel_S_sw | E_x_Z_aa_pixel_S_s
                     );
                     E_x_Q_window_I_draw_aa_Z_pixel_(
                       rectangle[0].x + rectangle[0].width - 1, rectangle[0].y + rectangle[0].height
                     , color
                     , pole / pole_pixela
-                    , Z_aa_pixel_S_s | Z_aa_pixel_S_se | Z_aa_pixel_S_e
+                    , E_x_Z_aa_pixel_S_s | E_x_Z_aa_pixel_S_se | E_x_Z_aa_pixel_S_e
                     );
                     if( points[ i + 1 ].x + 1 < points[i].x )
                         for( S16 x = points[ i + 1 ].x + 1; x != points[i].x; x++ )
@@ -421,13 +433,13 @@ E_x_Q_window_I_draw_aa_Z_lines(
                               x, rectangle[0].y - 1
                             , color
                             , pole / pole_pixela
-                            , Z_aa_pixel_S_n
+                            , E_x_Z_aa_pixel_S_n
                             );
                             E_x_Q_window_I_draw_aa_Z_pixel_(
                              x, rectangle[0].y + rectangle[0].height
                             , color
                             , pole / pole_pixela
-                            , Z_aa_pixel_S_s
+                            , E_x_Z_aa_pixel_S_s
                             );
                         }
                 }
@@ -464,25 +476,25 @@ E_x_Q_window_I_draw_aa_Z_lines(
                       rectangle[0].x - 1, rectangle[0].y
                     , color
                     , pole / pole_pixela
-                    , Z_aa_pixel_S_w | Z_aa_pixel_S_nw | Z_aa_pixel_S_n
+                    , E_x_Z_aa_pixel_S_w | E_x_Z_aa_pixel_S_nw | E_x_Z_aa_pixel_S_n
                     );
                     E_x_Q_window_I_draw_aa_Z_pixel_(
                       rectangle[0].x + rectangle[0].width, rectangle[0].y
                     , color
                     , pole / pole_pixela
-                    , Z_aa_pixel_S_n | Z_aa_pixel_S_ne | Z_aa_pixel_S_e
+                    , E_x_Z_aa_pixel_S_n | E_x_Z_aa_pixel_S_ne | E_x_Z_aa_pixel_S_e
                     );
                     E_x_Q_window_I_draw_aa_Z_pixel_(
                       rectangle[0].x - 1, rectangle[0].y + rectangle[0].height - 1
                     , color
                     , pole / pole_pixela
-                    , Z_aa_pixel_S_w | Z_aa_pixel_S_sw | Z_aa_pixel_S_s
+                    , E_x_Z_aa_pixel_S_w | E_x_Z_aa_pixel_S_sw | E_x_Z_aa_pixel_S_s
                     );
                     E_x_Q_window_I_draw_aa_Z_pixel_(
                       rectangle[0].x + rectangle[0].width, rectangle[0].y + rectangle[0].height - 1
                     , color
                     , pole / pole_pixela
-                    , Z_aa_pixel_S_s | Z_aa_pixel_S_se | Z_aa_pixel_S_e
+                    , E_x_Z_aa_pixel_S_s | E_x_Z_aa_pixel_S_se | E_x_Z_aa_pixel_S_e
                     );
                     if( points[i].y + 1 < points[ i + 1 ].y )
                         for( S16 y = points[i].y + 1; y != points[ i + 1 ].y; y++ )
@@ -490,13 +502,13 @@ E_x_Q_window_I_draw_aa_Z_lines(
                               rectangle[0].x - 1, y
                             , color
                             , pole / pole_pixela
-                            , Z_aa_pixel_S_w
+                            , E_x_Z_aa_pixel_S_w
                             );
                             E_x_Q_window_I_draw_aa_Z_pixel_(
                               rectangle[0].x + rectangle[0].width, y
                             , color
                             , pole / pole_pixela
-                            , Z_aa_pixel_S_e
+                            , E_x_Z_aa_pixel_S_e
                             );
                         }
                 }
@@ -530,25 +542,25 @@ E_x_Q_window_I_draw_aa_Z_lines(
                       rectangle[0].x - 1, rectangle[0].y
                     , color
                     , pole / pole_pixela
-                    , Z_aa_pixel_S_w | Z_aa_pixel_S_nw | Z_aa_pixel_S_n
+                    , E_x_Z_aa_pixel_S_w | E_x_Z_aa_pixel_S_nw | E_x_Z_aa_pixel_S_n
                     );
                     E_x_Q_window_I_draw_aa_Z_pixel_(
                       rectangle[0].x + rectangle[0].width, rectangle[0].y
                     , color
                     , pole / pole_pixela
-                    , Z_aa_pixel_S_n | Z_aa_pixel_S_ne | Z_aa_pixel_S_e
+                    , E_x_Z_aa_pixel_S_n | E_x_Z_aa_pixel_S_ne | E_x_Z_aa_pixel_S_e
                     );
                     E_x_Q_window_I_draw_aa_Z_pixel_(
                       rectangle[0].x - 1, rectangle[0].y + rectangle[0].height - 1
                     , color
                     , pole / pole_pixela
-                    , Z_aa_pixel_S_w | Z_aa_pixel_S_sw | Z_aa_pixel_S_s
+                    , E_x_Z_aa_pixel_S_w | E_x_Z_aa_pixel_S_sw | E_x_Z_aa_pixel_S_s
                     );
                     E_x_Q_window_I_draw_aa_Z_pixel_(
                       rectangle[0].x + rectangle[0].width, rectangle[0].y + rectangle[0].height - 1
                     , color
                     , pole / pole_pixela
-                    , Z_aa_pixel_S_s | Z_aa_pixel_S_se | Z_aa_pixel_S_e
+                    , E_x_Z_aa_pixel_S_s | E_x_Z_aa_pixel_S_se | E_x_Z_aa_pixel_S_e
                     );
                     if( points[ i + 1 ].y + 1 < points[i].y )
                         for( S16 y = points[ i + 1 ].y + 1; y != points[i].y; y++ )
@@ -556,13 +568,13 @@ E_x_Q_window_I_draw_aa_Z_lines(
                               rectangle[0].x - 1, y
                             , color
                             , pole / pole_pixela
-                            , Z_aa_pixel_S_w
+                            , E_x_Z_aa_pixel_S_w
                             );
                             E_x_Q_window_I_draw_aa_Z_pixel_(
                               rectangle[0].x + rectangle[0].width, y
                             , color
                             , pole / pole_pixela
-                            , Z_aa_pixel_S_e
+                            , E_x_Z_aa_pixel_S_e
                             );
                         }
                 }
@@ -924,45 +936,45 @@ E_x_Q_window_I_draw_aa_Z_lines(
                 {   N get_pixel;
                     if( U_R( screen->mode, animation ))
                         if( dx_direction > 0 && dy_direction > 0 )
-                        {   get_pixel = prawoskretny ? Z_aa_pixel_S_sw : Z_aa_pixel_S_ne;
+                        {   get_pixel = prawoskretny ? E_x_Z_aa_pixel_S_sw : E_x_Z_aa_pixel_S_ne;
                             if( prawoskretny && prev_dy )
-                                get_pixel |= Z_aa_pixel_S_nw | Z_aa_pixel_S_w;
+                                get_pixel |= E_x_Z_aa_pixel_S_nw | E_x_Z_aa_pixel_S_w;
                             if( !prawoskretny && prev_dx )
-                                get_pixel |= Z_aa_pixel_S_nw | Z_aa_pixel_S_n;
+                                get_pixel |= E_x_Z_aa_pixel_S_nw | E_x_Z_aa_pixel_S_n;
                             if( prawoskretny && !dy )
-                                get_pixel |= Z_aa_pixel_S_s;
+                                get_pixel |= E_x_Z_aa_pixel_S_s;
                             if( !prawoskretny && !dx )
-                                get_pixel |= Z_aa_pixel_S_e;
+                                get_pixel |= E_x_Z_aa_pixel_S_e;
                         }else if( dx_direction > 0 && dy_direction < 0 )
-                        {   get_pixel = prawoskretny ? Z_aa_pixel_S_se : Z_aa_pixel_S_nw;
+                        {   get_pixel = prawoskretny ? E_x_Z_aa_pixel_S_se : E_x_Z_aa_pixel_S_nw;
                             if( prawoskretny && prev_dx )
-                                get_pixel |= Z_aa_pixel_S_sw | Z_aa_pixel_S_s;
+                                get_pixel |= E_x_Z_aa_pixel_S_sw | E_x_Z_aa_pixel_S_s;
                             if( !prawoskretny && prev_dy )
-                                get_pixel |= Z_aa_pixel_S_sw | Z_aa_pixel_S_w;
+                                get_pixel |= E_x_Z_aa_pixel_S_sw | E_x_Z_aa_pixel_S_w;
                             if( prawoskretny && !dx )
-                                get_pixel |= Z_aa_pixel_S_s;
+                                get_pixel |= E_x_Z_aa_pixel_S_s;
                             if( !prawoskretny && !dy )
-                                get_pixel |= Z_aa_pixel_S_w;
+                                get_pixel |= E_x_Z_aa_pixel_S_w;
                         }else if( dx_direction < 0 && dy_direction > 0 )
-                        {   get_pixel = prawoskretny ? Z_aa_pixel_S_nw : Z_aa_pixel_S_se;
+                        {   get_pixel = prawoskretny ? E_x_Z_aa_pixel_S_nw : E_x_Z_aa_pixel_S_se;
                             if( prawoskretny && prev_dx )
-                                get_pixel |= Z_aa_pixel_S_ne | Z_aa_pixel_S_n;
+                                get_pixel |= E_x_Z_aa_pixel_S_ne | E_x_Z_aa_pixel_S_n;
                             if( !prawoskretny && prev_dy )
-                                get_pixel |= Z_aa_pixel_S_ne | Z_aa_pixel_S_e;
+                                get_pixel |= E_x_Z_aa_pixel_S_ne | E_x_Z_aa_pixel_S_e;
                             if( prawoskretny && !dx )
-                                get_pixel |= Z_aa_pixel_S_e;
+                                get_pixel |= E_x_Z_aa_pixel_S_e;
                             if( !prawoskretny && !dy )
-                                get_pixel |= Z_aa_pixel_S_s;
+                                get_pixel |= E_x_Z_aa_pixel_S_s;
                         }else /// if( dx_direction < 0 && dy_direction < 0 )
-                        {   get_pixel = prawoskretny ? Z_aa_pixel_S_ne : Z_aa_pixel_S_sw;
+                        {   get_pixel = prawoskretny ? E_x_Z_aa_pixel_S_ne : E_x_Z_aa_pixel_S_sw;
                             if( prawoskretny && prev_dy )
-                                get_pixel |= Z_aa_pixel_S_se | Z_aa_pixel_S_e;
+                                get_pixel |= E_x_Z_aa_pixel_S_se | E_x_Z_aa_pixel_S_e;
                             if( !prawoskretny && prev_dx )
-                                get_pixel |= Z_aa_pixel_S_se | Z_aa_pixel_S_s;
+                                get_pixel |= E_x_Z_aa_pixel_S_se | E_x_Z_aa_pixel_S_s;
                             if( prawoskretny && !dy )
-                                get_pixel |= Z_aa_pixel_S_n;
+                                get_pixel |= E_x_Z_aa_pixel_S_n;
                             if( !prawoskretny && !dx )
-                                get_pixel |= Z_aa_pixel_S_w;
+                                get_pixel |= E_x_Z_aa_pixel_S_w;
                         }
                     else
                         get_pixel = 0;
@@ -1136,7 +1148,7 @@ E_x_Q_object_I_draw_aa_Z_pixel(
 ){  E_x_Q_window_I_draw_aa_Z_pixel_(
       object->x + x
     , object->y + y
-    , !U_R( object->mode, drag_src ) ? color : E_x_theme_Q_theme.current_brace, brightness, get_pixel
+    , !U_R( object->mode, drag_src ) ? color : E_x_Q_theme.current_brace, brightness, get_pixel
     );
 }
 void
@@ -1153,6 +1165,6 @@ E_x_Q_object_I_draw_aa_Z_lines(
     {   points[i].x += object->x;
         points[i].y += object->y;
     }
-    E_x_Q_window_I_draw_aa_Z_lines_( n, points, thickness, !U_R( object->mode, drag_src ) ? color : E_x_theme_Q_theme.current_brace );
+    E_x_Q_window_I_draw_aa_Z_lines_( n, points, thickness, !U_R( object->mode, drag_src ) ? color : E_x_Q_theme.current_brace );
 }
 /******************************************************************************/
