@@ -144,29 +144,21 @@ E_x_Q_window_I_draw_Z_lines(
 , struct E_x_Q_window_Z *window
 , N32 n
 , xcb_point_t *points
-){  xcb_segment_t *Mt_( segments, n );
+){  xcb_segment_t *Mt_( segments, n - 1 );
     if( !segments )
         return ~0;
     for_n( i, n - 1 )
-    {   segments[i] = ( xcb_segment_t )
+        segments[i] = ( xcb_segment_t )
         { .x1 = points[i].x
         , .y1 = points[i].y
-        , .x2 = points[ i + 1 ].x - ( points[i].x != points[ i + 1 ].x ? 1 : 0 )
-        , .y2 = points[ i + 1 ].y - ( points[i].y != points[ i + 1 ].y ? 1 : 0 )
+        , .x2 = points[ i + 1 ].x
+        , .y2 = points[ i + 1 ].y
         };
-    }
     E_x_Q_window_I_draw_Z_segments( display, screen, window
-    , n
+    , n - 1
     , segments
     );
     W(segments);
-    E_x_Q_window_I_draw_Z_points_((
-      ( xcb_point_t[] )
-      { { .x = points[ n - 1 ].x - 1 + ( points[ n - 2 ].x != points[ n - 1 ].x ? 1 : 0 )
-        , .y = points[ n - 1 ].y - 1 + ( points[ n - 2 ].y != points[ n - 1 ].y ? 1 : 0 )
-        }
-      }
-    ));
     return 0;
 }
 N
@@ -183,24 +175,24 @@ E_x_Q_window_I_draw_Z_rectangles(
     {   segments[ 4 * i ] = ( xcb_segment_t )
         { .x1 = rectangles[i].x
         , .y1 = rectangles[i].y
-        , .x2 = rectangles[i].x + rectangles[i].width - 1 - ( rectangles[i].width != 1 - 1 ? 1 : 0 )
+        , .x2 = rectangles[i].x + rectangles[i].width - 1 - ( rectangles[i].width ? 1 : 0 )
         , .y2 = rectangles[i].y
         };
         segments[ 4 * i + 1 ] = ( xcb_segment_t )
         { .x1 = rectangles[i].x + rectangles[i].width - 1
         , .y1 = rectangles[i].y
         , .x2 = rectangles[i].x + rectangles[i].width - 1
-        , .y2 = rectangles[i].y + rectangles[i].height - 1 - ( rectangles[i].height != 1 ? 1 : 0 )
+        , .y2 = rectangles[i].y + rectangles[i].height - 1 - ( rectangles[i].height ? 1 : 0 )
         };
         segments[ 4 * i + 2 ] = ( xcb_segment_t )
-        { .x1 = rectangles[i].x + ( rectangles[i].width != 1 - 1 ? 1 : 0 )
+        { .x1 = rectangles[i].x + ( rectangles[i].width ? 1 : 0 )
         , .y1 = rectangles[i].y + rectangles[i].height - 1
         , .x2 = rectangles[i].x + rectangles[i].width - 1
         , .y2 = rectangles[i].y + rectangles[i].height - 1
         };
         segments[ 4 * i + 3 ] = ( xcb_segment_t )
         { .x1 = rectangles[i].x
-        , .y1 = rectangles[i].y + ( rectangles[i].height != 1 ? 1 : 0 )
+        , .y1 = rectangles[i].y + ( rectangles[i].height ? 1 : 0 )
         , .x2 = rectangles[i].x
         , .y2 = rectangles[i].y + rectangles[i].height - 1
         };

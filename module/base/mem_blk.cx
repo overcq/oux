@@ -686,26 +686,17 @@ E_mem_Q_blk_R_new_0( void
     O{  exists = no;
         N allocated_i = E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].n;
         while( allocated_i-- )
-            if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p == p )
+        {   if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p == p )
             {   exists = yes;
                 break;
-            }else if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p < p_end
+            }
+            if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p < p_end
             && E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p > p
             ){  p = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p;
                 exists = yes;
                 break;
             }
-        if( !exists )
-            return p;
-        if( ++p == p_end )
-            break;
-    }
-    O{  exists = no;
-        for_n( allocated_i, E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].n )
-            if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p == p )
-            {   exists = yes;
-                break;
-            }
+        }
         if( !exists )
             return p;
         if( ++p == p_end )
@@ -817,7 +808,9 @@ E_mem_Q_blk_W( P p
             if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n )
             {   struct E_mem_Q_blk_Z_free free_p_;
                 if( !~E_mem_Q_blk_Q_sys_table_mf_P_put( E_mem_Q_blk_S_allocated_S_free_id, (Pc)&free_p_.p - (Pc)&free_p_, (Pc)&free_p_.l - (Pc)&free_p_, p, E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u ))
+                {   _single_thread_end;
                     return ~0;
+                }
             }
             E_mem_Q_blk_I_assert_on_return( __LINE__ );
             _single_thread_end;

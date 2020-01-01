@@ -54,7 +54,6 @@ D( x_window, events )
     I display_id = *( I * )thread_proc_arg;
         #endif
     Xh_A( E_x_window_D_events_I_unblock );
-    X_A( x_object, draw );
     X_A( x_window, draw );
     X_A( x_window, close_window );
     X_A( x_window, flush );
@@ -76,7 +75,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
     D_M( x_window, events_pointer_button_check );
         #endif
     I_D
-    {   B U_L( x_object, draw );
+    {
             #ifndef E_flow_C_thread_system_unblock_reports
         for_each( display_id, E_x_Q_display_S, E_mem_Q_tab )
             #endif
@@ -353,9 +352,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                     { case XK_Return:
                                       case XK_KP_Enter:
                                             if( U_E( object_data->state, visible ))
-                                            {   U_F( object->req, draw );
-                                                U_F( x_object, draw );
-                                            }
+                                                E_x_Q_object_I_draw(window);
                                             D_W( x_window, cursor );
                                             display->cursor_window = ~0;
                                             break;
@@ -1061,9 +1058,7 @@ Loop:           free( x_event );
                                 struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->cursor_object );
                                 struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
                                 if( U_E( object_data->state, visible ))
-                                {   U_F( object->req, draw );
-                                    U_F( x_object, draw );
-                                }
+                                    E_x_Q_object_I_draw(window);
                             }
                             I xbutton_object_id;
                             if( display->pointer_button_S_x >= 0
@@ -1425,7 +1420,6 @@ Drag_start_error:                   {   GV_(NA);
             if( U_R( display->req, flush ))
                 U_F( x_window, flush );
         }
-        X_U( x_object, draw );
         X_U( x_window, close_window );
         X_U( x_window, draw );
         X_U( x_window, flush );
@@ -1555,8 +1549,7 @@ D( x_window, flush )
     X_W( x_window, flush );
 }
 D( x_window, cursor )
-{   X_A( x_object, draw );
-    for_each( display_id, E_x_Q_display_S, E_mem_Q_tab )
+{   for_each( display_id, E_x_Q_display_S, E_mem_Q_tab )
     {   struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
         if( !~display->cursor_window )
             continue;
@@ -1572,7 +1565,6 @@ D( x_window, cursor )
             break;
         if( lost_count % 2 )
             continue;
-        B U_L( x_object, draw );
         for_each( display_id, E_x_Q_display_S, E_mem_Q_tab )
         {   struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
             if( !~display->cursor_window )
@@ -1581,10 +1573,8 @@ D( x_window, cursor )
             struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->cursor_object );
             struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
             U_R( object_data->state, visible ) = !U_R( object_data->state, visible );
-            U_F( object->req, draw );
-            U_F( x_object, draw );
+            E_x_Q_object_I_draw(window);
         }
-        X_U( x_object, draw );
     }
     Y_W(timer);
 }
