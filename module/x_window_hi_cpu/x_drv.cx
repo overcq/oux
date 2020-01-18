@@ -792,7 +792,6 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                     {   G(); Gs_( "expose" );
                         U_F( window->req, draw );
                         U_F( display->req, draw );
-                        U_F( display->req, flush );
                         break;
                     }
                   case XCB_GRAPHICS_EXPOSURE:
@@ -992,7 +991,6 @@ Loop:           free( x_event );
                   , 1
                   }
                 );
-                W( dnd_window->object_mask );
                 W( dnd_window->drawable );
                 U_L( dnd_window->req, draw );
                 if( U_R( display->req, pointer_S_ungrab ))
@@ -1053,13 +1051,15 @@ Loop:           free( x_event );
                         display->pointer_button_S_grab_time = grab_time;
                         G(); Gs_( "click" ); Gd( display->pointer_button ); Gd( display->pointer_button_S_seq_i );
                         if( !U_R( display->mode, drag ))
-                        {   if( ~display->cursor_window ) ///wyczyszczenie widocznego kursora.
+                        {   G_();
+                            if( ~display->cursor_window ) ///wyczyszczenie widocznego kursora.
                             {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->cursor_window );
                                 struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->cursor_object );
                                 struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
                                 if( U_E( object_data->state, visible ))
                                     E_x_Q_object_I_draw(window);
                             }
+                            G_(); Gd( display->pointer_button_S_x ); Gd( display->pointer_button_S_y ); Gd( window->width );
                             I xbutton_object_id;
                             if( display->pointer_button_S_x >= 0
                             && display->pointer_button_S_x < window->width
@@ -1070,7 +1070,8 @@ Loop:           free( x_event );
                             else
                                 xbutton_object_id = ~0;
                             if( ~xbutton_object_id )
-                            {   struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, xbutton_object_id );
+                            {   G_(); Gd( xbutton_object_id );
+                                struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, xbutton_object_id );
                                 if( U_R( object->mode, draggable )
                                 && display->pointer_button_S_seq_i == 1
                                 && display->pointer_button == 1
@@ -1138,10 +1139,6 @@ Loop:           free( x_event );
                                         if( !dnd_window->drawable )
                                         {   GV(NA); V();
                                         }
-                                        Mt_( dnd_window->object_mask, dnd_window->width * dnd_window->height );
-                                        if( !dnd_window->object_mask )
-                                        {   GV(NA); V();
-                                        }
                                         xcb_configure_window( display->x_display
                                         , dnd_window->x_window
                                         , XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT | XCB_CONFIG_WINDOW_STACK_MODE
@@ -1180,7 +1177,8 @@ Drag_start_error:                   {   GV_(NA);
                                 }else if( display->pointer_button_S_seq_i == 2
                                 && display->pointer_button == 1
                                 && object->draw == E_x_Q_object_Z_entry_I_draw
-                                ){  I cursor_window = display->cursor_window;
+                                ){  G_();
+                                    I cursor_window = display->cursor_window;
                                     display->cursor_window = display->pointer_button_S_window_id;
                                     display->cursor_object = xbutton_object_id;
                                     struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
@@ -1206,6 +1204,7 @@ Drag_start_error:                   {   GV_(NA);
                                         if( x > click_x )
                                             break;
                                     }
+                                    G_();
                                     if( !~cursor_window )
                                         D_M( x_window, cursor );
                                 }else if( object->click )
@@ -1312,15 +1311,10 @@ Drag_start_error:                   {   GV_(NA);
                       , 1
                       }
                     );
-                    W( dnd_window->object_mask );
                     W( dnd_window->drawable );
                     dnd_window = &screen->dnd_window;
                     Mt_( dnd_window->drawable, dnd_window->width * dnd_window->height );
                     if( !dnd_window->drawable )
-                    {   GV(NA); V();
-                    }
-                    Mt_( dnd_window->object_mask, dnd_window->width * dnd_window->height );
-                    if( !dnd_window->object_mask )
                     {   GV(NA); V();
                     }
                     xcb_configure_window( display->x_display
@@ -1358,14 +1352,9 @@ Drag_start_error:                   {   GV_(NA);
                     ))
                     {   window->width = window->width_new;
                         window->height = window->height_new;
-                        W( window->object_mask );
                         W( window->drawable );
                         Mt_( window->drawable, window->width * window->height );
                         if( !window->drawable )
-                        {   GV(NA); V();
-                        }
-                        Mt_( window->object_mask, window->width * window->height );
-                        if( !window->object_mask )
                         {   GV(NA); V();
                         }
                         U_F( window->req, draw );
@@ -1400,6 +1389,8 @@ Drag_start_error:                   {   GV_(NA);
                             if( !window->object_mask )
                             {   GV(NA); V();
                             }
+                            for_n( i, window->width * window->height )
+                                window->object_mask[i] = ~0;
                             U_F( window->req, draw );
                             U_F( display->req, draw );
                             E_x_Q_object_I_lay( display, window );
@@ -1452,7 +1443,7 @@ D( x_window, draw )
                     {   struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, window->screen_id );
                         for_n( i, window->width * window->height )
                             window->drawable[i] = E_x_Q_theme.window_bg;
-                        for_n_( i, window->width * window->height / 8 + ( window->width * window->height % 8 ? 1 : 0 ))
+                        for_n_( i, window->width * window->height )
                             window->object_mask[i] = ~0;
                         for_each( object_id, window->object, E_mem_Q_tab ) //NDFN zakładana kolejność od na spodzie do na wierzchu. nie wiadomo, czy “_q” jest konieczne.
                         {   display->current_object = object_id;
