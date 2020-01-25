@@ -346,9 +346,8 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                     switch(keysym)
                                     { case XK_Return:
                                       case XK_KP_Enter:
-                                            if( U_E( object_data->state, visible ))
+                                            if( U_E( object_data->state, cursor_visible ))
                                                 E_x_Q_object_I_draw(window);
-                                            D_W( x_window, cursor );
                                             display->cursor_window = ~0;
                                             break;
                                       case XK_Home:
@@ -1059,7 +1058,7 @@ Loop:           free( x_event );
                             {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->cursor_window );
                                 struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->cursor_object );
                                 struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
-                                if( U_E( object_data->state, visible ))
+                                if( U_E( object_data->state, cursor_visible ))
                                     E_x_Q_object_I_draw(window);
                             }
                             I xbutton_object_id;
@@ -1080,9 +1079,7 @@ Loop:           free( x_event );
                                 && display->pointer_button_S_seq_i == 1
                                 && display->pointer_button == 1
                                 ){  if( ~display->cursor_window )
-                                    {   D_W( x_window, cursor );
                                         display->cursor_window = ~0;
-                                    }
                                     Mt_( display->drag_S_object_src, 1 );
                                     if( display->drag_S_object_src )
                                     {   struct E_x_Q_window_Z *dnd_window = &screen->dnd_window;
@@ -1242,18 +1239,14 @@ Drag_start_error:                   {   GV_(NA);
                                             break;
                                     }
                                     if( !~cursor_window )
-                                        D_M( x_window, cursor );
+                                        U_F( object_data->state, cursor_visible );
                                 }else if( object->click )
                                 {   if( ~display->cursor_window )
-                                    {   D_W( x_window, cursor );
                                         display->cursor_window = ~0;
-                                    }
                                     object->click( window, object, display->pointer_button, display->pointer_button_S_seq_i );
                                 }else
                                 {   if( ~display->cursor_window )
-                                    {   D_W( x_window, cursor );
                                         display->cursor_window = ~0;
-                                    }
                                     I object_id = E_x_Q_object_R_parent( window, xbutton_object_id );
                                     if( ~object_id )
                                     {   struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
@@ -1262,9 +1255,7 @@ Drag_start_error:                   {   GV_(NA);
                                     }
                                 }
                             }else if( ~display->cursor_window )
-                            {   D_W( x_window, cursor );
                                 display->cursor_window = ~0;
-                            }
                         }else
                         {   if( display->pointer_button_S_seq_i == 2
                             && display->pointer_button == 3
@@ -1919,35 +1910,5 @@ D( x_window, flush )
         }
     }
     X_W( x_window, flush );
-}
-D( x_window, cursor )
-{   for_each( display_id, E_x_Q_display_S, E_mem_Q_tab )
-    {   struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
-        if( !~display->cursor_window )
-            continue;
-        struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->cursor_window );
-        struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->cursor_object );
-        struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
-        U_L( object_data->state, visible );
-    }
-    I timer = Y_M(360000);
-    I_D
-    {   N lost_count;
-        Y_B( timer, &lost_count )
-            break;
-        if( lost_count % 2 )
-            continue;
-        for_each( display_id, E_x_Q_display_S, E_mem_Q_tab )
-        {   struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
-            if( !~display->cursor_window )
-                continue;
-            struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->cursor_window );
-            struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->cursor_object );
-            struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
-            U_R( object_data->state, visible ) = !U_R( object_data->state, visible );
-            E_x_Q_object_I_draw(window);
-        }
-    }
-    Y_W(timer);
 }
 /******************************************************************************/
