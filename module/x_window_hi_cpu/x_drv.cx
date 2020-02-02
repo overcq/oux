@@ -1106,6 +1106,12 @@ Loop:           free( x_event );
                                                 display->drag_S_object_src[ display->drag_S_object_src_n + i ].window_id = display->pointer_button_S_window_id;
                                                 display->drag_S_object_src[ display->drag_S_object_src_n + i ].object_id = object->child[i];
                                                 I dnd_window_object_id = E_x_Q_object_M( display, dnd_window, 0, object_src->x - parent_object->x, object_src->y - parent_object->y, object_src->width, object_src->height, 0, object_src->draw, 0 );
+                                                if( !~dnd_window_object_id )
+                                                {   W( display->drag_S_object_src );
+                                                    for_each( object_id, dnd_window->object, E_mem_Q_tab )
+                                                        E_x_Q_object_W( display, dnd_window, object_id );
+                                                    goto Drag_start_error;
+                                                }
                                                 struct E_x_Q_object_Z *dnd_window_object = E_mem_Q_tab_R( dnd_window->object, dnd_window_object_id );
                                                 dnd_window_object->data = object_src->data;
                                                 G_(); Gd( display->drag_S_object_src[ child_expanded_n ].object_id ); Gd( dnd_window_object_id );
@@ -1437,10 +1443,7 @@ D( x_window, draw )
                         {   display->current_object = object_id;
                             struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
                             if( U_R( object->mode, drag_src ))
-                            {   N32 color = E_x_Q_theme.current_brace;
-                                if( screen->draw_color != color )
-                                    screen->draw_color = color;
-                            }
+                                screen->draw_color = E_x_Q_theme.current_brace;
                             object->draw( display, screen, window, object ); //NDFN nieprzerysowywanie wszystkich obiektów dla każdej klatki animacji.
                         }
                         xcb_put_image( display->x_display

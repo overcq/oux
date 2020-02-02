@@ -1086,7 +1086,11 @@ Loop:           free( x_event );
                                         dnd_window->width_new = dnd_window->width = object->width;
                                         dnd_window->height_new = dnd_window->height = object->height;
                                         dnd_window->object = E_mem_Q_tab_M( sizeof( struct E_x_Q_object_Z ), 0 );
+                                        if( !dnd_window->object )
+                                            goto Drag_start_error;
                                         I dnd_window_object_id = E_x_Q_object_M( display, dnd_window, 0, 0, 0, object->width, object->height, 0, object->draw, 0 );
+                                        if( !~dnd_window_object_id )
+                                            goto Drag_start_error;
                                         struct E_x_Q_object_Z *dnd_window_object = E_mem_Q_tab_R( dnd_window->object, dnd_window_object_id );
                                         dnd_window_object->data = object->data;
                                         U_F( object->mode, drag_src );
@@ -1111,6 +1115,12 @@ Loop:           free( x_event );
                                                 display->drag_S_object_src[ display->drag_S_object_src_n + i ].window_id = display->pointer_button_S_window_id;
                                                 display->drag_S_object_src[ display->drag_S_object_src_n + i ].object_id = object->child[i];
                                                 I dnd_window_object_id = E_x_Q_object_M( display, dnd_window, 0, object_src->x - parent_object->x, object_src->y - parent_object->y, object_src->width, object_src->height, 0, object_src->draw, 0 );
+                                                if( !~dnd_window_object_id )
+                                                {   W( display->drag_S_object_src );
+                                                    for_each( object_id, dnd_window->object, E_mem_Q_tab )
+                                                        E_x_Q_object_W( display, dnd_window, object_id );
+                                                    goto Drag_start_error;
+                                                }
                                                 struct E_x_Q_object_Z *dnd_window_object = E_mem_Q_tab_R( dnd_window->object, dnd_window_object_id );
                                                 dnd_window_object->data = object_src->data;
                                                 G_(); Gd( display->drag_S_object_src[ child_expanded_n ].object_id ); Gd( dnd_window_object_id );
