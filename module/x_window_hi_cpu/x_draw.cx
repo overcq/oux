@@ -83,13 +83,14 @@ E_x_Q_window_I_draw_Z_points(
 , N32 n
 , xcb_point_t *points
 ){  for_n( i, n )
-    {   window->drawable[ points[i].x + points[i].y * window->width ] = screen->draw_color;
-        if( !U_R( screen->state, draw_object_drag_move ))
-            window->object_mask[ points[i].x + points[i].y * window->width ] = display->current_object;
-        //else
-            
-            //screen->dnd_window_shape_pixmap[ ( points[i].x + points[i].y * window->width ) / 8 ] |= 1 << (( points[i].x + points[i].y * window->width ) % 8 );
-    }
+        if( points[i].x < window->width && points[i].y < window->height )
+        {   window->drawable[ points[i].x + points[i].y * window->width ] = screen->draw_color;
+            if( !U_R( screen->state, draw_object_drag_move ))
+                window->object_mask[ points[i].x + points[i].y * window->width ] = display->current_object;
+            //else
+                
+                //screen->dnd_window_shape_pixmap[ ( points[i].x + points[i].y * window->width ) / 8 ] |= 1 << (( points[i].x + points[i].y * window->width ) % 8 );
+        }
     if( U_R( screen->state, draw_object_drag_move ))
         xcb_poly_point( display->x_display
         , XCB_COORD_MODE_ORIGIN
