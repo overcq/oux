@@ -236,18 +236,22 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                         window->user_activity_time = x_key->time;
                         U_F( window, postproc );
                         B ctrl = no, alt = no;
-                        N modifier;
+                        N modifier = 0;
+                        xcb_xkb_device_spec_t device_spec = xkb_x11_get_core_keyboard_device_id( display->x_display );
+                        xcb_xkb_get_state_cookie_t xkb_get_state_req_id = xcb_xkb_get_state_unchecked( display->x_display, device_spec );
+                        xcb_xkb_get_state_reply_t *ret = xcb_xkb_get_state_reply( display->x_display, xkb_get_state_req_id, 0 );
+                        if( ret->group == 1 )
+                            modifier = 2;
+                        else if( ret->group == 2 )
+                            modifier = 6;
+                        free(ret);
                         if( x_key->state & ( XCB_MOD_MASK_1 << 4 )) ///‛alt’
                         {   alt = yes;
-                            modifier = 4;
-                        }else if( x_key->state & XCB_MOD_MASK_CONTROL )
-                        {   ctrl = yes;
-                            modifier = 0;
-                        }else if( x_key->state & ~( XCB_MOD_MASK_SHIFT | XCB_MOD_MASK_LOCK ))
-                        {   G_(); Gd( x_key->detail ); Gh( x_key->state );
-                            break;
-                        }else
-                            modifier = 0;
+                            if( !modifier )
+                                modifier = 4;
+                        }
+                        if( x_key->state & XCB_MOD_MASK_CONTROL )
+                            ctrl = yes;
                         B shift = no;
                         if((( x_key->state & XCB_MOD_MASK_SHIFT ) && (( x_key->state & XCB_MOD_MASK_LOCK ) == 0 ))
                           || ((( x_key->state & XCB_MOD_MASK_SHIFT ) == 0 ) && ( x_key->state & XCB_MOD_MASK_LOCK ))
