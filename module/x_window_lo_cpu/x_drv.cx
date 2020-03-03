@@ -235,21 +235,24 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                         xcb_key_press_event_t *x_key = (P)x_event;
                         window->user_activity_time = x_key->time;
                         U_F( window, postproc );
-                        B ctrl = no, alt = no;
+                        B ctrl = no, alt = no, alt_r = no, logo = no;
                         N modifier = 0;
-                        xcb_xkb_device_spec_t device_spec = xkb_x11_get_core_keyboard_device_id( display->x_display );
-                        xcb_xkb_get_state_cookie_t xkb_get_state_req_id = xcb_xkb_get_state_unchecked( display->x_display, device_spec );
+                        xcb_xkb_get_state_cookie_t xkb_get_state_req_id = xcb_xkb_get_state_unchecked( display->x_display, display->xkb_keyboard );
                         xcb_xkb_get_state_reply_t *ret = xcb_xkb_get_state_reply( display->x_display, xkb_get_state_req_id, 0 );
                         if( ret->group == 1 )
                             modifier = 2;
                         else if( ret->group == 2 )
                             modifier = 6;
                         free(ret);
-                        if( x_key->state & ( XCB_MOD_MASK_1 << 4 )) ///‛alt’
-                        {   alt = yes;
+                        if( x_key->state & 0x80 ) ///prawy ‛alt’
+                        {   alt_r = yes;
                             if( !modifier )
                                 modifier = 4;
                         }
+                        if( x_key->state & 0x40 )
+                            logo = yes;
+                        if( x_key->state & XCB_MOD_MASK_1 ) ///lewy ‛alt’
+                            alt = yes;
                         if( x_key->state & XCB_MOD_MASK_CONTROL )
                             ctrl = yes;
                         B shift = no;
@@ -346,7 +349,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                             object_data->text_start--;
                                         }
                                     }
-                                }else if( !alt && !ctrl && !shift )
+                                }else if( !alt && !alt_r && !ctrl && !logo && !shift )
                                     switch(keysym)
                                     { case XK_Return:
                                       case XK_KP_Enter:
@@ -493,7 +496,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                             break;
                                         }
                                     }
-                                else if( !alt && ctrl && !shift )
+                                else if( !alt && !alt_r && ctrl && !logo && !shift )
                                     switch(keysym)
                                     { case XK_Left:
                                       case XK_KP_Left:
