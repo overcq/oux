@@ -27,7 +27,7 @@ struct E_io_Q_stream_out_Z
   struct aiocb *aiocb;
     #if defined( E_io_C_aio ) || defined( E_io_C_sig_has_fd )
   unsigned U_R( state, io_ready )       :1;
-  unsigned U_R( state, closing )       :1;
+  unsigned U_R( state, closing )        :1;
     #endif
   unsigned U_R( type, opened )          :1;
 };
@@ -422,9 +422,10 @@ D( io, stream_write )
         #if defined( E_io_C_aio ) || defined( E_io_C_sig_has_fd )
     Yi_M( io, aiocb_before_rem );
         #endif
+    B exit = no;
     I_D
     {   X_B( io, stream_write, 0 )
-            break;
+            exit = yes;
             #if defined( E_io_C_aio ) || defined( E_io_C_sig_has_fd )
         for_each_q( id, E_base_S->E_io_Q_stream_out_S, 0, E_mem_Q_tab )
             #else
@@ -568,6 +569,8 @@ D( io, stream_write )
             }
                     #endif
         }
+        if(exit)
+            break;
     }
         #if defined( E_io_C_aio ) || defined( E_io_C_sig_has_fd )
 End:Yi_W( io, aiocb_before_rem );

@@ -1,0 +1,54 @@
+/*******************************************************************************
+*   ___   workplace
+*  ¦OUX¦  ‟Coux”
+*  ¦Inc¦  server
+*   ---   web server
+*         entry and raw labels
+* ©overcq                on ‟Gentoo Linux 17.1” “x86_64”             2020‒4‒10 S
+*******************************************************************************/
+Pc E_main_S_conf_file[] =
+{ "/etc/web-srv.conf"
+};
+//==============================================================================
+N
+E_main_I_read_conf( void
+){  for_n( file_i, sizeof( E_main_S_conf_file ) / sizeof( E_main_S_conf_file[0] ))
+    {   I conf_file = E_mem_Q_file_M( E_main_S_conf_file[ file_i ] );
+        if( !~conf_file )
+            continue;
+        if( E_conf_I_read( conf_file ))
+            return ~0;
+        E_mem_Q_file_W( conf_file );
+        break;
+    }
+    return 0;
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+int
+main(
+  int argc
+, Pc *argv
+){  E_base_M( argc, argv );
+    I_B();
+    Mt_( E_conf_S_virtualhost, 0 );
+    if( !E_conf_S_virtualhost )
+    {   GV_(); Gs_( "error: allocating memory" ); V();
+    }
+    if( !~E_main_I_read_conf() )
+    {   GV_(); Gs_( "error: reading config file" ); V();
+    }
+    U_F( E_base_S->E_flow_S_signal, exit );
+    for_n( i, E_conf_S_virtualhost_n )
+    {   W( E_conf_S_virtualhost[i].root_path );
+        W( E_conf_S_virtualhost[i].ip );
+    }
+    W( E_conf_S_virtualhost );
+    E_base_W();
+    return 0;
+}
+//==============================================================================
+void
+E_flow_Q_process_call_I_func( void *data
+){
+}
+/******************************************************************************/

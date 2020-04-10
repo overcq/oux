@@ -1,0 +1,291 @@
+/*******************************************************************************
+*   ___   workplace
+*  ¦OUX¦  ‟Coux”
+*  ¦Inc¦  server
+*   ---   web server
+*         config file
+* ©overcq                on ‟Gentoo Linux 17.1” “x86_64”             2020‒4‒10 S
+*******************************************************************************/
+#define E_conf_S_newline    "\n"
+#define E_conf_S_space      " \t" E_conf_S_newline
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+struct E_conf_Z_virtualhost
+{ Pc root_path;
+  Pc ip;
+  N16 port;
+} *E_conf_S_virtualhost;
+N E_conf_S_virtualhost_n = 0;
+//==============================================================================
+N
+E_conf_I_read( I conf_file
+){  O{  Pc s;
+        N ret = E_mem_Q_file_R_u_outof( conf_file, E_conf_S_space, &s );
+        if( !~ret )
+            return ret;
+        if( ret == E_mem_Q_file_S_eof )
+        {   if( !E_conf_S_virtualhost_n )
+            {   G_(); Gs_( "no virtualhosts" );
+                return ret;
+            }
+            for_n( i, E_conf_S_virtualhost_n )
+            {   if( !E_conf_S_virtualhost[i].root_path )
+                {   G_(); Gs_( "no root_path" );
+                    return ret;
+                }
+                if( !E_conf_S_virtualhost[i].ip )
+                {   G_(); Gs_( "no ip" );
+                    return ret;
+                }
+                if( !E_conf_S_virtualhost[i].port )
+                {   G_(); Gs_( "no port" );
+                    return ret;
+                }
+                
+            }
+            for_n_( i, E_conf_S_virtualhost_n )
+            {   for_n( j, E_conf_S_virtualhost_n - i - 1 )
+                {   if( E_text_Z_s0_T_eq( E_conf_S_virtualhost[i].root_path, E_conf_S_virtualhost[ i + 1 + j ].root_path ))
+                    {   G_(); Gs_( "root_paths the same" );
+                        return ret;
+                    }
+                    if( E_text_Z_s0_T_eq( E_conf_S_virtualhost[i].ip, E_conf_S_virtualhost[ i + 1 + j ].ip )
+                    && E_conf_S_virtualhost[i].port, E_conf_S_virtualhost[ i + 1 + j ].port
+                    ){  G_(); Gs_( "ip:port the same" );
+                        return ret;
+                    }
+                }
+            }
+            return 0;
+        }
+        Pc s_1 = E_text_Z_s0_R_end(s);
+        U u;
+        Pc s_2 = E_text_Z_s_Z_utf8_R_rev_u( s_1, &u );
+        if( u == '#' )
+        {   W(s);
+            ret = E_mem_Q_file_R_u_upto( conf_file, E_conf_S_newline, &s );
+            if( !~ret
+            || ret == E_mem_Q_file_S_eof
+            )
+                return ret;
+            W(s);
+        }else
+        {   Pc s_entry = M( 1 + s_1 - s_2 );
+            if( !s_entry )
+                return ~0;
+            E_text_Z_s_P_copy_( s_entry, s_2, s_1 );
+            W(s);
+            N s_entry_i = s_1 - s_2;
+            ret = E_mem_Q_file_R_u_upto( conf_file, "{" E_conf_S_space, &s );
+            if( !~ret
+            || ret == E_mem_Q_file_S_eof
+            )
+            {   W( s_entry );
+                return ret;
+            }
+            s_1 = E_text_Z_s0_R_end(s);
+            s_2 = E_text_Z_s_Z_utf8_R_rev_u( s_1, &u );
+            if( !E_mem_Q_blk_I_append( &s_entry, s_2 - s ))
+            {   W(s);
+                W( s_entry );
+                return ~0;
+            }
+            E_text_Z_s_P_copy_( s_entry + s_entry_i, s, s_2 );
+            W(s);
+            s_entry_i += s_2 - s;
+            s_entry[ s_entry_i ] = '\0';
+            if( u != '{' )
+            {   ret = E_mem_Q_file_R_u_outof( conf_file, E_conf_S_space, &s );
+                if( !~ret
+                || ret == E_mem_Q_file_S_eof
+                )
+                {   W( s_entry );
+                    return ret;
+                }
+            	s_1 = E_text_Z_s0_R_end(s);
+                E_text_Z_s_Z_utf8_R_rev_u( s_1, &u );
+                W(s);
+                if( u != '{' )
+                {   W( s_entry );
+                    return ~0;
+                }
+            }
+            ret = E_mem_Q_file_R_u_outof( conf_file, E_conf_S_space, &s );
+            if( !~ret
+            || ret == E_mem_Q_file_S_eof
+            )
+            {   W( s_entry );
+                return ret;
+            }
+            s_1 = E_text_Z_s0_R_end(s);
+            s_2 = E_text_Z_s_Z_utf8_R_rev_u( s_1, &u );
+            Pc s_entry_1 = M( 1 + s_1 - s_2 );
+            if( !s_entry_1 )
+            {   W(s);
+                W( s_entry );
+                return ~0;
+            }
+            E_text_Z_s_P_copy_( s_entry_1, s_2, s_1 );
+            W(s);
+            N s_entry_1_i = s_1 - s_2;
+            if( E_text_Z_s0_T_eq( s_entry, "virtualhost" ))
+            {   W( s_entry );
+                if( !E_mem_Q_blk_I_append( &E_conf_S_virtualhost, 1 ))
+                {   W( s_entry_1 );
+                    return ~0;
+                }
+                E_conf_S_virtualhost_n++;
+                E_mem_Q_blk_P_fill_c( &E_conf_S_virtualhost[ E_conf_S_virtualhost_n - 1 ], sizeof( E_conf_S_virtualhost[ E_conf_S_virtualhost_n - 1 ] ), 0 );
+                do
+                {   ret = E_mem_Q_file_R_u_upto( conf_file, E_conf_S_space, &s );
+                    if( !~ret
+                    || ret == E_mem_Q_file_S_eof
+                    )
+                    {   W( s_entry_1 );
+                        return ret;
+                    }
+                    s_1 = E_text_Z_s0_R_end(s);
+                    s_2 = E_text_Z_s_Z_utf8_R_rev_u( s_1, &u );
+                    if( !E_mem_Q_blk_I_append( &s_entry_1, s_2 - s ))
+                    {   W(s);
+                        W( s_entry_1 );
+                        return ~0;
+                    }
+                    E_text_Z_s_P_copy_( s_entry_1 + s_entry_1_i, s, s_2 );
+                    W(s);
+                    s_entry_1_i += s_2 - s;
+                    s_entry_1[ s_entry_1_i ] = '\0';
+                    ret = E_mem_Q_file_R_u_outof( conf_file, E_conf_S_space, &s );
+                    if( !~ret
+                    || ret == E_mem_Q_file_S_eof
+                    )
+                    {   W( s_entry_1 );
+                        return ret;
+                    }
+                    s_1 = E_text_Z_s0_R_end(s);
+                    s_2 = E_text_Z_s_Z_utf8_R_rev_u( s_1, &u );
+                    if( E_text_Z_s0_T_eq( s_entry_1, "root_path" ))
+                    {   W( s_entry_1 );
+                        B quoted = u == '\"';
+                        s_entry = M( 1 + ( quoted ? 0 : 1 ));
+                        if( !s_entry )
+                        {   W(s);
+                            return ~0;
+                        }
+                        if( !quoted )
+                        {   E_text_Z_s_P_copy_( s_entry, s_2, s_1 );
+                            s_entry_i = s_1 - s_2;
+                        }else
+                            s_entry_i = 0;
+                        W(s);
+                        if(quoted)
+                            ret = E_mem_Q_file_R_u_upto( conf_file, "\"", &s );
+                        else
+                            ret = E_mem_Q_file_R_u_upto( conf_file, E_conf_S_space, &s );
+                        if( !~ret
+                        || ret == E_mem_Q_file_S_eof
+                        )
+                        {   W( s_entry );
+                            return ret;
+                        }
+                        s_1 = E_text_Z_s0_R_end(s);
+                        s_2 = E_text_Z_s_Z_utf8_R_rev_u( s_1, &u );
+                        if( !E_mem_Q_blk_I_append( &s_entry, s_2 - s ))
+                        {   W(s);
+                            W( s_entry_1 );
+                            return ~0;
+                        }
+                        E_text_Z_s_P_copy_( s_entry + s_entry_i, s, s_2 );
+                        W(s);
+                        s_entry_i += s_2 - s;
+                        s_entry[ s_entry_i ] = '\0';
+                        E_conf_S_virtualhost[ E_conf_S_virtualhost_n - 1 ].root_path = s_entry;
+                    }else if( E_text_Z_s0_T_eq( s_entry_1, "ip" ))
+                    {   W( s_entry_1 );
+                        s_entry = M( 1 + 1 );
+                        if( !s_entry )
+                        {   W(s);
+                            return ~0;
+                        }
+                        E_text_Z_s_P_copy_( s_entry, s_2, s_1 );
+                        s_entry_i = s_1 - s_2;
+                        W(s);
+                        ret = E_mem_Q_file_R_u_upto( conf_file, E_conf_S_space, &s );
+                        if( !~ret
+                        || ret == E_mem_Q_file_S_eof
+                        )
+                        {   W( s_entry );
+                            return ret;
+                        }
+                        s_1 = E_text_Z_s0_R_end(s);
+                        s_2 = E_text_Z_s_Z_utf8_R_rev_u( s_1, &u );
+                        if( !E_mem_Q_blk_I_append( &s_entry, s_2 - s ))
+                        {   W(s);
+                            W( s_entry_1 );
+                            return ~0;
+                        }
+                        E_text_Z_s_P_copy_( s_entry + s_entry_i, s, s_2 );
+                        W(s);
+                        s_entry_i += s_2 - s;
+                        s_entry[ s_entry_i ] = '\0';
+                        E_conf_S_virtualhost[ E_conf_S_virtualhost_n - 1 ].ip = s_entry;
+                    }else if( E_text_Z_s0_T_eq( s_entry_1, "port" ))
+                    {   W( s_entry_1 );
+                        s_entry = M( 1 + 1 );
+                        if( !s_entry )
+                        {   W(s);
+                            return ~0;
+                        }
+                        E_text_Z_s_P_copy_( s_entry, s_2, s_1 );
+                        s_entry_i = s_1 - s_2;
+                        W(s);
+                        ret = E_mem_Q_file_R_u_upto( conf_file, E_conf_S_space, &s );
+                        if( !~ret
+                        || ret == E_mem_Q_file_S_eof
+                        )
+                        {   W( s_entry );
+                            return ret;
+                        }
+                        s_1 = E_text_Z_s0_R_end(s);
+                        s_2 = E_text_Z_s_Z_utf8_R_rev_u( s_1, &u );
+                        if( !E_mem_Q_blk_I_append( &s_entry, s_2 - s ))
+                        {   W(s);
+                            W( s_entry_1 );
+                            return ~0;
+                        }
+                        E_text_Z_s_P_copy_( s_entry + s_entry_i, s, s_2 );
+                        W(s);
+                        s_entry_i += s_2 - s;
+                        s_entry[ s_entry_i ] = '\0';
+                        N port = E_text_Z_s_R_n( s_entry, s_entry + s_entry_i, &s, 10 );
+                        if( s == s_entry + s_entry_i
+                        && port > 0 && port <= 0xffff
+                        )
+                            E_conf_S_virtualhost[ E_conf_S_virtualhost_n - 1 ].port = port;
+                        W( s_entry );
+                    }else
+                    {   W( s_entry_1 );
+                        return ~0;
+                    }
+                    ret = E_mem_Q_file_R_u_outof( conf_file, E_conf_S_space, &s );
+                    if( !~ret
+                    || ret == E_mem_Q_file_S_eof
+                    )
+                        return ret;
+                    s_1 = E_text_Z_s0_R_end(s);
+                    s_2 = E_text_Z_s_Z_utf8_R_rev_u( s_1, &u );
+                    s_entry_1 = M( 1 + s_1 - s_2 );
+                    if( !s_entry_1 )
+                    {   W(s);
+                        return ~0;
+                    }
+                    E_text_Z_s_P_copy_( s_entry_1, s_2, s_1 );
+                    W(s);
+                    s_entry_1_i = s_1 - s_2;
+                }while( u != '}' );
+                W( s_entry_1 );
+            }
+        }
+    }
+    return 0;
+}
+/******************************************************************************/
