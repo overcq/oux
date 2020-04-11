@@ -1,0 +1,105 @@
+/*******************************************************************************
+*   ___   workplace
+*  ¦OUX¦  ‟Coux”
+*  ¦Inc¦  server
+*   ---   web server
+*         server
+* ©overcq                on ‟Gentoo Linux 17.1” “x86_64”             2020‒4‒11 P
+*******************************************************************************/
+struct E_srv_Z_srv
+{ Pc canonical;
+  int *sfd;
+  N sfd_n;
+} *E_srv_S_srv;
+N E_srv_S_srv_n = 0;
+//==============================================================================
+N
+E_srv_I_init( void
+){ for_n( i, E_conf_S_virtualhost_n )
+    {   struct addrinfo ai_hints =
+        { .ai_flags = AI_CANONNAME | AI_NUMERICSERV
+        , .ai_family = AF_UNSPEC
+        , .ai_socktype = SOCK_STREAM
+        , .ai_protocol = 0
+        };
+        struct addrinfo *ai;
+        N l = E_text_Z_n_N_s_G( E_conf_S_virtualhost[i].port, sizeof( E_conf_S_virtualhost[i].port ), 10 );
+        C port[l];
+        E_text_Z_n_N_s( &port[0] + l, E_conf_S_virtualhost[i].port, sizeof( E_conf_S_virtualhost[i].port ), 10 );
+        port[l] = '\0';
+        V0( getaddrinfo( E_conf_S_virtualhost[i].ip, &port[0], &ai_hints, &ai ))
+        {   E_srv_I_free();
+            freeaddrinfo(ai);
+            return ~0;
+        }
+        if( !E_mem_Q_blk_I_append( &E_srv_S_srv, 1 ))
+        {   E_srv_I_free();
+            freeaddrinfo(ai);
+            return ~0;
+        }
+        E_srv_S_srv_n++;
+        l = E_text_Z_s0_R_0_l( ai->ai_canonname );
+        E_srv_S_srv[ E_srv_S_srv_n - 1 ].canonical = M(l);
+        if( !E_srv_S_srv[ E_srv_S_srv_n - 1 ].canonical )
+        {   E_srv_I_free();
+            freeaddrinfo(ai);
+            return ~0;
+        }
+        E_text_Z_s0_P_copy_0( E_srv_S_srv[ E_srv_S_srv_n - 1 ].canonical, ai->ai_canonname );
+        Mt_( E_srv_S_srv[ E_srv_S_srv_n - 1 ].sfd, 0 );
+        if( !E_srv_S_srv[ E_srv_S_srv_n - 1 ].sfd )
+        {   E_srv_I_free();
+            freeaddrinfo(ai);
+            return ~0;
+        }
+        E_srv_S_srv[ E_srv_S_srv_n - 1 ].sfd_n = 0;
+        struct addrinfo *ai_1 = ai;
+        do
+        {   int sfd;
+            V1( sfd = socket( AF_INET, SOCK_STREAM, 0 ))
+            {   E_srv_I_free();
+                freeaddrinfo(ai);
+                return ~0;
+            }
+            if( !E_mem_Q_blk_I_append( &E_srv_S_srv[ E_srv_S_srv_n - 1 ].sfd, 1 ))
+            {   E_srv_I_free();
+                freeaddrinfo(ai);
+                return ~0;
+            }
+            E_srv_S_srv[ E_srv_S_srv_n - 1 ].sfd_n++;
+            E_srv_S_srv[ E_srv_S_srv_n - 1 ].sfd[ E_srv_S_srv[ E_srv_S_srv_n - 1 ].sfd_n - 1 ] = sfd;
+            G_(); Gd( ai_1->ai_family );
+            ai_1->ai_addr->sa_family = ai_1->ai_family;
+            
+            V0( bind( sfd, ai_1->ai_addr, sizeof( *ai_1->ai_addr )))
+            {   E_srv_I_free();
+                freeaddrinfo(ai);
+                return ~0;
+            }
+            ai_1 = ai_1->ai_next;
+        }while( ai_1 );
+        freeaddrinfo(ai);
+        for_n( i, E_srv_S_srv_n )
+        {   
+        }
+    }
+    return 0;
+}
+void
+E_srv_I_free( void
+){  for_n( i, E_srv_S_srv_n )
+    {   W( E_srv_S_srv[i].canonical );
+        for_n( j, E_srv_S_srv[i].sfd_n )
+        {   V1( close( E_srv_S_srv[i].sfd[j] )){}
+        }
+        W( E_srv_S_srv[i].sfd );
+    }
+    W( E_srv_S_srv );
+}
+D( srv, srv )
+{   I_D
+    {   
+    }
+    
+}
+/******************************************************************************/

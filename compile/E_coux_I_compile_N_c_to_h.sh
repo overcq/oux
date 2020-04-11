@@ -10,6 +10,8 @@
 headers_db="$1"
 cx_source="$2"
 #===============================================================================
+trap 'rm -f "$tmp_file"' EXIT
+tmp_file="$( mktemp )"
 perl -we '
     use warnings;
     local $/;
@@ -28,5 +30,9 @@ perl -we '
         }
     }
 ' < "$headers_db" \
-| sort -u
+| sort -u \
+> "$tmp_file"
+grep -Fe / "$tmp_file"
+grep -Fve / "$tmp_file"
+true
 ################################################################################

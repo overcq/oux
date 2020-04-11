@@ -449,8 +449,8 @@ install-0:
 	} \
 	$(if $(H_make_C_to_libs), \
         $(foreach module,$(H_make_S_modules), \
-        && { $(CMP) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so)  $(call H_make_Z_shell_cmd_arg_I_quote,/usr/lib/lib$(H_make_S_lib_prefix)$(module).so) \
-        || $(INSTALL) -m 755 $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so)  $(call H_make_Z_shell_cmd_arg_I_quote,/usr/lib/lib$(H_make_S_lib_prefix)$(module).so); \
+        && { $(CMP) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so)  $(call H_make_Z_shell_cmd_arg_I_quote,/usr/lib64/lib$(H_make_S_lib_prefix)$(module).so) \
+        || $(INSTALL) -m 755 $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so)  $(call H_make_Z_shell_cmd_arg_I_quote,/usr/lib64/lib$(H_make_S_lib_prefix)$(module).so); \
         } \
     ))
 #-------------------------------------------------------------------------------
