@@ -6,13 +6,16 @@
 *         server
 * ©overcq                on ‟Gentoo Linux 17.1” “x86_64”             2020‒4‒11 P
 *******************************************************************************/
-#define S_listen_backlog 1024
+#define S_listen_backlog    1024
+#define S_read_buffer_l     4096
+#define S_index_file        "index.html"
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 int E_srv_S_epoll_fd;
 struct epoll_event *E_srv_S_ee_ready = 0;
 N E_srv_S_ee_ready_n = 0;
 struct E_srv_Z_srv
-{ Pc canonical;
+{ N virtualhost_i;
+  Pc canonical;
   int *sfd;
   N sfd_n;
 } *E_srv_S_srv;
@@ -43,6 +46,7 @@ E_srv_M( void
             return ~0;
         }
         E_srv_S_srv_n++;
+        E_srv_S_srv[ E_srv_S_srv_n - 1 ].virtualhost_i = i;
         l = E_text_Z_s0_R_0_l( ai->ai_canonname );
         E_srv_S_srv[ E_srv_S_srv_n - 1 ].canonical = M(l);
         if( !E_srv_S_srv[ E_srv_S_srv_n - 1 ].canonical )
@@ -116,7 +120,7 @@ E_srv_W( void
 ){  for_n( i, E_srv_S_srv_n )
     {   W( E_srv_S_srv[i].canonical );
         for_n( j, E_srv_S_srv[i].sfd_n )
-        {   V1( close( E_srv_S_srv[i].sfd[j] )){}
+        {   V0( close( E_srv_S_srv[i].sfd[j] )){}
         }
         W( E_srv_S_srv[i].sfd );
     }
@@ -130,8 +134,189 @@ D( srv, srv )
         {   E_srv_W();
             V();
         }
-        if(n)
-        {   
+        for_n( i, n )
+        {   int listen_sock;
+            struct sockaddr peer_addr;
+            socklen_t sock_l = sizeof( peer_addr );
+            V1( listen_sock = accept( E_srv_S_ee_ready[i].data.fd, &peer_addr, &sock_l ))
+            {   E_srv_W();
+                V();
+            }
+            Pc buf = M( S_read_buffer_l );
+            if( !buf )
+            {   E_srv_W();
+                V();
+            }
+            N l;
+            V1( l = read( listen_sock, buf, S_read_buffer_l ))
+            {   E_srv_W();
+                V();
+            }
+            Pc s = E_text_Z_s_R_search_c( buf, buf + S_read_buffer_l, '\n' );
+            if( s == buf + S_read_buffer_l
+            || s == buf
+            || *( s - 1 ) != '\r'
+            ){  E_reply_I_code( listen_sock, 400 );
+                goto End;
+            }
+            *( s - 1 ) = '\0';
+            s = E_text_Z_s0_R_search_c( buf, ' ' );
+            if( !*s )
+            {   E_reply_I_code( listen_sock, 400 );
+                goto End;
+            }
+            *s = '\0';
+            if( !E_text_Z_s0_T_eq( buf, "GET" ))
+            {   E_reply_I_code( listen_sock, 400 );
+                goto End;
+            }
+            if( !E_text_Z_s0_T_ends( s + 1, " HTTP/1.1" )
+            //&& !E_text_Z_s0_T_ends( s + 1, " HTTP/1.0" )
+            )
+            {   E_reply_I_code( listen_sock, 400 );
+                goto End;
+            }
+            Pc s_1 = E_text_Z_s0_R_search_last_c( s + 1, ' ' );
+            *s_1 = '\0';
+            if( *( s + 1 ) != '/' )
+            {   E_reply_I_code( listen_sock, 400 );
+                goto End;
+            }
+            for_n( j, E_srv_S_srv_n )
+            {   for_n( k, E_srv_S_srv[j].sfd_n )
+                    if( E_srv_S_srv[j].sfd[k] == E_srv_S_ee_ready[i].data.fd )
+                        goto End_1;
+            }
+End_1:      l = E_text_Z_s0_R_0_l( E_conf_S_virtualhost[ E_srv_S_srv[j].virtualhost_i ].root_path ) + 1;
+            Pc path = M(l);
+            if( !path )
+            {   E_reply_I_code( listen_sock, 500 );
+                goto End;
+            }
+            Pc path_ = E_text_Z_s0_P_copy( path, E_conf_S_virtualhost[ E_srv_S_srv[j].virtualhost_i ].root_path );
+            *path_ = '/';
+            path_++;
+            Pc s_2 = path;
+            N path_n = 0;
+            while( ( s_2 = E_text_Z_s_R_search_c( s_2 + 1, path_, '/' )) != path_ )
+                path_n++;
+            N path_n_0 = path_n;
+            O{  s_1 = E_text_Z_s0_R_search_c( s + 1, '/' );
+                if( !*s_1 )
+                    break;
+                if( s_1 == s + 1 )
+                {   s = s_1;
+                    continue;
+                }
+                for( s_2 = s + 1; s_2 != s_1; s_2++ )
+                    if( *s_2 != '.' )
+                        break;
+                if( s_2 == s_1 )
+                {   if( path_n < path_n_0 + ( s_1 - ( s + 1 ) - 1 ))
+                    {   W(path);
+                        E_reply_I_code( listen_sock, 400 );
+                        goto End;
+                    }
+                    if( s_1 - ( s + 1 ) - 1 > 1 )
+                    {   path_n -= s_1 - ( s + 1 ) - 1;
+                        s_2 = path;
+                        for_n( k, path_n )
+                            s_2 = E_text_Z_s_R_search_c( s_2 + 1, path_, '/' );
+                        if( !E_mem_Q_blk_I_rem( &path, s_2 + 1 - path, path_ - ( s_2 + 1 )))
+                        {   W(path);
+                            E_reply_I_code( listen_sock, 500 );
+                            goto End;
+                        }
+                        path_ = s_2 + 1;
+                    }
+                }else
+                {   N path_i = path_ - path;
+                    if( !E_mem_Q_blk_I_append( &path, s_1 + 1 - ( s + 1 )))
+                    {   W(path);
+                        E_reply_I_code( listen_sock, 500 );
+                        goto End;
+                    }
+                    path_ = path + path_i;
+                    path_ = E_text_Z_s_P_copy_( path_, s + 1, s_1 + 1 );
+                    path_n++;
+                }
+                s = s_1;
+            }
+            if( s_1 - ( s + 1 ))
+            {   N path_i = path_ - path;
+                if( !E_mem_Q_blk_I_append( &path, s_1 - ( s + 1 )))
+                {   W(path);
+                    E_reply_I_code( listen_sock, 500 );
+                    goto End;
+                }
+                path_ = path + path_i;
+                path_ = E_text_Z_s_P_copy_( path_, s + 1, s_1 );
+            }else
+            {   N path_i = path_ - path;
+                if( !E_mem_Q_blk_I_append( &path, E_text_Z_s0_R_l( S_index_file )))
+                {   W(path);
+                    E_reply_I_code( listen_sock, 500 );
+                    goto End;
+                }
+                path_ = path + path_i;
+                path_ = E_text_Z_s0_P_copy( path_, S_index_file );
+            }
+            *path_ = '\0';
+            G_(); Gs(path);
+            //s = E_text_Z_s_R_search_c( buf, buf + S_read_buffer_l, ':' );
+            //if( s == buf + S_read_buffer_l )
+            //{   E_reply_I_code( listen_sock, 400 );
+                //goto End;
+            //}
+            int file;
+            V1( file = open( path, O_RDONLY ))
+            {   W(path);
+                E_reply_I_code( listen_sock, 404 );
+                goto End;
+            }
+            W(path);
+            struct stat stat;
+            V0( fstat( file, &stat ))
+            {   V0( close(file) ){}
+                W(path);
+                E_reply_I_code( listen_sock, 500 );
+                goto End;
+            }
+            l = E_text_Z_s0_R_l( "Content-Length: " );
+            N l_ = E_text_Z_n_N_s_G( stat.st_size, sizeof( stat.st_size ), 10 );
+            s = M( l + l_ + 4 );
+            if( !s )
+            {   V0( close(file) ){}
+                W(path);
+                E_reply_I_code( listen_sock, 500 );
+                goto End;
+            }
+            E_text_Z_s0_P_copy( s, "Content-Length: " );
+            E_text_Z_n_N_s( s + l + l_, stat.st_size, sizeof( stat.st_size ), 10 );
+            E_text_Z_s0_P_copy( s + l + l_, "\r\n\r\n" );
+            E_reply_I_code( listen_sock, 200 );
+            if( !~E_reply_I_data( listen_sock, s, l + l_ + 4 ))
+            {   V0( close(file) ){}
+                goto End;
+            }
+            l = 0;
+            O{  VO1( l_ = read( file, buf, S_read_buffer_l ))
+                {   V0( close(file) ){}
+                    goto End;
+                }
+                if( l + l_ > stat.st_size )
+                    l_ = stat.st_size - l;
+                l += l_;
+                if( !~E_reply_I_data( listen_sock, buf, l_ ))
+                {   V0( close(file) ){}
+                    goto End;
+                }
+                if( l >= stat.st_size )
+                    break;
+            }
+            V0( close(file) ){}
+End:        W(buf);
+            V0( close( listen_sock )){}
         }
         Y_B( timer, 0 )
             break;

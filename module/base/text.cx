@@ -56,6 +56,22 @@ E_text_Z_s0_T_starts( Pc s
     return !*t;
 }
 B
+E_text_Z_s0_T_ends( Pc s
+, Pc t
+){  Pc s_end = E_text_Z_s0_R_end(s);
+    N t_l = E_text_Z_s0_R_l(t);
+    if( s_end - s < t_l )
+        return no;
+    s = s_end - t_l;
+    while( *t
+    && *s == *t
+    )
+    {   s++;
+        t++;
+    }
+    return !*t;
+}
+B
 E_text_Z_s_T_eq( Pc s
 , Pc s_end
 , Pc t
@@ -120,6 +136,17 @@ E_text_Z_s_R_search_0( Pc s
     return s;
 }
 Pc
+E_text_Z_s_R_search_c( Pc s
+, Pc s_end
+, C c
+){  while( s != s_end )
+    {   if( *s == c )
+            break;
+        s++;
+    }
+    return s;
+}
+Pc
 E_text_Z_s_R_search_c_( Pc s
 , C c
 ){  while( *s != c )
@@ -168,7 +195,7 @@ E_text_Z_s_R_search_s( Pc s
         return s;
     if( t_end - t <= s_end - s )
     {   Pc r = s, t_ = t;
-        while( s < s_end )
+        while( s != s_end )
         {   if( *s == *t_ )
             {   if( t_ == t )
                     r = s;
@@ -192,7 +219,25 @@ E_text_Z_s_R_search_s0( Pc s
 ){  if( !*t )
         return s;
     Pc r = s, t_ = t;
-    while( s < s_end )
+    while( s != s_end )
+    {   if( *s == *t_ )
+        {   if( t_ == t )
+                r = s;
+            if( !*++t_ )
+                return r;
+        }else if( t_ != t )
+            t_ = t;
+        s++;
+    }
+    return s;
+}
+Pc
+E_text_Z_s0_R_search_s0( Pc s
+, Pc t
+){  if( !*t )
+        return s;
+    Pc r = s, t_ = t;
+    while( *s )
     {   if( *s == *t_ )
         {   if( t_ == t )
                 r = s;
