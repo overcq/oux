@@ -10,7 +10,5 @@ Parts inside modules:
 
 and much more...
 
-<div>
-    <iframe width="560" height="315" src="https://www.youtube.com/embed/ff9olrjh3HI" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen>
-    </iframe>
-</div>
+
+from my desktop: https://youtu.be/ff9olrjh3HI
