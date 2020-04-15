@@ -30,7 +30,6 @@ perl -we '
         }
     }
 ' < "$headers_db" \
-| sort -u \
 > "$tmp_file"
 grep -Fe / "$tmp_file"
 grep -Fve / "$tmp_file"
