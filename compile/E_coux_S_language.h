@@ -6,12 +6,12 @@
 *         base definitions
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”              2015‒1‒6 *
 *******************************************************************************/
-///“statement” i wyrażenia rozszerzonej składni, które muszą znajdować się w nawiasach klamrowych bloku nadrzędnego: “for_”[…], “X_M”, “X_A”, “Xh_A”, “Xh_B_”, “Xh_B”, “Yi_M”, “Yi_A”, “V”[…], “G”[…].
+///“statement” i wyrażenia rozszerzonej składni, które muszą znajdować się w nawiasach klamrowych bloku nadrzędnego: “for_”[…], “V”[…], linie “G”[…].
 ///ogólne standardy ‘interfejsów’ ‹procedur›:
 ///‣dodatkowe wyniki ‹procedur› są przypisywane zmiennym wskaźnikowym, jeśli podany adres zmiennej nie jest zerowy.
 ///‣‹menedżer› mogący zmienić adres przechowywany w zmiennej uchwytu obiektu otrzymuje jako pierwszy ‘argument’ wskaźnik do zmiennej uchwytu, którą uaktualnia, jeśli potrzeba. takimi ‹menedżerami› są tylko wydający adres struktury danych: ⁃“mem_blk” musi tak robić, ale ma zarejestrowane wszystkie wydane adresy, ⁃“mem_tab” nie musi tak robić, lecz dla oszczędności nie rejestruje wydanych tablic, a zawsze można to zmienić w przyszłości. poza ‹menedżerami› pamięci raczej nic więcej nie potrzebuje wydawać jako uchwyt obiektu— adresu struktury danych opisu, lecz ‹identyfikator› obiektu.
 //==============================================================================
-typedef C           *Pc; ///wskaźnik do obliczeń bajtowych i tekst techniczny języka ‟C”. zawsze będzie równoważny “char *” (przy uzgadnianiu ‘interfejsów’ procedur systemu operacyjnego).
+typedef C           *Pc; ///wskaźnik do obliczeń bajtowych i tekst techniczny języka ‟C” lub ‘UTF-8’. zawsze będzie równoważny “char *” (przy uzgadnianiu ‘interfejsów’ procedur systemu operacyjnego).
 typedef N           *Pn; ///wskaźnik do tablic liczb naturalnych.
 typedef P           *Pp; ///wskaźnik do tablic adresów.
 //==============================================================================
@@ -83,7 +83,6 @@ typedef P           *Pp; ///wskaźnik do tablic adresów.
 #define _D_proc(module,task)                J_a_b(J_a_b(E,module),J_a_b(D,task))
 #define D_id(module,task)                   J_autogen(J_a_b(J_a_b(E,module),J_a_b(J_a_b(D,task),S)))
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-///instrukcje “X_M”/“X_A”, “Yi_M”/“Yi_A” muszą występować w jednym z najwyższych bloków struktury programu ‹zadania›, w miejscu zapewniającym taką widoczność (do użycia ‹raportu› w tym ‹zadaniu›) jak deklaracja zmiennej lokalnej.
 //#define Q_use(variable,object,...)    if( ~(( variable ) = J_a_b(object,D_M)( __VA_ARGS__ ))) {
 //#define Q_use_0(variable,object,...)  if(( variable ) = J_a_b(object,D_M)( __VA_ARGS__ )) {
 //#define Q_rel(object,...)         J_a_b(object,D_W)( __VA_ARGS__ ); }else { K( "Q_use" ); }
@@ -139,6 +138,7 @@ typedef P           *Pp; ///wskaźnik do tablic adresów.
 ///deklaracja emisji ‹zdarzenia›.
 #define K_E(module,event,object)            if( !_K_proc(module,event)(object) ){} else
 //------------------------------------------------------------------------------
+///instrukcje “X_M”/“X_A”, “Yi_M”/“Yi_A” muszą występować w jednym z najwyższych bloków struktury programu ‹zadania›, w miejscu zapewniającym taką widoczność (do użycia ‹raportu› w tym ‹zadaniu›) jak deklaracja zmiennej lokalnej.
 ///utworzenie i wyrzucenie ‹raportu›.
 #define X_M_(module,report)                 _X_var(module,report) = E_flow_Q_report_M( _X_uid(module,report) )
 #define X_M(module,report)                  I X_M_(module,report)
@@ -165,7 +165,7 @@ typedef P           *Pp; ///wskaźnik do tablic adresów.
 #define Xh_A( thread_unblock_proc_ ) \
   pthread_mutex_t *J_autogen( thread_flow_mutex ); \
   B *J_autogen( thread_switch_back ); \
-  E_flow_Q_thread_system_unblock_report_M( (thread_unblock_proc_), &J_autogen( thread_flow_mutex ), &J_autogen( thread_switch_back ))
+  E_flow_Q_thread_system_unblock_report_M(( thread_unblock_proc_ ), &J_autogen( thread_flow_mutex ), &J_autogen( thread_switch_back ))
 ///tuż przed wywołaniem procedury blokującej w oczekiwaniu na ‹systemowy raport odblokowujący›.
 #define Xh_B_() \
   *J_autogen( thread_switch_back ) = yes; \

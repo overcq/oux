@@ -10,5 +10,5 @@ Parts inside modules:
 
 and much more...
 
-
-from my desktop: https://youtu.be/ff9olrjh3HI
+Blog in Polish: https://ocq430.wixsite.com/website
+From my desktop: https://youtu.be/ff9olrjh3HI
