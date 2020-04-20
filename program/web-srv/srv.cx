@@ -7,8 +7,8 @@
 * ©overcq                on ‟Gentoo Linux 17.1” “x86_64”             2020‒4‒11 P
 *******************************************************************************/
 #define S_listen_backlog    1024
-#define S_read_buffer_l     4096
-#define S_request_buffer_l  ( 4096 * 64 )
+#define S_request_buffer_l  4096
+#define S_read_buffer_l     ( 4096 * 64 )
 #define S_index_file        "index.html"
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 int E_srv_S_epoll_fd;
@@ -21,6 +21,16 @@ struct E_srv_Z_srv
   N sfd_n;
 } *E_srv_S_srv;
 N E_srv_S_srv_n = 0;
+struct E_srv_Z_accept
+{ int epoll_fd;
+  int listen_sock;
+  int file;
+  off_t file_size;
+  Pc buf, buf_, buf_2;
+  N buf_l;
+  Z_clock_time keepalive_tv;
+} *E_srv_S_accept;
+N E_srv_S_accept_n = 0;
 //==============================================================================
 N
 E_srv_M( void
@@ -136,7 +146,11 @@ D( srv, srv )
             V();
         }
         for_n( i, n )
-        {   G_(); Gs_( "accepting socket" );
+        {   for_n( j, E_srv_S_accept_n )
+                if( E_srv_S_accept[j].epoll_fd == E_srv_S_ee_ready[i].data.fd )
+                    break;
+            if( j != E_srv_S_accept_n )
+                continue;
             int listen_sock;
             struct sockaddr peer_addr;
             socklen_t sock_l = sizeof( peer_addr );
@@ -144,261 +158,305 @@ D( srv, srv )
             {   E_srv_W();
                 V();
             }
-            Pc buf = M( S_request_buffer_l );
-            if( !buf )
+            if( !E_mem_Q_blk_I_append( &E_srv_S_accept, 1 ))
+            {   E_reply_I_code( listen_sock, 500 );
+                continue;
+            }
+            E_srv_S_accept_n++;
+            E_srv_S_accept[ E_srv_S_accept_n - 1 ].epoll_fd = E_srv_S_ee_ready[i].data.fd;
+            E_srv_S_accept[ E_srv_S_accept_n - 1 ].listen_sock = listen_sock;
+            E_srv_S_accept[ E_srv_S_accept_n - 1 ].file = -1;
+            E_srv_S_accept[ E_srv_S_accept_n - 1 ].buf = 0;
+            E_srv_S_accept[ E_srv_S_accept_n - 1 ].buf_2 = 0;
+            E_srv_S_accept[ E_srv_S_accept_n - 1 ].buf_l = 0;
+            E_srv_S_accept[ E_srv_S_accept_n - 1 ].keepalive_tv = ( Z_clock_time ){ 0, 0 };
+        }
+        for_n_( i, E_srv_S_accept_n )
+        {   if( E_srv_S_accept[i].file == -1 )
+            {   if( !E_srv_S_accept[i].buf )
+                {   E_srv_S_accept[i].buf = M( S_request_buffer_l );
+                    if( !E_srv_S_accept[i].buf )
+                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        goto End_1;
+                    }
+                }
+                if( !E_srv_S_accept[i].buf_l )
+                {   fd_set readfds;
+                    O{  int e;
+                        FD_ZERO( &readfds );
+                        FD_SET( E_srv_S_accept[i].listen_sock, &readfds );
+                        struct timeval tv = { 0, 0 };
+                        V1e( select( E_srv_S_accept[i].listen_sock + 1, &readfds, 0, 0, &tv ), e )
+                        {   if( e == EINTR || e == EAGAIN )
+                                continue;
+                            goto End_1;
+                        }
+                        break;
+                    }
+                    if( !FD_ISSET( E_srv_S_accept[i].listen_sock, &readfds ))
+                    {   Z_clock_time tv;
+                        _gettime( &tv );
+                        if( _timercmp( &tv, <, &E_srv_S_accept[i].keepalive_tv ))
+                            continue;
+                        goto End_1;
+                    }
+                    VO1( E_srv_S_accept[i].buf_l = read( E_srv_S_accept[i].listen_sock, E_srv_S_accept[i].buf, S_request_buffer_l ))
+                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        goto End_1;
+                    }
+                    if( !E_srv_S_accept[i].buf_l )
+                        goto End_1;
+                    E_srv_S_accept[i].buf_ = E_srv_S_accept[i].buf;
+                }
+                B keep_alive = yes;
+                Pc s = E_text_Z_s_R_search_c( E_srv_S_accept[i].buf_, E_srv_S_accept[i].buf_ + E_srv_S_accept[i].buf_l, '\n' );
+                if( s == E_srv_S_accept[i].buf_ + E_srv_S_accept[i].buf_l
+                || s == E_srv_S_accept[i].buf_
+                || *( s - 1 ) != '\r'
+                ){  E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
+                    goto End_1;
+                }
+                G_(); Gd( E_srv_S_accept[i].buf_l ); Gs_l( E_srv_S_accept[i].buf_, E_srv_S_accept[i].buf_l );
+                *( s - 1 ) = '\0';
+                s = E_text_Z_s0_R_search_c( E_srv_S_accept[i].buf_, ' ' );
+                if( !*s )
+                {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
+                    goto End_1;
+                }
+                *s = '\0';
+                if( !E_text_Z_s0_T_eq( E_srv_S_accept[i].buf_, "GET" ))
+                {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
+                    goto End_1;
+                }
+                if( !E_text_Z_s0_T_ends( s + 1, " HTTP/1.1" )
+                //&& !E_text_Z_s0_T_ends( s + 1, " HTTP/1.0" )
+                )
+                {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
+                    goto End_1;
+                }
+                Pc s_1 = E_text_Z_s0_R_search_last_c( s + 1, ' ' );
+                *s_1 = '\0';
+                if( *( s + 1 ) != '/' )
+                {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
+                    goto End_1;
+                }
+                for_n( j, E_srv_S_srv_n )
+                {   for_n( k, E_srv_S_srv[j].sfd_n )
+                        if( E_srv_S_srv[j].sfd[k] == E_srv_S_ee_ready[i].data.fd )
+                            goto End;
+                }
+End:            ;
+                N l = E_text_Z_s0_R_0_l( E_conf_S_virtualhost[ E_srv_S_srv[j].virtualhost_i ].root_path ) + 1;
+                Pc path = M(l);
+                if( !path )
+                {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                    goto End_1;
+                }
+                Pc path_ = E_text_Z_s0_P_copy( path, E_conf_S_virtualhost[ E_srv_S_srv[j].virtualhost_i ].root_path );
+                *path_ = '/';
+                path_++;
+                Pc s_2 = path;
+                N path_n = 0;
+                while( ( s_2 = E_text_Z_s_R_search_c( s_2 + 1, path_, '/' )) != path_ )
+                    path_n++;
+                N path_n_0 = path_n;
+                O{  s_1 = E_text_Z_s0_R_search_c( s + 1, '/' );
+                    if( !*s_1 )
+                        break;
+                    if( s_1 == s + 1 )
+                    {   s = s_1;
+                        continue;
+                    }
+                    for( s_2 = s + 1; s_2 != s_1; s_2++ )
+                        if( *s_2 != '.' )
+                            break;
+                    if( s_2 == s_1 )
+                    {   if( path_n < path_n_0 + ( s_1 - ( s + 1 ) - 1 ))
+                        {   W(path);
+                            E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
+                            goto End_1;
+                        }
+                        if( s_1 - ( s + 1 ) - 1 > 1 )
+                        {   path_n -= s_1 - ( s + 1 ) - 1;
+                            s_2 = path;
+                            for_n( k, path_n )
+                                s_2 = E_text_Z_s_R_search_c( s_2 + 1, path_, '/' );
+                            if( !E_mem_Q_blk_I_rem( &path, s_2 + 1 - path, path_ - ( s_2 + 1 )))
+                            {   W(path);
+                                E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                                goto End_1;
+                            }
+                            path_ = s_2 + 1;
+                        }
+                    }else
+                    {   N path_i = path_ - path;
+                        if( !E_mem_Q_blk_I_append( &path, s_1 + 1 - ( s + 1 )))
+                        {   W(path);
+                            E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                            goto End_1;
+                        }
+                        path_ = path + path_i;
+                        path_ = E_text_Z_s_P_copy_( path_, s + 1, s_1 + 1 );
+                        path_n++;
+                    }
+                    s = s_1;
+                }
+                if( s_1 - ( s + 1 ))
+                {   N path_i = path_ - path;
+                    if( !E_mem_Q_blk_I_append( &path, s_1 - ( s + 1 )))
+                    {   W(path);
+                        E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        goto End_1;
+                    }
+                    path_ = path + path_i;
+                    path_ = E_text_Z_s_P_copy_( path_, s + 1, s_1 );
+                }else
+                {   N path_i = path_ - path;
+                    if( !E_mem_Q_blk_I_append( &path, E_text_Z_s0_R_l( S_index_file )))
+                    {   W(path);
+                        E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        goto End_1;
+                    }
+                    path_ = path + path_i;
+                    path_ = E_text_Z_s0_P_copy( path_, S_index_file );
+                }
+                *path_ = '\0';
+                B gz = no;
+                s = E_text_Z_s_R_search_c( E_srv_S_accept[i].buf_, E_srv_S_accept[i].buf_ + E_srv_S_accept[i].buf_l, '\n' );
+                O{  s_1 = E_text_Z_s_R_search_c( s + 1, E_srv_S_accept[i].buf_ + E_srv_S_accept[i].buf_l, '\n' );
+                    if( s_1 == E_srv_S_accept[i].buf_ + E_srv_S_accept[i].buf_l
+                    || *( s_1 - 1 ) != '\r'
+                    ){  E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
+                        goto End_1;
+                    }
+                    if( s + 1 + 1 == s_1 )
+                    {   E_srv_S_accept[i].buf_l -= s_1 + 1 - E_srv_S_accept[i].buf_;
+                        E_srv_S_accept[i].buf_ = s_1 + 1;
+                        break;
+                    }
+                    s_2 = E_text_Z_s_R_search_c( s + 1, s_1, ':' );
+                    if( s_2 == s_1 )
+                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
+                        goto End_1;
+                    }
+                    if( E_text_Z_s_T_eq( s + 1, s_2, "Accept-Encoding" ))
+                    {   s_2 = E_text_Z_s_R_search_s0( s_2 + 1, s_1 - 1, "gzip" );
+                        if( s_2 != s_1 - 1 )
+                            gz = yes;
+                    }else if( E_text_Z_s_T_eq( s + 1, s_2, "Connection" ))
+                    {   s_2 = E_text_Z_s_R_search_s0( s_2 + 1, s_1 - 1, "close" );
+                        if( s_2 != s_1 - 1 )
+                            keep_alive = no;
+                    }
+                    s = s_1;
+                }
+                if( !gz
+                || E_text_Z_s0_T_ends( path, ".gz" )
+                ){  gz = no;
+                    V1( E_srv_S_accept[i].file = open( path, O_RDONLY ))
+                    {   *path_ = '\0';
+                        W(path);
+                        E_reply_I_code( E_srv_S_accept[i].listen_sock, 404 );
+                        goto End_1;
+                    }
+                }else
+                {   N path_i = path_ - path;
+                    if( !E_mem_Q_blk_I_append( &path, 3 ))
+                    {   W(path);
+                        E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        goto End_1;
+                    }
+                    path_ = path + path_i;
+                    E_text_Z_s0_P_copy_0( path_, ".gz" );
+                    V1( E_srv_S_accept[i].file = open( path, O_RDONLY ))
+                    {   gz = no;
+                        *path_ = '\0';
+                        V1( E_srv_S_accept[i].file = open( path, O_RDONLY ))
+                        {   *path_ = '\0';
+                            W(path);
+                            E_reply_I_code( E_srv_S_accept[i].listen_sock, 404 );
+                            goto End_1;
+                        }
+                    }
+                }
+                G_(); Gs(path);
+                W(path);
+                struct stat stat;
+                V0( fstat( E_srv_S_accept[i].file, &stat ))
+                {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                    goto End_2;
+                }
+                E_srv_S_accept[i].file_size = stat.st_size;
+                l = E_text_Z_s0_R_l( "Content-Length: " );
+                N l_1 = E_text_Z_n_N_s_G( stat.st_size, sizeof( stat.st_size ), 10 );
+                N l_2;
+                if(gz)
+                    l_2 = E_text_Z_s0_R_l( "\r\nContent-Encoding: gzip" );
+                else
+                    l_2 = 0;
+                N l_3;
+                if( keep_alive )
+                    l_3 = E_text_Z_s0_R_l( "\r\nConnection: keep-alive\r\nKeep-alive: timeout=5, max=1000" );
+                else
+                    l_3 = E_text_Z_s0_R_l( "\r\nConnection: close" );
+                N l_4 = E_text_Z_s0_R_l( "\r\nHost: " ) + E_text_Z_s0_R_l( E_srv_S_srv[j].canonical );
+                s = M( l + l_1 + l_2 + l_3 + l_4 + 4 );
+                if( !s )
+                {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                    goto End_2;
+                }
+                E_text_Z_s0_P_copy( s, "Content-Length: " );
+                E_text_Z_n_N_s( s + l + l_1, stat.st_size, sizeof( stat.st_size ), 10 );
+                if(gz)
+                    E_text_Z_s0_P_copy( s + l + l_1, "\r\nContent-Encoding: gzip" );
+                if( keep_alive )
+                    E_text_Z_s0_P_copy( s + l + l_1 + l_2, "\r\nConnection: keep-alive\r\nKeep-alive: timeout=5, max=1000" );
+                else
+                    E_text_Z_s0_P_copy( s + l + l_1 + l_2, "\r\nConnection: close" );
+                E_text_Z_s0_P_copy( E_text_Z_s0_P_copy( s + l + l_1 + l_2 + l_3, "\r\nHost: " ), E_srv_S_srv[j].canonical );
+                E_text_Z_s0_P_copy( s + l + l_1 + l_2 + l_3 + l_4, "\r\n\r\n" );
+                E_reply_I_code( E_srv_S_accept[i].listen_sock, 200 );
+                G_(); Gd( l + l_1 + l_2 + l_3 + l_4 + 4 ); Gs_l( s, l + l_1 + l_2 + l_3 + l_4 + 4 );
+                if( !~E_reply_I_data( E_srv_S_accept[i].listen_sock, s, l + l_1 + l_2 + l_3 + l_4 + 4 ))
+                    goto End_2;
+            }else
+            {   if( !E_srv_S_accept[i].buf_2 )
+                {   E_srv_S_accept[i].buf_2 = M( S_read_buffer_l );
+                    if( !E_srv_S_accept[i].buf_2 )
+                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        goto End_2;
+                    }
+                }
+                N l = 0;
+                N l_1;
+                VO1( l_1 = read( E_srv_S_accept[i].file, E_srv_S_accept[i].buf_2, S_read_buffer_l ))
+                    goto End_2;
+                if( l + l_1 > E_srv_S_accept[i].file_size )
+                    l_1 = E_srv_S_accept[i].file_size - l;
+                l += l_1;
+                if( !~E_reply_I_data( E_srv_S_accept[i].listen_sock, E_srv_S_accept[i].buf_2, l_1 ))
+                    goto End_2;
+                if( l < E_srv_S_accept[i].file_size )
+                    continue;
+                V0( close( E_srv_S_accept[i].file )){}
+                E_srv_S_accept[i].file = -1;
+                _gettime( &E_srv_S_accept[i].keepalive_tv );
+                Z_clock_time tv = { 5, 0 };
+                _timeradd( &E_srv_S_accept[i].keepalive_tv, &tv, &E_srv_S_accept[i].keepalive_tv );
+            }
+            continue;
+End_2:      ;
+            V0( close( E_srv_S_accept[i].file )){}
+            E_srv_S_accept[i].file = -1;
+End_1:      W( E_srv_S_accept[i].buf_2 );
+            W( E_srv_S_accept[i].buf );
+            V0( close( E_srv_S_accept[i].listen_sock )){}
+            if( !E_mem_Q_blk_I_rem( &E_srv_S_accept, i, 1 ))
             {   E_srv_W();
                 V();
             }
-            O{  G_(); Gs_( "reading from socket" );
-                N l;
-                VO1( l = read( listen_sock, buf, S_request_buffer_l ))
-                {   E_srv_W();
-                    V();
-                }
-                if( !l )
-                    break;
-                B keep_alive = yes;
-                Pc buf_ = buf;
-                N read_buffer_l = l;
-                O{  Pc s = E_text_Z_s_R_search_c( buf_, buf_ + read_buffer_l, '\n' );
-                    if( s == buf_ + read_buffer_l
-                    || s == buf_
-                    || *( s - 1 ) != '\r'
-                    ){  E_reply_I_code( listen_sock, 400 );
-                        goto End;
-                    }
-                    G_(); Gd( read_buffer_l ); Gs_l( buf_, read_buffer_l );
-                    *( s - 1 ) = '\0';
-                    s = E_text_Z_s0_R_search_c( buf_, ' ' );
-                    if( !*s )
-                    {   E_reply_I_code( listen_sock, 400 );
-                        goto End;
-                    }
-                    *s = '\0';
-                    if( !E_text_Z_s0_T_eq( buf_, "GET" ))
-                    {   E_reply_I_code( listen_sock, 400 );
-                        goto End;
-                    }
-                    if( !E_text_Z_s0_T_ends( s + 1, " HTTP/1.1" )
-                    //&& !E_text_Z_s0_T_ends( s + 1, " HTTP/1.0" )
-                    )
-                    {   E_reply_I_code( listen_sock, 400 );
-                        goto End;
-                    }
-                    Pc s_1 = E_text_Z_s0_R_search_last_c( s + 1, ' ' );
-                    *s_1 = '\0';
-                    if( *( s + 1 ) != '/' )
-                    {   E_reply_I_code( listen_sock, 400 );
-                        goto End;
-                    }
-                    for_n( j, E_srv_S_srv_n )
-                    {   for_n( k, E_srv_S_srv[j].sfd_n )
-                            if( E_srv_S_srv[j].sfd[k] == E_srv_S_ee_ready[i].data.fd )
-                                goto End_1;
-                    }
-End_1:              l = E_text_Z_s0_R_0_l( E_conf_S_virtualhost[ E_srv_S_srv[j].virtualhost_i ].root_path ) + 1;
-                    Pc path = M(l);
-                    if( !path )
-                    {   E_reply_I_code( listen_sock, 500 );
-                        goto End;
-                    }
-                    Pc path_ = E_text_Z_s0_P_copy( path, E_conf_S_virtualhost[ E_srv_S_srv[j].virtualhost_i ].root_path );
-                    *path_ = '/';
-                    path_++;
-                    Pc s_2 = path;
-                    N path_n = 0;
-                    while( ( s_2 = E_text_Z_s_R_search_c( s_2 + 1, path_, '/' )) != path_ )
-                        path_n++;
-                    N path_n_0 = path_n;
-                    O{  s_1 = E_text_Z_s0_R_search_c( s + 1, '/' );
-                        if( !*s_1 )
-                            break;
-                        if( s_1 == s + 1 )
-                        {   s = s_1;
-                            continue;
-                        }
-                        for( s_2 = s + 1; s_2 != s_1; s_2++ )
-                            if( *s_2 != '.' )
-                                break;
-                        if( s_2 == s_1 )
-                        {   if( path_n < path_n_0 + ( s_1 - ( s + 1 ) - 1 ))
-                            {   W(path);
-                                E_reply_I_code( listen_sock, 400 );
-                                goto End;
-                            }
-                            if( s_1 - ( s + 1 ) - 1 > 1 )
-                            {   path_n -= s_1 - ( s + 1 ) - 1;
-                                s_2 = path;
-                                for_n( k, path_n )
-                                    s_2 = E_text_Z_s_R_search_c( s_2 + 1, path_, '/' );
-                                if( !E_mem_Q_blk_I_rem( &path, s_2 + 1 - path, path_ - ( s_2 + 1 )))
-                                {   W(path);
-                                    E_reply_I_code( listen_sock, 500 );
-                                    goto End;
-                                }
-                                path_ = s_2 + 1;
-                            }
-                        }else
-                        {   N path_i = path_ - path;
-                            if( !E_mem_Q_blk_I_append( &path, s_1 + 1 - ( s + 1 )))
-                            {   W(path);
-                                E_reply_I_code( listen_sock, 500 );
-                                goto End;
-                            }
-                            path_ = path + path_i;
-                            path_ = E_text_Z_s_P_copy_( path_, s + 1, s_1 + 1 );
-                            path_n++;
-                        }
-                        s = s_1;
-                    }
-                    if( s_1 - ( s + 1 ))
-                    {   N path_i = path_ - path;
-                        if( !E_mem_Q_blk_I_append( &path, s_1 - ( s + 1 )))
-                        {   W(path);
-                            E_reply_I_code( listen_sock, 500 );
-                            goto End;
-                        }
-                        path_ = path + path_i;
-                        path_ = E_text_Z_s_P_copy_( path_, s + 1, s_1 );
-                    }else
-                    {   N path_i = path_ - path;
-                        if( !E_mem_Q_blk_I_append( &path, E_text_Z_s0_R_l( S_index_file )))
-                        {   W(path);
-                            E_reply_I_code( listen_sock, 500 );
-                            goto End;
-                        }
-                        path_ = path + path_i;
-                        path_ = E_text_Z_s0_P_copy( path_, S_index_file );
-                    }
-                    *path_ = '\0';
-                    B gz = no;
-                    s = E_text_Z_s_R_search_c( buf_, buf_ + read_buffer_l, '\n' );
-                    O{  s_1 = E_text_Z_s_R_search_c( s + 1, buf_ + read_buffer_l, '\n' );
-                        if( s_1 == buf_ + read_buffer_l
-                        || *( s_1 - 1 ) != '\r'
-                        ){  E_reply_I_code( listen_sock, 400 );
-                            goto End;
-                        }
-                        if( s + 1 + 1 == s_1 )
-                        {   read_buffer_l -= s_1 + 1 - buf_;
-                            buf_ = s_1 + 1;
-                            break;
-                        }
-                        s_2 = E_text_Z_s_R_search_c( s + 1, s_1, ':' );
-                        if( s_2 == s_1 )
-                        {   E_reply_I_code( listen_sock, 400 );
-                            goto End;
-                        }
-                        if( E_text_Z_s_T_eq( s + 1, s_2, "Accept-Encoding" ))
-                        {   s_2 = E_text_Z_s_R_search_s0( s_2 + 1, s_1 - 1, "gzip" );
-                            if( s_2 != s_1 - 1 )
-                                gz = yes;
-                        }else if( E_text_Z_s_T_eq( s + 1, s_2, "Connection" ))
-                        {   s_2 = E_text_Z_s_R_search_s0( s_2 + 1, s_1 - 1, "close" );
-                            if( s_2 != s_1 - 1 )
-                                keep_alive = no;
-                        }
-                        s = s_1;
-                    }
-                    int file;
-                    if( !gz
-                    || E_text_Z_s0_T_ends( path, ".gz" )
-                    ){  gz = no;
-                        V1( file = open( path, O_RDONLY ))
-                        {   *path_ = '\0';
-                            W(path);
-                            E_reply_I_code( listen_sock, 404 );
-                            goto End;
-                        }
-                    }else
-                    {   N path_i = path_ - path;
-                        if( !E_mem_Q_blk_I_append( &path, 3 ))
-                        {   W(path);
-                            E_reply_I_code( listen_sock, 500 );
-                            goto End;
-                        }
-                        path_ = path + path_i;
-                        E_text_Z_s0_P_copy_0( path_, ".gz" );
-                        V1( file = open( path, O_RDONLY ))
-                        {   gz = no;
-                            *path_ = '\0';
-                            V1( file = open( path, O_RDONLY ))
-                            {   *path_ = '\0';
-                                W(path);
-                                E_reply_I_code( listen_sock, 404 );
-                                goto End;
-                            }
-                        }
-                    }
-                    G_(); Gs(path);
-                    W(path);
-                    struct stat stat;
-                    V0( fstat( file, &stat ))
-                    {   V0( close(file) ){}
-                        E_reply_I_code( listen_sock, 500 );
-                        goto End;
-                    }
-                    l = E_text_Z_s0_R_l( "Content-Length: " );
-                    N l_1 = E_text_Z_n_N_s_G( stat.st_size, sizeof( stat.st_size ), 10 );
-                    N l_2;
-                    if(gz)
-                        l_2 = E_text_Z_s0_R_l( "\r\nContent-Encoding: gzip" );
-                    else
-                        l_2 = 0;
-                    N l_3;
-                    if( keep_alive )
-                        l_3 = E_text_Z_s0_R_l( "\r\nConnection: keep-alive\r\nKeep-alive: timeout=1, max=1000" );
-                    else
-                        l_3 = 0;
-                    s = M( l + l_1 + l_2 + l_3 + 4 );
-                    if( !s )
-                    {   V0( close(file) ){}
-                        E_reply_I_code( listen_sock, 500 );
-                        goto End;
-                    }
-                    E_text_Z_s0_P_copy( s, "Content-Length: " );
-                    E_text_Z_n_N_s( s + l + l_1, stat.st_size, sizeof( stat.st_size ), 10 );
-                    if(gz)
-                        E_text_Z_s0_P_copy( s + l + l_1, "\r\nContent-Encoding: gzip" );
-                    if( keep_alive )
-                        E_text_Z_s0_P_copy( s + l + l_1 + l_2, "\r\nConnection: keep-alive\r\nKeep-alive: timeout=1, max=1000" );
-                    E_text_Z_s0_P_copy( s + l + l_1 + l_2 + l_3, "\r\n\r\n" );
-                    E_reply_I_code( listen_sock, 200 );
-                    if( !~E_reply_I_data( listen_sock, s, l + l_1 + l_2 + l_3 + 4 ))
-                    {   V0( close(file) ){}
-                        goto End;
-                    }
-                    l = 0;
-                    Pc buf_2 = M( S_read_buffer_l );
-                    if( !buf_2 )
-                    {   V0( close(file) ){}
-                        E_reply_I_code( listen_sock, 500 );
-                        goto End;
-                    }
-                    O{  VO1( l_1 = read( file, buf_2, S_read_buffer_l ))
-                        {   W( buf_2 );
-                            V0( close(file) ){}
-                            goto End;
-                        }
-                        if( l + l_1 > stat.st_size )
-                            l_1 = stat.st_size - l;
-                        l += l_1;
-                        if( !~E_reply_I_data( listen_sock, buf_2, l_1 ))
-                        {   W( buf_2 );
-                            V0( close(file) ){}
-                            goto End;
-                        }
-                        if( l >= stat.st_size )
-                            break;
-                    }
-                    W( buf_2 );
-                    V0( close(file) ){}
-                    if( !read_buffer_l )
-                        break;
-                }
-            }
-End:        W(buf);
-            V0( close( listen_sock )){}
+            E_srv_S_accept_n--;
+            i--;
         }
         Y_B( timer, 0 )
             break;
