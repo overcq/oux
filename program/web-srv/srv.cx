@@ -142,7 +142,7 @@ E_srv_W( void
 D( srv, srv )
 {   I_D
     {   N n;
-        V1( n = epoll_wait( E_srv_S_epoll_fd, E_srv_S_ee_ready, E_srv_S_ee_ready_n, 0 ))
+        V1( n = epoll_wait( E_srv_S_epoll_fd, E_srv_S_ee_ready, E_srv_S_ee_ready_n, E_srv_S_accept_n ? 0 : 1000 ))
         {   E_srv_W();
             V();
         }
@@ -167,7 +167,11 @@ D( srv, srv )
             E_srv_S_accept[ E_srv_S_accept_n - 1 ].epoll_fd = E_srv_S_ee_ready[i].data.fd;
             E_srv_S_accept[ E_srv_S_accept_n - 1 ].listen_sock = listen_sock;
             E_srv_S_accept[ E_srv_S_accept_n - 1 ].file = -1;
-            E_srv_S_accept[ E_srv_S_accept_n - 1 ].buf = 0;
+            E_srv_S_accept[ E_srv_S_accept_n - 1 ].buf = M( S_request_buffer_l );
+            if( !E_srv_S_accept[ E_srv_S_accept_n - 1 ].buf )
+            {   E_reply_I_code( listen_sock, 500 );
+                continue;
+            }
             E_srv_S_accept[ E_srv_S_accept_n - 1 ].buf_2 = 0;
             E_srv_S_accept[ E_srv_S_accept_n - 1 ].buf_l = 0;
             _gettime( &E_srv_S_accept[ E_srv_S_accept_n - 1 ].keepalive_tv );
@@ -176,14 +180,7 @@ D( srv, srv )
         }
         for_n_( i, E_srv_S_accept_n )
         {   if( E_srv_S_accept[i].file == -1 )
-            {   if( !E_srv_S_accept[i].buf )
-                {   E_srv_S_accept[i].buf = M( S_request_buffer_l );
-                    if( !E_srv_S_accept[i].buf )
-                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
-                        goto End_1;
-                    }
-                }
-                if( !E_srv_S_accept[i].buf_l )
+            {   if( !E_srv_S_accept[i].buf_l )
                 {   fd_set readfds;
                     O{  int e;
                         FD_ZERO( &readfds );
@@ -209,25 +206,46 @@ D( srv, srv )
                     }
                     if( !E_srv_S_accept[i].buf_l )
                         goto End_1;
-                    E_srv_S_accept[i].buf_ = E_srv_S_accept[i].buf;
+                }else
+                {   fd_set readfds;
+                    O{  int e;
+                        FD_ZERO( &readfds );
+                        FD_SET( E_srv_S_accept[i].listen_sock, &readfds );
+                        struct timeval tv = { 0, 0 };
+                        V1e( select( E_srv_S_accept[i].listen_sock + 1, &readfds, 0, 0, &tv ), e )
+                        {   if( e == EINTR || e == EAGAIN )
+                                continue;
+                            goto End_1;
+                        }
+                        break;
+                    }
+                    if( FD_ISSET( E_srv_S_accept[i].listen_sock, &readfds ))
+                    {   E_text_Z_s_P_copy_( E_srv_S_accept[i].buf, E_srv_S_accept[i].buf_, E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l );
+                        N l;
+                        VO1( l = read( E_srv_S_accept[i].listen_sock, E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l, S_request_buffer_l - E_srv_S_accept[i].buf_l ))
+                        {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                            goto End_1;
+                        }
+                        E_srv_S_accept[i].buf_l += l;
+                    }
                 }
                 B keep_alive = yes;
-                Pc s = E_text_Z_s_R_search_c( E_srv_S_accept[i].buf_, E_srv_S_accept[i].buf_ + E_srv_S_accept[i].buf_l, '\n' );
-                if( s == E_srv_S_accept[i].buf_ + E_srv_S_accept[i].buf_l
-                || s == E_srv_S_accept[i].buf_
+                Pc s = E_text_Z_s_R_search_c( E_srv_S_accept[i].buf, E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l, '\n' );
+                if( s == E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l
+                || s == E_srv_S_accept[i].buf
                 || *( s - 1 ) != '\r'
                 ){  E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
                     goto End_1;
                 }
-                G_(); Gd( E_srv_S_accept[i].buf_l ); Gs_l( E_srv_S_accept[i].buf_, E_srv_S_accept[i].buf_l );
+                G_(); Gd( E_srv_S_accept[i].buf_l ); Gs_l( E_srv_S_accept[i].buf, E_srv_S_accept[i].buf_l );
                 *( s - 1 ) = '\0';
-                s = E_text_Z_s0_R_search_c( E_srv_S_accept[i].buf_, ' ' );
+                s = E_text_Z_s0_R_search_c( E_srv_S_accept[i].buf, ' ' );
                 if( !*s )
                 {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
                     goto End_1;
                 }
                 *s = '\0';
-                if( !E_text_Z_s0_T_eq( E_srv_S_accept[i].buf_, "GET" ))
+                if( !E_text_Z_s0_T_eq( E_srv_S_accept[i].buf, "GET" ))
                 {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
                     goto End_1;
                 }
@@ -245,7 +263,6 @@ D( srv, srv )
                 }
                 for( Pc s_1 = s + 1, s; *( s = E_text_Z_s0_R_search_c( s_1, '+' )); s_1 = s + 1 )
                     *s_1 = ' ';
-                N n = 0;
                 for( Pc s_1 = s + 1, s; *( s = E_text_Z_s0_R_search_c( s_1, '%' )); s_1 = s + 1 )
                 {   if( !*( s + 1 )
                     || !*( s + 2 )
@@ -262,10 +279,12 @@ D( srv, srv )
                     {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
                         goto End_1;
                     }
-                    n += 2;
+                    if( !E_mem_Q_blk_I_append( &E_srv_S_accept[i].buf, 2 ))
+                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        goto End_1;
+                    }
                     *s = c;
                 }
-                s_1 -= n;
                 for_n( j, E_srv_S_srv_n )
                 {   for_n( k, E_srv_S_srv[j].sfd_n )
                         if( E_srv_S_srv[j].sfd[k] == E_srv_S_ee_ready[i].data.fd )
@@ -348,15 +367,15 @@ End:            ;
                 }
                 *path_ = '\0';
                 B gz = no;
-                s = E_text_Z_s_R_search_c( E_srv_S_accept[i].buf_, E_srv_S_accept[i].buf_ + E_srv_S_accept[i].buf_l, '\n' );
-                O{  s_1 = E_text_Z_s_R_search_c( s + 1, E_srv_S_accept[i].buf_ + E_srv_S_accept[i].buf_l, '\n' );
-                    if( s_1 == E_srv_S_accept[i].buf_ + E_srv_S_accept[i].buf_l
+                s = E_text_Z_s_R_search_c( E_srv_S_accept[i].buf, E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l, '\n' );
+                O{  s_1 = E_text_Z_s_R_search_c( s + 1, E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l, '\n' );
+                    if( s_1 == E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l
                     || *( s_1 - 1 ) != '\r'
                     ){  E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
                         goto End_1;
                     }
                     if( s + 1 + 1 == s_1 )
-                    {   E_srv_S_accept[i].buf_l -= s_1 + 1 - E_srv_S_accept[i].buf_;
+                    {   E_srv_S_accept[i].buf_l -= s_1 + 1 - E_srv_S_accept[i].buf;
                         E_srv_S_accept[i].buf_ = s_1 + 1;
                         break;
                     }
@@ -376,6 +395,7 @@ End:            ;
                     }
                     s = s_1;
                 }
+                G_(); Gs(path);
                 if( !gz
                 || E_text_Z_s0_T_ends( path, ".gz" )
                 ){  gz = no;
@@ -405,7 +425,6 @@ End:            ;
                         }
                     }
                 }
-                G_(); Gs(path);
                 W(path);
                 struct stat stat;
                 V0( fstat( E_srv_S_accept[i].file, &stat ))
