@@ -1,5 +1,6 @@
 # oux
-Directory of Oux programming language (C based) projects.
+
+Directory of OUX/C+ programming language (C based) projects.
 
 Parts inside modules:
 * text manipulation routines: [text.cx](https://github.com/overcq/oux/tree/master/module/base/text.cx)
