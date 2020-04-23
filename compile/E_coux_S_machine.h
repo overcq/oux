@@ -32,7 +32,7 @@
         #endif
     #endif
 //==============================================================================
-///włącza wypisywanie ‹raportów linii› umieszczonych instrukcjami “G”[…] lub z błędów w instrukcjach “V”[…]. wyłączenie ‹raportów linii› nie wyłącza “strumienia” wypisywania dostępnego programow.
+///włącza wypisywanie ‹raportów linii› umieszczonych instrukcjami “G”[…] lub z błędów w instrukcjach “V”[…]. wyłączenie ‹raportów linii› nie wyłącza “strumienia” wypisywania dostępnego programowo.
 #define C_line_report
 ///przełącza na jeszcze mniejszy rozmiar identyfikatorów.
 #define C_id_small

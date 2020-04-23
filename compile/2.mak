@@ -14,6 +14,7 @@
 #NDFN w ‘kompilacji’ do “bibliotek”— podczas tworzenia każdego pliku ‘kompilator’ otrzymuje wynik “pkg-config” tylko dla deklaracji “packages” tego, bieżącego ‹modułu›. lista “bibliotek” wymaganych dla każdego ‹modułu› z osobna powinna być tak podawana, ale teksty pozostałe z “--libs” być może będą potrzebne z pozostałych ‹modułów›, by zachować integrację sposobu utworzenia każdego pliku. jednak nie wiadomo, jak to rozumieć w sensie integralności ‘linkera’ wymaganej przez “packages”.
 #DFN podstawienie dla “bibliotek” procedur menedżera pamięci (w ‘kompilacji’ do “bibliotek”) zawsze będzie funkcjonalnością opcjonalną, mimo że bardzo stabilizuje, a także przyspiesza działanie programów “bibliotecznych” dołączanych do ‘kompilowanego’ programu oraz ich ‘serverów’ komunikacji, jednak otwiera “menedżera pamięci” na obce oprogramowanie, które nie jest gwarantowane, i w ten sposób eliminuje gwarancje dla całego programu, gdy byłaby realizowana niewłaściwa obsługa “menedżera pamięci” przez te obce programy.
 #===============================================================================
+H_make_S_usr_lib := /usr/lib64
 H_make_S_module_path := $(H_make_S_root_path)/module
 H_make_S_base_module := base
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -449,11 +450,11 @@ install-0:
 	} \
 	$(if $(H_make_C_to_libs), \
         $(foreach module,$(H_make_S_modules), \
-        && { $(CMP) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so)  $(call H_make_Z_shell_cmd_arg_I_quote,/usr/lib64/lib$(H_make_S_lib_prefix)$(module).so) \
-        || $(INSTALL) -m 755 $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so)  $(call H_make_Z_shell_cmd_arg_I_quote,/usr/lib64/lib$(H_make_S_lib_prefix)$(module).so); \
+        && { $(CMP) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so)  $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_usr_lib)/lib$(H_make_S_lib_prefix)$(module).so) \
+        || $(INSTALL) -m 755 $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so)  $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_usr_lib)/lib$(H_make_S_lib_prefix)$(module).so); \
         } \
     ))
 #-------------------------------------------------------------------------------
 uninstall-0:
-	$(RM) /usr/lib/lib$(H_make_S_lib_prefix)*.so
+	$(RM) $(H_make_S_usr_lib)/lib$(H_make_S_lib_prefix)*.so
 ################################################################################
