@@ -33,6 +33,7 @@ struct E_srv_Z_accept
   off_t l;
 } *E_srv_S_accept;
 N E_srv_S_accept_n = 0;
+int E_srv_S_epoll_pipe[2] = { -1, -1 };
 //==============================================================================
 N
 E_srv_M( void
@@ -120,9 +121,23 @@ E_srv_M( void
                 E_srv_S_ee_ready_n++;
             }
         }
+        V0( pipe( &E_srv_S_epoll_pipe[0] ))
+        {   E_srv_W();
+            return ~0;
+        }
+        ee.data.fd = E_srv_S_epoll_pipe[0];
+        V0( epoll_ctl( E_srv_S_epoll_fd, EPOLL_CTL_ADD, E_srv_S_epoll_pipe[0], &ee ))
+        {   V0( close( E_srv_S_epoll_pipe[0] )){}
+            V0( close( E_srv_S_epoll_pipe[1] )){}
+            E_srv_W();
+            return ~0;
+        }
+        E_srv_S_ee_ready_n++;
         Mt_( E_srv_S_ee_ready, E_srv_S_ee_ready_n );
         if( !E_srv_S_ee_ready )
-        {   E_srv_W();
+        {   V0( close( E_srv_S_epoll_pipe[0] )){}
+            V0( close( E_srv_S_epoll_pipe[1] )){}
+            E_srv_W();
             return ~0;
         }
     }
@@ -139,13 +154,19 @@ E_srv_W( void
     }
     W( E_srv_S_srv );
 }
+void
+E_srv_D_srv_I_unblock( P p
+){  C c;
+    VO1_( write( E_srv_S_epoll_pipe[1], &c, sizeof(C) ));
+}
 D( srv, srv )
-{   I_D
+{   Xh_A( E_srv_D_srv_I_unblock );
+    I_D
     {   N n;
-        V1( n = epoll_wait( E_srv_S_epoll_fd, E_srv_S_ee_ready, E_srv_S_ee_ready_n, E_srv_S_accept_n ? 0 : 1000 ))
-        {   E_srv_W();
-            V();
-        }
+        Xh_B_();
+        VO1_( n = epoll_wait( E_srv_S_epoll_fd, E_srv_S_ee_ready, E_srv_S_ee_ready_n, E_srv_S_accept_n ? 0 : -1 ));
+        Xh_B()
+            break;
         for_n( i, n )
         {   for_n( j, E_srv_S_accept_n )
                 if( E_srv_S_accept[j].epoll_fd == E_srv_S_ee_ready[i].data.fd )
@@ -504,8 +525,6 @@ End_1:      W( E_srv_S_accept[i].buf_2 );
             E_srv_S_accept_n--;
             i--;
         }
-        I_B()
-            break;
     }
 }
 /******************************************************************************/
