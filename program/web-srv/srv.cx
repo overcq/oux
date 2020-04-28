@@ -9,8 +9,10 @@
 #define S_listen_backlog    1024
 #define S_request_buffer_l  4096
 #define S_read_buffer_l     ( 4096 * 64 )
-#define S_index_file        "index.html"
+#define S_php_index_file    "index.php"
+#define S_html_index_file   "index.html"
 #define S_keepalive_timeout 5
+#define S_server_name       "OUX/C+ web-srv"
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 int E_srv_S_epoll_fd;
 struct epoll_event *E_srv_S_ee_ready = 0;
@@ -31,9 +33,11 @@ struct E_srv_Z_accept
   N buf_l;
   Z_clock_time keepalive_tv;
   off_t l;
+  B stream;
 } *E_srv_S_accept;
 N E_srv_S_accept_n = 0;
 int E_srv_S_epoll_pipe[2] = { -1, -1 };
+int E_srv_S_subprocess_pipe[2];
 //==============================================================================
 N
 E_srv_M( void
@@ -154,6 +158,16 @@ E_srv_W( void
     }
     W( E_srv_S_srv );
 }
+N
+E_srv_Q_reply_I_add_header( Pc *headers
+, Pc s
+){  N l = E_text_Z_s0_R_l(s) + 2;
+    Pc p;
+    if( !( p = E_mem_Q_blk_I_append( headers, l )))
+        return 0;
+    E_text_Z_s0_P_copy( E_text_Z_s0_P_copy( p, s ), "\r\n" );
+    return l;
+}
 void
 E_srv_D_srv_I_unblock( P p
 ){  C c;
@@ -250,7 +264,6 @@ D( srv, srv )
                         E_srv_S_accept[i].buf_l += l;
                     }
                 }
-                B keep_alive = yes;
                 Pc s = E_text_Z_s_R_search_c( E_srv_S_accept[i].buf, E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l, '\n' );
                 if( s == E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l
                 || s == E_srv_S_accept[i].buf
@@ -278,10 +291,6 @@ D( srv, srv )
                 }
                 Pc s_1 = E_text_Z_s0_R_search_last_c( s + 1, ' ' );
                 *s_1 = '\0';
-                if( *( s + 1 ) != '/' )
-                {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
-                    goto End_1;
-                }
                 for( Pc s_1 = s + 1, s; *( s = E_text_Z_s0_R_search_c( s_1, '+' )); s_1 = s + 1 )
                     *s_1 = ' ';
                 for( Pc s_1 = s + 1, s; *( s = E_text_Z_s0_R_search_c( s_1, '%' )); s_1 = s + 1 )
@@ -306,12 +315,21 @@ D( srv, srv )
                     }
                     *s = c;
                 }
+                if( *( s + 1 ) != '/' )
+                {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
+                    goto End_1;
+                }
                 for_n( j, E_srv_S_srv_n )
                 {   for_n( k, E_srv_S_srv[j].sfd_n )
                         if( E_srv_S_srv[j].sfd[k] == E_srv_S_ee_ready[i].data.fd )
                             goto End;
                 }
 End:            ;
+                Pc query = E_text_Z_s0_R_search_c( s + 1, '?' );
+                if( *query )
+                {   *query = '\0';
+                    query++;
+                }
                 N l = E_text_Z_s0_R_0_l( E_conf_S_virtualhost[ E_srv_S_srv[j].virtualhost_i ].root_path ) + 1;
                 Pc path = M(l);
                 if( !path )
@@ -376,18 +394,35 @@ End:            ;
                     }
                     path_ = path + path_i;
                     path_ = E_text_Z_s_P_copy_( path_, s + 1, s_1 );
+                    *path_ = '\0';
                 }else
                 {   N path_i = path_ - path;
-                    if( !E_mem_Q_blk_I_append( &path, E_text_Z_s0_R_l( S_index_file )))
+                    if( !E_mem_Q_blk_I_append( &path, E_text_Z_s0_R_l( S_php_index_file )))
                     {   W(path);
                         E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
                         goto End_1;
                     }
                     path_ = path + path_i;
-                    path_ = E_text_Z_s0_P_copy( path_, S_index_file );
+                    path_ = E_text_Z_s0_P_copy( path_, S_php_index_file );
+                    *path_ = '\0';
+                    V0( access( path, F_OK ))
+                    {   if( !E_mem_Q_blk_I_rem( &path, path_i, E_text_Z_s0_R_l( S_php_index_file )))
+                        {   W(path);
+                            E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                            goto End_1;
+                        }
+                        if( !E_mem_Q_blk_I_append( &path, E_text_Z_s0_R_l( S_html_index_file )))
+                        {   W(path);
+                            E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                            goto End_1;
+                        }
+                        path_ = path + path_i;
+                        path_ = E_text_Z_s0_P_copy( path_, S_html_index_file );
+                        *path_ = '\0';
+                    }
                 }
-                *path_ = '\0';
                 B gz = no;
+                B keep_alive = yes;
                 s = E_text_Z_s_R_search_c( E_srv_S_accept[i].buf, E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l, '\n' );
                 O{  s_1 = E_text_Z_s_R_search_c( s + 1, E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l, '\n' );
                     if( s_1 == E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l
@@ -417,9 +452,38 @@ End:            ;
                     s = s_1;
                 }
                 G_(); Gs(path);
-                if( !gz
+                B php = E_text_Z_s0_T_ends( path, ".php" );
+                if(php)
+                {   gz = no; //Nie obsługuje kompresji strumienia PHP.
+                    N args_n = 1;
+                    struct E_flow_Z_args *Mt_( args, args_n );
+                    if( !args )
+                    {   W(path);
+                        E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        goto End_1;
+                    }
+                    args[0].argc = 6;
+                    args[0].argv = ( Pc[] ){ "php", "-r", "parse_str( $_SERVER[\"argv\"][2], $_GET ); include $_SERVER[\"argv\"][1];", "--", path, query, 0 };
+                    V0( pipe( &E_srv_S_subprocess_pipe[0] ))
+                    {   W(args);
+                        W(path);
+                        E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        goto End_1;
+                    }
+                    E_srv_S_accept[i].file = E_srv_S_subprocess_pipe[0];
+                    pid_t pid = E_flow_I_fork_I_begin();
+                    if( !pid )
+                    {   E_flow_I_fork_I_start();
+                        VO1_( dup2( E_srv_S_subprocess_pipe[1], 1 ));
+                        E_flow_I_fork_I_exec( 0, args, args_n );
+                    }
+                    E_flow_I_fork_I_end(pid);
+                    W(args);
+                    V0( close( E_srv_S_subprocess_pipe[1] )){}
+                }else if( !gz
                 || E_text_Z_s0_T_ends( path, ".gz" )
-                ){  gz = no;
+                )
+                {   gz = no;
                     V1( E_srv_S_accept[i].file = open( path, O_RDONLY ))
                     {   *path_ = '\0';
                         W(path);
@@ -447,44 +511,97 @@ End:            ;
                     }
                 }
                 W(path);
-                struct stat stat;
-                V0( fstat( E_srv_S_accept[i].file, &stat ))
+                E_srv_S_accept[i].stream = php;
+                Pc headers = M(0);
+                if( !headers )
                 {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
                     goto End_2;
                 }
-                E_srv_S_accept[i].file_size = stat.st_size;
-                E_srv_S_accept[i].l = 0;
-                l = E_text_Z_s0_R_l( "Content-Length: " );
-                N l_1 = E_text_Z_n_N_s_G( stat.st_size, sizeof( stat.st_size ), 10 );
-                N l_2;
-                if(gz)
-                    l_2 = E_text_Z_s0_R_l( "\r\nContent-Encoding: gzip" );
-                else
-                    l_2 = 0;
-                N l_3;
-                if( keep_alive )
-                    l_3 = E_text_Z_s0_R_l( "\r\nConnection: keep-alive\r\nKeep-alive: timeout=" J_s( S_keepalive_timeout ) ", max=1000" );
-                else
-                    l_3 = E_text_Z_s0_R_l( "\r\nConnection: close" );
-                N l_4 = E_text_Z_s0_R_l( "\r\nHost: " ) + E_text_Z_s0_R_l( E_srv_S_srv[j].canonical );
-                s = M( l + l_1 + l_2 + l_3 + l_4 + 4 );
+                N headers_l = 0;
+                l = E_text_Z_s0_R_l( "Host: " );
+                N l_1 = E_text_Z_s0_R_l( E_srv_S_srv[j].canonical );
+                s = M( l + l_1 + 1 );
                 if( !s )
                 {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
                     goto End_2;
                 }
-                E_text_Z_s0_P_copy( s, "Content-Length: " );
-                E_text_Z_n_N_s( s + l + l_1, stat.st_size, sizeof( stat.st_size ), 10 );
+                E_text_Z_s0_P_copy( E_text_Z_s0_P_copy( s, "Host: " ), E_srv_S_srv[j].canonical );
+                *( s + l + l_1 ) = '\0';
+                if( !( l = E_srv_Q_reply_I_add_header( &headers, s )))
+                {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                    goto End_2;
+                }
+                W(s);
+                headers_l += l;
+                if( !( l = E_srv_Q_reply_I_add_header( &headers, "Server: " S_server_name )))
+                {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                    goto End_2;
+                }
+                headers_l += l;
+                E_srv_S_accept[i].l = 0;
+                if( E_srv_S_accept[i].stream )
+                {   if( !( l = E_srv_Q_reply_I_add_header( &headers, "Transfer-Encoding: chunked" )))
+                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        goto End_2;
+                    }
+                    headers_l += l;
+                }else
+                {   struct stat stat;
+                    V0( fstat( E_srv_S_accept[i].file, &stat ))
+                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        goto End_2;
+                    }
+                    E_srv_S_accept[i].file_size = stat.st_size;
+                    l = E_text_Z_s0_R_l( "Content-Length: " );
+                    l_1 = E_text_Z_n_N_s_G( stat.st_size, sizeof( stat.st_size ), 10 );
+                    s = M( l + l_1 + 1 );
+                    if( !s )
+                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        goto End_2;
+                    }
+                    E_text_Z_s0_P_copy( s, "Content-Length: " );
+                    E_text_Z_n_N_s( s + l + l_1, stat.st_size, sizeof( stat.st_size ), 10 );
+                    *( s + l + l_1 ) = '\0';
+                    if( !( l = E_srv_Q_reply_I_add_header( &headers, s )))
+                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        goto End_2;
+                    }
+                    W(s);
+                    headers_l += l;
+                }
                 if(gz)
-                    E_text_Z_s0_P_copy( s + l + l_1, "\r\nContent-Encoding: gzip" );
+                {   if( !( l = E_srv_Q_reply_I_add_header( &headers, "Content-Encoding: gzip" )))
+                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        goto End_2;
+                    }
+                    headers_l += l;
+                }
                 if( keep_alive )
-                    E_text_Z_s0_P_copy( s + l + l_1 + l_2, "\r\nConnection: keep-alive\r\nKeep-alive: timeout=" J_s( S_keepalive_timeout ) ", max=1000" );
-                else
-                    E_text_Z_s0_P_copy( s + l + l_1 + l_2, "\r\nConnection: close" );
-                E_text_Z_s0_P_copy( E_text_Z_s0_P_copy( s + l + l_1 + l_2 + l_3, "\r\nHost: " ), E_srv_S_srv[j].canonical );
-                E_text_Z_s0_P_copy( s + l + l_1 + l_2 + l_3 + l_4, "\r\n\r\n" );
+                {   if( !( l = E_srv_Q_reply_I_add_header( &headers, "Connection: keep-alive" )))
+                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        goto End_2;
+                    }
+                    headers_l += l;
+                    if( !( l = E_srv_Q_reply_I_add_header( &headers, "Keep-alive: timeout=" J_s( S_keepalive_timeout ) ", max=1000" )))
+                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        goto End_2;
+                    }
+                    headers_l += l;
+                }else
+                {   if( !( l = E_srv_Q_reply_I_add_header( &headers, "Connection: close" )))
+                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        goto End_2;
+                    }
+                    headers_l += l;
+                }
+                if( !( l = E_srv_Q_reply_I_add_header( &headers, "" )))
+                {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                    goto End_2;
+                }
+                headers_l += l;
                 E_reply_I_code( E_srv_S_accept[i].listen_sock, 200 );
-                G_(); Gd( l + l_1 + l_2 + l_3 + l_4 + 4 ); Gs_l( s, l + l_1 + l_2 + l_3 + l_4 + 4 );
-                if( !~E_reply_I_data( E_srv_S_accept[i].listen_sock, s, l + l_1 + l_2 + l_3 + l_4 + 4 ))
+                G_(); Gd( headers_l ); Gs_l( headers, headers_l );
+                if( !~E_reply_I_data( E_srv_S_accept[i].listen_sock, headers, headers_l ))
                     goto End_2;
             }else
             {   if( !E_srv_S_accept[i].buf_2 )
@@ -497,14 +614,35 @@ End:            ;
                 N l;
                 VO1( l = read( E_srv_S_accept[i].file, E_srv_S_accept[i].buf_2, S_read_buffer_l ))
                     goto End_2;
-                if( !l )
+                if( !E_srv_S_accept[i].stream
+                && !l
+                )
                     goto End_2;
                 if( E_srv_S_accept[i].l + l > E_srv_S_accept[i].file_size )
                     l = E_srv_S_accept[i].file_size - E_srv_S_accept[i].l;
-                E_srv_S_accept[i].l += l;
+                if( E_srv_S_accept[i].stream )
+                {   E_srv_S_accept[i].l += l;
+                    N l_1 = E_text_Z_n_N_s_G( l, sizeof(l), 16 ) + 2;
+                    C s[ l_1 ];
+                    E_text_Z_n_N_s( &s[ l_1 - 2 ], l, sizeof(l), 16 );
+                    s[ l_1 - 2 ] = '\r';
+                    s[ l_1 - 1 ] = '\n';
+                    if( !~E_reply_I_data( E_srv_S_accept[i].listen_sock, &s[0], l_1 ))
+                        goto End_2;
+                }
                 if( !~E_reply_I_data( E_srv_S_accept[i].listen_sock, E_srv_S_accept[i].buf_2, l ))
                     goto End_2;
-                if( E_srv_S_accept[i].l < E_srv_S_accept[i].file_size )
+                if( E_srv_S_accept[i].stream )
+                {   Pc s = "\r\n";
+                    if( !~E_reply_I_data( E_srv_S_accept[i].listen_sock, s, 2 ))
+                        goto End_2;
+                }
+                if(( E_srv_S_accept[i].stream
+                  && l
+                )
+                || ( !E_srv_S_accept[i].stream
+                  && E_srv_S_accept[i].l < E_srv_S_accept[i].file_size
+                ))
                     continue;
                 V0( close( E_srv_S_accept[i].file )){}
                 E_srv_S_accept[i].file = -1;
