@@ -220,7 +220,6 @@ TARGET_ARCH += -march=native
   mostlyclean clean distclean \
   run rebuild-run
 .DEFAULT: all
-all: build
 #-------------------------------------------------------------------------------
 build: a.out
 install: install-0
