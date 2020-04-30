@@ -248,8 +248,7 @@ E_flow_Q_task_M( I *uid
     {   task->thread_proc_arg = thread_proc_arg;
         pthread_mutex_t *M_( thread_flow_mutex );
         if( !thread_flow_mutex )
-        {   W( thread_flow_mutex );
-            _tasks_table_begin;
+        {   _tasks_table_begin;
             E_mem_Q_tab_I_rem( E_base_S->E_flow_Q_task_S, task_id );
             _tasks_table_end;
             V0_( munmap( stack, E_base_S->E_flow_Z_task_stacks_S_granulation_u ));
@@ -416,7 +415,7 @@ E_flow_Q_task_M( I *uid
                 W(s);
         }
             #endif
-        O{  V0_( sched_yield() );
+        O{  Vr_( pthread_yield() );
             Vr_( pthread_mutex_lock( thread_flow_mutex ));
             if( *thread_switch_back )
                 break;
@@ -550,7 +549,7 @@ E_flow_Q_task_I_begin( void
         pthread_mutex_t *thread_flow_mutex = task->thread_flow_mutex;
         Vr_( pthread_sigmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ));
         Vr_( pthread_mutex_unlock( thread_flow_mutex ));
-        O{  V0_( sched_yield() );
+        O{  Vr_( pthread_yield() );
             Vr_( pthread_mutex_lock( thread_flow_mutex ));
             if( !*thread_switch_back )
                 break;
@@ -574,6 +573,7 @@ E_flow_Q_task_W( I *uid
     if( U_R( task->type, system_unblock_report ))
     {   if( *task->thread_switch_back )
             task->thread_unblock_proc( task->thread_proc_arg );
+        E_base_S->switch_back_try = no;
         pthread_t thread = task->thread;
         E_base_S->E_flow_Q_task_S_current = id;
         Vr_( pthread_sigmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ));
@@ -937,7 +937,10 @@ E_flow_Q_thread_system_unblock_report_I_before_block(
 B
 E_flow_Q_thread_system_unblock_report_I_after_block(
   pthread_mutex_t *thread_flow_mutex
-){  V0_( kill( E_base_S->E_flow_S_exe_pid, SIGALRM ));
+){  while( E_base_S->switch_back_try )
+    {   V0_( kill( E_base_S->E_flow_S_exe_pid, SIGALRM ));
+        Vr_( pthread_yield() );
+    }
     Vr_( pthread_mutex_lock( thread_flow_mutex ));
     Vr_( pthread_sigmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ));
     struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
@@ -1122,14 +1125,16 @@ Loop:
                     pthread_mutex_t *thread_flow_mutex = task->thread_flow_mutex;
                     Vr_( pthread_sigmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ));
                     Vr_( pthread_mutex_unlock( thread_flow_mutex ));
-                    O{  V0_( sched_yield() );
+                    O{  Vr_( pthread_yield() );
                         Vr_( pthread_mutex_lock( thread_flow_mutex ));
+                        E_base_S->switch_back_try = yes;
                         if( *thread_switch_back )
                             break;
+                        E_base_S->switch_back_try = no;
                         Vr_( pthread_mutex_unlock( thread_flow_mutex ));
                     }
                     Vr_( pthread_sigmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ));
-                    V0_( sched_yield() ); ///żeby dać szansę na wykonanie się “wątku” ‹zadania›, z którego przełączono spowrotem— od “Xh_B_” do rzeczywistej procedury systemowej, na której się blokuje.
+                    Vr_( pthread_yield() ); ///żeby dać szansę na wykonanie się “wątku” ‹zadania›, z którego przełączono spowrotem— od “Xh_B_” do rzeczywistej procedury systemowej, na której się blokuje.
                     U_L( E_base_S->E_flow_S_signal, time ); ///“kill” z “Xh_B” jest niepotrzebne, więc ‘resetuje’ stan, by nie potrzeba było później wykonać ponownej pętli “schedule” ze względu na stan “wake”.
                     goto Loop; ///wywołuje “E_flow_Q_task_I_schedule” w sposób wewnętrzny, gdy nie można użyć funkcjonalności “E_flow_Q_task_I_switch”, ale przy pierwszej konieczności przełączenia standardowego będzie przełączał w trybie ·pominięcia nie obługiwanych systemowych danych zatrzymywania przepływu wykonania z tablicy ‹zadań›· (pominięcia ‹zadań›) przekazanych kolejnych typu “wątkowanych” ‹systemowych raportów odblokowujących› z “cyklicznej kolejki”— na rzecz zwykłego ‹zadania› (“schedule_task_id”), które wywołało “schedule”.
                 }
@@ -1156,14 +1161,16 @@ Loop:
             {   pthread_mutex_t *thread_flow_mutex = task->thread_flow_mutex;
                 Vr_( pthread_sigmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ));
                 Vr_( pthread_mutex_unlock( thread_flow_mutex ));
-                O{  V0_( sched_yield() );
+                O{  Vr_( pthread_yield() );
                     Vr_( pthread_mutex_lock( thread_flow_mutex ));
+                    E_base_S->switch_back_try = yes;
                     if( *thread_switch_back )
                         break;
+                    E_base_S->switch_back_try = no;
                     Vr_( pthread_mutex_unlock( thread_flow_mutex ));
                 }
                 Vr_( pthread_sigmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ));
-                V0_( sched_yield() );
+                Vr_( pthread_yield() );
                 U_L( E_base_S->E_flow_S_signal, time );
                 continue;
             }
@@ -1231,6 +1238,9 @@ Loop:
                 #endif
                 while( !U_R( E_base_S->E_flow_S_signal, wake ))
                 {   Vp_(( sigsuspend( &E_base_S->E_flow_Z_sigset_S_empty ), !_errno || _errno == EINTR ));
+                        #ifdef E_flow_C_thread_system_unblock_reports
+                    E_base_S->switch_back_try = no;
+                        #endif
                 }
             if( U_has_suspend_time
             && !U_R( E_base_S->E_flow_S_signal, time )

@@ -14,7 +14,7 @@
 #define S_request_buffer_l  4096
 #define S_read_buffer_l     ( 1096 * 64 )
 #define S_keepalive_timeout 5
-#define S_system_idle_time  500
+#define S_system_idle_time  0
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 int E_srv_S_epoll_fd;
 struct epoll_event *E_srv_S_ee_ready = 0;
@@ -188,14 +188,13 @@ D( srv, srv )
         VO1_( n = epoll_wait( E_srv_S_epoll_fd, E_srv_S_ee_ready, E_srv_S_ee_ready_n, E_srv_S_accept_n ? S_system_idle_time : -1 ));
         Xh_B()
             break;
-        G_(); Gd(n);
         for_n( i, n )
         {   for_n( j, E_srv_S_accept_n )
                 if( E_srv_S_accept[j].epoll_fd == E_srv_S_ee_ready[i].data.fd )
                     break;
             if( j != E_srv_S_accept_n )
                 continue;
-            G_();
+            G_(); Gs_( "połączenie" ); Gd(i);
             int listen_sock;
             struct sockaddr peer_addr;
             socklen_t sock_l = sizeof( peer_addr );
@@ -220,15 +219,16 @@ D( srv, srv )
             E_srv_S_accept[ E_srv_S_accept_n - 1 ].buf_2 = 0;
             E_srv_S_accept[ E_srv_S_accept_n - 1 ].buf_l = 0;
             _gettime( &E_srv_S_accept[ E_srv_S_accept_n - 1 ].keepalive_tv );
-            Z_clock_time tv = { S_keepalive_timeout, 0 };
+            Z_clock_time tv;
+            tv.tv_sec = S_keepalive_timeout;
+            tv.Z_clock_time_minor_field = 0;
             _timeradd( &E_srv_S_accept[ E_srv_S_accept_n - 1 ].keepalive_tv, &tv, &E_srv_S_accept[ E_srv_S_accept_n - 1 ].keepalive_tv );
+            G_(); Gs_( "połączenie przyjęte" );
         }
-        G_(); Gd( E_srv_S_accept_n );
         for_n_( i, E_srv_S_accept_n )
         {   if( E_srv_S_accept[i].file == -1 )
             {   if( !E_srv_S_accept[i].buf_l )
-                {   G_();
-                    fd_set readfds;
+                {   fd_set readfds;
 Next:               FD_ZERO( &readfds );
                     FD_SET( E_srv_S_accept[i].listen_sock, &readfds );
                     struct timeval tv = { 0, 0 };
@@ -249,11 +249,11 @@ Next:               FD_ZERO( &readfds );
                     {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
                         goto End_1;
                     }
+                    G_(); Gs_( "odczytano nagłówek" ); Gd( E_srv_S_accept[i].buf_l );
                     if( !E_srv_S_accept[i].buf_l )
                         goto End_1;
                 }else
-                {   G_();
-                    fd_set readfds;
+                {   fd_set readfds;
 Next_1:             FD_ZERO( &readfds );
                     FD_SET( E_srv_S_accept[i].listen_sock, &readfds );
                     struct timeval tv = { 0, 0 };
@@ -270,9 +270,11 @@ Next_1:             FD_ZERO( &readfds );
                         {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
                             goto End_1;
                         }
+                        G_(); Gs_( "doczytano nagłówek" ); Gd(l);
                         E_srv_S_accept[i].buf_l += l;
                     }
                 }
+                G_(); Gs_( "parsowanie nagłówka" );
                 Pc s = E_text_Z_s_R_search_c( E_srv_S_accept[i].buf, E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l, '\n' );
                 if( s == E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l
                 || s == E_srv_S_accept[i].buf
@@ -441,11 +443,13 @@ End:            ;
                 Pc accept = 0, accept_charset = 0, accept_encoding = 0, accept_language = 0, connection = 0, cookie = 0, host = 0, referrer = 0, set_cookie = 0, user_agent = 0;
                 O{  s_1 = E_text_Z_s_R_search_c( s + 1, E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l, '\n' );
                     if( s_1 == E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l )
-                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                    {   W(path);
+                        E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
                         goto End_1;
                     }
                     if( *( s_1 - 1 ) != '\r' )
-                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
+                    {   W(path);
+                        E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
                         goto End_1;
                     }
                     if( s + 1 + 1 == s_1 )
@@ -455,7 +459,8 @@ End:            ;
                     }
                     s_2 = E_text_Z_s_R_search_c( s + 1, s_1, ':' );
                     if( s_2 == s_1 )
-                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
+                    {   W(path);
+                        E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
                         goto End_1;
                     }
                     *( s_1 - 1 ) = '\0';
@@ -489,7 +494,8 @@ End:            ;
                     {   if(post)
                         {   s_2 = E_text_Z_s0_R_search_s0( s_2 + 1, "application/x-www-form-urlencoded" );
                             if( s_2 == s_1 - 1 )
-                            {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
+                            {   W(path);
+                                E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
                                 goto End_1;
                             }
                         }
@@ -499,7 +505,8 @@ End:            ;
                                 s_2++;
                             post_l = E_text_Z_s_R_n10( s_2 + 1, s_1 - 1, &s_2 );
                             if( s_2 != s_1 - 1 )
-                            {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
+                            {   W(path);
+                                E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
                                 goto End_1;
                             }
                         }
@@ -527,15 +534,25 @@ End:            ;
                     s = s_1;
                 }
                 Pc body = s_1 + 1;
-                if( post
-                && post_l > E_srv_S_accept[i].buf_l - ( s_1 + 1 - E_srv_S_accept[i].buf ) - 1
-                )
-                {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
-                    goto End_1;
+                if(post)
+                {   if( !post_l
+                    || post_l > E_srv_S_accept[i].buf_l - ( E_srv_S_accept[i].buf_ - E_srv_S_accept[i].buf ) - 1
+                    )
+                    {   W(path);
+                        E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        goto End_1;
+                    }
+                    E_srv_S_accept[i].buf_ += post_l;
+                    E_srv_S_accept[i].buf_l -= post_l;
                 }
                 B php = E_text_Z_s0_T_ends( path, ".php" );
                 if(php)
                 {   gz = no; //Nie obsługuje kompresji strumienia PHP.
+                    V0( access( path, F_OK ))
+                    {   W(path);
+                        E_reply_I_code( E_srv_S_accept[i].listen_sock, 404 );
+                        goto End_1;
+                    }
                     N args_n = 1;
                     struct E_flow_Z_args *Mt_( args, args_n );
                     if( !args )
@@ -712,11 +729,11 @@ End:            ;
                         environ[21] = 0;
                         if( !post )
                         {   args[0].argc = 8;
-                            args[0].argv = ( Pc[] ){ "php", "-r", "$_SERVER[\'SCRIPT_FILENAME\'] = $_SERVER[\'argv\'][1]; parse_str( $_SERVER[\'argv\'][2], $_GET ); $_SERVER[\'SCRIPT_NAME\'] = $_SERVER[\'PHP_SELF\'] = $_SERVER[\'argv\'][3]; $_SERVER[\'DOCUMENT_ROOT\'] = $_SERVER[\'argv\'][4]; $_s = $_SERVER[\'HTTP_COOKIE\']; str_replace( \'; \', \'&\', $_s ); parse_str( $_s, $_COOKIE ); include $_SERVER[\'argv\'][1];", "--", path, query, path + path_rel_i, E_conf_S_virtualhost[ E_srv_S_srv[j].virtualhost_i ].root_path, 0 };
+                            args[0].argv = ( Pc[] ){ "php", "-f", "run.php", "--", path, query, path + path_rel_i, E_conf_S_virtualhost[ E_srv_S_srv[j].virtualhost_i ].root_path, 0 };
                         }else
                         {   *( body + post_l ) = '\0';
                             args[0].argc = 9;
-                            args[0].argv = ( Pc[] ){ "php", "-r", "$_SERVER[\'SCRIPT_FILENAME\'] = $_SERVER[\'argv\'][1]; parse_str( $_SERVER[\'argv\'][2], $_GET ); $_SERVER[\'SCRIPT_NAME\'] = $_SERVER[\'PHP_SELF\'] = $_SERVER[\'argv\'][3]; $_SERVER[\'DOCUMENT_ROOT\'] = $_SERVER[\'argv\'][4]; $_s = $_SERVER[\'HTTP_COOKIE\']; str_replace( \'; \', \'&\', $_s ); parse_str( $_s, $_COOKIE ); parse_str( $_SERVER[\'argv\'][5], $_POST ); include $_SERVER[\'argv\'][1];", "--", path, query, path + path_rel_i, E_conf_S_virtualhost[ E_srv_S_srv[j].virtualhost_i ].root_path, body, 0 };
+                            args[0].argv = ( Pc[] ){ "php", "-f", "run.php", "--", path, query, path + path_rel_i, E_conf_S_virtualhost[ E_srv_S_srv[j].virtualhost_i ].root_path, body, 0 };
                         }
                         E_flow_I_fork_I_exec( 0, args, args_n );
                     }
@@ -905,9 +922,9 @@ End:            ;
                     goto End_2;
                 if( E_srv_S_accept[i].l + l > E_srv_S_accept[i].file_size )
                     l = E_srv_S_accept[i].file_size - E_srv_S_accept[i].l;
+                E_srv_S_accept[i].l += l;
                 if( E_srv_S_accept[i].stream )
-                {   E_srv_S_accept[i].l += l;
-                    N l_1 = E_text_Z_n_N_s_G( l, sizeof(l), 16 ) + 2;
+                {   N l_1 = E_text_Z_n_N_s_G( l, sizeof(l), 16 ) + 2;
                     C s[ l_1 ];
                     E_text_Z_n_N_s( &s[ l_1 - 2 ], l, sizeof(l), 16 );
                     s[ l_1 - 2 ] = '\r';
@@ -932,8 +949,11 @@ End:            ;
                 V0( close( E_srv_S_accept[i].file )){}
                 E_srv_S_accept[i].file = -1;
                 _gettime( &E_srv_S_accept[i].keepalive_tv );
-                Z_clock_time tv = { S_keepalive_timeout, 0 };
+                Z_clock_time tv;
+                tv.tv_sec = S_keepalive_timeout;
+                tv.Z_clock_time_minor_field = 0;
                 _timeradd( &E_srv_S_accept[i].keepalive_tv, &tv, &E_srv_S_accept[i].keepalive_tv );
+                G_(); Gs_( "koniec transmisji" );
             }
             continue;
 End_2:      ;
@@ -947,6 +967,7 @@ End_1:      W( E_srv_S_accept[i].buf_2 );
             }
             E_srv_S_accept_n--;
             i--;
+            G_(); Gs_( "koniec połączenia" );
         }
     }
 }

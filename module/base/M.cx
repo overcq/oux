@@ -104,6 +104,9 @@ struct E_base_Z
     #ifdef C_line_report
   C E_flow_Z_line_report_N_n_S[ J_n_10_max_digits( sizeof(N) ) + 1 ];
     #endif
+    #ifdef E_flow_C_thread_system_unblock_reports
+  volatile B switch_back_try;
+    #endif
 } *E_base_S;
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 extern Pc *environ;
@@ -281,6 +284,10 @@ E_base_M(
     , .proc_name = "main"
         #endif
     };
+        #ifdef E_flow_C_thread_system_unblock_reports
+    task->thread = pthread_self();
+    E_base_S->switch_back_try = yes;
+        #endif
     ///wyłączenie niedozwolonych “sygnałów” ‘uniksowych’, przyblokowanie, ustawienie “masek”.
     struct sigaction sa =
     { .sa_handler = SIG_IGN
