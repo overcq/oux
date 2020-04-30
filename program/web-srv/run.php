@@ -16,5 +16,3 @@ str_replace( '; ', '&', $_s );
 parse_str( $_s, $_COOKIE );
 
 include $_SERVER['argv'][1];
-
-print_r( $_COOKIE );
