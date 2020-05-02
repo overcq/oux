@@ -51,7 +51,7 @@ struct E_flow_Q_task_Z
   N stack_size;
     #ifdef E_flow_C_thread_system_unblock_reports
   pthread_mutex_t *thread_flow_mutex;
-  B *thread_switch_back;
+  volatile B *thread_switch_back;
   P thread_proc_arg;
   void ( *thread_unblock_proc )(P);
   pthread_t thread;
@@ -937,12 +937,18 @@ E_flow_Q_thread_system_unblock_report_I_before_block(
 B
 E_flow_Q_thread_system_unblock_report_I_after_block(
   pthread_mutex_t *thread_flow_mutex
-){  struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S,0 );
+){  G_();
+    struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, 0 );
     while( E_base_S->switch_back_try )
+    {   Vr_( pthread_yield() );
+    }
+    while( E_base_S->switch_back_suspend )
     {   Vr_( pthread_kill( task->thread, SIGALRM ));
         Vr_( pthread_yield() );
     }
+    G_();
     Vr_( pthread_mutex_lock( thread_flow_mutex ));
+    G_();
     Vr_( pthread_sigmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ));
     task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
     return task->run_state == E_flow_Z_run_state_S_stopping_by_task;
@@ -1238,10 +1244,16 @@ Loop:
             }else
                 #endif
                 while( !U_R( E_base_S->E_flow_S_signal, wake ))
-                {   Vp_(( sigsuspend( &E_base_S->E_flow_Z_sigset_S_empty ), !_errno || _errno == EINTR ));
+                {   G_();
                         #ifdef E_flow_C_thread_system_unblock_reports
+                    E_base_S->switch_back_suspend = yes;
                     E_base_S->switch_back_try = no;
                         #endif
+                    Vp_(( sigsuspend( &E_base_S->E_flow_Z_sigset_S_empty ), !_errno || _errno == EINTR ));
+                        #ifdef E_flow_C_thread_system_unblock_reports
+                    E_base_S->switch_back_suspend = no;
+                        #endif
+                    G_();
                 }
             if( U_has_suspend_time
             && !U_R( E_base_S->E_flow_S_signal, time )
@@ -1380,7 +1392,7 @@ E_flow_Z_signal_V_alrm( int uid
 , siginfo_t *siginfo
 , P data
 ){  int errno_ = _errno;
-    ///jako nieszkodliwa pozostałość po projektowaniu ‘schedulera’: jeśli programowi zostanie wysłany “sygnał” ‘unix’ “ALRM” (nie z powodu “setitimer”), gdy jest w “sigsuspend”, to wznowi wykonywanie, mimo że nie jest to konieczne ze względu na żadne ‹zadanie›, więc jeśli nie okaże się, że w trakcie wykonywania wznowionej pętli w “E_flow_Q_task_I_schedule” jest już konieczne wykonywanie któregoś ‹zadania›, to wykona pojedynczy obieg “E_flow_Q_task_I_schedule” i wróci do “sigsuspend”— czyli wykona pusty, testowy przebieg ‘schedulera’, jeśli nie byłby sprzeczny z normalnym, koniecznym wykonywaniem programu.
+    G_();
     if( !siginfo->si_pid ) //NDFN brak w dokumentacji, ale tylko to jest stałe pomiędzy systemami dla “sygnału” z “setitimer” lub “timer_settime”.
         U_F( E_base_S->E_flow_S_signal, time );
     U_F( E_base_S->E_flow_S_signal, wake );
