@@ -146,9 +146,6 @@ E_mem_M_blk( void
     E_base_S->E_flow_S_exe_name = E_mem_Q_file_S_filename_separator_s;
     E_base_S->E_mem_S_page_size = page_size;
     E_base_S->E_flow_Q_task_S_current = 0;
-        #ifdef E_flow_Q_process_call_C_alt
-    E_base_S->E_flow_Q_process_call_S_service_path_guid = E_mem_Q_file_S_filename_separator_s;
-        #endif
         #ifdef E_flow_C_itimer_system_unblock_report
     E_base_S->E_flow_Z_itimer_system_unblock_report_I_sigsuspend = 0;
     E_base_S->E_flow_Z_itimer_system_unblock_report_I_setitimer = 0;
@@ -262,6 +259,17 @@ E_base_M(
 , Pc *argv
 ){  feclearexcept( FE_ALL_EXCEPT );
     E_mem_M_blk();
+        #ifdef E_flow_Q_process_call_C_alt
+    N l_1 = E_text_Z_n_N_s_G( E_base_S->E_flow_S_exe_pid, sizeof( E_base_S->E_flow_S_exe_pid ), 10 );
+    Pc s = M( 6 + l_1 + 1 );
+    if( !s )
+    {   G_(); V();
+    }
+    E_text_Z_s0_P_copy( s, "/proc/" );
+    E_text_Z_n_N_s( s + 6 + l_1, E_base_S->E_flow_S_exe_pid, sizeof( E_base_S->E_flow_S_exe_pid ), 10 );
+    *( s + 6 + l_1 ) = '\0';
+    E_base_S->E_flow_Q_process_call_S_service_path_guid = s;
+        #endif
     ///włączenie “V”[…]“_”.
     int fd_flags;
     V1_( fd_flags = fcntl( STDERR_FILENO, F_GETFL ));
@@ -438,7 +446,7 @@ E_base_M(
     if( !E_base_S->E_flow_Q_process_call_cli_S )
         V();
         #ifdef E_flow_Q_process_call_C_alt
-    E_base_S->E_flow_Q_process_call_S_shm_key = ftok( E_base_S->E_flow_Q_process_call_S_service_path_guid, E_base_S->E_flow_S_exe_pid );
+    E_base_S->E_flow_Q_process_call_S_shm_key = ftok( E_base_S->E_flow_Q_process_call_S_service_path_guid, E_flow_Q_process_call_S_ftok_id );
         #endif
         #ifdef E_flow_drv_C_timer_monotonic
     V0_( timer_create( CLOCK_MONOTONIC, 0, &E_base_S->E_flow_S_timer )); //NDFN funkcjonalność na ‟Linuksach”. “CLOCK_REALTIME” przy stosowanym we “flow_drv” ustawianiu wartości względnych (domyślnych) ma zapisane w dokumentacji (“man”), że “adjtime” nie zmienia jego czasu odliczania, co jest oczekiwane przy “E_flow_drv_C_clock_monotonic”, ale nigdzie nie ma napisane, którego typu zegara można używać dla zgodności z “CLOCK_BOOTTIME” od “clock_gettime”, by był zaliczony czas trwania “suspend”: “CLOCK_REALTIME” czy “CLOCK_MONOTONIC”. z testu wynika, że oba zegary są natychmiast zakańczane po zakończeniu “suspend” komputera…

@@ -937,13 +937,14 @@ E_flow_Q_thread_system_unblock_report_I_before_block(
 B
 E_flow_Q_thread_system_unblock_report_I_after_block(
   pthread_mutex_t *thread_flow_mutex
-){  while( E_base_S->switch_back_try )
-    {   V0_( kill( E_base_S->E_flow_S_exe_pid, SIGALRM ));
+){  struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S,0 );
+    while( E_base_S->switch_back_try )
+    {   Vr_( pthread_kill( task->thread, SIGALRM ));
         Vr_( pthread_yield() );
     }
     Vr_( pthread_mutex_lock( thread_flow_mutex ));
     Vr_( pthread_sigmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ));
-    struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+    task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
     return task->run_state == E_flow_Z_run_state_S_stopping_by_task;
 }
 void
@@ -1017,7 +1018,7 @@ Loop:
         _sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply_pong, 0 );
         for_each( call_id, E_base_S->E_flow_Q_process_call_cli_S, E_mem_Q_tab )
         {   struct E_flow_Q_process_call_cli_Z *call = E_mem_Q_tab_R( E_base_S->E_flow_Q_process_call_cli_S, call_id );
-            if( U_R( call->state, active ))
+            if( !U_R( call->state, active ))
                 continue;
             struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, call->task_id );
             if( _timercmp( &tv, <, &task->run_state_time ))
@@ -1407,9 +1408,11 @@ E_flow_Z_signal_V_process_call_pong( int uid
     int errno_ = _errno;
     for_each( call_id, E_base_S->E_flow_Q_process_call_cli_S, E_mem_Q_tab )
     {   struct E_flow_Q_process_call_cli_Z *call = E_mem_Q_tab_R( E_base_S->E_flow_Q_process_call_cli_S, call_id );
-        U_L( call->state, ping );
-        U_F( E_base_S->E_flow_S_signal, wake );
-        break;
+        if( call->process_id == siginfo->si_pid )
+        {   U_L( call->state, ping );
+            U_F( E_base_S->E_flow_S_signal, wake );
+            break;
+        }
     }
     _errno = errno_;
 }
@@ -1438,11 +1441,23 @@ E_flow_Z_signal_V_process_call_req( int uid
         #ifndef E_flow_Q_process_call_C_alt
     if( !~(N)( shm = E_mem_Q_shared_Q_blk_M( siginfo->si_value.sival_int )))
         #else
-    key_t key;
-    V1( key = ftok( E_base_S->E_flow_Q_process_call_S_service_path_guid, siginfo->si_pid ))
-    {   _errno = errno_;
+    N l = E_text_Z_n_N_s_G( siginfo->si_pid, sizeof( siginfo->si_pid ), 10 );
+    Pc s = M( 6 + l + 1 );
+    if( !s )
+    {   G_();
+        _errno = errno_;
         return;
     }
+    E_text_Z_s0_P_copy( s, "/proc/" );
+    E_text_Z_n_N_s( s + 6 + l, siginfo->si_pid, sizeof( siginfo->si_pid ), 10 );
+    *( s + 6 + l ) = '\0';
+    key_t key;
+    V1( key = ftok( s, E_flow_Q_process_call_S_ftok_id ))
+    {   W(s);
+        _errno = errno_;
+        return;
+    }
+    W(s);
     int shm_id;
     if( !~( shm_id = E_mem_Q_shared_R(key))
     || !~(N)( shm = E_mem_Q_shared_Q_blk_M( shm_id ))
@@ -1476,6 +1491,7 @@ E_flow_Z_signal_V_process_call_reply( int uid
     {   struct E_flow_Q_process_call_cli_Z *call = E_mem_Q_tab_R( E_base_S->E_flow_Q_process_call_cli_S, call_id );
         if( call->process_id == siginfo->si_pid )
         {   U_L( call->state, active );
+            U_L( call->state, ping );
             struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, call->task_id );
             task->run_state = E_flow_Z_run_state_S_ready;
             U_F( E_base_S->E_flow_S_signal, wake );

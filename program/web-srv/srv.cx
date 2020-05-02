@@ -165,16 +165,56 @@ E_srv_W( void
     }
     W( E_srv_S_srv );
 }
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 N
-E_srv_Q_reply_I_add_header( Pc *headers
+E_srv_Q_reply_I_add_header_1( Pc *headers
+, N *headers_l
 , Pc s
-){  N l = E_text_Z_s0_R_l(s) + 2;
-    Pc p;
-    if( !( p = E_mem_Q_blk_I_append( headers, l )))
+){  N l;
+    if( !( l = E_text_Z_s0_I_append( headers, s )))
+    {   E_mem_Q_blk_I_rem( headers, *headers_l, l );
         return 0;
-    E_text_Z_s0_P_copy( E_text_Z_s0_P_copy( p, s ), "\r\n" );
+    }
+    *headers_l += l;
     return l;
 }
+N
+E_srv_Q_reply_I_add_header_1_( Pc *headers
+, N *headers_l
+, Pc s
+, Pc s_end
+){  N l;
+    if( !( l = E_text_Z_s_I_append( headers, s, s_end )))
+    {   E_mem_Q_blk_I_rem( headers, *headers_l, l );
+        return 0;
+    }
+    *headers_l += l;
+    return l;
+}
+N
+E_srv_Q_reply_I_add_header_2( Pc *headers
+, N *headers_l
+){  N l;
+    if( !( l = E_text_Z_s0_I_append( headers, "\r\n" )))
+        return 0;
+    *headers_l += l;
+    return l;
+}
+N
+E_srv_Q_reply_I_add_header( Pc *headers
+, N *headers_l
+, Pc s
+){  N headers_l_ = *headers_l;
+    if( !E_srv_Q_reply_I_add_header_1( headers, headers_l, s ))
+        return 0;
+    if( !E_srv_Q_reply_I_add_header_2( headers, headers_l ))
+    {   E_mem_Q_blk_I_rem( headers, headers_l_, *headers_l - headers_l_ );
+        *headers_l = headers_l_;
+        return 0;
+    }
+    return *headers_l - headers_l_;
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 void
 E_srv_D_srv_I_unblock( P p
 ){  C c;
@@ -185,7 +225,9 @@ D( srv, srv )
     I_D
     {   N n;
         Xh_B_();
+        G_();
         VO1_( n = epoll_wait( E_srv_S_epoll_fd, E_srv_S_ee_ready, E_srv_S_ee_ready_n, E_srv_S_accept_n ? S_system_idle_time : -1 ));
+        G_();
         Xh_B()
             break;
         for_n( i, n )
@@ -290,13 +332,14 @@ Next_1:             FD_ZERO( &readfds );
                     goto End_1;
                 }
                 *s = '\0';
+                Pc path = s + 1;
                 B post = E_text_Z_s0_T_eq( E_srv_S_accept[i].buf, "POST" );
                 if( !post
                 && !E_text_Z_s0_T_eq( E_srv_S_accept[i].buf, "GET" )
                 ){  E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
                     goto End_1;
                 }
-                Pc s_1 = E_text_Z_s0_R_search_last_c( s + 1, ' ' );
+                Pc s_1 = E_text_Z_s0_R_search_last_c( path, ' ' );
                 *s_1 = '\0';
                 if( !E_text_Z_s0_T_eq( s_1 + 1, "HTTP/1.1" )
                 //&& !E_text_Z_s0_T_eq( s_1 + 1, "HTTP/1.0" )
@@ -309,9 +352,10 @@ Next_1:             FD_ZERO( &readfds );
                 {   *query = '\0';
                     query++;
                 }
-                for( Pc s_1 = s + 1, s; *( s = E_text_Z_s0_R_search_c( s_1, '+' )); s_1 = s + 1 )
+                ///unescape
+                for( Pc s_1 = path, s; *( s = E_text_Z_s0_R_search_c( s_1, '+' )); s_1 = s + 1 )
                     *s_1 = ' ';
-                for( Pc s_1 = s + 1, s; *( s = E_text_Z_s0_R_search_c( s_1, '%' )); s_1 = s + 1 )
+                for( Pc s_1 = path, s; *( s = E_text_Z_s0_R_search_c( s_1, '%' )); s_1 = s + 1 )
                 {   if( !*( s + 1 )
                     || !*( s + 2 )
                     )
@@ -344,7 +388,8 @@ Next_1:             FD_ZERO( &readfds );
                 }
 End:            ;
                 N l = E_text_Z_s0_R_0_l( E_conf_S_virtualhost[ E_srv_S_srv[j].virtualhost_i ].root_path ) + 1;
-                Pc path = M(l);
+                s = path - 1;
+                path = M(l);
                 if( !path )
                 {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
                     goto End_1;
@@ -353,6 +398,7 @@ End:            ;
                 *path_ = '/';
                 N path_rel_i = path_ - path;
                 path_++;
+                ///Normalizacja ścieżki żądania: eliminacja powtórzonych separatorów, sprawdzenie, czy nie wychodzi poza root_path.
                 Pc s_2 = path;
                 N path_n = 0;
                 while(( s_2 = E_text_Z_s_R_search_c( s_2 + 1, path_, '/' )) != path_ )
@@ -399,6 +445,7 @@ End:            ;
                     }
                     s = s_1;
                 }
+                ///Dodanie ostatniego wpisu na ścieżce lub pliku index.
                 if( s_1 - ( s + 1 ))
                 {   N path_i = path_ - path;
                     if( !E_mem_Q_blk_I_append( &path, s_1 - ( s + 1 )))
@@ -439,6 +486,7 @@ End:            ;
                 B gz = no;
                 B keep_alive = yes;
                 N post_l = 0;
+                ///Przetworzenie przychodzących nagłówków.
                 s = E_text_Z_s_R_search_c( E_srv_S_accept[i].buf, E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l, '\n' );
                 Pc accept = 0, accept_charset = 0, accept_encoding = 0, accept_language = 0, connection = 0, cookie = 0, host = 0, referrer = 0, set_cookie = 0, user_agent = 0;
                 O{  s_1 = E_text_Z_s_R_search_c( s + 1, E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l, '\n' );
@@ -534,6 +582,7 @@ End:            ;
                     s = s_1;
                 }
                 Pc body = s_1 + 1;
+                ///Przesunięcie o dane wysłane w formularzu.
                 if(post)
                 {   if( post_l > E_srv_S_accept[i].buf_l - ( E_srv_S_accept[i].buf_ - E_srv_S_accept[i].buf ) - 1 )
                     {   W(path);
@@ -545,7 +594,7 @@ End:            ;
                 }
                 B php = E_text_Z_s0_T_ends( path, ".php" );
                 if(php)
-                {   gz = no; //Nie obsługuje kompresji strumienia PHP.
+                {   gz = no; ///Nie obsługuje kompresji strumienia PHP.
                     V0( access( path, F_OK ))
                     {   W(path);
                         E_reply_I_code( E_srv_S_accept[i].listen_sock, 404 );
@@ -782,33 +831,28 @@ End:            ;
                     goto End_2;
                 }
                 N headers_l = 0;
-                l = E_text_Z_s0_R_l( "Host: " );
-                N l_1 = E_text_Z_s0_R_l( E_srv_S_srv[j].canonical );
-                s = M( l + l_1 + 1 );
-                if( !s )
+                if( !E_srv_Q_reply_I_add_header_1( &headers, &headers_l, "Host: " ))
                 {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
                     goto End_2;
                 }
-                E_text_Z_s0_P_copy( E_text_Z_s0_P_copy( s, "Host: " ), E_srv_S_srv[j].canonical );
-                *( s + l + l_1 ) = '\0';
-                if( !( l = E_srv_Q_reply_I_add_header( &headers, s )))
+                if( !E_srv_Q_reply_I_add_header_1( &headers, &headers_l, E_srv_S_srv[j].canonical ))
                 {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
                     goto End_2;
                 }
-                W(s);
-                headers_l += l;
-                if( !( l = E_srv_Q_reply_I_add_header( &headers, "Server: " S_server_name )))
+                if( !E_srv_Q_reply_I_add_header_2( &headers, &headers_l ))
                 {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
                     goto End_2;
                 }
-                headers_l += l;
+                if( !E_srv_Q_reply_I_add_header( &headers, &headers_l, "Server: " S_server_name ))
+                {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                    goto End_2;
+                }
                 E_srv_S_accept[i].l = 0;
                 if( E_srv_S_accept[i].stream )
-                {   if( !( l = E_srv_Q_reply_I_add_header( &headers, "Transfer-Encoding: chunked" )))
+                {   if( !E_srv_Q_reply_I_add_header( &headers, &headers_l, "Transfer-Encoding: chunked" ))
                     {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
                         goto End_2;
                     }
-                    headers_l += l;
                 }else
                 {   struct stat stat;
                     V0( fstat( E_srv_S_accept[i].file, &stat ))
@@ -816,94 +860,86 @@ End:            ;
                         goto End_2;
                     }
                     E_srv_S_accept[i].file_size = stat.st_size;
-                    l = E_text_Z_s0_R_l( "Content-Length: " );
-                    l_1 = E_text_Z_n_N_s_G( stat.st_size, sizeof( stat.st_size ), 10 );
-                    s = M( l + l_1 + 1 );
+                    if( !E_srv_Q_reply_I_add_header_1( &headers, &headers_l, "Content-Length: " ))
+                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        goto End_2;
+                    }
+                    l = E_text_Z_n_N_s_G( stat.st_size, sizeof( stat.st_size ), 10 );
+                    s = M(l);
                     if( !s )
                     {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
                         goto End_2;
                     }
-                    E_text_Z_s0_P_copy( s, "Content-Length: " );
-                    E_text_Z_n_N_s( s + l + l_1, stat.st_size, sizeof( stat.st_size ), 10 );
-                    *( s + l + l_1 ) = '\0';
-                    if( !( l = E_srv_Q_reply_I_add_header( &headers, s )))
-                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                    E_text_Z_n_N_s( s + l, stat.st_size, sizeof( stat.st_size ), 10 );
+                    if( !E_srv_Q_reply_I_add_header_1_( &headers, &headers_l, s, s + l ))
+                    {   W(s);
+                        E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
                         goto End_2;
                     }
                     W(s);
-                    headers_l += l;
+                    if( !E_srv_Q_reply_I_add_header_2( &headers, &headers_l ))
+                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        goto End_2;
+                    }
                 }
                 if(gz)
-                {   if( !( l = E_srv_Q_reply_I_add_header( &headers, "Content-Encoding: gzip" )))
+                {   if( !E_srv_Q_reply_I_add_header( &headers, &headers_l, "Content-Encoding: gzip" ))
                     {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
                         goto End_2;
                     }
-                    headers_l += l;
                 }
                 if( keep_alive )
-                {   if( !( l = E_srv_Q_reply_I_add_header( &headers, "Connection: keep-alive" )))
+                {   if( !E_srv_Q_reply_I_add_header( &headers, &headers_l, "Connection: keep-alive" ))
                     {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
                         goto End_2;
                     }
-                    headers_l += l;
-                    if( !( l = E_srv_Q_reply_I_add_header( &headers, "Keep-alive: timeout=" J_s( S_keepalive_timeout ) ", max=1000" )))
+                    if( !E_srv_Q_reply_I_add_header( &headers, &headers_l, "Keep-alive: timeout=" J_s( S_keepalive_timeout ) ", max=1000" ))
                     {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
                         goto End_2;
                     }
-                    headers_l += l;
                 }else
-                {   if( !( l = E_srv_Q_reply_I_add_header( &headers, "Connection: close" )))
+                    if( !E_srv_Q_reply_I_add_header( &headers, &headers_l, "Connection: close" ))
                     {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
                         goto End_2;
                     }
-                    headers_l += l;
-                }
                 if(cookie)
-                {   l = E_text_Z_s0_R_l( "Cookie: " );
-                    N l_1 = E_text_Z_s0_R_l(cookie);
-                    s = M( l + l_1 + 1 );
-                    if( !s )
+                {   if( !E_srv_Q_reply_I_add_header_1( &headers, &headers_l, "Cookie: " ))
                     {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
                         goto End_2;
                     }
-                    E_text_Z_s0_P_copy( E_text_Z_s0_P_copy( s, "Cookie: " ), cookie );
-                    *( s + l + l_1 ) = '\0';
-                    if( !( l = E_srv_Q_reply_I_add_header( &headers, s )))
+                    if( !E_srv_Q_reply_I_add_header_1( &headers, &headers_l, cookie ))
                     {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
                         goto End_2;
                     }
-                    W(s);
-                    headers_l += l;
+                    if( !E_srv_Q_reply_I_add_header_2( &headers, &headers_l ))
+                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        goto End_2;
+                    }
                 }
                 if( set_cookie )
-                {   l = E_text_Z_s0_R_l( "Set-Cookie: " );
-                    N l_1 = E_text_Z_s0_R_l( set_cookie );
-                    s = M( l + l_1 + 1 );
-                    if( !s )
+                {   if( !E_srv_Q_reply_I_add_header_1( &headers, &headers_l, "Set-Cookie: " ))
                     {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
                         goto End_2;
                     }
-                    E_text_Z_s0_P_copy( E_text_Z_s0_P_copy( s, "Set-Cookie: " ), set_cookie );
-                    *( s + l + l_1 ) = '\0';
-                    if( !( l = E_srv_Q_reply_I_add_header( &headers, s )))
+                    if( !E_srv_Q_reply_I_add_header_1( &headers, &headers_l, set_cookie ))
                     {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
                         goto End_2;
                     }
-                    W(s);
-                    headers_l += l;
+                    if( !E_srv_Q_reply_I_add_header_2( &headers, &headers_l ))
+                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        goto End_2;
+                    }
                 }
-                if( !( l = E_srv_Q_reply_I_add_header( &headers, "" )))
+                if( !E_srv_Q_reply_I_add_header_2( &headers, &headers_l ))
                 {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
                     goto End_2;
                 }
-                headers_l += l;
                 E_reply_I_code( E_srv_S_accept[i].listen_sock, 200 );
                 G_(); Gd( headers_l ); Gs_l( headers, headers_l );
                 if( !~E_reply_I_data( E_srv_S_accept[i].listen_sock, headers, headers_l ))
                     goto End_2;
             }else
-            {   G_();
-                if( !E_srv_S_accept[i].buf_2 )
+            {   if( !E_srv_S_accept[i].buf_2 )
                 {   E_srv_S_accept[i].buf_2 = M( S_read_buffer_l );
                     if( !E_srv_S_accept[i].buf_2 )
                     {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );

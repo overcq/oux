@@ -11,6 +11,8 @@ extern I _X_var( io, stream_write );
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 extern void E_flow_Q_process_call_I_func(P);
 //==============================================================================
+#define E_flow_Q_process_call_S_ftok_id 1
+//------------------------------------------------------------------------------
     #ifndef C_middle_code
 #define _sigaction_M(signum,act)        { V0_( sigaction( (signum), (act), 0 )); }
 #define _sigaction_W(signum,act)        { V0_( sigaction( (signum), (act), 0 )); }
