@@ -15,9 +15,17 @@
 #define S_keepalive_timeout 5
 #define S_system_idle_time  0
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-int E_srv_S_epoll_fd;
+    #ifndef __gnu_linux__
+extern char **environ;
+    #endif
+    #ifdef __gnu_linux__
+int E_srv_S_poll_fd;
 struct epoll_event *E_srv_S_ee_ready = 0;
 N E_srv_S_ee_ready_n = 0;
+    #else
+struct pollfd *E_srv_S_poll_fd = 0;
+N E_srv_S_poll_fd_n = 0;
+    #endif
 struct E_srv_Z_srv
 { N virtualhost_i;
   Pc canonical;
@@ -26,7 +34,7 @@ struct E_srv_Z_srv
 } *E_srv_S_srv;
 N E_srv_S_srv_n = 0;
 struct E_srv_Z_accept
-{ int epoll_fd;
+{ int poll_fd;
   int listen_sock;
   struct sockaddr peer_addr;
   int file;
@@ -39,12 +47,12 @@ struct E_srv_Z_accept
   B cgi_after_headers;
 } *E_srv_S_accept;
 N E_srv_S_accept_n = 0;
-int E_srv_S_epoll_pipe[2] = { -1, -1 };
+int E_srv_S_poll_pipe[2] = { -1, -1 };
 int E_srv_S_subprocess_pipe[2];
 //==============================================================================
 N
 E_srv_M( void
-){ for_n( i, E_conf_S_virtualhost_n )
+){  for_n( i, E_conf_S_virtualhost_n )
     {   struct addrinfo ai_hints =
         { .ai_flags = AI_CANONNAME | AI_NUMERICSERV
         , .ai_family = 0
@@ -116,41 +124,67 @@ E_srv_M( void
             ai_1 = ai_1->ai_next;
         }while( ai_1 );
         freeaddrinfo(ai);
-        V1( E_srv_S_epoll_fd = epoll_create1(0) )
+            #ifdef __gnu_linux__
+        V1( E_srv_S_poll_fd = epoll_create1(0) )
         {   E_srv_W();
             return ~0;
         }
         struct epoll_event ee;
         ee.events = EPOLLIN;
-        for_n( i, E_srv_S_srv_n )
-        {   for_n( j, E_srv_S_srv[i].sfd_n )
-            {   ee.data.fd = E_srv_S_srv[i].sfd[j];
-                V0( epoll_ctl( E_srv_S_epoll_fd, EPOLL_CTL_ADD, E_srv_S_srv[i].sfd[j], &ee ))
+        for_n( j, E_srv_S_srv_n )
+        {   for_n( k, E_srv_S_srv[j].sfd_n )
+            {   ee.data.fd = E_srv_S_srv[j].sfd[k];
+                V0( epoll_ctl( E_srv_S_poll_fd, EPOLL_CTL_ADD, E_srv_S_srv[j].sfd[k], &ee ))
                 {   E_srv_W();
                     return ~0;
                 }
                 E_srv_S_ee_ready_n++;
             }
         }
-        V0( pipe( &E_srv_S_epoll_pipe[0] ))
+            #else
+        for_n( j, E_srv_S_srv_n )
+        {   for_n( k, E_srv_S_srv[j].sfd_n )
+                E_srv_S_poll_fd_n++;
+        }
+        Mt_( E_srv_S_poll_fd, E_srv_S_poll_fd_n + 1 );
+        if( !E_srv_S_poll_fd )
         {   E_srv_W();
             return ~0;
         }
-        ee.data.fd = E_srv_S_epoll_pipe[0];
-        V0( epoll_ctl( E_srv_S_epoll_fd, EPOLL_CTL_ADD, E_srv_S_epoll_pipe[0], &ee ))
-        {   V0( close( E_srv_S_epoll_pipe[0] )){}
-            V0( close( E_srv_S_epoll_pipe[1] )){}
+        E_srv_S_poll_fd_n = 0;
+        for_n_( j, E_srv_S_srv_n )
+        {   for_n( k, E_srv_S_srv[j].sfd_n )
+            {   E_srv_S_poll_fd[ E_srv_S_poll_fd_n ].fd = E_srv_S_srv[j].sfd[k];
+                E_srv_S_poll_fd[ E_srv_S_poll_fd_n ].events = POLLIN;
+                E_srv_S_poll_fd_n++;
+            }
+        }
+            #endif
+        V0( pipe( &E_srv_S_poll_pipe[0] ))
+        {   E_srv_W();
+            return ~0;
+        }
+            #ifdef __gnu_linux__
+        ee.data.fd = E_srv_S_poll_pipe[0];
+        V0( epoll_ctl( E_srv_S_poll_fd, EPOLL_CTL_ADD, E_srv_S_poll_pipe[0], &ee ))
+        {   V0( close( E_srv_S_poll_pipe[0] )){}
+            V0( close( E_srv_S_poll_pipe[1] )){}
             E_srv_W();
             return ~0;
         }
         E_srv_S_ee_ready_n++;
         Mt_( E_srv_S_ee_ready, E_srv_S_ee_ready_n );
         if( !E_srv_S_ee_ready )
-        {   V0( close( E_srv_S_epoll_pipe[0] )){}
-            V0( close( E_srv_S_epoll_pipe[1] )){}
+        {   V0( close( E_srv_S_poll_pipe[0] )){}
+            V0( close( E_srv_S_poll_pipe[1] )){}
             E_srv_W();
             return ~0;
         }
+            #else
+        E_srv_S_poll_fd[ E_srv_S_poll_fd_n ].fd = E_srv_S_poll_pipe[0];
+        E_srv_S_poll_fd[ E_srv_S_poll_fd_n ].events = POLLIN;
+        E_srv_S_poll_fd_n++;
+            #endif
     }
     return 0;
 }
@@ -233,19 +267,34 @@ E_srv_Q_reply_I_add_header_( Pc *headers
 void
 E_srv_D_srv_I_unblock( P p
 ){  C c;
-    VO1_( write( E_srv_S_epoll_pipe[1], &c, sizeof(C) ));
+    VO1_( write( E_srv_S_poll_pipe[1], &c, sizeof(C) ));
 }
 D( srv, srv )
 {   Xh_A( E_srv_D_srv_I_unblock );
     I_D
     {   N n;
         Xh_B_();
-        VO1_( n = epoll_wait( E_srv_S_epoll_fd, E_srv_S_ee_ready, E_srv_S_ee_ready_n, E_srv_S_accept_n ? S_system_idle_time : -1 ));
+            #ifdef __gnu_linux__
+        VO1_( n = epoll_wait( E_srv_S_poll_fd, E_srv_S_ee_ready, E_srv_S_ee_ready_n, E_srv_S_accept_n ? S_system_idle_time : -1 ));
+            #else
+        VO1_( n = poll( E_srv_S_poll_fd, E_srv_S_poll_fd_n, E_srv_S_accept_n ? S_system_idle_time : -1 ));
+            #endif
         Xh_B()
             break;
+            #ifdef __gnu_linux__
         for_n( i, n )
-        {   for_n( j, E_srv_S_accept_n )
-                if( E_srv_S_accept[j].epoll_fd == E_srv_S_ee_ready[i].data.fd )
+        {
+            #else
+        for_n( i, E_srv_S_poll_fd_n )
+        {   if( !E_srv_S_poll_fd[i].revents )
+                continue;
+            #endif
+            for_n( j, E_srv_S_accept_n )
+                    #ifdef __gnu_linux__
+                if( E_srv_S_accept[j].poll_fd == E_srv_S_ee_ready[i].data.fd )
+                    #else
+                if( E_srv_S_accept[j].poll_fd == E_srv_S_poll_fd[i].fd )
+                    #endif
                     break;
             if( j != E_srv_S_accept_n )
                 continue;
@@ -253,7 +302,11 @@ D( srv, srv )
             int listen_sock;
             struct sockaddr peer_addr;
             socklen_t sock_l = sizeof( peer_addr );
+                #ifdef __gnu_linux__
             VO1( listen_sock = accept( E_srv_S_ee_ready[i].data.fd, &peer_addr, &sock_l ))
+                #else
+            VO1( listen_sock = accept( E_srv_S_poll_fd[i].fd, &peer_addr, &sock_l ))
+                #endif
             {   E_srv_W();
                 V();
             }
@@ -262,7 +315,11 @@ D( srv, srv )
                 continue;
             }
             E_srv_S_accept_n++;
-            E_srv_S_accept[ E_srv_S_accept_n - 1 ].epoll_fd = E_srv_S_ee_ready[i].data.fd;
+                #ifdef __gnu_linux__
+            E_srv_S_accept[ E_srv_S_accept_n - 1 ].poll_fd = E_srv_S_ee_ready[i].data.fd;
+                #else
+            E_srv_S_accept[ E_srv_S_accept_n - 1 ].poll_fd = E_srv_S_poll_fd[i].fd;
+                #endif
             E_srv_S_accept[ E_srv_S_accept_n - 1 ].listen_sock = listen_sock;
             E_srv_S_accept[ E_srv_S_accept_n - 1 ].peer_addr = peer_addr;
             E_srv_S_accept[ E_srv_S_accept_n - 1 ].file = -1;
@@ -395,7 +452,11 @@ Next_1:             FD_ZERO( &readfds );
                 }
                 for_n( j, E_srv_S_srv_n )
                 {   for_n( k, E_srv_S_srv[j].sfd_n )
+                            #ifdef __gnu_linux__
                         if( E_srv_S_srv[j].sfd[k] == E_srv_S_ee_ready[i].data.fd )
+                            #else
+                        if( E_srv_S_srv[j].sfd[k] == E_srv_S_poll_fd[i].fd )
+                            #endif
                             goto End;
                 }
 End:            ;
@@ -1029,7 +1090,6 @@ End:            ;
                 {   VO1( l = read( E_srv_S_accept[i].file, E_srv_S_accept[i].buf_2, S_read_buffer_l ))
                         goto End_2;
                 }
-                //G_(); Gs_l( E_srv_S_accept[i].buf_2, l );
                 if( !E_srv_S_accept[i].stream )
                 {   if( !l )
                         goto End_2;
@@ -1046,6 +1106,7 @@ End:            ;
                         goto End_2;
                 }
                 E_srv_S_accept[i].l += l;
+                //G_(); Gd(l); Gs_l( E_srv_S_accept[i].buf_2, l );
                 if( !~E_reply_I_data( E_srv_S_accept[i].listen_sock, E_srv_S_accept[i].buf_2, l ))
                     goto End_2;
                 if( E_srv_S_accept[i].stream )
