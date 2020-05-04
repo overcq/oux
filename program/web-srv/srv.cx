@@ -698,31 +698,12 @@ End:            ;
                         //V0_( close( STDIN_FILENO ));
                         VO1_( dup2( E_srv_S_subprocess_pipe[1], STDOUT_FILENO ));
                         V0_( close( E_srv_S_subprocess_pipe[1] ));
-                        environ = Mt( sizeof( Pc ), 25 );
+                        environ = Mt( sizeof( Pc ), 27 + ( post ? 2 : 0 ));
                         if( !environ )
                         {   G_(); V();
                         }
                         environ[0] = "GATEWAY_INTERFACE=CGI/1.1";
-                        struct sockaddr sa;
-                        socklen_t sa_l = sizeof(sa);
-                        V0_( getsockname( E_srv_S_accept[i].listen_sock, &sa, &sa_l ));
-                        Pc addr = M( INET6_ADDRSTRLEN );
-                        struct sockaddr_in *sa4;
-                        struct sockaddr_in6 *sa6;
-                        if( sa.sa_family == AF_INET )
-                            sa4 = (P)&sa;
-                        else
-                            sa6 = (P)&sa;
-                        Vp_( inet_ntop( sa.sa_family, sa.sa_family == AF_INET ? (P)&sa4->sin_addr : (P)&sa6->sin6_addr, addr, INET6_ADDRSTRLEN ));
-                        G_(); Gs(addr);
-                        l = E_text_Z_s0_R_l( "SERVER_ADDR=" ) + E_text_Z_s0_R_l(addr) + 1;
-                        s = M(l);
-                        if( !s )
-                        {   G_(); V();
-                        }
-                        E_text_Z_s0_P_copy_0( E_text_Z_s0_P_copy( s, "SERVER_ADDR=" ), addr );
-                        W(addr);
-                        environ[1] = s;
+                        environ[1] = "SERVER_PORT=80";
                         l = E_text_Z_s0_R_l( "SERVER_NAME=" ) + E_text_Z_s0_R_l( E_srv_S_srv[j].canonical ) + 1;
                         s = M(l);
                         if( !s )
@@ -816,15 +797,23 @@ End:            ;
                         }
                         E_text_Z_s0_P_copy_0( E_text_Z_s0_P_copy( s, "HTTPS=" ), "" );
                         environ[16] = s;
-                        C ip[INET6_ADDRSTRLEN];
+                        Pc ip;
                         N16 port;
                         if( E_srv_S_accept[i].peer_addr.sa_family == AF_INET )
-                        {   struct sockaddr_in *sa = (P)&E_srv_S_accept[i].peer_addr;
-                            Vp_( inet_ntop( E_srv_S_accept[i].peer_addr.sa_family, &sa->sin_addr, &ip[0], sizeof(ip) ));
+                        {   ip = M( INET_ADDRSTRLEN );
+                            if( !ip )
+                            {   G_(); V();
+                            }
+                            struct sockaddr_in *sa = (P)&E_srv_S_accept[i].peer_addr;
+                            Vp_( inet_ntop( E_srv_S_accept[i].peer_addr.sa_family, &sa->sin_addr, ip, INET_ADDRSTRLEN ));
                             port = ntohs( sa->sin_port );
                         }else
-                        {   struct sockaddr_in6 *sa = (P)&E_srv_S_accept[i].peer_addr;
-                            Vp_( inet_ntop( E_srv_S_accept[i].peer_addr.sa_family, &sa->sin6_addr, &ip[0], sizeof(ip) ));
+                        {   ip = M( INET6_ADDRSTRLEN );
+                            if( !ip )
+                            {   G_(); V();
+                            }
+                            struct sockaddr_in6 *sa = (P)&E_srv_S_accept[i].peer_addr;
+                            Vp_( inet_ntop( E_srv_S_accept[i].peer_addr.sa_family, &sa->sin6_addr, ip, INET6_ADDRSTRLEN ));
                             port = ntohs( sa->sin6_port );
                         }
                         l = E_text_Z_s0_R_l( "REMOTE_ADDR=" ) + E_text_Z_s0_R_l(ip) + 1;
@@ -834,6 +823,15 @@ End:            ;
                         }
                         E_text_Z_s0_P_copy_0( E_text_Z_s0_P_copy( s, "REMOTE_ADDR=" ), ip );
                         environ[17] = s;
+                        l = E_text_Z_s0_R_l( "REMOTE_HOST=" ) + E_text_Z_s0_R_l(ip) + 1;
+                        s = M(l);
+                        if( !s )
+                        {   G_(); V();
+                        }
+                        E_text_Z_s0_P_copy_0( E_text_Z_s0_P_copy( s, "REMOTE_HOST=" ), ip );
+                        environ[18] = s;
+                        environ[19] = "AUTH_TYPE=";
+                        environ[20] = "PATH_INFO=";
                         N port_l = E_text_Z_n_N_s_G( port, sizeof(port), 10 );
                         l = E_text_Z_s0_R_l( "REMOTE_PORT=" ) + port_l + 1;
                         s = M(l);
@@ -843,7 +841,7 @@ End:            ;
                         E_text_Z_s0_P_copy( s, "REMOTE_PORT=" );
                         E_text_Z_n_N_s( s + E_text_Z_s0_R_l( "REMOTE_PORT=" ) + port_l, port, sizeof(port), 10 );
                         *( s + E_text_Z_s0_R_l( "REMOTE_PORT=" ) + port_l ) = '\0';
-                        environ[18] = s;
+                        environ[21] = s;
                         l = E_text_Z_s0_R_l( "REQUEST_URI=" ) + E_text_Z_s0_R_l( path + path_rel_i ) + 1 + E_text_Z_s0_R_l(query) + 1;
                         s = M(l);
                         if( !s )
@@ -855,17 +853,24 @@ End:            ;
                             s_1++;
                         }
                         E_text_Z_s0_P_copy_0( s_1, query );
-                        environ[19] = s;
-                        environ[20] = "REDIRECT_STATUS=200";
+                        environ[22] = s;
+                        environ[23] = "REDIRECT_STATUS=200";
                         l = E_text_Z_s0_R_l( "SCRIPT_FILENAME=" ) + E_text_Z_s0_R_l(path) + 1;
                         s = M(l);
                         if( !s )
                         {   G_(); V();
                         }
                         E_text_Z_s0_P_copy_0( E_text_Z_s0_P_copy( s, "SCRIPT_FILENAME=" ), path );
-                        environ[21] = s;
+                        environ[24] = s;
+                        l = E_text_Z_s0_R_l( "SCRIPT_NAME=" ) + E_text_Z_s0_R_l( path + path_rel_i ) + 1;
+                        s = M(l);
+                        if( !s )
+                        {   G_(); V();
+                        }
+                        E_text_Z_s0_P_copy_0( E_text_Z_s0_P_copy( s, "SCRIPT_NAME=" ), path + path_rel_i );
+                        environ[25] = s;
                         if(post)
-                        {   environ[22] = "CONTENT_TYPE=application/x-www-form-urlencoded";
+                        {   environ[26] = "CONTENT_TYPE=application/x-www-form-urlencoded";
                             N l_1 = E_text_Z_n_N_s_G( post_l, sizeof( post_l ), 10 );
                             l = E_text_Z_s0_R_l( "CONTENT_LENGTH=" ) + l_1 + 1;
                             s = M(l);
@@ -875,16 +880,16 @@ End:            ;
                             E_text_Z_s0_P_copy( s, "CONTENT_LENGTH=" );
                             E_text_Z_n_N_s( s + E_text_Z_s0_R_l( "CONTENT_LENGTH=" ) + l_1, post_l, sizeof( post_l ), 10 );
                             *( s + E_text_Z_s0_R_l( "CONTENT_LENGTH=" ) + l_1 ) = '\0';
-                            environ[23] = s;
+                            environ[27] = s;
                             int tmp_pipe[2];
                             V0_( pipe( &tmp_pipe[0] ));
                             VO1_( dup2( tmp_pipe[0], STDIN_FILENO ));
                             V0_( close( tmp_pipe[0] ));
                             E_reply_I_data( tmp_pipe[1], body, post_l );
                             V0_( close( tmp_pipe[1] ));
-                            environ[24] = 0;
+                            environ[28] = 0;
                         }else
-                            environ[22] = 0;
+                            environ[26] = 0;
                         args[0].argc = 1;
                         args[0].argv = ( Pc[] ){ "php-cgi", 0 };
                         E_flow_I_fork_I_exec( 0, args, args_n );
@@ -1055,7 +1060,7 @@ End:            ;
                     Pc s_1 = E_srv_S_accept[i].buf_2;
                     if( E_text_Z_s_T_eq( E_srv_S_accept[i].buf_2, E_srv_S_accept[i].buf_2 + 8, "Status: " ))
                     {   s_1 = E_text_Z_s_R_search_s0( E_srv_S_accept[i].buf_2 + 8, E_srv_S_accept[i].buf_2 + l, "\r\n" );
-                        G_(); Gs_l( E_srv_S_accept[i].buf_2, s_1 - E_srv_S_accept[i].buf_2 );
+                        //G_(); Gs_l( E_srv_S_accept[i].buf_2, s_1 - E_srv_S_accept[i].buf_2 );
                         Pc s = E_text_Z_s_R_search_c( E_srv_S_accept[i].buf_2 + 8, s_1, ' ' );
                         status = E_text_Z_s_R_n( E_srv_S_accept[i].buf_2 + 8, s, &s, 10 );
                         s_1 += 2;
