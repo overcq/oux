@@ -19,7 +19,7 @@
 extern char **environ;
     #endif
     #ifdef __gnu_linux__
-int E_srv_S_poll_fd;
+int E_srv_S_epoll_fd;
 struct epoll_event *E_srv_S_ee_ready = 0;
 N E_srv_S_ee_ready_n = 0;
     #else
@@ -125,7 +125,7 @@ E_srv_M( void
         }while( ai_1 );
         freeaddrinfo(ai);
             #ifdef __gnu_linux__
-        V1( E_srv_S_poll_fd = epoll_create1(0) )
+        V1( E_srv_S_epoll_fd = epoll_create1(0) )
         {   E_srv_W();
             return ~0;
         }
@@ -134,7 +134,7 @@ E_srv_M( void
         for_n( j, E_srv_S_srv_n )
         {   for_n( k, E_srv_S_srv[j].sfd_n )
             {   ee.data.fd = E_srv_S_srv[j].sfd[k];
-                V0( epoll_ctl( E_srv_S_poll_fd, EPOLL_CTL_ADD, E_srv_S_srv[j].sfd[k], &ee ))
+                V0( epoll_ctl( E_srv_S_epoll_fd, EPOLL_CTL_ADD, E_srv_S_srv[j].sfd[k], &ee ))
                 {   E_srv_W();
                     return ~0;
                 }
@@ -166,7 +166,7 @@ E_srv_M( void
         }
             #ifdef __gnu_linux__
         ee.data.fd = E_srv_S_poll_pipe[0];
-        V0( epoll_ctl( E_srv_S_poll_fd, EPOLL_CTL_ADD, E_srv_S_poll_pipe[0], &ee ))
+        V0( epoll_ctl( E_srv_S_epoll_fd, EPOLL_CTL_ADD, E_srv_S_poll_pipe[0], &ee ))
         {   V0( close( E_srv_S_poll_pipe[0] )){}
             V0( close( E_srv_S_poll_pipe[1] )){}
             E_srv_W();
@@ -190,7 +190,14 @@ E_srv_M( void
 }
 void
 E_srv_W( void
-){  for_n( i, E_srv_S_srv_n )
+){
+        #ifdef __gnu_linux__
+    W( E_srv_S_ee_ready );
+    V0( close( E_srv_S_epoll_fd )){}
+        #else
+    W( E_srv_S_poll_fd );
+        #endif
+    for_n( i, E_srv_S_srv_n )
     {   W( E_srv_S_srv[i].canonical );
         for_n( j, E_srv_S_srv[i].sfd_n )
         {   V0( close( E_srv_S_srv[i].sfd[j] )){}
@@ -275,7 +282,7 @@ D( srv, srv )
     {   N n;
         Xh_B_();
             #ifdef __gnu_linux__
-        VO1_( n = epoll_wait( E_srv_S_poll_fd, E_srv_S_ee_ready, E_srv_S_ee_ready_n, E_srv_S_accept_n ? S_system_idle_time : -1 ));
+        VO1_( n = epoll_wait( E_srv_S_epoll_fd, E_srv_S_ee_ready, E_srv_S_ee_ready_n, E_srv_S_accept_n ? S_system_idle_time : -1 ));
             #else
         VO1_( n = poll( E_srv_S_poll_fd, E_srv_S_poll_fd_n, E_srv_S_accept_n ? S_system_idle_time : -1 ));
             #endif
@@ -1048,6 +1055,7 @@ End:            ;
                     Pc s_1 = E_srv_S_accept[i].buf_2;
                     if( E_text_Z_s_T_eq( E_srv_S_accept[i].buf_2, E_srv_S_accept[i].buf_2 + 8, "Status: " ))
                     {   s_1 = E_text_Z_s_R_search_s0( E_srv_S_accept[i].buf_2 + 8, E_srv_S_accept[i].buf_2 + l, "\r\n" );
+                        G_(); Gs_l( E_srv_S_accept[i].buf_2, s_1 - E_srv_S_accept[i].buf_2 );
                         Pc s = E_text_Z_s_R_search_c( E_srv_S_accept[i].buf_2 + 8, s_1, ' ' );
                         status = E_text_Z_s_R_n( E_srv_S_accept[i].buf_2 + 8, s, &s, 10 );
                         s_1 += 2;
@@ -1071,7 +1079,8 @@ End:            ;
                     goto End_2;
                 }
                 //G_(); Gs_l( headers, headers_l );
-                E_reply_I_code( E_srv_S_accept[i].listen_sock, status );
+                if( !~E_reply_I_code_( E_srv_S_accept[i].listen_sock, status, no ))
+                    goto End_2;
                 if( !~E_reply_I_data( E_srv_S_accept[i].listen_sock, headers, headers_l ))
                     goto End_2;
             }else
@@ -1145,5 +1154,6 @@ End_1:      W( E_srv_S_accept[i].buf_2 );
             G_(); Gs_( "koniec połączenia" );
         }
     }
+    E_srv_W();
 }
 /******************************************************************************/

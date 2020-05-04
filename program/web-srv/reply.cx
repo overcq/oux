@@ -41,14 +41,14 @@ E_reply_T_code_close( N code
     && code != 404;
 }
 N
-E_reply_I_code( int fd
+E_reply_I_code_( int fd
 , N code
-){  G_(); Gd(code);
-    for_n( i, E_reply_S_status_msg_n )
+, B end
+){  for_n( i, E_reply_S_status_msg_n )
         if( E_reply_S_status_msg[i].code == code )
         {   N l = 9 + 4 + E_text_Z_s0_R_l( E_reply_S_status_msg[i].s ) + 2;
             if( E_reply_T_code_close( E_reply_S_status_msg[i].code ))
-                l += E_text_Z_s0_R_l( "Connection: close\r\n" ) + 2;
+                l += E_text_Z_s0_R_l( "Connection: close\r\n" ) + ( end ? 2 : 0 );
             Pc s = M(l);
             if( !s )
                 return ~0;
@@ -56,8 +56,10 @@ E_reply_I_code( int fd
             E_text_Z_n_N_s( s + 9 + 3, E_reply_S_status_msg[i].code, sizeof( E_reply_S_status_msg[i].code ), 10 );
             *( s + 9 + 3 ) = ' ';
             Pc s_1 = E_text_Z_s0_P_copy( E_text_Z_s0_P_copy( s + 9 + 4, E_reply_S_status_msg[i].s ), "\r\n" );
-            if( E_reply_T_code_close( E_reply_S_status_msg[i].code != 200 ))
-                E_text_Z_s0_P_copy( s_1, "Connection: close\r\n\r\n" );
+            if( E_reply_T_code_close( E_reply_S_status_msg[i].code ))
+                s_1 = E_text_Z_s0_P_copy( s_1, "Connection: close\r\n" );
+            if(end)
+                E_text_Z_s0_P_copy( s_1, "\r\n" );
             if( !~E_reply_I_data( fd, s, l ))
             {   W(s);
                 return ~0;
@@ -67,5 +69,10 @@ E_reply_I_code( int fd
         }
     E_reply_I_code( fd, 500 );
     return ~0;
+}
+N
+E_reply_I_code( int fd
+, N code
+){  return E_reply_I_code_( fd, code, yes );
 }
 /******************************************************************************/
