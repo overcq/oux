@@ -15,15 +15,30 @@ E_text_Z_c_T_alpha( C c
 }
 B
 E_text_Z_c_T_quote( C c
-){  if( E_text_Z_c_T_alpha(c) )
-        return no;
-    return c < 43 || c > 122
+){  return c < 43 || c > 122
     || c == ';'
     || c == '<'
     || c == '>'
     || c == '?'
     || c == '\\'
     || c == '`';
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C
+E_text_Z_c_I_lower( C c
+){  if( c >= 'A'
+    && c <= 'Z'
+    )
+        c += 32;
+    return c;
+}
+C
+E_text_Z_c_I_upper( C c
+){  if( c >= 'a'
+    && c <= 'z'
+    )
+        c -= 32;
+    return c;
 }
 //==============================================================================
 ///szkic standardu:
@@ -32,7 +47,7 @@ E_text_Z_c_T_quote( C c
 ///•po wszystkich danych.
 //------------------------------------------------------------------------------
 B
-E_text_Z_s0_T_eq( Pc s
+E_text_Z_s0_T_s0_eq( Pc s
 , Pc t
 ){  while( *s
     && *t
@@ -43,16 +58,8 @@ E_text_Z_s0_T_eq( Pc s
     }
     return !*s && !*t;
 }
-C
-E_text_Z_c_I_upper( C c
-){  if( c >= 'a'
-    && c <= 'z'
-    )
-        c -= 32;
-    return c;
-}
 B
-E_text_Z_s0_T_eq_case( Pc s
+E_text_Z_s0_T_s0_eq_case( Pc s
 , Pc t
 ){  while( *s
     && *t
@@ -64,7 +71,7 @@ E_text_Z_s0_T_eq_case( Pc s
     return !*s && !*t;
 }
 B
-E_text_Z_s0_T_starts( Pc s
+E_text_Z_s0_T_s0_starts( Pc s
 , Pc t
 ){  while( *s
     && *t
@@ -76,7 +83,7 @@ E_text_Z_s0_T_starts( Pc s
     return !*t;
 }
 B
-E_text_Z_s0_T_ends( Pc s
+E_text_Z_s0_T_s0_ends( Pc s
 , Pc t
 ){  Pc s_end = E_text_Z_s0_R_end(s);
     N t_l = E_text_Z_s0_R_l(t);
@@ -91,12 +98,27 @@ E_text_Z_s0_T_ends( Pc s
     }
     return !*t;
 }
+//------------------------------------------------------------------------------
 B
-E_text_Z_s_T_eq( Pc s
+E_text_Z_s_T_s0_eq( Pc s
 , Pc s_end
 , Pc t
 ){  while( s != s_end
+    && *t
     && *s == *t
+    )
+    {   s++;
+        t++;
+    }
+    return s == s_end;
+}
+B
+E_text_Z_s_T_s0_eq_case( Pc s
+, Pc s_end
+, Pc t
+){  while( s != s_end
+    && *t
+    && E_text_Z_c_I_upper( *s ) == E_text_Z_c_I_upper( *t )
     )
     {   s++;
         t++;
@@ -115,6 +137,7 @@ E_text_Z_s0_R_l( Pc s
 ){  return E_text_Z_s0_R_end(s) - s;
 }
 //------------------------------------------------------------------------------
+///Less or equal end.
 Pc
 E_text_Z_s0_R_end_le( Pc s
 , N l /// > 0
@@ -133,7 +156,7 @@ E_text_Z_s0_T_l_le( Pc s
             break;
         s++;
     }
-    return *s == 0;
+    return !*s;
 }
 //------------------------------------------------------------------------------
 Pc
@@ -207,7 +230,7 @@ E_text_Z_s0_R_search_last_c_( Pc s_end
 }
 //------------------------------------------------------------------------------
 Pc
-E_text_Z_s_R_search_s( Pc s
+E_text_Z_s_R_s_search( Pc s
 , Pc s_end
 , Pc t
 , Pc t_end
@@ -233,7 +256,7 @@ E_text_Z_s_R_search_s( Pc s
     return s_end;
 }
 Pc
-E_text_Z_s_R_search_s0( Pc s
+E_text_Z_s_R_s0_search( Pc s
 , Pc s_end
 , Pc t
 ){  if( !*t )
@@ -252,7 +275,7 @@ E_text_Z_s_R_search_s0( Pc s
     return s;
 }
 Pc
-E_text_Z_s0_R_search_s0( Pc s
+E_text_Z_s0_R_s0_search( Pc s
 , Pc t
 ){  if( !*t )
         return s;
@@ -271,7 +294,7 @@ E_text_Z_s0_R_search_s0( Pc s
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 N
-E_text_Z_s_R_n( Pc s
+E_text_Z_s_N_n( Pc s
 , Pc s_end
 , Pc *ret_s
 , N base ///do 36; wynikającej z “( '9' - '0' + 1 ) + ( 'Z' - 'A' + 1 )”.
@@ -292,7 +315,7 @@ E_text_Z_s_R_n( Pc s
     return n;
 }
 N
-E_text_Z_s0_R_n( Pc s
+E_text_Z_s0_N_n( Pc s
 , Pc *ret_s
 , N base ///do 36; wynikającej z “( '9' - '0' + 1 ) + ( 'Z' - 'A' + 1 )”.
 ){  N n = 0;
@@ -313,7 +336,7 @@ E_text_Z_s0_R_n( Pc s
 }
 //------------------------------------------------------------------------------
 N
-E_text_Z_s_R_n10( Pc s
+E_text_Z_s_N_n10( Pc s
 , Pc s_end
 , Pc *ret_s
 ){  N n = 0;
@@ -329,7 +352,7 @@ E_text_Z_s_R_n10( Pc s
     return n;
 }
 N
-E_text_Z_s0_R_n10( Pc s
+E_text_Z_s0_N_n10( Pc s
 , Pc *ret_s
 ){  N n = 0;
     while( *s )
@@ -394,36 +417,30 @@ E_text_Z_s_P_0( Pc s
     return s;
 }
 Pc
-E_text_Z_s_P_fill_c( Pc s
+E_text_Z_s_P_c_fill( Pc s
 , Pc s_end
 , C c
 ){  while( s < s_end )
         *s++ = c;
     return s;
 }
+void
+E_text_Z_s0_P_lower( Pc s
+){  while( *s )
+    {   *s = E_text_Z_c_I_lower( *s );
+        s++;
+    }
+}
+void
+E_text_Z_s0_P_upper( Pc s
+){  while( *s )
+    {   *s = E_text_Z_c_I_upper( *s );
+        s++;
+    }
+}
 //------------------------------------------------------------------------------
 Pc
-E_text_Z_s_P_copy( Pc s
-, Pc s_end
-, Pc t
-, Pc t_end
-){  while( s != s_end
-    && t != t_end
-    ){  *s = *t;
-        s++;
-        t++;
-    }
-    return s;
-}
-Pc
-E_text_Z_s_P_copy_0( Pc s
-, Pc s_end
-, Pc t
-, Pc t_end
-){  return E_text_Z_s_P_0( E_text_Z_s_P_copy( s, s_end, t, t_end ));
-}
-Pc
-E_text_Z_s_P_copy_( Pc s
+E_text_Z_s_P_s_copy( Pc s
 , Pc t
 , Pc t_end
 ){  while( t != t_end )
@@ -434,14 +451,14 @@ E_text_Z_s_P_copy_( Pc s
     return s;
 }
 Pc
-E_text_Z_s_P_copy_0_( Pc s
+E_text_Z_s_P_s_copy_0( Pc s
 , Pc t
 , Pc t_end
-){  return E_text_Z_s_P_0( E_text_Z_s_P_copy_( s, t, t_end ));
+){  return E_text_Z_s_P_0( E_text_Z_s_P_s_copy( s, t, t_end ));
 }
 //------------------------------------------------------------------------------
 Pc
-E_text_Z_s_P_copy_l( Pc s
+E_text_Z_s_P_sl_copy( Pc s
 , Pc t
 , N l
 ){  while( l-- )
@@ -452,14 +469,14 @@ E_text_Z_s_P_copy_l( Pc s
     return s;
 }
 Pc
-E_text_Z_s_P_copy_l_0( Pc s
+E_text_Z_s_P_sl_copy_0( Pc s
 , Pc t
 , N l
-){  return E_text_Z_s_P_0( E_text_Z_s_P_copy_l( s, t, l ));
+){  return E_text_Z_s_P_0( E_text_Z_s_P_sl_copy( s, t, l ));
 }
 //------------------------------------------------------------------------------
 Pc
-E_text_Z_s0_P_copy( Pc s
+E_text_Z_s_P_s0_copy( Pc s
 , Pc t
 ){  while( *t )
     {   *s = *t;
@@ -469,13 +486,13 @@ E_text_Z_s0_P_copy( Pc s
     return s;
 }
 Pc
-E_text_Z_s0_P_copy_0( Pc s
+E_text_Z_s_P_s0_copy_0( Pc s
 , Pc t
-){  return E_text_Z_s_P_0( E_text_Z_s0_P_copy( s, t ));
+){  return E_text_Z_s_P_0( E_text_Z_s_P_s0_copy( s, t ));
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 void
-E_text_Z_s_P_rev( Pc s
+E_text_Z_sl_P_rev( Pc s
 , N l
 ){  N i = 0;
     N l_ = l / 2;
@@ -486,62 +503,62 @@ E_text_Z_s_P_rev( Pc s
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 N
-E_text_Z_s_I_append( Pc *s
+E_text_Z_s_I_s_append( Pc *s
 , Pc t
 , Pc t_end
 ){  Pc p;
     if( !( p = E_mem_Q_blk_I_append( s, t_end - t )))
         return 0;
-    E_text_Z_s_P_copy_( p, t, t_end );
+    E_text_Z_s_P_s_copy( p, t, t_end );
     return t_end - t;
 }
 N
-E_text_Z_s_I_append_0( Pc *s
+E_text_Z_s_I_s_append_0( Pc *s
 , Pc t
 , Pc t_end
 ){  Pc p;
     if( !( p = E_mem_Q_blk_I_append( s, t_end - t + 1 )))
         return 0;
-    E_text_Z_s_P_copy_0_( p, t, t_end );
+    E_text_Z_s_P_s_copy_0( p, t, t_end );
     return t_end - t + 1;
 }
 N
-E_text_Z_s0_I_append( Pc *s
+E_text_Z_s_I_s0_append( Pc *s
 , Pc t
 ){  N l = E_text_Z_s0_R_l(t);
     Pc p;
     if( !( p = E_mem_Q_blk_I_append( s, l )))
         return 0;
-    E_text_Z_s_P_copy_l( p, t, l );
+    E_text_Z_s_P_sl_copy( p, t, l );
     return l;
 }
 N
-E_text_Z_s0_I_append_0( Pc *s
+E_text_Z_s_I_s0_append_0( Pc *s
 , Pc t
 ){  N l = E_text_Z_s0_R_l(t) + 1;
     Pc p;
     if( !( p = E_mem_Q_blk_I_append( s, l )))
         return 0;
-    E_text_Z_s_P_copy_l_0( p, t, l );
+    E_text_Z_s_P_sl_copy_0( p, t, l );
     return l;
 }
 //------------------------------------------------------------------------------
 N
-E_text_Z_s_I_prepend( Pc *s
+E_text_Z_s_I_s_prepend( Pc *s
 , Pc t
 , Pc t_end
 ){  if( !E_mem_Q_blk_I_prepend( s, t_end - t ))
         return 0;
-    E_text_Z_s_P_copy_( *s, t, t_end );
+    E_text_Z_s_P_s_copy( *s, t, t_end );
     return t_end - t;
 }
 N
-E_text_Z_s0_I_prepend( Pc *s
+E_text_Z_s_I_s0_prepend( Pc *s
 , Pc t
 ){  N l = E_text_Z_s0_R_l(t);
     if( !E_mem_Q_blk_I_prepend( s, l ))
         return 0;
-    E_text_Z_s_P_copy_l( *s, t, l );
+    E_text_Z_s_P_sl_copy( *s, t, l );
     return l;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -569,25 +586,25 @@ E_text_Z_s_Z_cmdline_Z_arg_I_mode( S *cmd_mode
 , Pc arg
 ){  switch( *cmd_mode )
     { case 0:
-          if( E_text_Z_s0_T_eq( arg, "gnome-terminal" ))
+          if( E_text_Z_s0_T_s0_eq( arg, "gnome-terminal" ))
               *cmd_mode = 1;
-          else if( E_text_Z_s0_T_eq( arg, "su" ))
+          else if( E_text_Z_s0_T_s0_eq( arg, "su" ))
               *cmd_mode = 2;
-          else if( E_text_Z_s0_T_eq( arg, "sg" ))
+          else if( E_text_Z_s0_T_s0_eq( arg, "sg" ))
               *cmd_mode = 3;
           else
               *cmd_mode = 0;
           break;
       case 1:
-          if( E_text_Z_s0_T_eq( arg, "-e" ))
+          if( E_text_Z_s0_T_s0_eq( arg, "-e" ))
               *cmd_mode = -*cmd_mode;
           break;
       case 2:
-          if( E_text_Z_s0_T_eq( arg, "-c" ))
+          if( E_text_Z_s0_T_s0_eq( arg, "-c" ))
               *cmd_mode = -*cmd_mode;
           break;
       case 3:
-          if( !E_text_Z_s0_T_eq( arg, "-" ))
+          if( !E_text_Z_s0_T_s0_eq( arg, "-" ))
               *cmd_mode = -*cmd_mode;
           break;
     }
@@ -852,7 +869,7 @@ E_text_Z_s_Z_u_R_utf8( U u
         i++;
     }
     s[i] = (C)(( ~first << 2 ) | u );
-    E_text_Z_s_P_rev( s, i + 1 );
+    E_text_Z_sl_P_rev( s, i + 1 );
     return i + 1;
 }
 ///TODO dodać sprawdzanie najkrótszego kodowania.
@@ -880,7 +897,7 @@ E_text_Z_s_Z_utf8_R_u( Pc s
     return s + 1;
 }
 Pc
-E_text_Z_s_Z_utf8_R_rev_u( Pc s
+E_text_Z_s_Z_utf8_R_u_rev( Pc s
 , U *u
 ){  if( (S8)*( s - 1 ) >= 0 )
     {   *u = *( s - 1 );
@@ -946,7 +963,7 @@ E_text_Z_getter_Z_c_R_u( N (*getter)(void)
     return 7 - n;
 }
 N
-E_text_Z_getter_Z_c_R_rev_u( N (*getter)(void)
+E_text_Z_getter_Z_c_R_u_rev( N (*getter)(void)
 , U *u
 ){  N c = getter();
     if( !~c

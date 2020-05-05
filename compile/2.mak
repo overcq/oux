@@ -197,7 +197,7 @@ CFLAGS += -std=c99 -D_unreachable=no
         endif
 CFLAGS += -O2 -Wno-old-style-declaration -Wno-overflow -Wno-shift-negative-value
     endif
-CFLAGS += -pedantic -fno-common -Wfatal-errors -Wall -Wextra -Wno-missing-braces -Wno-parentheses -Wno-sign-compare -Wstrict-prototypes -Wno-unused-parameter \
+CFLAGS += -pedantic -fno-common -Wall -Wextra -Wno-missing-braces -Wno-parentheses -Wno-sign-compare -Wstrict-prototypes -Wno-unused-parameter \
 -fno-stack-protector -fno-trapping-math -fwrapv \
 -pipe
     ifeq (clang,$(H_make_S_cc))
