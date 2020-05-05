@@ -6,6 +6,7 @@
 #         program makefile
 # ©overcq                on ‟Gentoo Linux 17.1” “x86_64”             2020‒4‒10 S
 ################################################################################
+S_packages := libssl
 install:
 	{ $(CMP) /usr/bin/direct_oux /usr/bin/web-srv \
 	|| ln -f /usr/bin/direct_oux /usr/bin/web-srv; \

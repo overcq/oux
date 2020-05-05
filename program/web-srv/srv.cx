@@ -6,6 +6,8 @@
 *         server
 * ©overcq                on ‟Gentoo Linux 17.1” “x86_64”             2020‒4‒11 P
 *******************************************************************************/
+#define S_tls_certificate_file  "/etc/ssl/certs/apache-selfsigned.crt"
+#define S_tls_private_key_file  "/etc/ssl/private/apache-selfsigned.key"
 #define S_server_name       "OUX/C+ web-srv"
 #define S_php_index_file    "index.php"
 #define S_html_index_file   "index.html"
@@ -26,9 +28,12 @@ N E_srv_S_ee_ready_n = 0;
 struct pollfd *E_srv_S_poll_fd = 0;
 N E_srv_S_poll_fd_n = 0;
     #endif
+SSL_CTX *E_srv_S_ssl_ctx = 0;
+int E_srv_S_ssl_ret;
 struct E_srv_Z_srv
 { N virtualhost_i;
   Pc canonical;
+  B ssl;
   int *sfd;
   N sfd_n;
 } *E_srv_S_srv;
@@ -36,6 +41,7 @@ N E_srv_S_srv_n = 0;
 struct E_srv_Z_accept
 { int poll_fd;
   int listen_sock;
+  SSL *ssl;
   struct sockaddr peer_addr;
   int file;
   off_t file_size;
@@ -52,7 +58,23 @@ int E_srv_S_subprocess_pipe[2];
 //==============================================================================
 N
 E_srv_M( void
-){  for_n( i, E_conf_S_virtualhost_n )
+){  B ssl = no;
+    for_n( i, E_conf_S_virtualhost_n )
+        if( E_conf_S_virtualhost[i].ssl )
+        {   ssl = yes;
+            break;
+        }
+    if(ssl)
+    {   E_srv_S_ssl_ctx = SSL_CTX_new( TLS_server_method() );
+        if( SSL_CTX_set_min_proto_version( E_srv_S_ssl_ctx, TLS1_VERSION ) != 1
+        || SSL_CTX_use_certificate_file( E_srv_S_ssl_ctx, S_tls_certificate_file, SSL_FILETYPE_PEM ) != 1
+        || SSL_CTX_use_PrivateKey_file( E_srv_S_ssl_ctx, S_tls_private_key_file, SSL_FILETYPE_PEM ) != 1
+        )
+        {   E_srv_W();
+            return ~0;
+        }
+    }
+    for_n_( i, E_conf_S_virtualhost_n )
     {   struct addrinfo ai_hints =
         { .ai_flags = AI_CANONNAME | AI_NUMERICSERV
         , .ai_family = 0
@@ -75,6 +97,8 @@ E_srv_M( void
         }
         E_srv_S_srv_n++;
         E_srv_S_srv[ E_srv_S_srv_n - 1 ].virtualhost_i = i;
+        E_srv_S_srv[ E_srv_S_srv_n - 1 ].ssl = E_conf_S_virtualhost[i].ssl;
+        E_srv_S_srv[ E_srv_S_srv_n - 1 ].sfd_n = 0;
         l = E_text_Z_s0_R_0_l( ai->ai_canonname );
         E_srv_S_srv[ E_srv_S_srv_n - 1 ].canonical = M(l);
         if( !E_srv_S_srv[ E_srv_S_srv_n - 1 ].canonical )
@@ -89,7 +113,6 @@ E_srv_M( void
             E_srv_W();
             return ~0;
         }
-        E_srv_S_srv[ E_srv_S_srv_n - 1 ].sfd_n = 0;
         struct addrinfo *ai_1 = ai;
         do
         {   struct sockaddr_in *sa;
@@ -197,6 +220,8 @@ E_srv_W( void
         #else
     W( E_srv_S_poll_fd );
         #endif
+    if( E_srv_S_ssl_ctx )
+        SSL_CTX_free( E_srv_S_ssl_ctx );
     for_n( i, E_srv_S_srv_n )
     {   W( E_srv_S_srv[i].canonical );
         for_n( j, E_srv_S_srv[i].sfd_n )
@@ -204,7 +229,6 @@ E_srv_W( void
         }
         W( E_srv_S_srv[i].sfd );
     }
-    W( E_srv_S_srv );
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 N
@@ -287,7 +311,21 @@ D( srv, srv )
         VO1_( n = poll( E_srv_S_poll_fd, E_srv_S_poll_fd_n, E_srv_S_accept_n ? S_system_idle_time : -1 ));
             #endif
         Xh_B()
+        {   for_n( i, E_srv_S_accept_n )
+            {   if( E_srv_S_accept[i].file != -1 )
+                {   V0( close( E_srv_S_accept[i].file )){}
+                }
+                if( E_srv_S_accept[i].ssl )
+                {   SSL_shutdown( E_srv_S_accept[i].ssl );
+                    SSL_free( E_srv_S_accept[i].ssl );
+                }
+                if( E_srv_S_accept[i].buf_2 )
+                    W( E_srv_S_accept[i].buf_2 );
+                W( E_srv_S_accept[i].buf );
+                V0( close( E_srv_S_accept[i].listen_sock )){}
+            }
             break;
+        }
             #ifdef __gnu_linux__
         for_n( i, n )
         {
@@ -305,9 +343,19 @@ D( srv, srv )
                     break;
             if( j != E_srv_S_accept_n )
                 continue;
-            G_(); Gs_( "połączenie" ); Gd(i);
-            int listen_sock;
+            G_(); Gd(j); Gs_( "połączenie" );
+            for_n_( j, E_srv_S_srv_n )
+            {   for_n( k, E_srv_S_srv[j].sfd_n )
+                        #ifdef __gnu_linux__
+                    if( E_srv_S_srv[j].sfd[k] == E_srv_S_ee_ready[i].data.fd )
+                        #else
+                    if( E_srv_S_srv[j].sfd[k] == E_srv_S_poll_fd[i].fd )
+                        #endif
+                        goto End_3;
+            }
+End_3:      ;
             struct sockaddr peer_addr;
+            int listen_sock;
             socklen_t sock_l = sizeof( peer_addr );
                 #ifdef __gnu_linux__
             VO1( listen_sock = accept( E_srv_S_ee_ready[i].data.fd, &peer_addr, &sock_l ))
@@ -318,10 +366,43 @@ D( srv, srv )
                 V();
             }
             if( !E_mem_Q_blk_I_append( &E_srv_S_accept, 1 ))
-            {   E_reply_I_code( listen_sock, 500 );
+            {   V0( close( listen_sock )){}
                 continue;
             }
             E_srv_S_accept_n++;
+            if( E_srv_S_srv[j].ssl )
+            {   E_srv_S_accept[ E_srv_S_accept_n - 1 ].ssl = SSL_new( E_srv_S_ssl_ctx );
+                if( !E_srv_S_accept[ E_srv_S_accept_n - 1 ].ssl )
+                {   E_mem_Q_blk_I_rem( &E_srv_S_accept, --E_srv_S_accept_n, 1 );
+                    V0( close( listen_sock )){}
+                    continue;
+                }
+                if( SSL_set_fd( E_srv_S_accept[ E_srv_S_accept_n - 1 ].ssl, listen_sock ) != 1 )
+                {   SSL_free( E_srv_S_accept[ E_srv_S_accept_n - 1 ].ssl );
+                    E_mem_Q_blk_I_rem( &E_srv_S_accept, --E_srv_S_accept_n, 1 );
+                    V0( close( listen_sock )){}
+                    continue;
+                }
+                int e = SSL_accept( E_srv_S_accept[ E_srv_S_accept_n - 1 ].ssl );
+                if( !e )
+                {   SSL_free( E_srv_S_accept[ E_srv_S_accept_n - 1 ].ssl );
+                    E_mem_Q_blk_I_rem( &E_srv_S_accept, --E_srv_S_accept_n, 1 );
+                    V0( close( listen_sock )){}
+                    continue;
+                }
+                if( e < 0 )
+                {   e = SSL_get_error( E_srv_S_accept[ E_srv_S_accept_n - 1 ].ssl, e );
+                    if( e != SSL_ERROR_SYSCALL
+                    || e != SSL_ERROR_SSL
+                    )
+                        SSL_shutdown( E_srv_S_accept[ E_srv_S_accept_n - 1 ].ssl );
+                    SSL_free( E_srv_S_accept[ E_srv_S_accept_n - 1 ].ssl );
+                    E_mem_Q_blk_I_rem( &E_srv_S_accept, --E_srv_S_accept_n, 1 );
+                    V0( close( listen_sock )){}
+                    continue;
+                }
+            }else
+                E_srv_S_accept[ E_srv_S_accept_n - 1 ].ssl = 0;
                 #ifdef __gnu_linux__
             E_srv_S_accept[ E_srv_S_accept_n - 1 ].poll_fd = E_srv_S_ee_ready[i].data.fd;
                 #else
@@ -332,7 +413,13 @@ D( srv, srv )
             E_srv_S_accept[ E_srv_S_accept_n - 1 ].file = -1;
             E_srv_S_accept[ E_srv_S_accept_n - 1 ].buf = M( S_request_buffer_l );
             if( !E_srv_S_accept[ E_srv_S_accept_n - 1 ].buf )
-            {   E_reply_I_code( listen_sock, 500 );
+            {   E_reply_I_code( E_srv_S_accept[ E_srv_S_accept_n - 1 ].ssl, listen_sock, 500 );
+                if( E_srv_S_srv[j].ssl )
+                {   SSL_shutdown( E_srv_S_accept[ E_srv_S_accept_n - 1 ].ssl );
+                    SSL_free( E_srv_S_accept[ E_srv_S_accept_n - 1 ].ssl );
+                }
+                E_mem_Q_blk_I_rem( &E_srv_S_accept, --E_srv_S_accept_n, 1 );
+                V0( close( listen_sock )){}
                 continue;
             }
             E_srv_S_accept[ E_srv_S_accept_n - 1 ].buf_2 = 0;
@@ -342,7 +429,7 @@ D( srv, srv )
             tv.tv_sec = S_keepalive_timeout;
             tv.Z_clock_time_minor_field = 0;
             _timeradd( &E_srv_S_accept[ E_srv_S_accept_n - 1 ].keepalive_tv, &tv, &E_srv_S_accept[ E_srv_S_accept_n - 1 ].keepalive_tv );
-            G_(); Gs_( "połączenie przyjęte" );
+            G_(); Gd(j); Gs_( "połączenie przyjęte" );
         }
         for_n_( i, E_srv_S_accept_n )
         {   if( E_srv_S_accept[i].file == -1 )
@@ -364,11 +451,16 @@ Next:               FD_ZERO( &readfds );
                             continue;
                         goto End_1;
                     }
-                    VO1( E_srv_S_accept[i].buf_l = read( E_srv_S_accept[i].listen_sock, E_srv_S_accept[i].buf, S_request_buffer_l ))
-                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
-                        goto End_1;
+                    if( E_srv_S_accept[i].ssl )
+                    {   if(( E_srv_S_ssl_ret = SSL_read_ex( E_srv_S_accept[i].ssl, E_srv_S_accept[i].buf, S_request_buffer_l, &E_srv_S_accept[i].buf_l )) != 1 )
+                            goto End_1;
+                    }else
+                    {   VO1( E_srv_S_accept[i].buf_l = read( E_srv_S_accept[i].listen_sock, E_srv_S_accept[i].buf, S_request_buffer_l ))
+                        {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
+                            goto End_1;
+                        }
                     }
-                    G_(); Gs_( "odczytano nagłówek" ); Gd( E_srv_S_accept[i].buf_l );
+                    G_(); Gd(i); Gs_( "odczytano nagłówek" ); Gd( E_srv_S_accept[i].buf_l );
                     if( !E_srv_S_accept[i].buf_l )
                         goto End_1;
                 }else
@@ -386,25 +478,25 @@ Next_1:             FD_ZERO( &readfds );
                     {   E_text_Z_s_P_copy_( E_srv_S_accept[i].buf, E_srv_S_accept[i].buf_, E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l );
                         N l;
                         VO1( l = read( E_srv_S_accept[i].listen_sock, E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l, S_request_buffer_l - E_srv_S_accept[i].buf_l ))
-                        {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                             goto End_1;
                         }
-                        G_(); Gs_( "doczytano nagłówek" ); Gd(l);
+                        G_(); Gd(i); Gs_( "doczytano nagłówek" ); Gd(l);
                         E_srv_S_accept[i].buf_l += l;
                     }
                 }
-                G_(); Gs_( "parsowanie nagłówka" );
+                G_(); Gd(i); Gs_( "parsowanie nagłówka" );
                 Pc s = E_text_Z_s_R_search_c( E_srv_S_accept[i].buf, E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l, '\n' );
                 if( s == E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l
                 || s == E_srv_S_accept[i].buf
                 || *( s - 1 ) != '\r'
-                ){  E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
+                ){  E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 400 );
                     goto End_1;
                 }
                 *( s - 1 ) = '\0';
                 s = E_text_Z_s0_R_search_c( E_srv_S_accept[i].buf, ' ' );
                 if( !*s )
-                {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
+                {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 400 );
                     goto End_1;
                 }
                 *s = '\0';
@@ -412,7 +504,7 @@ Next_1:             FD_ZERO( &readfds );
                 B post = E_text_Z_s0_T_eq( E_srv_S_accept[i].buf, "POST" );
                 if( !post
                 && !E_text_Z_s0_T_eq( E_srv_S_accept[i].buf, "GET" )
-                ){  E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
+                ){  E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 400 );
                     goto End_1;
                 }
                 Pc s_1 = E_text_Z_s0_R_search_last_c( path, ' ' );
@@ -420,7 +512,7 @@ Next_1:             FD_ZERO( &readfds );
                 if( !E_text_Z_s0_T_eq( s_1 + 1, "HTTP/1.1" )
                 //&& !E_text_Z_s0_T_eq( s_1 + 1, "HTTP/1.0" )
                 )
-                {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
+                {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 400 );
                     goto End_1;
                 }
                 Pc query = E_text_Z_s0_R_search_c( s + 1, '?' );
@@ -435,35 +527,31 @@ Next_1:             FD_ZERO( &readfds );
                 {   if( !*( s + 1 )
                     || !*( s + 2 )
                     )
-                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
+                    {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 400 );
                         goto End_1;
                     }
                     C c = E_text_Z_s_R_n( s + 1, s + 3, &s_1, 16 );
                     if( s_1 != s + 3 )
-                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
+                    {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 400 );
                         goto End_1;
                     }
                     if( !E_mem_Q_blk_I_rem( &E_srv_S_accept[i].buf, s + 1 - E_srv_S_accept[i].buf, 2 ))
-                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                    {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                         goto End_1;
                     }
                     if( !E_mem_Q_blk_I_append( &E_srv_S_accept[i].buf, 2 ))
-                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                    {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                         goto End_1;
                     }
                     *s = c;
                 }
                 if( *( s + 1 ) != '/' )
-                {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
+                {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 400 );
                     goto End_1;
                 }
                 for_n( j, E_srv_S_srv_n )
                 {   for_n( k, E_srv_S_srv[j].sfd_n )
-                            #ifdef __gnu_linux__
-                        if( E_srv_S_srv[j].sfd[k] == E_srv_S_ee_ready[i].data.fd )
-                            #else
-                        if( E_srv_S_srv[j].sfd[k] == E_srv_S_poll_fd[i].fd )
-                            #endif
+                        if( E_srv_S_srv[j].sfd[k] == E_srv_S_accept[i].poll_fd )
                             goto End;
                 }
 End:            ;
@@ -471,7 +559,7 @@ End:            ;
                 s = path - 1;
                 path = M(l);
                 if( !path )
-                {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                     goto End_1;
                 }
                 Pc path_ = E_text_Z_s0_P_copy( path, E_conf_S_virtualhost[ E_srv_S_srv[j].virtualhost_i ].root_path );
@@ -497,7 +585,7 @@ End:            ;
                     if( s_2 == s_1 )
                     {   if( path_n < path_n_0 + ( s_1 - ( s + 1 ) - 1 ))
                         {   W(path);
-                            E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
+                            E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 400 );
                             goto End_1;
                         }
                         if( s_1 - ( s + 1 ) - 1 > 1 )
@@ -507,7 +595,7 @@ End:            ;
                                 s_2 = E_text_Z_s_R_search_c( s_2 + 1, path_, '/' );
                             if( !E_mem_Q_blk_I_rem( &path, s_2 + 1 - path, path_ - ( s_2 + 1 )))
                             {   W(path);
-                                E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                                E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                                 goto End_1;
                             }
                             path_ = s_2 + 1;
@@ -516,7 +604,7 @@ End:            ;
                     {   N path_i = path_ - path;
                         if( !E_mem_Q_blk_I_append( &path, s_1 + 1 - ( s + 1 )))
                         {   W(path);
-                            E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                            E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                             goto End_1;
                         }
                         path_ = path + path_i;
@@ -530,7 +618,7 @@ End:            ;
                 {   N path_i = path_ - path;
                     if( !E_mem_Q_blk_I_append( &path, s_1 - ( s + 1 )))
                     {   W(path);
-                        E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                         goto End_1;
                     }
                     path_ = path + path_i;
@@ -540,7 +628,7 @@ End:            ;
                 {   N path_i = path_ - path;
                     if( !E_mem_Q_blk_I_append( &path, E_text_Z_s0_R_l( S_php_index_file )))
                     {   W(path);
-                        E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                         goto End_1;
                     }
                     path_ = path + path_i;
@@ -549,12 +637,12 @@ End:            ;
                     V0( access( path, F_OK ))
                     {   if( !E_mem_Q_blk_I_rem( &path, path_i, E_text_Z_s0_R_l( S_php_index_file )))
                         {   W(path);
-                            E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                            E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                             goto End_1;
                         }
                         if( !E_mem_Q_blk_I_append( &path, E_text_Z_s0_R_l( S_html_index_file )))
                         {   W(path);
-                            E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                            E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                             goto End_1;
                         }
                         path_ = path + path_i;
@@ -562,7 +650,7 @@ End:            ;
                         *path_ = '\0';
                     }
                 }
-                G_(); Gs(path);
+                G_(); Gd(i); Gs(path);
                 B gz = no;
                 B keep_alive = yes;
                 N post_l = 0;
@@ -572,14 +660,14 @@ End:            ;
                 O{  s_1 = E_text_Z_s_R_search_c( s + 1, E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l, '\n' );
                     if( s_1 == E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l )
                     {   W(path);
-                        E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                         goto End_1;
                     }
                     if( s_1 < s + 1 + 1
                     || *( s_1 - 1 ) != '\r'
                     )
                     {   W(path);
-                        E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
+                        E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 400 );
                         goto End_1;
                     }
                     if( s_1 == s + 1 + 1 )
@@ -590,7 +678,7 @@ End:            ;
                     s_2 = E_text_Z_s_R_search_c( s + 1, s_1, ':' );
                     if( s_2 == s_1 )
                     {   W(path);
-                        E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
+                        E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 400 );
                         goto End_1;
                     }
                     *( s_1 - 1 ) = '\0';
@@ -625,7 +713,7 @@ End:            ;
                         {   s_2 = E_text_Z_s0_R_search_s0( s_2 + 1, "application/x-www-form-urlencoded" );
                             if( s_2 == s_1 - 1 )
                             {   W(path);
-                                E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
+                                E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 400 );
                                 goto End_1;
                             }
                         }
@@ -636,7 +724,7 @@ End:            ;
                             post_l = E_text_Z_s_R_n10( s_2 + 1, s_1 - 1, &s_2 );
                             if( s_2 != s_1 - 1 )
                             {   W(path);
-                                E_reply_I_code( E_srv_S_accept[i].listen_sock, 400 );
+                                E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 400 );
                                 goto End_1;
                             }
                         }
@@ -664,7 +752,7 @@ End:            ;
                 if(post)
                 {   if( post_l > E_srv_S_accept[i].buf_l - ( E_srv_S_accept[i].buf_ - E_srv_S_accept[i].buf ) - 1 )
                     {   W(path);
-                        E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                         goto End_1;
                     }
                     E_srv_S_accept[i].buf_ += post_l;
@@ -675,20 +763,20 @@ End:            ;
                 {   gz = no; ///Nie obsługuje kompresji strumienia PHP.
                     V0( access( path, F_OK ))
                     {   W(path);
-                        E_reply_I_code( E_srv_S_accept[i].listen_sock, 404 );
+                        E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 404 );
                         goto End_1;
                     }
                     N args_n = 1;
                     struct E_flow_Z_args *Mt_( args, args_n );
                     if( !args )
                     {   W(path);
-                        E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                         goto End_1;
                     }
                     V0( pipe( &E_srv_S_subprocess_pipe[0] ))
                     {   W(args);
                         W(path);
-                        E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                         goto End_1;
                     }
                     E_srv_S_accept[i].file = E_srv_S_subprocess_pipe[0];
@@ -816,6 +904,7 @@ End:            ;
                             Vp_( inet_ntop( E_srv_S_accept[i].peer_addr.sa_family, &sa->sin6_addr, ip, INET6_ADDRSTRLEN ));
                             port = ntohs( sa->sin6_port );
                         }
+                        G_(); Gd(i); Gs(ip);
                         l = E_text_Z_s0_R_l( "REMOTE_ADDR=" ) + E_text_Z_s0_R_l(ip) + 1;
                         s = M(l);
                         if( !s )
@@ -885,7 +974,7 @@ End:            ;
                             V0_( pipe( &tmp_pipe[0] ));
                             VO1_( dup2( tmp_pipe[0], STDIN_FILENO ));
                             V0_( close( tmp_pipe[0] ));
-                            E_reply_I_data( tmp_pipe[1], body, post_l );
+                            E_reply_I_data( 0, tmp_pipe[1], body, post_l );
                             V0_( close( tmp_pipe[1] ));
                             environ[28] = 0;
                         }else
@@ -904,14 +993,14 @@ End:            ;
                     V1( E_srv_S_accept[i].file = open( path, O_RDONLY ))
                     {   *path_ = '\0';
                         W(path);
-                        E_reply_I_code( E_srv_S_accept[i].listen_sock, 404 );
+                        E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 404 );
                         goto End_1;
                     }
                 }else
                 {   N path_i = path_ - path;
                     if( !E_mem_Q_blk_I_append( &path, 3 ))
                     {   W(path);
-                        E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                         goto End_1;
                     }
                     path_ = path + path_i;
@@ -922,7 +1011,7 @@ End:            ;
                         V1( E_srv_S_accept[i].file = open( path, O_RDONLY ))
                         {   *path_ = '\0';
                             W(path);
-                            E_reply_I_code( E_srv_S_accept[i].listen_sock, 404 );
+                            E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 404 );
                             goto End_1;
                         }
                     }
@@ -931,98 +1020,98 @@ End:            ;
                 if( post
                 && !php
                 )
-                {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 403 );
+                {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 403 );
                     goto End_2;
                 }
                 E_srv_S_accept[i].stream = php;
                 Pc headers = M(0);
                 if( !headers )
-                {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                     goto End_2;
                 }
                 N headers_l = 0;
                 if( !E_srv_Q_reply_I_add_header_1( &headers, &headers_l, "Host: " ))
-                {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                     goto End_2;
                 }
                 if( !E_srv_Q_reply_I_add_header_1( &headers, &headers_l, E_srv_S_srv[j].canonical ))
-                {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                     goto End_2;
                 }
                 if( !E_srv_Q_reply_I_add_header_2( &headers, &headers_l ))
-                {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                     goto End_2;
                 }
                 if( !E_srv_Q_reply_I_add_header( &headers, &headers_l, "Server: " S_server_name ))
-                {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                     goto End_2;
                 }
                 E_srv_S_accept[i].l = 0;
                 if( E_srv_S_accept[i].stream )
                 {   if( !E_srv_Q_reply_I_add_header( &headers, &headers_l, "Transfer-Encoding: chunked" ))
-                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                    {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                         goto End_2;
                     }
                 }else
                 {   struct stat stat;
                     V0( fstat( E_srv_S_accept[i].file, &stat ))
-                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                    {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                         goto End_2;
                     }
                     E_srv_S_accept[i].file_size = stat.st_size;
                     if( !E_srv_Q_reply_I_add_header_1( &headers, &headers_l, "Content-Length: " ))
-                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                    {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                         goto End_2;
                     }
                     l = E_text_Z_n_N_s_G( stat.st_size, sizeof( stat.st_size ), 10 );
                     s = M(l);
                     if( !s )
-                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                    {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                         goto End_2;
                     }
                     E_text_Z_n_N_s( s + l, stat.st_size, sizeof( stat.st_size ), 10 );
                     if( !E_srv_Q_reply_I_add_header_1_( &headers, &headers_l, s, s + l ))
                     {   W(s);
-                        E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                         goto End_2;
                     }
                     W(s);
                     if( !E_srv_Q_reply_I_add_header_2( &headers, &headers_l ))
-                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                    {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                         goto End_2;
                     }
                 }
                 if(gz)
                 {   if( !E_srv_Q_reply_I_add_header( &headers, &headers_l, "Content-Encoding: gzip" ))
-                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                    {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                         goto End_2;
                     }
                 }
                 if( keep_alive )
                 {   if( !E_srv_Q_reply_I_add_header( &headers, &headers_l, "Connection: keep-alive" ))
-                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                    {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                         goto End_2;
                     }
                     if( !E_srv_Q_reply_I_add_header( &headers, &headers_l, "Keep-alive: timeout=" J_s( S_keepalive_timeout ) ", max=1000" ))
-                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                    {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                         goto End_2;
                     }
                 }else
                     if( !E_srv_Q_reply_I_add_header( &headers, &headers_l, "Connection: close" ))
-                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                    {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                         goto End_2;
                     }
                 if(cookie)
                 {   if( !E_srv_Q_reply_I_add_header_1( &headers, &headers_l, "Cookie: " ))
-                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                    {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                         goto End_2;
                     }
                     if( !E_srv_Q_reply_I_add_header_1( &headers, &headers_l, cookie ))
-                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                    {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                         goto End_2;
                     }
                     if( !E_srv_Q_reply_I_add_header_2( &headers, &headers_l ))
-                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                    {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                         goto End_2;
                     }
                 }
@@ -1031,7 +1120,7 @@ End:            ;
                 {   if( !E_srv_S_accept[i].buf_2 )
                     {   E_srv_S_accept[i].buf_2 = M( S_read_buffer_l );
                         if( !E_srv_S_accept[i].buf_2 )
-                        {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                             goto End_2;
                         }
                     }
@@ -1041,18 +1130,18 @@ End:            ;
                     Pc s;
                     O{  s = E_text_Z_s_R_search_s0( E_srv_S_accept[i].buf_2, E_srv_S_accept[i].buf_2 + l, "\r\n\r\n" );
                         if( s == E_srv_S_accept[i].buf_2 )
-                        {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                             goto End_2;
                         }
                         if( s != E_srv_S_accept[i].buf_2 + l )
                             break;
                         if( l == S_read_buffer_l )
-                        {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                             goto End_2;
                         }
                         N l_1;
                         VO1( l_1 = read( E_srv_S_accept[i].file, E_srv_S_accept[i].buf_2 + l, S_read_buffer_l - l ))
-                        {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                             goto End_2;
                         }
                         l += l_1;
@@ -1060,7 +1149,7 @@ End:            ;
                     Pc s_1 = E_srv_S_accept[i].buf_2;
                     if( E_text_Z_s_T_eq( E_srv_S_accept[i].buf_2, E_srv_S_accept[i].buf_2 + 8, "Status: " ))
                     {   s_1 = E_text_Z_s_R_search_s0( E_srv_S_accept[i].buf_2 + 8, E_srv_S_accept[i].buf_2 + l, "\r\n" );
-                        //G_(); Gs_l( E_srv_S_accept[i].buf_2, s_1 - E_srv_S_accept[i].buf_2 );
+                        //G_(); Gd(i); Gs_l( E_srv_S_accept[i].buf_2, s_1 - E_srv_S_accept[i].buf_2 );
                         Pc s = E_text_Z_s_R_search_c( E_srv_S_accept[i].buf_2 + 8, s_1, ' ' );
                         status = E_text_Z_s_R_n( E_srv_S_accept[i].buf_2 + 8, s, &s, 10 );
                         s_1 += 2;
@@ -1069,30 +1158,30 @@ End:            ;
                         if( s == s_1 )
                             break;
                         if( !E_srv_Q_reply_I_add_header_( &headers, &headers_l, s_1, s ))
-                        {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                        {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                             goto End_2;
                         }
                         s_1 = s + 2;
                     }
                     E_srv_S_accept[i].first_l = l - ( s + 2 - E_srv_S_accept[i].buf_2 );
-                    //G_(); Gd( E_srv_S_accept[i].first_l ); Gs_l( s + 2, E_srv_S_accept[i].first_l );
+                    //G_(); Gd(i); Gd( E_srv_S_accept[i].first_l ); Gs_l( s + 2, E_srv_S_accept[i].first_l );
                     E_mem_Q_blk_I_copy( E_srv_S_accept[i].buf_2, s + 2, E_srv_S_accept[i].first_l );
                 }else
                     E_srv_S_accept[i].first_l = 0;
                 if( !E_srv_Q_reply_I_add_header_2( &headers, &headers_l ))
-                {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                     goto End_2;
                 }
-                //G_(); Gs_l( headers, headers_l );
-                if( !~E_reply_I_code_( E_srv_S_accept[i].listen_sock, status, no ))
+                //G_(); Gd(i); Gs_l( headers, headers_l );
+                if( !~E_reply_I_code_( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, status, no ))
                     goto End_2;
-                if( !~E_reply_I_data( E_srv_S_accept[i].listen_sock, headers, headers_l ))
+                if( !~E_reply_I_data( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, headers, headers_l ))
                     goto End_2;
             }else
             {   if( !E_srv_S_accept[i].buf_2 )
                 {   E_srv_S_accept[i].buf_2 = M( S_read_buffer_l );
                     if( !E_srv_S_accept[i].buf_2 )
-                    {   E_reply_I_code( E_srv_S_accept[i].listen_sock, 500 );
+                    {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
                         goto End_2;
                     }
                 }
@@ -1116,16 +1205,16 @@ End:            ;
                     E_text_Z_n_N_s( &s[ l_1 - 2 ], l, sizeof(l), 16 );
                     s[ l_1 - 2 ] = '\r';
                     s[ l_1 - 1 ] = '\n';
-                    if( !~E_reply_I_data( E_srv_S_accept[i].listen_sock, &s[0], l_1 ))
+                    if( !~E_reply_I_data( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, &s[0], l_1 ))
                         goto End_2;
                 }
                 E_srv_S_accept[i].l += l;
-                //G_(); Gd(l); Gs_l( E_srv_S_accept[i].buf_2, l );
-                if( !~E_reply_I_data( E_srv_S_accept[i].listen_sock, E_srv_S_accept[i].buf_2, l ))
+                G_(); Gd(i); Gd(l);
+                if( !~E_reply_I_data( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, E_srv_S_accept[i].buf_2, l ))
                     goto End_2;
                 if( E_srv_S_accept[i].stream )
                 {   Pc s = "\r\n";
-                    if( !~E_reply_I_data( E_srv_S_accept[i].listen_sock, s, 2 ))
+                    if( !~E_reply_I_data( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, s, 2 ))
                         goto End_2;
                 }
                 if(( E_srv_S_accept[i].stream
@@ -1142,12 +1231,20 @@ End:            ;
                 tv.tv_sec = S_keepalive_timeout;
                 tv.Z_clock_time_minor_field = 0;
                 _timeradd( &E_srv_S_accept[i].keepalive_tv, &tv, &E_srv_S_accept[i].keepalive_tv );
-                G_(); Gs_( "koniec transmisji" );
+                G_(); Gd(i); Gs_( "koniec transmisji" );
             }
             continue;
 End_2:      ;
             V0( close( E_srv_S_accept[i].file )){}
-End_1:      W( E_srv_S_accept[i].buf_2 );
+End_1:      if( E_srv_S_accept[i].ssl )
+            {   int e = SSL_get_error( E_srv_S_accept[i].ssl, E_srv_S_ssl_ret );
+                if( e != SSL_ERROR_SYSCALL
+                || e != SSL_ERROR_SSL
+                )
+                    SSL_shutdown( E_srv_S_accept[i].ssl );
+                SSL_free( E_srv_S_accept[i].ssl );
+            }
+            W( E_srv_S_accept[i].buf_2 );
             W( E_srv_S_accept[i].buf );
             V0( close( E_srv_S_accept[i].listen_sock )){}
             if( !E_mem_Q_blk_I_rem( &E_srv_S_accept, i, 1 ))
@@ -1155,8 +1252,8 @@ End_1:      W( E_srv_S_accept[i].buf_2 );
                 V();
             }
             E_srv_S_accept_n--;
+            G_(); Gd(i); Gs_( "koniec połączenia" );
             i--;
-            G_(); Gs_( "koniec połączenia" );
         }
     }
     E_srv_W();

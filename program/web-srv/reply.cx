@@ -21,15 +21,23 @@ struct E_reply_Z_status_msg
 N E_reply_S_status_msg_n = sizeof( E_reply_S_status_msg ) / sizeof( E_reply_S_status_msg[0] );
 //==============================================================================
 N
-E_reply_I_data( int fd
+E_reply_I_data( SSL *ssl
+, int fd
 , Pc s
 , N l
 ){  N l_;
-    O{  VO1( l_ = write( fd, s, l ))
-            return ~0;
-        if( !( l -= l_ ))
-            break;
-    }
+    if(ssl)
+        O{  if(( E_srv_S_ssl_ret = SSL_write_ex( ssl, s, l, &l_ )) != 1 )
+                return ~0;
+            if( !( l -= l_ ))
+                break;
+        }
+    else
+        O{  VO1( l_ = write( fd, s, l ))
+                return ~0;
+            if( !( l -= l_ ))
+                break;
+        }
     return 0;
 }
 B
@@ -41,7 +49,8 @@ E_reply_T_code_close( N code
     && code != 404;
 }
 N
-E_reply_I_code_( int fd
+E_reply_I_code_( SSL *ssl
+, int fd
 , N code
 , B end
 ){  for_n( i, E_reply_S_status_msg_n )
@@ -60,19 +69,20 @@ E_reply_I_code_( int fd
                 s_1 = E_text_Z_s0_P_copy( s_1, "Connection: close\r\n" );
             if(end)
                 E_text_Z_s0_P_copy( s_1, "\r\n" );
-            if( !~E_reply_I_data( fd, s, l ))
+            if( !~E_reply_I_data( ssl, fd, s, l ))
             {   W(s);
                 return ~0;
             }
             W(s);
             return 0;
         }
-    E_reply_I_code( fd, 500 );
+    E_reply_I_code( ssl, fd, 500 );
     return ~0;
 }
 N
-E_reply_I_code( int fd
+E_reply_I_code( SSL *ssl
+, int fd
 , N code
-){  return E_reply_I_code_( fd, code, yes );
+){  return E_reply_I_code_( ssl, fd, code, yes );
 }
 /******************************************************************************/
