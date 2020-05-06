@@ -369,7 +369,7 @@ typedef P           *Pp; ///wskaźnik do tablic adresów.
           } \
           if( too_small_errno ) \
               break; \
-          J_autogen_line( p_end ) = E_text_Z_s_R_search_0(( pointer_variable ), (Pc)( pointer_variable ) + J_autogen_line(l) ); \
+          J_autogen_line( p_end ) = E_text_Z_s_R_0_search(( pointer_variable ), (Pc)( pointer_variable ) + J_autogen_line(l) ); \
           if( J_autogen_line( p_end ) != (Pc)( pointer_variable ) + J_autogen_line(l) ) \
           {   J_autogen_line( p_end )++; \
               break; \

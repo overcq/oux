@@ -537,36 +537,35 @@ E_mem_Q_file_R_u_outof( I id
     if( !*s )
         return ~0;
     N s_i = 0;
-    O{  
-Cont:   ;
-        N i = E_mem_Q_file_R_u( id, &u );
-        if( !~i
-        || i == E_mem_Q_file_S_eof
-        )
-        {   W( *s );
-            return i;
-        }
-        if( !E_mem_Q_blk_I_append( s, i ))
+Cont:
+    ;
+    N i = E_mem_Q_file_R_u( id, &u );
+    if( !~i
+    || i == E_mem_Q_file_S_eof
+    )
+    {   W( *s );
+        return i;
+    }
+    if( !E_mem_Q_blk_I_append( s, i ))
+    {   W( *s );
+        return ~0;
+    }
+    E_text_Z_s_Z_u_R_utf8( u, *s + s_i );
+    s_i += i;
+    Pc outof_1 = outof;
+    while( *outof_1 )
+    {   U u_1;
+        Pc outof_2 = E_text_Z_s_Z_utf8_R_u( outof_1, &u_1 );
+        if( outof_1 == outof_2 )
         {   W( *s );
             return ~0;
         }
-        E_text_Z_s_Z_u_R_utf8( u, *s + s_i );
-        s_i += i;
-        Pc outof_1 = outof;
-        while( *outof_1 )
-        {   U u_1;
-            Pc outof_2 = E_text_Z_s_Z_utf8_R_u( outof_1, &u_1 );
-            if( outof_1 == outof_2 )
-            {   W( *s );
-                return ~0;
-            }
-            outof_1 = outof_2;
-            if( u == u_1 )
-                goto Cont;
-        }
-        (*s)[ s_i ] = '\0';
-        return 0;
+        outof_1 = outof_2;
+        if( u == u_1 )
+            goto Cont;
     }
+    (*s)[ s_i ] = '\0';
+    return 0;
 }
 //------------------------------------------------------------------------------
 N

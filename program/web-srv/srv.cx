@@ -6,8 +6,6 @@
 *         server
 * ©overcq                on ‟Gentoo Linux 17.1” “x86_64”             2020‒4‒11 P
 *******************************************************************************/
-#define S_tls_certificate_file  "/etc/ssl/certs/apache-selfsigned.crt"
-#define S_tls_private_key_file  "/etc/ssl/private/apache-selfsigned.key"
 #define S_server_name           "OUX/C+ web-srv"
 #define S_php_index_file        "index.php"
 #define S_html_index_file       "index.html"
@@ -67,8 +65,8 @@ E_srv_M( void
     if(ssl)
     {   E_srv_S_ssl_ctx = SSL_CTX_new( TLS_server_method() );
         if( SSL_CTX_set_min_proto_version( E_srv_S_ssl_ctx, TLS1_VERSION ) != 1
-        || SSL_CTX_use_certificate_file( E_srv_S_ssl_ctx, S_tls_certificate_file, SSL_FILETYPE_PEM ) != 1
-        || SSL_CTX_use_PrivateKey_file( E_srv_S_ssl_ctx, S_tls_private_key_file, SSL_FILETYPE_PEM ) != 1
+        || SSL_CTX_use_certificate_file( E_srv_S_ssl_ctx, E_conf_S_virtualhost[i].certificate_path, SSL_FILETYPE_PEM ) != 1
+        || SSL_CTX_use_PrivateKey_file( E_srv_S_ssl_ctx, E_conf_S_virtualhost[i].private_key_path, SSL_FILETYPE_PEM ) != 1
         )
         {   E_srv_W();
             return ~0;
@@ -486,7 +484,7 @@ Next_1:             FD_ZERO( &readfds );
                     }
                 }
                 G_(); Gd(i); Gs_( "parsowanie nagłówka" );
-                Pc s = E_text_Z_s_R_search_c( E_srv_S_accept[i].buf, E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l, '\n' );
+                Pc s = E_text_Z_s_R_c_search( E_srv_S_accept[i].buf, E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l, '\n' );
                 if( s == E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l
                 || s == E_srv_S_accept[i].buf
                 || *( s - 1 ) != '\r'
@@ -494,7 +492,7 @@ Next_1:             FD_ZERO( &readfds );
                     goto End_1;
                 }
                 *( s - 1 ) = '\0';
-                s = E_text_Z_s0_R_search_c( E_srv_S_accept[i].buf, ' ' );
+                s = E_text_Z_s0_R_c_search( E_srv_S_accept[i].buf, ' ' );
                 if( !*s )
                 {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 400 );
                     goto End_1;
@@ -507,7 +505,7 @@ Next_1:             FD_ZERO( &readfds );
                 ){  E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 400 );
                     goto End_1;
                 }
-                Pc s_1 = E_text_Z_s0_R_search_last_c( path, ' ' );
+                Pc s_1 = E_text_Z_s0_R_c_search_last( path, ' ' );
                 *s_1 = '\0';
                 if( !E_text_Z_s0_T_s0_eq( s_1 + 1, "HTTP/1.1" )
                 //&& !E_text_Z_s0_T_s0_eq( s_1 + 1, "HTTP/1.0" )
@@ -515,15 +513,15 @@ Next_1:             FD_ZERO( &readfds );
                 {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 400 );
                     goto End_1;
                 }
-                Pc query = E_text_Z_s0_R_search_c( s + 1, '?' );
+                Pc query = E_text_Z_s0_R_c_search( s + 1, '?' );
                 if( *query )
                 {   *query = '\0';
                     query++;
                 }
                 ///unescape
-                for( Pc s_1 = path, s; *( s = E_text_Z_s0_R_search_c( s_1, '+' )); s_1 = s + 1 )
+                for( Pc s_1 = path, s; *( s = E_text_Z_s0_R_c_search( s_1, '+' )); s_1 = s + 1 )
                     *s_1 = ' ';
-                for( Pc s_1 = path, s; *( s = E_text_Z_s0_R_search_c( s_1, '%' )); s_1 = s + 1 )
+                for( Pc s_1 = path, s; *( s = E_text_Z_s0_R_c_search( s_1, '%' )); s_1 = s + 1 )
                 {   if( !*( s + 1 )
                     || !*( s + 2 )
                     )
@@ -569,10 +567,10 @@ End:            ;
                 ///Normalizacja ścieżki żądania: eliminacja powtórzonych separatorów, sprawdzenie, czy nie wychodzi poza root_path.
                 Pc s_2 = path;
                 N path_n = 0;
-                while(( s_2 = E_text_Z_s_R_search_c( s_2 + 1, path_, '/' )) != path_ )
+                while(( s_2 = E_text_Z_s_R_c_search( s_2 + 1, path_, '/' )) != path_ )
                     path_n++;
                 N path_n_0 = path_n;
-                O{  s_1 = E_text_Z_s0_R_search_c( s + 1, '/' );
+                O{  s_1 = E_text_Z_s0_R_c_search( s + 1, '/' );
                     if( !*s_1 )
                         break;
                     if( s_1 == s + 1 )
@@ -592,7 +590,7 @@ End:            ;
                         {   path_n -= s_1 - ( s + 1 ) - 1;
                             s_2 = path;
                             for_n( k, path_n )
-                                s_2 = E_text_Z_s_R_search_c( s_2 + 1, path_, '/' );
+                                s_2 = E_text_Z_s_R_c_search( s_2 + 1, path_, '/' );
                             if( !E_mem_Q_blk_I_rem( &path, s_2 + 1 - path, path_ - ( s_2 + 1 )))
                             {   W(path);
                                 E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
@@ -655,9 +653,9 @@ End:            ;
                 B keep_alive = yes;
                 N post_l = 0;
                 ///Przetworzenie przychodzących nagłówków.
-                s = E_text_Z_s_R_search_c( E_srv_S_accept[i].buf, E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l, '\n' );
+                s = E_text_Z_s_R_c_search( E_srv_S_accept[i].buf, E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l, '\n' );
                 Pc accept = 0, accept_charset = 0, accept_encoding = 0, accept_language = 0, connection = 0, cookie = 0, host = 0, referrer = 0, user_agent = 0;
-                O{  s_1 = E_text_Z_s_R_search_c( s + 1, E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l, '\n' );
+                O{  s_1 = E_text_Z_s_R_c_search( s + 1, E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l, '\n' );
                     if( s_1 == E_srv_S_accept[i].buf + E_srv_S_accept[i].buf_l )
                     {   W(path);
                         E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500 );
@@ -675,7 +673,7 @@ End:            ;
                         E_srv_S_accept[i].buf_ = s_1 + 1;
                         break;
                     }
-                    s_2 = E_text_Z_s_R_search_c( s + 1, s_1, ':' );
+                    s_2 = E_text_Z_s_R_c_search( s + 1, s_1, ':' );
                     if( s_2 == s_1 )
                     {   W(path);
                         E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 400 );
@@ -1011,8 +1009,7 @@ End:            ;
                     {   gz = no;
                         *path_ = '\0';
                         V1( E_srv_S_accept[i].file = open( path, O_RDONLY ))
-                        {   *path_ = '\0';
-                            W(path);
+                        {   W(path);
                             E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 404 );
                             goto End_1;
                         }
@@ -1152,7 +1149,7 @@ End:            ;
                     if( E_text_Z_s_T_s0_eq_case( E_srv_S_accept[i].buf_2, E_srv_S_accept[i].buf_2 + 8, "Status: " ))
                     {   s_1 = E_text_Z_s_R_s0_search( E_srv_S_accept[i].buf_2 + 8, E_srv_S_accept[i].buf_2 + l, "\r\n" );
                         //G_(); Gd(i); Gs_l( E_srv_S_accept[i].buf_2, s_1 - E_srv_S_accept[i].buf_2 );
-                        Pc s = E_text_Z_s_R_search_c( E_srv_S_accept[i].buf_2 + 8, s_1, ' ' );
+                        Pc s = E_text_Z_s_R_c_search( E_srv_S_accept[i].buf_2 + 8, s_1, ' ' );
                         status = E_text_Z_s_N_n( E_srv_S_accept[i].buf_2 + 8, s, &s, 10 );
                         s_1 += 2;
                     }
