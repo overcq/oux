@@ -26,15 +26,18 @@ E_x_Z_color_M(
 }
 N8
 E_x_Z_color_R_red( N32 color
-){  return ( color >> 16 ) & 0xff;
+){  J_assert( !( color & ~0xffffff ));
+    return ( color >> 16 ) & 0xff;
 }
 N8
 E_x_Z_color_R_green( N32 color
-){  return ( color >> 8 ) & 0xff;
+){  J_assert( !( color & ~0xffffff ));
+    return ( color >> 8 ) & 0xff;
 }
 N8
 E_x_Z_color_R_blue( N32 color
-){  return color & 0xff;
+){  J_assert( !( color & ~0xffffff ));
+    return color & 0xff;
 }
 N32
 E_x_Z_color_M_gray(
@@ -45,7 +48,8 @@ N32
 E_x_Z_color_P_luminance( struct E_x_Q_display_Z *display
 , N32 color
 , F luminance
-){  N8 red = E_x_Z_color_R_red(color);
+){  J_assert( luminance >= 0 && luminance <= 1 );
+    N8 red = E_x_Z_color_R_red(color);
     N8 green = E_x_Z_color_R_green(color);
     N8 blue = E_x_Z_color_R_blue(color);
     F color_luminance = E_x_Z_color_R_luminance( display, color );
@@ -72,7 +76,8 @@ E_x_Q_window_I_draw_P_color(
   struct E_x_Q_display_Z *display
 , struct E_x_Q_screen_Z *screen
 , N32 color
-){  screen->draw_color = color;
+){  J_assert( !( color & ~0xffffff ));
+    screen->draw_color = color;
 }
 //------------------------------------------------------------------------------
 void
@@ -82,7 +87,8 @@ E_x_Q_window_I_draw_Z_points(
 , struct E_x_Q_window_Z *window
 , N32 n
 , xcb_point_t *points
-){  for_n( i, n )
+){  J_assert(n);
+    for_n( i, n )
         if( points[i].x < window->width && points[i].y < window->height )
         {   window->drawable[ points[i].x + points[i].y * window->width ] = screen->draw_color;
             if( !U_R( screen->state, draw_object_drag_move ))
@@ -172,7 +178,8 @@ E_x_Q_window_I_draw_Z_segments(
 , struct E_x_Q_window_Z *window
 , N32 n
 , xcb_segment_t *segments
-){  for_n( i, n )
+){  J_assert(n);
+    for_n( i, n )
         if( segments[i].x1 == segments[i].x2 )
         {   xcb_point_t *Mt_( points, abs( segments[i].y2 - segments[i].y1 ) + 1 );
             if( !points )
@@ -223,7 +230,8 @@ E_x_Q_window_I_draw_Z_lines(
 , struct E_x_Q_window_Z *window
 , N32 n
 , xcb_point_t *points
-){  xcb_segment_t *Mt_( segments, n - 1 );
+){  J_assert( n > 1 );
+    xcb_segment_t *Mt_( segments, n - 1 );
     if( !segments )
         return ~0;
     for_n( i, n - 1 )
@@ -250,7 +258,8 @@ E_x_Q_window_I_draw_Z_rectangles(
 , struct E_x_Q_window_Z *window
 , N32 n
 , xcb_rectangle_t *rectangles
-){  xcb_segment_t *Mt_( segments, n * 4 );
+){  J_assert(n);
+    xcb_segment_t *Mt_( segments, n * 4 );
     if( !segments )
         return ~0;
     for_n( i, n )
@@ -296,7 +305,8 @@ E_x_Q_window_I_draw_Z_arcs(
 , struct E_x_Q_window_Z *window
 , N32 n
 , xcb_arc_t *arcs
-){  //TODO
+){  J_assert(n);
+    //TODO
 
 }
 void
@@ -306,7 +316,8 @@ E_x_Q_window_I_fill_Z_points(
 , struct E_x_Q_window_Z *window
 , N32 n
 , xcb_point_t *points
-){  //TODO
+){  J_assert( n > 2 );
+    //TODO
 
 }
 void
@@ -316,7 +327,8 @@ E_x_Q_window_I_fill_Z_rectangles(
 , struct E_x_Q_window_Z *window
 , N32 n
 , xcb_rectangle_t *rectangles
-){  //TODO
+){  J_assert(n);
+    //TODO
 
 }
 void
@@ -326,7 +338,8 @@ E_x_Q_window_I_fill_Z_arcs(
 , struct E_x_Q_window_Z *window
 , N32 n
 , xcb_arc_t *arcs
-){  //TODO
+){  J_assert(n);
+    //TODO
     
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -337,7 +350,8 @@ F
 E_x_I_pole_wielokata(
   N n
 , struct E_x_Z_points *points
-){  F pole = 0;
+){  J_assert( n > 2 );
+    F pole = 0;
     for_n( i, n - 1 )
         pole += points[i].x * points[ i + 1 ].y - points[ i + 1 ].x * points[i].y;
     pole += points[ n - 1 ].x * points[0].y - points[0].x * points[ n - 1 ].y;
@@ -353,7 +367,9 @@ E_x_Q_window_I_draw_aa_Z_pixel(
 , N32 color
 , F brightness
 , N get_pixel
-){  N background_red, background_green, background_blue;
+){  J_assert( !( color & ~0xffffff ));
+    J_assert( brightness >= 0 && brightness <= 1 );
+    N background_red, background_green, background_blue;
     N n = 0;
     if( !U_R( screen->state, draw_object_drag_move ))
     {   N p[8];
@@ -414,10 +430,8 @@ E_x_Q_window_I_draw_aa_Z_lines(
 , xcb_point_t *points
 , F thickness
 , N32 color
-){  if( n < 2 )
-    {   GV( "to few points" );
-        return ~0;
-    }
+){  J_assert( n > 1 );
+    J_assert( !( color & ~0xffffff ));
     F a = screen->pixel_width;
     F b = screen->pixel_height;
     F pole_pixela = a * b;

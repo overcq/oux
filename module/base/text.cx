@@ -103,7 +103,8 @@ B
 E_text_Z_s_T_s0_eq( Pc s
 , Pc s_end
 , Pc t
-){  while( s != s_end
+){  J_assert( s_end >= s );
+    while( s != s_end
     && *t
     && *s == *t
     )
@@ -116,7 +117,8 @@ B
 E_text_Z_s_T_s0_eq_case( Pc s
 , Pc s_end
 , Pc t
-){  while( s != s_end
+){  J_assert( s_end >= s );
+    while( s != s_end
     && *t
     && E_text_Z_c_I_upper( *s ) == E_text_Z_c_I_upper( *t )
     )
@@ -140,8 +142,9 @@ E_text_Z_s0_R_l( Pc s
 ///Less or equal end.
 Pc
 E_text_Z_s0_R_end_le( Pc s
-, N l /// > 0
-){  while( *s )
+, N l
+){  J_assert(l);
+    while( *s )
     {   if( !--l )
             break;
         s++;
@@ -150,8 +153,9 @@ E_text_Z_s0_R_end_le( Pc s
 }
 B
 E_text_Z_s0_T_l_le( Pc s
-, N l /// > 0
-){  while( *s )
+, N l
+){  J_assert(l);
+    while( *s )
     {   if( !--l )
             break;
         s++;
@@ -171,7 +175,8 @@ E_text_Z_s0_R_0_l( Pc s
 Pc
 E_text_Z_s_R_0_search( Pc s
 , Pc s_end
-){  while( s != s_end )
+){  J_assert( s_end >= s );
+    while( s != s_end )
     {   if( !*s )
             break;
         s++;
@@ -182,7 +187,8 @@ Pc
 E_text_Z_s_R_c_search( Pc s
 , Pc s_end
 , C c
-){  while( s != s_end )
+){  J_assert( s_end >= s );
+    while( s != s_end )
     {   if( *s == c )
             break;
         s++;
@@ -210,7 +216,8 @@ Pc
 E_text_Z_s_R_c_search_last( Pc s
 , Pc s_end
 , C c
-){  while( s_end != s )
+){  J_assert( s_end >= s );
+    while( s_end != s )
     {   if( *--s_end == c )
             break;
     }
@@ -234,7 +241,9 @@ E_text_Z_s_R_s_search( Pc s
 , Pc s_end
 , Pc t
 , Pc t_end
-){  if( t == t_end )
+){  J_assert( s_end >= s );
+    J_assert( t_end >= t );
+    if( t == t_end )
         return s;
     if( t_end - t <= s_end - s )
     {   Pc r = s, t_ = t;
@@ -259,7 +268,8 @@ Pc
 E_text_Z_s_R_s0_search( Pc s
 , Pc s_end
 , Pc t
-){  if( !*t )
+){  J_assert( s_end >= s );
+    if( !*t )
         return s;
     Pc r = s, t_ = t;
     while( s != s_end )
@@ -297,8 +307,10 @@ N
 E_text_Z_s_N_n( Pc s
 , Pc s_end
 , Pc *ret_s
-, N base ///do 36; wynikającej z “( '9' - '0' + 1 ) + ( 'Z' - 'A' + 1 )”.
-){  N n = 0;
+, N base
+){  J_assert( s_end >= s );
+    J_assert( base <= 36 );
+    N n = 0;
     while( s != s_end )
     {   n *= base;
         if( *s >= '0' && *s <= '9' )
@@ -317,7 +329,7 @@ E_text_Z_s_N_n( Pc s
 N
 E_text_Z_s0_N_n( Pc s
 , Pc *ret_s
-, N base ///do 36; wynikającej z “( '9' - '0' + 1 ) + ( 'Z' - 'A' + 1 )”.
+, N base
 ){  N n = 0;
     while( *s )
     {   n *= base;
@@ -339,7 +351,8 @@ N
 E_text_Z_s_N_n10( Pc s
 , Pc s_end
 , Pc *ret_s
-){  N n = 0;
+){  J_assert( s_end >= s );
+    N n = 0;
     while( s < s_end )
     {   n *= 10;
         if( *s >= '0' && *s <= '9' )
@@ -372,7 +385,8 @@ E_text_Z_n_N_s( Pc s_end
 , N n
 , N l
 , N base
-){  n = E_simple_Z_n_I_mod_i_2( n, l * 8 );
+){  J_assert( base <= 36 );
+    n = E_simple_Z_n_I_mod_i_2( n, l * 8 );
     do
     {   N k = n % base;
         *--s_end = k < 10
@@ -385,7 +399,8 @@ N
 E_text_Z_n_N_s_G( N n
 , N l
 , N base
-){  N i = 0;
+){  J_assert( base <= 36 );
+    N i = 0;
     n = E_simple_Z_n_I_mod_i_2( n, l * 8 );
     do
     {   i++;
@@ -395,11 +410,11 @@ E_text_Z_n_N_s_G( N n
 //------------------------------------------------------------------------------
 Pc
 E_text_Z_i_N_s( Pc s_end
-, S n
+, S i
 , N l
 , N base
-){  s_end = E_text_Z_n_N_s( s_end, J_abs(n), l, base );
-    if( n < 0 )
+){  s_end = E_text_Z_n_N_s( s_end, J_abs(i), l, base );
+    if( i < 0 )
         *--s_end = '-';
     return s_end;
 }
@@ -420,7 +435,8 @@ Pc
 E_text_Z_s_P_c_fill( Pc s
 , Pc s_end
 , C c
-){  while( s < s_end )
+){  J_assert( s_end >= s );
+    while( s < s_end )
         *s++ = c;
     return s;
 }
@@ -443,7 +459,8 @@ Pc
 E_text_Z_s_P_s_copy( Pc s
 , Pc t
 , Pc t_end
-){  while( t != t_end )
+){  J_assert( t_end >= t );
+    while( t != t_end )
     {   *s = *t;
         s++;
         t++;
@@ -454,7 +471,8 @@ Pc
 E_text_Z_s_P_s_copy_0( Pc s
 , Pc t
 , Pc t_end
-){  return E_text_Z_s_P_0( E_text_Z_s_P_s_copy( s, t, t_end ));
+){  J_assert( t_end >= t );
+    return E_text_Z_s_P_0( E_text_Z_s_P_s_copy( s, t, t_end ));
 }
 //------------------------------------------------------------------------------
 Pc
@@ -506,7 +524,8 @@ N
 E_text_Z_s_I_s_append( Pc *s
 , Pc t
 , Pc t_end
-){  Pc p;
+){  J_assert( t_end >= t );
+    Pc p;
     if( !( p = E_mem_Q_blk_I_append( s, t_end - t )))
         return 0;
     E_text_Z_s_P_s_copy( p, t, t_end );
@@ -516,7 +535,8 @@ N
 E_text_Z_s_I_s_append_0( Pc *s
 , Pc t
 , Pc t_end
-){  Pc p;
+){  J_assert( t_end >= t );
+    Pc p;
     if( !( p = E_mem_Q_blk_I_append( s, t_end - t + 1 )))
         return 0;
     E_text_Z_s_P_s_copy_0( p, t, t_end );
@@ -547,7 +567,8 @@ N
 E_text_Z_s_I_s_prepend( Pc *s
 , Pc t
 , Pc t_end
-){  if( !E_mem_Q_blk_I_prepend( s, t_end - t ))
+){  J_assert( t_end >= t );
+    if( !E_mem_Q_blk_I_prepend( s, t_end - t ))
         return 0;
     E_text_Z_s_P_s_copy( *s, t, t_end );
     return t_end - t;
@@ -565,7 +586,8 @@ E_text_Z_s_I_s0_prepend( Pc *s
 Pc
 E_text_Z_s_Z_cmdline_T_quote_n( Pc s
 , Pc s_end
-){  while( s < s_end )
+){  J_assert( s_end >= s );
+    while( s != s_end )
         if( E_text_Z_c_T_quote( *s++ ))
             break;
     return s;

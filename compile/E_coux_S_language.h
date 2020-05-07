@@ -386,6 +386,8 @@ typedef P           *Pp; ///wskaźnik do tablic adresów.
           {   GV_(NA); \
           } \
   }
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#define J_assert(expr)                      assert(expr)
 //==============================================================================
     #ifdef E_flow_C_errno_p
 #define _errno                              ( *E_base_S->E_flow_S_errno )

@@ -82,7 +82,7 @@ E_mem_Q_tab_W( struct E_mem_Q_tab_Z *tab
 B
 E_mem_Q_tab_T( struct E_mem_Q_tab_Z *tab
 , I id
-){  return (In)tab->data_n > (In)id
+){  return (In)id < (In)tab->index_n
     && tab->index[id];
 }
 I
@@ -92,7 +92,8 @@ E_mem_Q_tab_R_n( struct E_mem_Q_tab_Z *tab
 P
 E_mem_Q_tab_R( struct E_mem_Q_tab_Z *tab
 , I id
-){  return tab->index[id];
+){  J_assert( E_mem_Q_tab_T( tab, id ));
+    return tab->index[id];
 }
 I
 E_mem_Q_tab_I_add( struct E_mem_Q_tab_Z *tab
@@ -140,7 +141,8 @@ E_mem_Q_tab_I_add( struct E_mem_Q_tab_Z *tab
 I
 E_mem_Q_tab_I_add_i( struct E_mem_Q_tab_Z *tab
 , I id
-){  Pc data = tab->data;
+){  J_assert( !E_mem_Q_tab_T( tab, id ));
+    Pc data = tab->data;
     N n_prepended;
     if( !E_mem_Q_blk_I_add( &tab->data, 1, &n_prepended, 0 ))
         return ~0;
@@ -234,7 +236,8 @@ E_mem_Q_tab_I_segv_add_end( struct E_mem_Q_tab_Z *tab
 N
 E_mem_Q_tab_I_rem( struct E_mem_Q_tab_Z *tab
 , I id
-){  if( tab->iterator )
+){  J_assert( E_mem_Q_tab_T( tab, id ));
+    if( tab->iterator )
     {   for_i( i, tab->iterator->index_n )
             if( tab->iterator->index[i] )
             {   struct E_mem_Q_tab_S_iterator_Z *iterator = (P)tab->iterator->index[i];
@@ -304,7 +307,8 @@ I
 E_mem_Q_tab_Z_iter_R_next( struct E_mem_Q_tab_Z *tab
 , I id
 , I out_id ///pomijany— i od następnego do poprzedniego elementu.
-){  if( (In)id + 1 > (In)out_id )
+){  J_assert( !~id || E_mem_Q_tab_T( tab, id ));
+    if( (In)id + 1 > (In)out_id )
     {   while( ++id != tab->index_n )
             if( tab->index[id] )
                 return id;
@@ -321,7 +325,8 @@ I
 E_mem_Q_tab_Z_iter_R_prev( struct E_mem_Q_tab_Z *tab
 , I id
 , I out_id
-){  if( !~id )
+){  J_assert( !~id || E_mem_Q_tab_T( tab, id ));
+    if( !~id )
         id = tab->index_n;
     if( (In)id - 1 < (In)out_id )
     {   while( ~--id )

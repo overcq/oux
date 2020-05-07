@@ -8,6 +8,9 @@
 ################################################################################
 #NDFN nie wiadomo, gdzie umieszczać poniższe przełączniki.
 #obecnie pliki “0.mak” nie mogą zawierać ustawiania “H_make_”[…], chyba że usystematyzuje się sposób włączania tych przełączników.
+#Czy włączyć wewnętrzne testy poprawności?
+H_make_C_debug := 1
+E_mem_Q_blk_C_debug := 1
 #są dostępne następujące rodzaje programu wynikowego:
 #•jeden plik wykonywalny, zależny tylko od “bibliotek” systemu operacyjnego. domyślnie.
 #•plik wykonywalny zależny od ‹modułów› tworzonych tutaj jako ‘dll’ (“to libs”). oszczędza pamięć, gdy jest używany kolejny program.
@@ -20,7 +23,6 @@ E_flow_drv_C_clock_monotonic := 1
 #wybiera ‟POSIX” “aio” zamiast “strumieni asynchronicznych” ‟BSD” (“O_ASYNC”). generalnie– “wątkowane” “aio” nie jest potrzebne. żadne nie jest gwarantowane bezczasowo ze względu na brak metody znalezienia wartości “E_io_Q_stream_out_S_delay”, ograniczającej możliwe opóźnienie systemu operacyjnego przed oddaniem użycia “aiocb” (dla “aio”) lub “aio_buf” (dla “O_ASYNC”).
 E_io_C_aio := 1
 #włącza kontrolę poprawności pamięci ‘alokatora’ bloków.
-#E_mem_Q_blk_C_debug := 1
 #===============================================================================
 H_make_S_os := $(shell uname -s)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

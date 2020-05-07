@@ -206,6 +206,10 @@ CFLAGS += -flto -Wa,-emit-llvm
         endif
     endif
 #-------------------------------------------------------------------------------
+    ifeq (,$(H_make_C_debug))
+CFLAGS += -DNDEBUG
+    endif
+#-------------------------------------------------------------------------------
     ifeq (Linux,$(H_make_S_os))
 LDFLAGS += -Wl,--gc-sections,--as-needed
     endif
@@ -269,6 +273,7 @@ $(addprefix $(H_make_S_compile_path)/,1.mak 2.mak Makefile) \
             echo "#include <$${include}>" ;\
         done ;\
         ) \
+        echo '#include <assert.h>' ;\
         $(foreach module,$(H_make_S_modules),$(call H_make_Q_main_header_I_module_0,$(module)) ;) \
         for header in $(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,E_coux_S_0_%.h,$(H_make_S_cx_sources))); do \
             echo "#include \"$${header}\"" ;\
@@ -305,6 +310,7 @@ $(addprefix $(H_make_S_compile_path)/,1.mak 2.mak Makefile) \
             echo "#include <$${include}>" ;\
         done ;\
         ) \
+        echo '#include <assert.h>' ;\
         $(foreach module,$(H_make_S_modules),$(call H_make_Q_main_header_I_module_0,$(module)) ;) \
         echo '#include "E_coux_S_machine.h"' ;\
         echo '#include "E_coux_S_language.h"' ;\

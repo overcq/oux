@@ -57,13 +57,14 @@ E_simple_T_multiply_overflow(
 _inline
 B
 E_simple_Z_n_T_power_2( N n
-){  return n ? __builtin_clzl(n) + 1 + __builtin_ctzl(n) == sizeof(N) * 8 : 0;
+){  return n ? ( _v( n, 1 ) << __builtin_ctzl(n) ) == n : no;
 }
 _inline
 B
 E_simple_Z_n_T_aligned_to_v_2( N n
 , N v_2
-){  return !( n & ( v_2 - 1 ));
+){  J_assert( E_simple_Z_n_T_power_2( v_2 ));
+    return !( n & ( v_2 - 1 ));
 }
 //------------------------------------------------------------------------------
 _inline
@@ -89,13 +90,15 @@ _inline
 N
 E_simple_Z_n_I_align_down_to_v_2( N n
 , N v_2
-){  return n & ~( v_2 - 1 );
+){  J_assert( E_simple_Z_n_T_power_2( v_2 ));
+    return n & ~( v_2 - 1 );
 }
 _inline
 N
 E_simple_Z_n_I_align_up_to_v_2( N n
 , N v_2
-){  N a = v_2 - 1;
+){  J_assert( E_simple_Z_n_T_power_2( v_2 ));
+    N a = v_2 - 1;
     return ( n + a ) & ~a;
 }
 _inline
