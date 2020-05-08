@@ -11,7 +11,7 @@
 #define S_html_index_file       "index.html"
 #define S_listen_backlog        1024
 #define S_request_buffer_l      4096
-#define S_read_buffer_l         ( 1096 * 64 )
+#define S_read_buffer_l         ( 64 * 1024 )
 #define S_keepalive_timeout     5
 #define S_system_idle_time      0
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -702,7 +702,7 @@ End:            ;
                             accept_encoding++;
                         accept_encoding_end = s_1 - 1;
                         E_text_Z_s_P_lower( accept_encoding, accept_encoding_end );
-                        s_2 = E_text_Z_s0_R_s0_search( accept_encoding, "gzip" );
+                        s_2 = E_text_Z_s_R_s0_search( accept_encoding, accept_encoding_end, "gzip" );
                         if( *s_2 )
                             gz = yes;
                     }else if( E_text_Z_s_T_s0_eq_case( s + 1, s_2, "Accept-Language" ))
@@ -716,16 +716,19 @@ End:            ;
                             connection++;
                         connection_end = s_1 - 1;
                         E_text_Z_s_P_lower( connection, connection_end );
-                        s_2 = E_text_Z_s0_R_s0_search( connection, "close" );
+                        s_2 = E_text_Z_s_R_s0_search( connection, connection_end, "close" );
                         if( *s_2 )
                             keep_alive = no;
                     }else if( E_text_Z_s_T_s0_eq_case( s + 1, s_2, "Content-Type" ))
                     {   if(post)
-                        {   s_2 = E_text_Z_s0_R_s0_search( s_2 + 1, "application/x-www-form-urlencoded" );
-                            if( s_2 == s_1 - 1 )
-                            {   W(path);
-                                E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 400, yes );
-                                goto End_1;
+                        {   Pc s_3 = E_text_Z_s_R_s0_search( s_2 + 1, s_1, "application/x-www-form-urlencoded" );
+                            if( s_3 == s_1 - 1 )
+                            {   s_3 = E_text_Z_s_R_s0_search( s_2 + 1, s_1, "multipart/form-data" );
+                                if( s_3 == s_1 - 1 )
+                                {   W(path);
+                                    E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 400, yes );
+                                    goto End_1;
+                                }
                             }
                         }
                     }else if( E_text_Z_s_T_s0_eq_case( s + 1, s_2, "Content-Length" ))
