@@ -217,8 +217,10 @@ typedef P           *Pp; ///wskaźnik do tablic adresów.
 //------------------------------------------------------------------------------
 ///wypisywanie zmiennych programu; po “G”/“GV”/“G_”/“GV_” w linii.
 #define Gc(c)       if( _G_var ) E_flow_Z_line_report_Z_text_c_I_sync( J_s(c), c ); else E_flow_Z_line_report_Z_text_c_I( J_s(c), c )
-#define Gs(s)       Gs_l( s, 0 )
-#define Gs_(s)      Gs_l_( s, 0 )
+#define Gs(s,s_end) Gs_l( s, (s_end) - (s) );
+#define Gs_(s,s_end) Gs_l_( s, (s_end) - (s) );
+#define Gs0(s)      Gs_l( (s), 0 )
+#define Gs0_(s)     Gs_l_( (s), 0 )
 #define Gs_l(s,l)   if( _G_var ) E_flow_Z_line_report_Z_text_s_I_sync( J_s(s), (s), (l) ); else E_flow_Z_line_report_Z_text_s_I( J_s(s), (s), (l) )
 #define Gs_l_(s,l)  if( _G_var ) E_flow_Z_line_report_Z_s_I_sync( (s), (l) ); else E_flow_Z_line_report_Z_s_I( (s), (l) )
 #define Gd(n)       if( _G_var ) E_flow_Z_line_report_Z_text_n_I_sync( J_s(n), (N)(n), sizeof(n), 10 ); else E_flow_Z_line_report_Z_text_n_I( J_s(n), (N)(n), sizeof(n), 10 )
@@ -230,8 +232,10 @@ typedef P           *Pp; ///wskaźnik do tablic adresów.
 #define GV(s)
 #define GV_(s)
 #define Gc(c)
-#define Gs(s)
-#define Gs_(s)
+#define Gs(s,s_end)
+#define Gs_(s,s_end)
+#define Gs0(s)
+#define Gs0_(s)
 #define Gs_l(s)
 #define Gs_l_(s)
 #define Gd(n)
