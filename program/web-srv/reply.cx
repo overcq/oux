@@ -46,21 +46,26 @@ E_reply_I_code_( SSL *ssl
 , N code
 , B end
 , B close
+, B http_1
 ){  for_n( i, E_reply_S_status_msg_n )
         if( E_reply_S_status_msg[i].code == code )
         {   N l = 9 + 4 + E_text_Z_s0_R_l( E_reply_S_status_msg[i].s ) + 2;
-            if(close)
+            if( http_1 && close)
                 l += E_text_Z_s0_R_l( "Connection: close\r\n" );
             if(end)
                 l += 2;
             Pc s = M(l);
             if( !s )
                 return ~0;
-            E_text_Z_s_P_s0_copy( s, "HTTP/1.1 " );
+            Pc s_1 = E_text_Z_s_P_s0_copy( s, "HTTP/1." );
+            if( http_1 )
+                E_text_Z_s_P_s0_copy( s_1, "1 " );
+            else
+                E_text_Z_s_P_s0_copy( s_1, "0 " );
             E_text_Z_n_N_s( s + 9 + 3, E_reply_S_status_msg[i].code, sizeof( E_reply_S_status_msg[i].code ), 10 );
             *( s + 9 + 3 ) = ' ';
-            Pc s_1 = E_text_Z_s_P_s0_copy( E_text_Z_s_P_s0_copy( s + 9 + 4, E_reply_S_status_msg[i].s ), "\r\n" );
-            if(close)
+            s_1 = E_text_Z_s_P_s0_copy( E_text_Z_s_P_s0_copy( s + 9 + 4, E_reply_S_status_msg[i].s ), "\r\n" );
+            if( http_1 && close )
                 s_1 = E_text_Z_s_P_s0_copy( s_1, "Connection: close\r\n" );
             if(end)
                 E_text_Z_s_P_s0_copy( s_1, "\r\n" );
@@ -72,7 +77,7 @@ E_reply_I_code_( SSL *ssl
             W(s);
             return 0;
         }
-    E_reply_I_code_( ssl, fd, 500, end, close );
+    E_reply_I_code_( ssl, fd, 500, end, close, http_1 );
     return ~0;
 }
 N
@@ -80,6 +85,7 @@ E_reply_I_code( SSL *ssl
 , int fd
 , N code
 , B close
-){  return E_reply_I_code_( ssl, fd, code, yes, close );
+, B http_1
+){  return E_reply_I_code_( ssl, fd, code, yes, close, http_1 );
 }
 /******************************************************************************/
