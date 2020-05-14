@@ -6,6 +6,7 @@
 *         entry and raw labels
 * ©overcq                on ‟Gentoo Linux 17.1” “x86_64”             2020‒4‒10 S
 *******************************************************************************/
+#define S_as_user   "apache"
 Pc E_main_S_conf_file[] =
 { "oux-web-srv.conf"
 , "/etc/oux-web-srv.conf"
@@ -46,6 +47,12 @@ main(
     if( !~E_srv_M() )
     {   G_(); Gs0_( "error: initializing server" ); V();
     }
+    struct passwd *pw = getpwnam( S_as_user );
+    if( !pw )
+    {   G_(); V();
+    }
+    V0_( setgid( pw->pw_gid ));
+    V0_( setuid( pw->pw_uid ));
     I *M_(task);
     *task = E_mem_Q_tab_R_n( E_base_S->E_flow_Q_task_S );
     Dh_M( srv, srv, 0, task );

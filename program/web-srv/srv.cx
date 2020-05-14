@@ -1142,7 +1142,8 @@ End:            ;
                 {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 403, no, http_1 );
                     goto End_4;
                 }
-                E_srv_S_accept[i].stream = http_1 ? php : no;
+                E_srv_S_accept[i].stream = http_1 ? php : no; ///W HTTP/1.0 wykonuje połączenie bez Content-Length i zakańcza.
+                ///Utworzenie wychodzących nagłówków.
                 Pc headers = M(0);
                 if( !headers )
                 {   E_reply_I_code( E_srv_S_accept[i].ssl, E_srv_S_accept[i].listen_sock, 500, no, http_1 );
@@ -1248,6 +1249,7 @@ End:            ;
                         goto End_4;
                     }
                 }
+                ///Przetworzenie nagłówków przychodzących ze skryptu PHP.
                 N status = 200;
                 if(php)
                 {   N l;
@@ -1316,7 +1318,8 @@ End:            ;
                 }
                 W(headers);
             }else
-            {   N l;
+            {   ///Przesłanie zawartości pliku lub ze skryptu PHP.
+                N l;
                 if( E_srv_S_accept[i].first_l )
                 {   l = E_srv_S_accept[i].first_l;
                     E_srv_S_accept[i].first_l = 0;
