@@ -6,13 +6,13 @@
 #         bottom include makefile
 # ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2015‒1‒13 #
 ################################################################################
-#DFN standard dozwolonych znaków i sekwencji w nazwach w systemie plików: brak jakichkolwiek, które są interpretowane specjalnie przez “gmake”, gdy są one wstawiane z wyniku funkcji wbudowanej “gmake”, a nie literalnie. czyli jeśli na przykład “gmake” przetwarza te nazwy od początku (np. “$(wildcard)”) do końca (interpretacja reguły wytworzenia pliku z parametrów “$”) jako referencje, to wtedy nie ma ograniczeń, ale znaki odstępu pomiędzy parametrami (beztypowa składni języka— lista “gmake”) nie wydają się podlegać tym ewentualnym referencjom wewnętrznym. natomiast znaki interpretowane przez “shell” są globalnie ‘eskejpowane’ przed przekazaniem do wykonania w środowisku “shell”.
-#DFN jednak są inne, pozostałe jeszcze ograniczenia, powstające z wymaganych do ‘kompilacji’ form pośrednich: ‣otaczanie deklaracji (“#include”) w pliku nagłówkowym ‟C” znakami podwójnego cudzysłowu, co uniemożliwia użycie tego znaku w nazwach tych plików, ‣wybieranie plików w regule “gmake” z listy zależnych (“$^”), co uniemożliwia użycie odstępu także w ścieżkach do plików, ‣‘nieeskejpowalna’ funkcja “$(wildcard)”, co uniemożliwia użycie odstępu także w ścieżkach do plików.
-#w przyszłości, gdy będzie możliwa ‘kompilacja’ naraz całego systemu programów ‘oux’ używających ‹modułów› w ‘dllach’, to o tym, czy po aktualizacji “biblioteki” bez zmiany ‘api’ używanego przez dany program będzie wymagana ‘rekompilacja’ programu— będzie decydować zmiana wartości automatycznie deterministycznie generowanych ‘uidów’ ‹raportów›/‹impulsatorów›,
+#DFN Standard dozwolonych znaków i sekwencji w nazwach w systemie plików: brak jakichkolwiek, które są interpretowane specjalnie przez “gmake”, gdy są one wstawiane z wyniku funkcji wbudowanej “gmake”, a nie literalnie. Czyli jeśli na przykład “gmake” przetwarza te nazwy od początku (np. “$(wildcard)”) do końca (interpretacja reguły wytworzenia pliku z parametrów “$”) jako referencje, to wtedy nie ma ograniczeń, ale znaki odstępu pomiędzy parametrami (beztypowa składni języka— lista “gmake”) nie wydają się podlegać tym ewentualnym referencjom wewnętrznym. Natomiast znaki interpretowane przez “shell” są globalnie ‘eskejpowane’ przed przekazaniem do wykonania w środowisku “shell”.
+#DFN Jednak są inne, pozostałe jeszcze ograniczenia, powstające z wymaganych do ‘kompilacji’ form pośrednich: ‣otaczanie deklaracji (“#include”) w pliku nagłówkowym ‟C” znakami podwójnego cudzysłowu, co uniemożliwia użycie tego znaku w nazwach tych plików, ‣wybieranie plików w regule “gmake” z listy zależnych (“$^”), co uniemożliwia użycie odstępu także w ścieżkach do plików, ‣‘nieeskejpowalna’ funkcja “$(wildcard)”, co uniemożliwia użycie odstępu także w ścieżkach do plików.
+# W przyszłości, gdy będzie możliwa ‘kompilacja’ naraz całego systemu programów ‘oux’ używających ‹modułów› w ‘dllach’, to o tym, czy po aktualizacji “biblioteki” bez zmiany ‘api’ używanego przez dany program będzie wymagana ‘rekompilacja’ programu— będzie decydować zmiana wartości automatycznie deterministycznie generowanych ‘uidów’ ‹raportów›/‹impulsatorów›,
 #a to jest obecnie uzależnione od pozycji na sortowanej liście plików ‘cx’ sortowanej (oprócz “main”) listy ‹modułów› (czyli po dodaniu/usunięciu pliku nie położonego na końcu listy plików ostatniego z posortowanych ‹modułów›) oraz pozycji na sortowanej liście nazw ‹raportów› i ‹impulsatorów› z generatorów ‘uidów’ w tych plikach ‘cx’ (czyli po dodaniu/usunięciu ‹raportu›/‹impulsatora› nie położonego na końcu listy w danym pliku ‘cx’), a także przypuszczalnie dodatkowo będzie decydować jakaś zmiana pośredniego użycia ‹modułów› (szczególnie nowych) poprzez ‹moduły›, których już używa dany “zainstalowany” program ‘oux’ (jeśli dodawałbym po ‘kompilacji’ zależności ‹modułów› od ‹modułów›, to to ostatnie może nie byłoby potrzebne).
-#TODO zależność ‘rekompilacji’ od listy plików ‘cx’: dodania, usunięcia pliku.
-#NDFN w ‘kompilacji’ do “bibliotek”— podczas tworzenia każdego pliku ‘kompilator’ otrzymuje wynik “pkg-config” tylko dla deklaracji “packages” tego, bieżącego ‹modułu›. lista “bibliotek” wymaganych dla każdego ‹modułu› z osobna powinna być tak podawana, ale teksty pozostałe z “--libs” być może będą potrzebne z pozostałych ‹modułów›, by zachować integrację sposobu utworzenia każdego pliku. jednak nie wiadomo, jak to rozumieć w sensie integralności ‘linkera’ wymaganej przez “packages”.
-#DFN podstawienie dla “bibliotek” procedur menedżera pamięci (w ‘kompilacji’ do “bibliotek”) zawsze będzie funkcjonalnością opcjonalną, mimo że bardzo stabilizuje, a także przyspiesza działanie programów “bibliotecznych” dołączanych do ‘kompilowanego’ programu oraz ich ‘serverów’ komunikacji, jednak otwiera “menedżera pamięci” na obce oprogramowanie, które nie jest gwarantowane, i w ten sposób eliminuje gwarancje dla całego programu, gdy byłaby realizowana niewłaściwa obsługa “menedżera pamięci” przez te obce programy.
+#TODO Zależność ‘rekompilacji’ od listy plików ‘cx’: dodania, usunięcia pliku.
+#NDFN W ‘kompilacji’ do “bibliotek”— podczas tworzenia każdego pliku ‘kompilator’ otrzymuje wynik “pkg-config” tylko dla deklaracji “packages” tego, bieżącego ‹modułu›. Lista “bibliotek” wymaganych dla każdego ‹modułu› z osobna powinna być tak podawana, ale teksty pozostałe z “--libs” być może będą potrzebne z pozostałych ‹modułów›, by zachować integrację sposobu utworzenia każdego pliku. Jednak nie wiadomo, jak to rozumieć w sensie integralności ‘linkera’ wymaganej przez “packages”.
+#DFN Podstawienie dla “bibliotek” procedur menedżera pamięci (w ‘kompilacji’ do “bibliotek”) zawsze będzie funkcjonalnością opcjonalną, mimo że bardzo stabilizuje, a także przyspiesza działanie programów “bibliotecznych” dołączanych do ‘kompilowanego’ programu oraz ich ‘serverów’ komunikacji, jednak otwiera “menedżera pamięci” na obce oprogramowanie, które nie jest gwarantowane, i w ten sposób eliminuje gwarancje dla całego programu, gdy byłaby realizowana niewłaściwa obsługa “menedżera pamięci” przez te obce programy.
 #===============================================================================
 H_make_S_usr_lib := /usr/lib64
 H_make_S_module_path := $(H_make_S_root_path)/module
@@ -21,8 +21,8 @@ H_make_S_base_module := base
 H_make_Z_list_M_n = $(shell i=0; while [ $$i -ne $(1) ]; do i=$$(( $$i + 1 )); printf '%s ' $$i; done )
 H_make_Z_list_I_index = $(strip $(foreach i,$(call H_make_Z_list_M_n,$(words $(2))),$(if $(filter $(word $(i),$(2)),$(1)),$(i))))
 #===============================================================================
-#wczytanie plików (“0.mak”) definicji programu i ‹modułów›.
-#NDFN są wymieniane, a mogłyby być automatycznie generowane, gdyby nie było modułów alternatywnych, np. “x_window_lo_cpu” i “x_window_hi_cpu”.
+# Wczytanie plików (“0.mak”) definicji programu i ‹modułów›.
+#NDFN Są wymieniane, a mogłyby być automatycznie generowane, gdyby nie było modułów alternatywnych, np. “x_window_lo_cpu” i “x_window_hi_cpu”.
 H_make_S_modules := $(H_make_S_base_module) $(sort $(filter-out $(H_make_S_base_module),$(S_modules)))
 undefine S_modules
 #-------------------------------------------------------------------------------
@@ -98,7 +98,7 @@ S_libraries := $(sort ncursesw $(E_main_S_libraries))
 #===============================================================================
 H_make_S_lib_prefix := oux-
 #-------------------------------------------------------------------------------
-#NDFN wymienione, ponieważ są inne pliki “.h” w tym katalogu.
+#NDFN Wymienione, ponieważ są inne pliki “.h” w tym katalogu.
 H_make_S_compiler_cx_sources := simple.h
 H_make_S_cx_sources := $(wildcard *.cx)
 H_make_S_headers := stdbool.h
@@ -119,7 +119,7 @@ LIBTOOL := libtool
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 H_make_T_pthreads := $(if $(shell whatis pthreads),1)
 #===============================================================================
-#ustawienie parametrów z przełączników ‘kompilacji’.
+# Ustawienie parametrów z przełączników ‘kompilacji’.
     ifneq (,$(H_make_C_middle_code))
 CFLAGS += -DC_middle_code -ffreestanding
 #H_make_C_pthreads := 1
@@ -135,7 +135,7 @@ H_make_C_pthreads := 1
 CFLAGS += -DE_flow_C_thread_system_unblock_reports
             endif
         else
-#NDFN wymyślenie zależności przełącznikowej, by nie potrzebował za każdym razem przeglądać plików ‘cx’.
+#NDFN Wymyślenie zależności przełącznikowej, by nie potrzebował za każdym razem przeglądać plików ‘cx’.
             ifneq (,$(shell grep -Fwqe Xh1_M $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cx_sources)) && echo 1))
 CFLAGS += -DE_flow_C_itimer_system_unblock_report
             endif
@@ -146,14 +146,14 @@ CFLAGS += -DE_flow_C_thread_system_unblock_reports
         endif
     endif
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#ustawienie parametrów dostępnego podsystemu ‘kompilacji’.
+# Ustawienie parametrów dostępnego podsystemu ‘kompilacji’.
     ifneq (,$(H_make_C_pthreads))
 H_make_S_headers += pthread.h
 CFLAGS += -DC_pthreads -pthread
     endif
 #-------------------------------------------------------------------------------
     ifneq (,$(filter $(H_make_S_cc),gcc clang))
-#NDFN przełącznik “gnu”, który i tak nie byłby potrzebny, jeśli przy przełączniku “c” ‘kompilator’ stosowałby “builtiny” (eliminujące dane znane w czasie ‘kompilacji’) dla procedur takich jak “strcmp” (używanych jakkolwiek tylko dla składni wewnętrznej, a nie jako podstawa własnych funkcji).
+#NDFN Przełącznik “gnu”, który i tak nie byłby potrzebny, jeśli przy przełączniku “c” ‘kompilator’ stosowałby “builtiny” (eliminujące dane znane w czasie ‘kompilacji’) dla procedur takich jak “strcmp” (używanych jakkolwiek tylko dla składni wewnętrznej, a nie jako podstawa własnych funkcji).
 H_make_S_c_std_alt := gnu
     endif
     ifeq (clang,$(H_make_S_cc))
@@ -217,7 +217,7 @@ LDFLAGS += -Wl,--enable-new-dtags
 #-------------------------------------------------------------------------------
 TARGET_ARCH += -march=native
 #===============================================================================
-#definicje wytworzenia.
+# Definicje wytworzenia.
 .PHONY: all \
   build install-0 install uninstall-0 uninstall \
   recompile rebuild \
@@ -235,7 +235,9 @@ rebuild-run: rebuild run
 .SECONDARY: $(H_make_S_compile_path)/headers_db \
 0.mak 0.h $(foreach module,$(H_make_S_modules),$(addprefix $(H_make_S_module_path)/$(module)/,0.mak 0.h)) \
 E_coux_S_0_main_not_to_libs.h $(H_make_S_module_path)/E_coux_S_0_to_libs.h \
-$(patsubst %.cx,E_coux_S_0_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,E_coux_S_1_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,E_coux_S_2_%.h,$(H_make_S_cx_sources)) \
+$(patsubst %.cx,E_coux_S_0_%.h,$(H_make_S_cx_sources)) \
+$(patsubst %.cx,E_coux_S_1_%.h,$(H_make_S_cx_sources)) \
+$(patsubst %.cx,E_coux_S_2_%.h,$(H_make_S_cx_sources)) \
 $(foreach module,$(H_make_S_modules),$(addprefix $(H_make_S_module_path)/$(module)/,$(patsubst %.cx,E_coux_S_0_%.h,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))) $(patsubst %.cx,E_coux_S_1_%.h,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))) $(patsubst %.cx,E_coux_S_2_%.h,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))))) \
 $(patsubst %.cx,%.c,$(H_make_S_cx_sources) $(foreach module,$(H_make_S_modules),$(wildcard $(H_make_S_module_path)/$(module)/*.cx)))
 0.mak 0.h $(foreach module,$(H_make_S_modules),$(addprefix $(H_make_S_module_path)/$(module)/,0.mak 0.h)):
@@ -346,7 +348,10 @@ $(addprefix $(H_make_S_compile_path)/,1.mak 2.mak Makefile)
     ifeq (,$(H_make_C_to_libs))
 a.out: \
 $(addprefix $(H_make_S_compile_path)/,E_coux_S_machine.h E_coux_S_language.h $(H_make_S_compiler_cx_sources)) \
-0.mak E_coux_S_0_main_not_to_libs.h 0.h $(patsubst %.cx,E_coux_S_0_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,E_coux_S_1_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,E_coux_S_2_%.h,$(H_make_S_cx_sources)) \
+0.mak E_coux_S_0_main_not_to_libs.h 0.h \
+$(patsubst %.cx,E_coux_S_0_%.h,$(H_make_S_cx_sources)) \
+$(patsubst %.cx,E_coux_S_1_%.h,$(H_make_S_cx_sources)) \
+$(patsubst %.cx,E_coux_S_2_%.h,$(H_make_S_cx_sources)) \
 $(foreach module,$(H_make_S_modules),$(addprefix $(H_make_S_module_path)/$(module)/,0.mak 0.h $(patsubst %.cx,E_coux_S_0_%.h,$(notdir $(wildcard $(H_make_S_root_path)/module/$(module)/*.cx))) $(patsubst %.cx,E_coux_S_1_%.h,$(notdir $(wildcard $(H_make_S_root_path)/module/$(module)/*.cx))) $(patsubst %.cx,E_coux_S_2_%.h,$(notdir $(wildcard $(H_make_S_root_path)/module/$(module)/*.cx))))) \
 $(patsubst %.cx,%.c,$(H_make_S_cx_sources) $(foreach module,$(H_make_S_modules),$(wildcard $(H_make_S_module_path)/$(module)/*.cx)))
 	$(CC) $(call H_make_Q_packages_R_cflags,$(E_main_S_packages)) $(CFLAGS) $(call H_make_Q_packages_R_ldflags,$(E_main_S_packages)) $(LDFLAGS) $(TARGET_ARCH) -fPIE -pie -s -iquote$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_compile_path)) -iquote$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)) -include E_coux_S_0_main_not_to_libs.h $(addprefix -include ,$(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_compiler_cx_sources))) $(call H_make_Z_shell_cmd_arg_I_quote_for,$(filter %.c,$^)) -o $(call H_make_Z_shell_cmd_arg_I_quote,$@) $(addprefix -l,$(call H_make_Z_shell_cmd_arg_I_quote_for,$(E_main_S_libraries))) $(call H_make_Q_packages_R_ldlibs,$(E_main_S_packages))
@@ -364,12 +369,16 @@ $$(H_make_S_module_path)/$(1)/lib$$(H_make_S_lib_prefix)$(1).so: $$(patsubst %.c
 $(foreach module,$(H_make_S_modules),$(eval $(call H_make_Q_lib_M,$(module),$(call H_make_Z_list_I_index,$(module),$(H_make_S_modules)))))
         undefine H_make_Q_lib_M
 a.out: \
-0.mak E_coux_S_0_main_not_to_libs.h 0.h $(patsubst %.cx,E_coux_S_0_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,E_coux_S_1_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,E_coux_S_2_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,%.c,$(H_make_S_cx_sources)) \
+0.mak E_coux_S_0_main_not_to_libs.h 0.h \
+$(patsubst %.cx,E_coux_S_0_%.h,$(H_make_S_cx_sources)) \
+$(patsubst %.cx,E_coux_S_1_%.h,$(H_make_S_cx_sources)) \
+$(patsubst %.cx,E_coux_S_2_%.h,$(H_make_S_cx_sources)) \
+$(patsubst %.cx,%.c,$(H_make_S_cx_sources)) \
 $(foreach module,$(H_make_S_modules),$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so)
 	$(CC) $(call H_make_Q_packages_R_cflags,$(sort $(E_module_S_packages) $(E_main_S_packages))) $(CFLAGS) $(call H_make_Q_packages_R_ldflags,$(E_main_S_packages)) $(LDFLAGS) $(TARGET_ARCH) -fPIE -pie -s -iquote$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_compile_path)) -iquote$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)) -include E_coux_S_0_main_not_to_libs.h $(addprefix -include ,$(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_compiler_cx_sources))) $(call H_make_Z_shell_cmd_arg_I_quote_for,$(filter %.c,$^)) -o $(call H_make_Z_shell_cmd_arg_I_quote,$@) $(foreach module,$(H_make_S_modules),-L$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module))) $(foreach module,$(H_make_S_modules),-l$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_lib_prefix)$(module))) $(addprefix -l,$(call H_make_Z_shell_cmd_arg_I_quote_for,$(E_main_S_libraries))) $(call H_make_Q_packages_R_ldlibs,$(E_main_S_packages))
     endif
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#definicje czyszczenia katalogów.
+# Definicje czyszczenia katalogów.
     define H_make_I_libtool_I_clean
 $(LIBTOOL) --mode=clean $(RM) $(1) ;\
 if [ -e $(2) ]; then \
@@ -427,7 +436,7 @@ distclean:
     $(RM) $(H_make_S_compile_path)/_0.h ;\
 	$(RM) $(H_make_S_compile_path)/headers_db
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#uruchamianie rezultatu niezainstalowanego.
+# Uruchamianie rezultatu nie zainstalowanego.
 run: build
 	libs=$(if $(H_make_C_to_libs),"$$( "$$SHELL" -c 'if [ -n "$$1" ]; then s="$$1"; shift; while [ -n "$$1" ]; do s="$${s}:$$1"; shift; done; fi; printf %s "$$s"' "$$SHELL" $(foreach module,$(H_make_S_modules),$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module))))") ;\
     cmd='trap sleep\ 1000 EXIT; cd "$$1" || exit 1; shift; $(if $(H_make_C_to_libs),LD_LIBRARY_PATH_="$$1"; shift; LD_LIBRARY_PATH="$$LD_LIBRARY_PATH_" $(if $(H_make_C_to_libs_C_replace_c_alloc),LD_PRELOAD=lib$(H_make_S_lib_prefix)$(H_make_S_base_module).so ))./a.out "$$@"' ;\

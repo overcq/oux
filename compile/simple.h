@@ -11,6 +11,32 @@
 //==============================================================================
 _inline
 N
+E_asm_I_bsf( N n
+){  N i;
+        #if defined( __i386__ ) || defined( __x86_64__ )
+    N v;
+    __asm__ volatile (
+            #if defined( __i386__ )
+    "\n" "orl   $~0,%0"
+            #else
+    "\n" "orq   $~0,%0"
+            #endif
+    "\n" "bsf   %2,%1"
+    "\n" "cmove %0,%1"
+    : "=g" (v), "=r" (i)
+    : "g" (n)
+    : "cc"
+    );
+        #else
+    if(n)
+        i = __builtin_ctzl(n);
+    else
+        i = ~0;
+        #endif
+    return i;
+}
+_inline
+N
 E_asm_I_bsr( N n
 ){  N i;
         #if defined( __i386__ ) || defined( __x86_64__ )
@@ -57,48 +83,52 @@ E_simple_T_multiply_overflow(
 _inline
 B
 E_simple_Z_n_T_power_2( N n
-){  return n ? ( _v( n, 1 ) << __builtin_ctzl(n) ) == n : no;
+){  return n ? ( _v( n, 1 ) << E_asm_I_bsf(n) ) == n : yes;
 }
 _inline
 B
-E_simple_Z_n_T_aligned_to_v_2( N n
-, N v_2
-){  J_assert( E_simple_Z_n_T_power_2( v_2 ));
-    return !( n & ( v_2 - 1 ));
+E_simple_Z_n_T_aligned_to_v2( N n
+, N v2
+){  J_assert( E_simple_Z_n_T_power_2( v2 ));
+    return !( n & ( v2 - 1 ));
 }
 //------------------------------------------------------------------------------
 _inline
 N
-E_simple_Z_n_I_mod_i_2( N n
+E_simple_Z_n_I_mod_i2( N n
 , N i
 ){  return n & ( _v( n, ~0 ) >> ( sizeof(n) * 8 - i ));
 }
 _inline
 N
-E_simple_Z_n_I_align_down_to_i_2( N n
+E_simple_Z_n_I_align_down_to_i2( N n
 , N i
 ){  return n & ( _v( n, ~0 ) << i );
 }
 _inline
 N
-E_simple_Z_n_I_align_up_to_i_2( N n
+E_simple_Z_n_I_align_up_to_i2( N n
 , N i
 ){  N a = _v( n, ~0 ) << i;
     return ( n + ~a ) & a;
 }
 _inline
 N
-E_simple_Z_n_I_align_down_to_v_2( N n
-, N v_2
-){  J_assert( E_simple_Z_n_T_power_2( v_2 ));
-    return n & ~( v_2 - 1 );
+E_simple_Z_n_I_align_down_to_v2( N n
+, N v2
+){  J_assert( E_simple_Z_n_T_power_2( v2 ));
+    if( !v2 )
+        return n;
+    return n & ~( v2 - 1 );
 }
 _inline
 N
-E_simple_Z_n_I_align_up_to_v_2( N n
-, N v_2
-){  J_assert( E_simple_Z_n_T_power_2( v_2 ));
-    N a = v_2 - 1;
+E_simple_Z_n_I_align_up_to_v2( N n
+, N v2
+){  J_assert( E_simple_Z_n_T_power_2( v2 ));
+    if( !v2 )
+        return n;
+    N a = v2 - 1;
     return ( n + a ) & ~a;
 }
 _inline
@@ -113,6 +143,11 @@ E_simple_Z_n_I_align_up_to_v( N n
 , N v
 ){  N a = n % v;
     return a ? n + v - a : n;
+}
+_inline
+N
+E_simple_Z_n_I_align_up_to_first_i2( N n
+){  return n ? ( _v( n, 1 ) << E_simple_Z_n_I_align_down_to_i2( n, E_asm_I_bsf(n) )) : n;
 }
 _inline
 N
@@ -164,34 +199,34 @@ E_simple_Z_p_T_cross( P p_1
 }
 _inline
 B
-E_simple_Z_p_T_aligned_to_v_2( P p
-, N v_2
-){  return E_simple_Z_n_T_aligned_to_v_2( (N)p, v_2 );
+E_simple_Z_p_T_aligned_to_v2( P p
+, N v2
+){  return E_simple_Z_n_T_aligned_to_v2( (N)p, v2 );
 }
 //------------------------------------------------------------------------------
 _inline
 P
-E_simple_Z_p_I_align_down_to_i_2( P p
+E_simple_Z_p_I_align_down_to_i2( P p
 , N i
-){  return (P)E_simple_Z_n_I_align_down_to_i_2( (N)p, i );
+){  return (P)E_simple_Z_n_I_align_down_to_i2( (N)p, i );
 }
 _inline
 P
-E_simple_Z_p_I_align_up_to_i_2( P p
+E_simple_Z_p_I_align_up_to_i2( P p
 , N i
-){  return (P)E_simple_Z_n_I_align_up_to_i_2( (N)p, i );
+){  return (P)E_simple_Z_n_I_align_up_to_i2( (N)p, i );
 }
 _inline
 P
-E_simple_Z_p_I_align_down_to_v_2( P p
-, N v_2
-){  return (P)E_simple_Z_n_I_align_down_to_v_2( (N)p, v_2 );
+E_simple_Z_p_I_align_down_to_v2( P p
+, N v2
+){  return (P)E_simple_Z_n_I_align_down_to_v2( (N)p, v2 );
 }
 _inline
 P
-E_simple_Z_p_I_align_up_to_v_2( P p
-, N v_2
-){  return (P)E_simple_Z_n_I_align_up_to_v_2( (N)p, v_2 );
+E_simple_Z_p_I_align_up_to_v2( P p
+, N v2
+){  return (P)E_simple_Z_n_I_align_up_to_v2( (N)p, v2 );
 }
 _inline
 P

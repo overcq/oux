@@ -6,9 +6,9 @@
 *         storage memory
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”              2016‒2‒5 U
 *******************************************************************************/
-//obsługę plików zrobić jako obiekt pamięci implementujący niegdyś wymyślone pojęcie dostępu do bloków pamięci masowej bez obecności tzw. “wymiatania na dysk”. teraz byłby to raczej obiekt pamięci operacyjnej do umieszczania w nim danych zachowywanych w postaci integralnej pomiędzy ‘wywaleniami’ programu. czyli bazować na automatycznych mechanizmach systemu operacyjnego zapisujących zawartość pamięci do wcześniej gwarantowanego miejsca na dysku— dopiero w momencie konieczności, np. ‘wywalenia’ programu.
-//trzeba podjąć decyzje strukturalne co do sposobu bezpośredniego indeksowania bloków, bloku bieżącego— w przepływie wykonania funkcji ‹modułu›.
-//odczyt dostępnego bloku pamięci do podanej wielkości rozmiaru danych.
+// Obsługę plików zrobić jako obiekt pamięci implementujący niegdyś wymyślone pojęcie dostępu do bloków pamięci masowej bez obecności tzw. “wymiatania na dysk”. teraz byłby to raczej obiekt pamięci operacyjnej do umieszczania w nim danych zachowywanych w postaci integralnej pomiędzy ‘wywaleniami’ programu. czyli bazować na automatycznych mechanizmach systemu operacyjnego zapisujących zawartość pamięci do wcześniej gwarantowanego miejsca na dysku— dopiero w momencie konieczności, np. ‘wywalenia’ programu.
+// Trzeba podjąć decyzje strukturalne co do sposobu bezpośredniego indeksowania bloków, bloku bieżącego— w przepływie wykonania funkcji ‹modułu›.
+// Odczyt dostępnego bloku pamięci do podanej wielkości rozmiaru danych.
 //==============================================================================
 struct E_mem_Q_rel_map_blk_Z
 { N pos;
@@ -20,9 +20,9 @@ struct E_mem_Z_range
   N pos_end;
 };
 struct E_mem_Q_file_Z
-{ struct E_mem_Q_rel_map_blk_Z *blk; ///tablica bloków danych wczytanych uporządkowana wg pozycji danych w pliku.
+{ struct E_mem_Q_rel_map_blk_Z *blk; /// Tablica bloków danych wczytanych uporządkowana wg pozycji danych w pliku.
   N blk_n;
-  struct E_mem_Z_range *unsaved; ///tablica zakresów danych nie zapisanych uporządkowana wg pozycji danych w pliku.
+  struct E_mem_Z_range *unsaved; /// Tablica zakresów danych nie zapisanych uporządkowana wg pozycji danych w pliku.
   N unsaved_n;
   N pos;
   N current_blk;
@@ -72,7 +72,7 @@ E_mem_Q_file_Q_cache_I_put( struct E_mem_Q_file_Z *file
         file->current_blk_pos = file->pos - data_pos;
         return 0;
     }
-    ///scalenie bloków danych wczytanych zawartych w bloku odczytanym z pliku.
+    /// Scalenie bloków danych wczytanych zawartych w bloku odczytanym z pliku.
     struct E_mem_Q_rel_map_blk_Z *blk, *blk_begin, *blk_end;
     for( blk = file->blk; blk != file->blk + file->blk_n; blk++ )
         if( data_pos < blk->pos )
@@ -186,7 +186,7 @@ E_mem_Q_file_W( I id
         {   for_n( blk_i, file->blk_n )
                 if( range->pos >= file->blk[ blk_i ].pos )
                     break;
-            for( N pos = E_simple_Z_n_I_align_down_to_v_2( range->pos, E_base_S->E_mem_Q_file_S_buffer_l ); pos != E_simple_Z_n_I_align_up_to_v_2( range->pos_end, E_base_S->E_mem_Q_file_S_buffer_l ); pos += E_base_S->E_mem_Q_file_S_buffer_l )
+            for( N pos = E_simple_Z_n_I_align_down_to_v2( range->pos, E_base_S->E_mem_Q_file_S_buffer_l ); pos != E_simple_Z_n_I_align_up_to_v2( range->pos_end, E_base_S->E_mem_Q_file_S_buffer_l ); pos += E_base_S->E_mem_Q_file_S_buffer_l )
             {   E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_file_S_buffer, file->blk[ blk_i ].data + pos - file->blk[ blk_i ].pos, E_base_S->E_mem_Q_file_S_buffer_l );
                 N l = E_mem_Q_file_I_write_pos( file->fd
                 , pos
@@ -244,7 +244,7 @@ E_mem_Q_file_I_save( I id
         {   for_n( blk_i, file->blk_n )
                 if( range->pos >= file->blk[ blk_i ].pos )
                     break;
-            for( N pos = E_simple_Z_n_I_align_down_to_v_2( range->pos, E_base_S->E_mem_Q_file_S_buffer_l ); pos != E_simple_Z_n_I_align_up_to_v_2( range->pos_end, E_base_S->E_mem_Q_file_S_buffer_l ); pos += E_base_S->E_mem_Q_file_S_buffer_l )
+            for( N pos = E_simple_Z_n_I_align_down_to_v2( range->pos, E_base_S->E_mem_Q_file_S_buffer_l ); pos != E_simple_Z_n_I_align_up_to_v2( range->pos_end, E_base_S->E_mem_Q_file_S_buffer_l ); pos += E_base_S->E_mem_Q_file_S_buffer_l )
             {   E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_file_S_buffer, file->blk[ blk_i ].data + pos - file->blk[ blk_i ].pos, E_base_S->E_mem_Q_file_S_buffer_l );
                 N l = E_mem_Q_file_I_write_pos( file->fd
                 , pos
@@ -343,7 +343,7 @@ E_mem_Q_file_R_current_blk( struct E_mem_Q_file_Z *file
     {   U_F( file->current_blk, valid );
         return 0;
     }
-    N data_pos = E_simple_Z_n_I_align_down_to_v_2( file->pos, E_base_S->E_mem_Q_file_S_buffer_l );
+    N data_pos = E_simple_Z_n_I_align_down_to_v2( file->pos, E_base_S->E_mem_Q_file_S_buffer_l );
     N l = E_mem_Q_file_I_read_pos( file->fd, data_pos );
     if( !~l )
         return l;
