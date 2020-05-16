@@ -1,0 +1,597 @@
+/*******************************************************************************
+*   ___   publicplace
+*  ¦OUX¦  C+
+*  ¦Inc¦  component
+*   ---   base
+*         text syntax
+* ©overcq                on ‟Gentoo Linux 17.1” “x86_64”             2020‒5‒15 Q
+*******************************************************************************/
+#define E_text_syntax_S_newline             "\n"
+#define E_text_syntax_S_line_space          " \t"
+#define E_text_syntax_S_space               E_text_syntax_S_line_space E_text_syntax_S_newline
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+enum E_text_syntax_Z_entity_Z
+{ E_text_syntax_S_entity_uid
+, E_text_syntax_S_entity_builtin
+, E_text_syntax_S_entity_string
+};
+enum E_text_syntax_Z_builtin
+{ E_text_syntax_S_builtin_eof
+, E_text_syntax_S_builtin_alpha
+, E_text_syntax_S_builtin_digit
+, E_text_syntax_S_builtin_text
+};
+struct E_text_syntax_Z_entity
+{ enum E_text_syntax_Z_entity_Z type;
+  union
+  { N uid;
+    enum E_text_syntax_Z_builtin builtin;
+    Pc s;
+  };
+  B alternative;
+  B repeat;
+};
+struct E_text_syntax_Z_entities
+{ Pc name;
+  struct E_text_syntax_Z_entity *entity;
+  N entity_n;
+  N space_uid;
+};
+struct E_text_syntax_Z_body
+{ struct E_text_syntax_Z_entities *entities;
+  N entities_n;
+};
+//==============================================================================
+_internal
+B
+E_text_syntax_I_unescape( Pc *s_
+){  Pc s = *s_;
+    while( *s )
+    {   G_(); Gs0(s);
+        if( *s == '\\' )
+        {   if( !*( s + 1 ))
+                return no;
+            N n;
+            Pc ret_s;
+            switch( *( s + 1 ))
+            { case 'a':
+                    n = 7;
+                    break;
+              case 'b':
+                    n = 8;
+                    break;
+              case 'e':
+                    n = 0x1b;
+                    break;
+              case 'f':
+                    n = 0xc;
+                    break;
+              case 'n':
+                    n = 0xa;
+                    break;
+              case 'r':
+                    n = 0xd;
+                    break;
+              case 't':
+                    n = 9;
+                    break;
+              case 'v':
+                    n = 0xb;
+                    break;
+              case '\\':
+                    n = 0x5c;
+                    break;
+              case '\'':
+                    n = 0x27;
+                    break;
+              case '\"':
+                    n = 0x22;
+                    break;
+              case '?':
+                    n = 0x3f;
+                    break;
+              case '0':
+              case '1':
+              case '2':
+              case '3':
+              case '4':
+              case '5':
+              case '6':
+              case '7':
+                {   Pc s_end = s + 1;
+                    for_n( i, 2 )
+                        if( *s_end )
+                            s_end++;
+                    n = E_text_Z_s_N_n( s + 1, s_end, &ret_s, 8 );
+                    if( ret_s == s + 1 )
+                        return no;
+                    s = ret_s - 1;
+                    break;
+                }
+              case 'x':
+                {   if( !*( s + 2 ))
+                        return no;
+                    Pc s_end = s + 3;
+                    if( !*s_end )
+                        s_end++;
+                    n = E_text_Z_s_N_n( s + 2, s_end, &ret_s, 16 );
+                    if( ret_s == s + 2 )
+                        return no;
+                    break;
+                }
+              case 'u':
+                {   for_n( i, 4 )
+                        if( !s[ 2 + i ] )
+                            return no;
+                    n = E_text_Z_s0_N_n( s + 2, &ret_s, 16 );
+                    if( ret_s != s + 2 + 4 )
+                        return no;
+                    break;
+                }
+              case 'U':
+                {   for_n( i, 8 )
+                        if( !s[ 2 + i ] )
+                            return no;
+                    n = E_text_Z_s0_N_n( s + 2, &ret_s, 16 );
+                    if( ret_s != s + 2 + 8 )
+                        return no;
+                    break;
+                }
+              default:
+                    return no;
+            }
+            switch( *( s + 1 ))
+            { case 'x':
+                {   N s_i = s - *s_;
+                    if( !E_mem_Q_blk_I_rem( s_, s_i + 1, ret_s - ( s + 1 )))
+                    {   GV_(NA);
+                    }
+                    s = *s_ + s_i;
+                    *s = n;
+                    break;
+                }
+              case 'u':
+              case 'U':
+                {   N l = E_text_Z_s_Z_u_R_utf8_G(n);
+                    if( l < ret_s - s )
+                    {   N s_i = s - *s_;
+                        if( !E_mem_Q_blk_I_rem( s_, ( ret_s - s ) - (( ret_s - s ) - l ), ( ret_s - s ) - l ))
+                        {   GV_(NA);
+                        }
+                        s = *s_ + s_i;
+                    }else if( l > ret_s - s )
+                    {   N s_i = s - *s_;
+                        if( !E_mem_Q_blk_I_insert( s_, ret_s - s, l - ( ret_s - s )))
+                        {   GV_(NA);
+                        }
+                        s = *s_ + s_i;
+                    }
+                    E_text_Z_s_Z_u_R_utf8( n, s );
+                    s += l - 1;
+                    break;
+                }
+            default:
+                {   N s_i = s - *s_;
+                    if( !E_mem_Q_blk_I_rem( s_, s_i + 1, 1 ))
+                    {   GV_(NA);
+                    }
+                    s = *s_ + s_i;
+                    *s = n;
+                    break;
+                }
+            }
+        }
+        s++;
+    }
+    return yes;
+}
+_internal
+int
+E_text_syntax_R_builtin_by_name( Pc name
+){  int builtin = ~0;
+    if( E_text_Z_s0_T_s0_eq( name, "eof" ))
+        builtin = E_text_syntax_S_builtin_eof;
+    else if( E_text_Z_s0_T_s0_eq( name, "alpha" ))
+        builtin = E_text_syntax_S_builtin_alpha;
+    else if( E_text_Z_s0_T_s0_eq( name, "digit" ))
+        builtin = E_text_syntax_S_builtin_digit;
+    else if( E_text_Z_s0_T_s0_eq( name, "text" ))
+        builtin = E_text_syntax_S_builtin_text;
+    return builtin;
+}
+N
+E_text_syntax_R_entity_by_name( struct E_text_syntax_Z_body *body
+, Pc name
+){  for_n( i, body->entities_n )
+        if( E_text_Z_s0_T_s0_eq( body->entities[i].name, name ))
+            return i;
+    return ~0;
+}
+_internal
+B
+E_text_syntax_T_name( Pc s
+){  Pc s_start = s;
+    U u, u_prev; /// Procedura nadrzędna zapewnia, że zawsze będzie poprawny tekst UTF-8 i “iswalpha” pierwszego znaku.
+    while( *s_start )
+    {   Pc s_end = E_text_Z_s_Z_utf8_R_u( s_start, &u );
+        if(( !iswalpha(u)
+          && u != ' '
+        )
+        || ( u == ' '
+          && u_prev == ' '
+        ))
+            return no;
+        s_start = s_end;
+        u_prev = u;
+    }
+    return yes;
+}
+N
+E_text_syntax_M( I file
+, struct E_text_syntax_Z_body **body_
+){  struct E_text_syntax_Z_body *M_(body);
+    if( !body )
+        return ~0;
+    Mt_( body->entities, 0 );
+    if( !body->entities )
+    {   W(body);
+        return ~0;
+    }
+    body->entities_n = 0;
+    O{  Pc s;
+        N ret = E_mem_Q_file_R_u_outof( file, E_text_syntax_S_space, &s );
+        if( !~ret )
+            goto End;
+        if( ret == E_mem_Q_file_S_eof )
+        {   W(s);
+            break;
+        }
+        Pc s_end = E_text_Z_s0_R_end(s);
+        U u;
+        Pc s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+        if( E_text_Z_s0_R_l(s) != s_end - s_start
+        && *( s_start - 1 ) != '\n'
+        )
+        {   W(s);
+            goto End;
+        }
+        if( !iswalpha(u) )
+        {   W(s);
+            if( u != '/' )
+                goto End;
+            /// Komentarz linowy na osobnej linii.
+            ret = E_mem_Q_file_R_u_outof( file, "/", &s );
+            if( !~ret )
+                goto End;
+            s_end = E_text_Z_s0_R_end(s);
+            if( ret == E_mem_Q_file_S_eof )
+            {   W(s);
+                if( s_end - s == 0 )
+                    goto End;
+                break;
+            }
+            s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+            W(s);
+            if( u != E_mem_Q_file_S_filename_separator )
+            {   ret = E_mem_Q_file_R_u_upto( file, E_text_syntax_S_newline, &s );
+                if( !~ret )
+                    goto End;
+                if( ret == E_mem_Q_file_S_eof )
+                {   W(s);
+                    break;
+                }
+            }
+            continue;
+        }
+        if( !E_mem_Q_blk_I_append( &body->entities, 1 ))
+        {   W(s);
+            goto End;
+        }
+        body->entities[ body->entities_n ].name = M(( s_end - s_start ) + 1 );
+        if( !body->entities[ body->entities_n ].name )
+        {   if( !E_mem_Q_blk_I_rem( &body->entities, body->entities_n, 1 ))
+            {   G_();
+            }
+            W(s);
+            goto End;
+        }
+        Mt_( body->entities[ body->entities_n ].entity, 0 );
+        if( !body->entities[ body->entities_n ].entity )
+        {   if( !E_mem_Q_blk_I_rem( &body->entities, body->entities_n, 1 ))
+            {   G_();
+            }
+            W(s);
+            goto End;
+        }
+        body->entities[ body->entities_n ].entity_n = 0;
+        E_text_Z_s_P_s_copy_0( body->entities[ body->entities_n ].name, s_start, s_end );
+        W(s);
+        body->entities[ body->entities_n ].space_uid = ~0;
+        body->entities_n++;
+        ret = E_mem_Q_file_R_u_upto( file, E_text_syntax_S_newline, &s );
+        if( !~ret )
+            goto End;
+        s_end = E_text_Z_s0_R_end(s) - 1;
+        if( ret == E_mem_Q_file_S_eof )
+        {   s_start = s;
+            while( *s_start )
+            {   s_end = E_text_Z_s_Z_utf8_R_u( s_start, &u );
+                if( s_start == s_end
+                || ( u != ' '
+                  && u != '\t'
+                ))
+                {   W(s);
+                    goto End;
+                }
+            }
+            if( *s_end )
+            {   W(s);
+                goto End;
+            }
+            W(s);
+            break;
+        }
+        if( s_end != s )
+            O{  s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+                if( u != ' ' )
+                    break;
+                s_end = s_start;
+                if( s_start == s )
+                    break;
+            }
+        N i = E_text_Z_s0_R_l( body->entities[ body->entities_n - 1 ].name );
+        if( s_end - s )
+            if( !E_mem_Q_blk_I_insert( &body->entities[ body->entities_n - 1 ].name, i, s_end - s ))
+            {   W(s);
+                goto End;
+            }
+        E_text_Z_s_P_s_copy_0( body->entities[ body->entities_n - 1 ].name + i, s, s_end );
+        W(s);
+        G_(); Gs0( body->entities[ body->entities_n - 1 ].name );
+        if( !E_text_syntax_T_name( body->entities[ body->entities_n - 1 ].name ))
+            goto End;
+        ret = E_mem_Q_file_R_u_outof( file, E_text_syntax_S_line_space, &s );
+        if( !~ret )
+            goto End;
+        s_end = E_text_Z_s0_R_end(s);
+        if( ret == E_mem_Q_file_S_eof )
+        {   W(s);
+            goto End;
+        }
+        s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+        while( s_start == s ) /// Brak odstępów na początku linii, to linia deklaracji.
+        {   W(s);
+            if( u == '/' )
+            {   if( ~body->entities[ body->entities_n - 1 ].space_uid )
+                    goto End;
+                ret = E_mem_Q_file_R_u_outof( file, E_text_syntax_S_line_space, &s );
+                if( !~ret )
+                    goto End;
+                if( ret == E_mem_Q_file_S_eof )
+                {   W(s);
+                    goto End;
+                }
+                s_end = E_text_Z_s0_R_end(s);
+                s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+                W(s);
+                ret = E_mem_Q_file_R_u_upto( file, E_text_syntax_S_newline, &s );
+                if( !~ret )
+                    goto End;
+                if( ret == E_mem_Q_file_S_eof )
+                {   W(s);
+                    goto End;
+                }
+                if( !E_mem_Q_blk_I_prepend( &s, s_end - s_start ))
+                {   W(s);
+                    goto End;
+                }
+                E_text_Z_s_Z_u_R_utf8( u, s );
+                s_end = E_text_Z_s0_R_end(s) - 1;
+                if( s_end != s )
+                {   O{  s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+                        if( u != ' ' )
+                            break;
+                        s_end = s_start;
+                        if( s_start == s )
+                            break;
+                    }
+                }
+                if( !E_mem_Q_blk_I_rem( &s, s_end - s, E_text_Z_s0_R_end(s) - s_end ))
+                {   W(s);
+                    goto End;
+                }
+                body->entities[ body->entities_n ].space_uid = E_text_syntax_R_entity_by_name( body, s );
+                G_(); Gs0(s); Gd( body->entities[ body->entities_n ].space_uid );
+                if( !~body->entities[ body->entities_n ].space_uid )
+                {   W(s);
+                    goto End;
+                }
+                W(s);
+                ret = E_mem_Q_file_R_u_outof( file, E_text_syntax_S_line_space, &s );
+                if( !~ret )
+                    goto End;
+                s_end = E_text_Z_s0_R_end(s);
+                if( ret == E_mem_Q_file_S_eof )
+                {   W(s);
+                    goto End;
+                }
+                s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+            }else
+                goto End;
+        }
+for_n_( i, body->entities_n )
+{   G_(); Gs0( body->entities[i].name );
+}
+        O{  O{  W(s);
+                ret = E_mem_Q_file_R_u_upto( file, ",|" E_text_syntax_S_newline, &s );
+                if( !~ret )
+                    goto End;
+                B end_of_entities = no;
+                if( ret == E_mem_Q_file_S_eof )
+                    end_of_entities = yes;
+                enum E_text_syntax_Z_entity_Z entity_type;
+                if( u == '@' )
+                {   if( E_text_Z_s0_R_l(s) == ( end_of_entities ? 0 : 1 ))
+                    {   W(s);
+                        goto End;
+                    }
+                    entity_type = E_text_syntax_S_entity_builtin;
+                    s_start = s;
+                    O{  s_end = E_text_Z_s_Z_utf8_R_u( s_start, &u );
+                        if( u != ' ' )
+                            break;
+                        s_start = s_end;
+                        if( !*s_start )
+                            break;
+                    }
+                    if( s_start != s )
+                        if( !E_mem_Q_blk_I_rem( &s, 0, s_start - s ))
+                        {   W(s);
+                            goto End;
+                        }
+                }
+                else if( u == '\"' )
+                {   if( E_text_Z_s0_R_l(s) < ( end_of_entities ? 2 : 3 ))
+                    {   W(s);
+                        goto End;
+                    }
+                    entity_type = E_text_syntax_S_entity_string;
+                }else if( iswalpha(u) )
+                {   entity_type = E_text_syntax_S_entity_uid;
+                    if( !E_mem_Q_blk_I_prepend( &s, s_end - s_start ))
+                    {   W(s);
+                        goto End;
+                    }
+                    E_text_Z_s_Z_u_R_utf8( u, s );
+                }else
+                {   W(s);
+                    goto End;
+                }
+                s_end = E_text_Z_s0_R_end(s) - 1;
+                if( !end_of_entities )
+                    end_of_entities = *s_end == '\n';
+                G_(); Gd( end_of_entities );
+                B alternative_entity = *s_end == '|';
+                G_(); Gd( alternative_entity );
+                if( s_end != s )
+                    O{  s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+                        if( u != ' ' )
+                            break;
+                        s_end = s_start;
+                        if( s_start == s )
+                            break;
+                    }
+                if( entity_type == E_text_syntax_S_entity_string )
+                {   if( u != '\"'
+                    || s_end == s + 1
+                    )
+                    {   W(s);
+                        goto End;
+                    }
+                    s_end--;
+                }
+                if( !E_mem_Q_blk_I_rem( &s, s_end - s, E_text_Z_s0_R_end(s) - s_end ))
+                {   W(s);
+                    goto End;
+                }
+                if( !E_mem_Q_blk_I_append( &body->entities[ body->entities_n - 1 ].entity, 1 ))
+                {   W(s);
+                    goto End;
+                }
+                body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].type = entity_type;
+                G_(); Gs0(s); Gd( entity_type );
+                if( entity_type == E_text_syntax_S_entity_builtin )
+                {   body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].builtin = E_text_syntax_R_builtin_by_name(s);
+                    if( !~body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].builtin )
+                    {   if( !E_mem_Q_blk_I_rem( &body->entities[ body->entities_n - 1 ].entity, body->entities[ body->entities_n - 1 ].entity_n, 1 ))
+                        {   G_();
+                        }
+                        W(s);
+                        goto End;
+                    }
+                    W(s);
+                }
+                else if( entity_type == E_text_syntax_S_entity_string )
+                {   G_();
+                    //if( !E_text_syntax_I_unescape( &s ))
+                    //{   W(s);
+                        //goto End;
+                    //}
+                    G_();
+                    body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].s = s;
+                }else if( entity_type == E_text_syntax_S_entity_uid )
+                {   body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].uid = E_text_syntax_R_entity_by_name( body, s );
+                    if( !~body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].uid )
+                    {   if( !E_mem_Q_blk_I_rem( &body->entities[ body->entities_n - 1 ].entity, body->entities[ body->entities_n - 1 ].entity_n, 1 ))
+                        {   G_();
+                        }
+                        W(s);
+                        goto End;
+                    }
+                    W(s);
+                }
+                body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].alternative = alternative_entity;
+                body->entities[ body->entities_n - 1 ].entity_n++;
+                if( end_of_entities )
+                    break;
+                ret = E_mem_Q_file_R_u_outof( file, E_text_syntax_S_line_space, &s );
+                if( !~ret )
+                    goto End;
+                s_end = E_text_Z_s0_R_end(s);
+                if( ret == E_mem_Q_file_S_eof )
+                {   W(s);
+                    goto End;
+                }
+                s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+for_n_( i, body->entities_n )
+{   G_(); Gs0( body->entities[i].name );
+}
+            }
+            N pos = E_mem_Q_file_R_pos(file);
+            ret = E_mem_Q_file_R_u( file, &u );
+            if( !~ret )
+                goto End;
+            if( ret == E_mem_Q_file_S_eof )
+            {   if( E_mem_Q_file_R_pos(file) - pos )
+                    goto End;
+                break;
+            }
+            G_(); Gd(u);
+            if( u != ' '
+            && u != '\t'
+            )
+            {   E_mem_Q_file_P_pos( file, pos );
+                break;
+            }
+            ret = E_mem_Q_file_R_u_outof( file, E_text_syntax_S_line_space, &s );
+            if( !~ret )
+                goto End;
+            s_end = E_text_Z_s0_R_end(s);
+            if( ret == E_mem_Q_file_S_eof )
+            {   W(s);
+                goto End;
+            }
+            s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+        }
+for_n_( i, body->entities_n )
+{   G_(); Gs0( body->entities[i].name );
+}
+    }
+    *body_ = body;
+    return 0;
+End:;
+    E_text_syntax_W(body);
+    return ~0;
+}
+void
+E_text_syntax_W( struct E_text_syntax_Z_body *body
+){  for_n( i, body->entities_n )
+    {   W( body->entities[i].name );
+        for_n( j, body->entities[i].entity_n )
+            if( body->entities[i].entity[j].type == E_text_syntax_S_entity_string )
+                W( body->entities[i].entity[j].s );
+        W( body->entities[i].entity );
+    }
+    W( body->entities );
+}
+/******************************************************************************/

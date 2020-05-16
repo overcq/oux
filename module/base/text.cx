@@ -310,7 +310,7 @@ E_text_Z_s_N_n( Pc s
 , N base
 ){  J_assert( s_end >= s );
     J_assert( base <= 36 );
-    N n = 0;
+    N n = 0, n_prev = 0;
     while( s != s_end )
     {   n *= base;
         if( *s >= '0' && *s <= '9' )
@@ -321,6 +321,11 @@ E_text_Z_s_N_n( Pc s
             n += 10 + *s - 'a';
         else
             break;
+        if( n < n_prev )
+        {   n = n_prev;
+            break;
+        }
+        n_prev = n;
         s++;
     }
     *ret_s = s;
@@ -330,7 +335,7 @@ N
 E_text_Z_s0_N_n( Pc s
 , Pc *ret_s
 , N base
-){  N n = 0;
+){  N n = 0, n_prev = 0;
     while( *s )
     {   n *= base;
         if( *s >= '0' && *s <= '9' )
@@ -341,6 +346,11 @@ E_text_Z_s0_N_n( Pc s
             n += 10 + *s - 'a';
         else
             break;
+        if( n < n_prev )
+        {   n = n_prev;
+            break;
+        }
+        n_prev = n;
         s++;
     }
     *ret_s = s;
@@ -891,7 +901,7 @@ E_text_Z_s_Z_cmdline_N_quote_G(
     return l;
 }
 //==============================================================================
-N ///ile bajtów zapisano lub błąd.
+N /// Ile bajtów zapisano lub błąd.
 E_text_Z_s_Z_u_R_utf8( U u
 , Pc s
 ){  if( u <= 0x7f )
@@ -912,7 +922,22 @@ E_text_Z_s_Z_u_R_utf8( U u
     E_text_Z_sl_P_rev( s, i + 1 );
     return i + 1;
 }
-///TODO dodać sprawdzanie najkrótszego kodowania.
+N
+E_text_Z_s_Z_u_R_utf8_G( U u
+){  if( u <= 0x7f )
+        return 1;
+    N first = 0x1f;
+    N i = 0;
+    while( u > first )
+    {   first >>= 1;
+        if( !first )
+            return ~0;
+        u >>= 6;
+        i++;
+    }
+    return i + 1;
+}
+///TODO Dodać sprawdzanie najkrótszego kodowania.
 Pc
 E_text_Z_s_Z_utf8_R_u( Pc s
 , U *u

@@ -116,7 +116,7 @@ void
 E_mem_M_blk( void
 ){  N page_size;
     if( !~( page_size = sysconf( _SC_PAGESIZE )))
-    {   V();
+    {   GV_(NA); V();
     }
     N initial_size = E_simple_Z_n_I_align_up_to_v2( sizeof( *E_base_S ) + sizeof( struct E_mem_Q_blk_Z_mapped ) + sizeof( struct E_mem_Q_blk_Z_free ) + 4 * sizeof( struct E_mem_Q_blk_Z_allocated ), page_size );
         #if defined( __gnu_linux__ )
@@ -140,7 +140,7 @@ E_mem_M_blk( void
         #else
 #error not implemented
         #endif
-    {   V();
+    {   GV_(NA); V();
     }
     E_base_S->E_flow_S_system_name = "oux";
     E_base_S->E_flow_S_exe_name = E_mem_Q_file_S_filename_separator_s;
@@ -216,7 +216,8 @@ void
 E_mem_M_file( void
 ){  E_base_S->E_mem_Q_file_S = E_mem_Q_tab_M( sizeof( struct E_mem_Q_file_Z ), 0 );
     if( !E_base_S->E_mem_Q_file_S )
-        V();
+    {   GV_(NA); V();
+    }
     E_base_S->E_mem_Q_file_S_buffer_l = E_base_S->E_mem_S_page_size; //CONF wartość optymalna, ale może być wymagana większa.
         #if defined( __gnu_linux__ )
     V1p_( E_base_S->E_mem_Q_file_S_buffer = mmap( 0
@@ -245,7 +246,8 @@ void
 E_io_M_stream( void
 ){  E_base_S->E_io_Q_stream_out_S = E_mem_Q_tab_M( sizeof( struct E_io_Q_stream_out_Z ), 0 );
     if( !E_base_S->E_io_Q_stream_out_S )
-        V();
+    {   GV_(NA); V();
+    }
         #if defined( E_io_C_aio ) || defined( E_io_C_sig_has_fd )
     E_mem_Q_tab_Q_iter_M( E_base_S->E_io_Q_stream_out_S, ~0 );
         #endif
@@ -263,27 +265,28 @@ E_base_M(
     N l_1 = E_text_Z_n_N_s_G( E_base_S->E_flow_S_exe_pid, sizeof( E_base_S->E_flow_S_exe_pid ), 10 );
     Pc s = M( 6 + l_1 + 1 );
     if( !s )
-    {   G_(); V();
+    {   GV_(NA); V();
     }
     E_text_Z_s_P_s0_copy( s, "/proc/" );
     E_text_Z_n_N_s( s + 6 + l_1, E_base_S->E_flow_S_exe_pid, sizeof( E_base_S->E_flow_S_exe_pid ), 10 );
     *( s + 6 + l_1 ) = '\0';
     E_base_S->E_flow_Q_process_call_S_service_path_guid = s;
         #endif
-    ///włączenie “V”[…]“_”.
+    /// Włączenie “V”[…]“_”.
     int fd_flags;
     V1_( fd_flags = fcntl( STDERR_FILENO, F_GETFL ));
     fd_flags |= O_NONBLOCK;
     V0_( fcntl( STDERR_FILENO, F_SETFL, fd_flags ));
-    ///procedury wymagane lub zalecane w środowisku uruchamiania programu.
+    /// Procedury wymagane lub zalecane w środowisku uruchamiania programu.
     Vp_( setlocale( LC_ALL, "" ));
         #ifdef C_pthreads
     Vr_( pthread_setconcurrency(1) );
         #endif
-    ///odblokowanie dostępu do tablicy ‹zadań›.
+    /// Odblokowanie dostępu do tablicy ‹zadań›.
     E_base_S->E_flow_Q_task_S = E_mem_Q_tab_M( sizeof( struct E_flow_Q_task_Z ), 1 );
     if( !E_base_S->E_flow_Q_task_S )
-        V();
+    {   GV_(NA); V();
+    }
     _tasks_table_end;
     struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, 0 );
     *task = ( struct E_flow_Q_task_Z )
@@ -297,7 +300,7 @@ E_base_M(
     E_base_S->switch_back_try = yes;
     E_base_S->switch_back_suspend = no;
         #endif
-    ///wyłączenie niedozwolonych “sygnałów” ‘uniksowych’, przyblokowanie, ustawienie “masek”.
+    /// Wyłączenie niedozwolonych “sygnałów” ‘uniksowych’, przyblokowanie, ustawienie “masek”.
     struct sigaction sa =
     { .sa_handler = SIG_IGN
     , .sa_flags = 0
@@ -432,20 +435,25 @@ E_base_M(
         #ifdef E_flow_C_thread_system_unblock_reports
     E_base_S->E_flow_Q_task_S_uid_subid = E_mem_Q_tab_M( sizeof( struct E_mem_Q_tab_Z * ), 0 );
     if( !E_base_S->E_flow_Q_task_S_uid_subid )
-        V();
+    {   GV_(NA); V();
+    }
         #endif
     E_base_S->E_flow_Q_report_S = E_mem_Q_tab_M( sizeof( struct E_flow_Q_report_Z ), 0 );
     if( !E_base_S->E_flow_Q_report_S )
-        V();
+    {   GV_(NA); V();
+    }
     E_base_S->E_flow_Q_timer_S = E_mem_Q_tab_M( sizeof( struct E_flow_Q_timer_Z ), 0 );
     if( !E_base_S->E_flow_Q_timer_S )
-        V();
+    {   GV_(NA); V();
+    }
     E_base_S->E_flow_Q_process_call_srv_S = E_mem_Q_tab_M( sizeof( struct E_flow_Q_process_call_srv_Z ), 0 );
     if( !E_base_S->E_flow_Q_process_call_srv_S )
-        V();
+    {   GV_(NA); V();
+    }
     E_base_S->E_flow_Q_process_call_cli_S = E_mem_Q_tab_M( sizeof( struct E_flow_Q_process_call_cli_Z ), 0 );
     if( !E_base_S->E_flow_Q_process_call_cli_S )
-        V();
+    {   GV_(NA); V();
+    }
         #ifdef E_flow_Q_process_call_C_alt
     E_base_S->E_flow_Q_process_call_S_shm_key = ftok( E_base_S->E_flow_Q_process_call_S_service_path_guid, E_flow_Q_process_call_S_ftok_id );
         #endif
