@@ -217,11 +217,13 @@ typedef P           *Pp; ///wskaźnik do tablic adresów.
 //------------------------------------------------------------------------------
 ///wypisywanie zmiennych programu; po “G”/“GV”/“G_”/“GV_” w linii.
 #define Gc(c)       if( _G_var ) E_flow_Z_line_report_Z_text_c_I_sync( J_s(c), c ); else E_flow_Z_line_report_Z_text_c_I( J_s(c), c )
-#define Gs(s,s_end) Gs_l( s, (s_end) - (s) );
-#define Gs_(s,s_end) Gs_l_( s, (s_end) - (s) );
-#define Gs0(s)      Gs_l( s, 0 )
+#define Gs(s,s_end) if( (s_end) - (s) ) Gs_l( s, s, (s_end) - (s) ); else Gs_l( s, "", 0 )
+#define Gs_(s,s_end) if( (s_end) - (s) ) Gs_l_( s, (s_end) - (s) ); else Gs_l_( "", 0 )
+#define Gs0(s)      Gs_l( s, s, 0 )
 #define Gs0_(s)     Gs_l_( s, 0 )
-#define Gs_l(s,l)   if( _G_var ) E_flow_Z_line_report_Z_text_s_I_sync( J_s(s), (s), (l) ); else E_flow_Z_line_report_Z_text_s_I( J_s(s), (s), (l) )
+#define Gsl(s,l)    if(l) Gs_l( s, s, (l) ); else Gs_l( s, "", 0 )
+#define Gsl_(s,l)   if(l) Gs_l_( s, (l) ); else Gs_l_( "", 0 )
+#define Gs_l(t,s,l) if( _G_var ) E_flow_Z_line_report_Z_text_s_I_sync( J_s(t), (s), (l) ); else E_flow_Z_line_report_Z_text_s_I( J_s(t), (s), (l) )
 #define Gs_l_(s,l)  if( _G_var ) E_flow_Z_line_report_Z_s_I_sync( (s), (l) ); else E_flow_Z_line_report_Z_s_I( (s), (l) )
 #define Gd(n)       if( _G_var ) E_flow_Z_line_report_Z_text_n_I_sync( J_s(n), (N)(n), sizeof(n), 10 ); else E_flow_Z_line_report_Z_text_n_I( J_s(n), (N)(n), sizeof(n), 10 )
 #define Gh(n)       if( _G_var ) E_flow_Z_line_report_Z_text_n_I_sync( J_s(n), (N)(n), sizeof(n), 16 ); else E_flow_Z_line_report_Z_text_n_I( J_s(n), (N)(n), sizeof(n), 16 )
@@ -386,7 +388,7 @@ typedef P           *Pp; ///wskaźnik do tablic adresów.
       if( too_small_errno ) \
           J_autogen_line( p_end ) = E_text_Z_s0_R_0_end( pointer_variable ); \
       if( (Pc)( pointer_variable ) + J_autogen_line(l) != J_autogen_line( p_end )) \
-          if( !E_mem_Q_blk_I_rem( &( pointer_variable ), J_autogen_line( p_end ) - ( pointer_variable ), (Pc)( pointer_variable ) + J_autogen_line(l) - J_autogen_line( p_end ))) \
+          if( !E_mem_Q_blk_I_remove( &( pointer_variable ), J_autogen_line( p_end ) - ( pointer_variable ), (Pc)( pointer_variable ) + J_autogen_line(l) - J_autogen_line( p_end ))) \
           {   GV_(NA); \
           } \
   }

@@ -114,7 +114,7 @@ E_mem_Q_tab_I_add( struct E_mem_Q_tab_Z *tab
     }
     if( id == tab->index_n )
     {   if( !E_mem_Q_blk_I_append( &tab->index, 1 ))
-        {   if( !E_mem_Q_blk_I_rem( &tab->data, n_prepended ? 0 : tab->data_n, 1 ))
+        {   if( !E_mem_Q_blk_I_remove( &tab->data, n_prepended ? 0 : tab->data_n, 1 ))
             {   GV_(NA);
             }
             return ~0;
@@ -161,7 +161,7 @@ E_mem_Q_tab_I_add_i( struct E_mem_Q_tab_Z *tab
     }
     if( id >= tab->index_n )
     {   if( !E_mem_Q_blk_I_append( &tab->index, id + 1 - tab->index_n ))
-        {   if( !E_mem_Q_blk_I_rem( &tab->data, n_prepended ? 0 : tab->data_n, id + 1 - tab->index_n ))
+        {   if( !E_mem_Q_blk_I_remove( &tab->data, n_prepended ? 0 : tab->data_n, id + 1 - tab->index_n ))
             {   GV_(NA);
             }
             return ~0;
@@ -214,7 +214,7 @@ E_mem_Q_tab_I_segv_add_begin( struct E_mem_Q_tab_Z *tab
     *(Pp)id_data = tab->data + ( n_prepended ? 0 : id * tab->u );
     if( id == tab->index_n )
         if( !E_mem_Q_blk_I_append( &tab->index, 1 ))
-        {   if( !E_mem_Q_blk_I_rem( &tab->data, n_prepended ? 0 : tab->data_n - 1, 1 ))
+        {   if( !E_mem_Q_blk_I_remove( &tab->data, n_prepended ? 0 : tab->data_n - 1, 1 ))
             {   GV_(NA);
             }
             _tasks_table_end;
@@ -244,7 +244,7 @@ E_mem_Q_tab_I_rem( struct E_mem_Q_tab_Z *tab
                 for_i( j, iterator->n )
                     if( iterator->index[j] == id )
                     {   iterator->n--;
-                        if( !E_mem_Q_blk_I_rem( &iterator->index, j, 1 ))
+                        if( !E_mem_Q_blk_I_remove( &iterator->index, j, 1 ))
                             return ~0;
                         break;
                     }
@@ -259,13 +259,13 @@ E_mem_Q_tab_I_rem( struct E_mem_Q_tab_Z *tab
                 break;
             }
         tab->index_n = i;
-        if( !E_mem_Q_blk_I_rem( &tab->index, i, id - i + 1 ))
+        if( !E_mem_Q_blk_I_remove( &tab->index, i, id - i + 1 ))
             tab->index[id] = 0;
     }else
         tab->index[id] = 0;
     Pc data = tab->data;
     tab->data_n--;
-    if( !E_mem_Q_blk_I_rem( &tab->data, ( p - tab->data ) / tab->u, 1 ))
+    if( !E_mem_Q_blk_I_remove( &tab->data, ( p - tab->data ) / tab->u, 1 ))
         return ~0;
     if( tab->data != data )
     {   for_i( i, tab->index_n )
@@ -405,7 +405,7 @@ E_mem_Q_tab_Q_iter_R_shift( struct E_mem_Q_tab_Z *tab
     }
     I id = iterator->index[0];
     iterator->n--;
-    if( !E_mem_Q_blk_I_rem( &iterator->index, 0, 1 ))
+    if( !E_mem_Q_blk_I_remove( &iterator->index, 0, 1 ))
     {   GV_(NA);
     }
     return id;

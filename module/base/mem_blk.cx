@@ -662,13 +662,13 @@ E_mem_Q_blk_Q_table_M_from_free_or_map_0( N allocated_2_table_i
             free_p[ i_found ].p = 0;
         }else
         {   Pc old_free_p = free_p[ i_found ].p;
-            free_p[ i_found ].l -= ( p_1 - free_p[ i_found ].p ) + l_1;
             free_p[ i_found ].p = p_1 + l_1;
-            if( p_1 - old_free_p )
-            {   struct E_mem_Q_blk_Z_free free_p_;
-                if( !~E_mem_Q_blk_Q_sys_table_mf_P_put( E_mem_Q_blk_S_allocated_S_free_id, (Pc)&free_p_.p - (Pc)&free_p_, (Pc)&free_p_.l - (Pc)&free_p_, old_free_p, p_1 - old_free_p ))
-                    return 0;
-            }
+            free_p[ i_found ].l -= ( p_1 - old_free_p ) + l_1;
+            //if( p_1 - old_free_p )
+            //{   struct E_mem_Q_blk_Z_free free_p_;
+                //if( !~E_mem_Q_blk_Q_sys_table_mf_P_put( E_mem_Q_blk_S_allocated_S_free_id, (Pc)&free_p_.p - (Pc)&free_p_, (Pc)&free_p_.l - (Pc)&free_p_, old_free_p, p_1 - old_free_p ))
+                    //return 0;
+            //}
         }
         if(p)
         {   if( !U_R( E_base_S->E_flow_S_mode, Z_task_table_S_can_read ))
@@ -1284,7 +1284,7 @@ E_mem_Q_blk_I_insert_( P p
 }
 _internal
 P
-E_mem_Q_blk_I_rem_( P p
+E_mem_Q_blk_I_remove_( P p
 , N i
 , N n
 ){  if( !n )
@@ -1424,11 +1424,11 @@ E_mem_Q_blk_I_insert( P p
 ///remove without memory move.
 ///w wyniku podaje nowy adres bloku (jak w “*( P * )p”).
 P
-E_mem_Q_blk_I_rem( P p
+E_mem_Q_blk_I_remove( P p
 , N i
 , N n
 ){  _single_thread_begin;
-    P p_ = E_mem_Q_blk_I_rem_( p, i, n );
+    P p_ = E_mem_Q_blk_I_remove_( p, i, n );
     E_mem_Q_blk_I_assert_on_return( __LINE__ );
     _single_thread_end;
     if( !~(N)p )
@@ -1488,7 +1488,7 @@ realloc( P p
                 return p_;
             }
             if( i < E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n )
-            {   P p_ = E_mem_Q_blk_I_rem_( &p, i, E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n - i );
+            {   P p_ = E_mem_Q_blk_I_remove_( &p, i, E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n - i );
                 _single_thread_end;
                 return p_;
             }

@@ -29,17 +29,27 @@ struct E_text_syntax_Z_entity
     Pc s;
   };
   B alternative;
-  B repeat;
+  B optional;
 };
 struct E_text_syntax_Z_entities
 { Pc name;
   struct E_text_syntax_Z_entity *entity;
   N entity_n;
   N space_uid;
+  B repeat;
 };
 struct E_text_syntax_Z_body
 { struct E_text_syntax_Z_entities *entities;
   N entities_n;
+};
+//------------------------------------------------------------------------------
+struct E_text_syntax_Z_state
+{ N entities_i;
+  N entity_i;
+  B in_space;
+  B in_space_one_more; /// Służy do oznaczania, że sprawdzane jest space_uid na końcu w trybie repeat.
+  B once_matched; /// Służy do oznaczania, że zaszło conajmniej jedno w trybie repeat.
+  Pc s;
 };
 //==============================================================================
 _internal
@@ -47,8 +57,7 @@ B
 E_text_syntax_I_unescape( Pc *s_
 ){  Pc s = *s_;
     while( *s )
-    {   G_(); Gs0(s);
-        if( *s == '\\' )
+    {   if( *s == '\\' )
         {   if( !*( s + 1 ))
                 return no;
             N n;
@@ -143,7 +152,7 @@ E_text_syntax_I_unescape( Pc *s_
             switch( *( s + 1 ))
             { case 'x':
                 {   N s_i = s - *s_;
-                    if( !E_mem_Q_blk_I_rem( s_, s_i + 1, ret_s - ( s + 1 )))
+                    if( !E_mem_Q_blk_I_remove( s_, s_i + 1, ret_s - ( s + 1 )))
                     {   GV_(NA);
                     }
                     s = *s_ + s_i;
@@ -152,10 +161,10 @@ E_text_syntax_I_unescape( Pc *s_
                 }
               case 'u':
               case 'U':
-                {   N l = E_text_Z_s_Z_u_R_utf8_G(n);
+                {   N l = E_text_Z_u_R_s_utf8_G(n);
                     if( l < ret_s - s )
                     {   N s_i = s - *s_;
-                        if( !E_mem_Q_blk_I_rem( s_, ( ret_s - s ) - (( ret_s - s ) - l ), ( ret_s - s ) - l ))
+                        if( !E_mem_Q_blk_I_remove( s_, ( ret_s - s ) - (( ret_s - s ) - l ), ( ret_s - s ) - l ))
                         {   GV_(NA);
                         }
                         s = *s_ + s_i;
@@ -166,13 +175,13 @@ E_text_syntax_I_unescape( Pc *s_
                         }
                         s = *s_ + s_i;
                     }
-                    E_text_Z_s_Z_u_R_utf8( n, s );
+                    E_text_Z_u_R_s_utf8( n, s );
                     s += l - 1;
                     break;
                 }
             default:
                 {   N s_i = s - *s_;
-                    if( !E_mem_Q_blk_I_rem( s_, s_i + 1, 1 ))
+                    if( !E_mem_Q_blk_I_remove( s_, s_i + 1, 1 ))
                     {   GV_(NA);
                     }
                     s = *s_ + s_i;
@@ -199,14 +208,6 @@ E_text_syntax_R_builtin_by_name( Pc name
         builtin = E_text_syntax_S_builtin_text;
     return builtin;
 }
-N
-E_text_syntax_R_entity_by_name( struct E_text_syntax_Z_body *body
-, Pc name
-){  for_n( i, body->entities_n )
-        if( E_text_Z_s0_T_s0_eq( body->entities[i].name, name ))
-            return i;
-    return ~0;
-}
 _internal
 B
 E_text_syntax_T_name( Pc s
@@ -226,6 +227,15 @@ E_text_syntax_T_name( Pc s
     }
     return yes;
 }
+N
+E_text_syntax_R_entity_by_name( struct E_text_syntax_Z_body *body
+, Pc name
+){  for_n( i, body->entities_n )
+        if( E_text_Z_s0_T_s0_eq( body->entities[i].name, name ))
+            return i;
+    return ~0;
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 N
 E_text_syntax_M( I file
 , struct E_text_syntax_Z_body **body_
@@ -289,7 +299,7 @@ E_text_syntax_M( I file
         }
         body->entities[ body->entities_n ].name = M(( s_end - s_start ) + 1 );
         if( !body->entities[ body->entities_n ].name )
-        {   if( !E_mem_Q_blk_I_rem( &body->entities, body->entities_n, 1 ))
+        {   if( !E_mem_Q_blk_I_remove( &body->entities, body->entities_n, 1 ))
             {   G_();
             }
             W(s);
@@ -297,7 +307,7 @@ E_text_syntax_M( I file
         }
         Mt_( body->entities[ body->entities_n ].entity, 0 );
         if( !body->entities[ body->entities_n ].entity )
-        {   if( !E_mem_Q_blk_I_rem( &body->entities, body->entities_n, 1 ))
+        {   if( !E_mem_Q_blk_I_remove( &body->entities, body->entities_n, 1 ))
             {   G_();
             }
             W(s);
@@ -307,6 +317,7 @@ E_text_syntax_M( I file
         E_text_Z_s_P_s_copy_0( body->entities[ body->entities_n ].name, s_start, s_end );
         W(s);
         body->entities[ body->entities_n ].space_uid = ~0;
+        body->entities[ body->entities_n ].repeat = no;
         body->entities_n++;
         ret = E_mem_Q_file_R_u_upto( file, E_text_syntax_S_newline, &s );
         if( !~ret )
@@ -347,7 +358,6 @@ E_text_syntax_M( I file
             }
         E_text_Z_s_P_s_copy_0( body->entities[ body->entities_n - 1 ].name + i, s, s_end );
         W(s);
-        G_(); Gs0( body->entities[ body->entities_n - 1 ].name );
         if( !E_text_syntax_T_name( body->entities[ body->entities_n - 1 ].name ))
             goto End;
         ret = E_mem_Q_file_R_u_outof( file, E_text_syntax_S_line_space, &s );
@@ -385,7 +395,7 @@ E_text_syntax_M( I file
                 {   W(s);
                     goto End;
                 }
-                E_text_Z_s_Z_u_R_utf8( u, s );
+                E_text_Z_u_R_s_utf8( u, s );
                 s_end = E_text_Z_s0_R_end(s) - 1;
                 if( s_end != s )
                 {   O{  s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
@@ -396,13 +406,12 @@ E_text_syntax_M( I file
                             break;
                     }
                 }
-                if( !E_mem_Q_blk_I_rem( &s, s_end - s, E_text_Z_s0_R_end(s) - s_end ))
+                if( !E_mem_Q_blk_I_remove( &s, s_end - s, E_text_Z_s0_R_end(s) - s_end ))
                 {   W(s);
                     goto End;
                 }
-                body->entities[ body->entities_n ].space_uid = E_text_syntax_R_entity_by_name( body, s );
-                G_(); Gs0(s); Gd( body->entities[ body->entities_n ].space_uid );
-                if( !~body->entities[ body->entities_n ].space_uid )
+                body->entities[ body->entities_n - 1 ].space_uid = E_text_syntax_R_entity_by_name( body, s );
+                if( !~body->entities[ body->entities_n - 1 ].space_uid )
                 {   W(s);
                     goto End;
                 }
@@ -419,9 +428,6 @@ E_text_syntax_M( I file
             }else
                 goto End;
         }
-for_n_( i, body->entities_n )
-{   G_(); Gs0( body->entities[i].name );
-}
         O{  O{  W(s);
                 ret = E_mem_Q_file_R_u_upto( file, ",|" E_text_syntax_S_newline, &s );
                 if( !~ret )
@@ -445,7 +451,7 @@ for_n_( i, body->entities_n )
                             break;
                     }
                     if( s_start != s )
-                        if( !E_mem_Q_blk_I_rem( &s, 0, s_start - s ))
+                        if( !E_mem_Q_blk_I_remove( &s, 0, s_start - s ))
                         {   W(s);
                             goto End;
                         }
@@ -462,7 +468,7 @@ for_n_( i, body->entities_n )
                     {   W(s);
                         goto End;
                     }
-                    E_text_Z_s_Z_u_R_utf8( u, s );
+                    E_text_Z_u_R_s_utf8( u, s );
                 }else
                 {   W(s);
                     goto End;
@@ -470,9 +476,7 @@ for_n_( i, body->entities_n )
                 s_end = E_text_Z_s0_R_end(s) - 1;
                 if( !end_of_entities )
                     end_of_entities = *s_end == '\n';
-                G_(); Gd( end_of_entities );
                 B alternative_entity = *s_end == '|';
-                G_(); Gd( alternative_entity );
                 if( s_end != s )
                     O{  s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
                         if( u != ' ' )
@@ -481,6 +485,60 @@ for_n_( i, body->entities_n )
                         if( s_start == s )
                             break;
                     }
+                if( end_of_entities
+                && s_end != s
+                )
+                {   s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+                    if( u == '.' )
+                    {   N i = 1;
+                        s_end = s_start;
+                        if( s_end != s )
+                            O{  s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+                                if( u != '.' )
+                                    break;
+                                i++;
+                                s_end = s_start;
+                                if( s_start == s )
+                                    break;
+                            }
+                        if( s_end == s
+                        || i != 3
+                        )
+                        {   W(s);
+                            goto End;
+                        }
+                        s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+                        if( *s_start != ' ' )
+                        {   W(s);
+                            goto End;
+                        }
+                        s_end = s_start;
+                        body->entities[ body->entities_n - 1 ].repeat = yes;
+                    }
+                }
+                B optional_entity = no;
+                if( !alternative_entity
+                && ( body->entities[ body->entities_n - 1 ].entity_n == 0 
+                  || !body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n - 1 ].alternative
+                )
+                && s_end != s
+                )
+                {   s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+                    if( u == '?' )
+                    {   s_end = s_start;
+                        if( s_end == s )
+                        {   W(s);
+                            goto End;
+                        }
+                        s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+                        if( *s_start != ' ' )
+                        {   W(s);
+                            goto End;
+                        }
+                        s_end = s_start;
+                        optional_entity = yes;
+                    }
+                }
                 if( entity_type == E_text_syntax_S_entity_string )
                 {   if( u != '\"'
                     || s_end == s + 1
@@ -490,7 +548,7 @@ for_n_( i, body->entities_n )
                     }
                     s_end--;
                 }
-                if( !E_mem_Q_blk_I_rem( &s, s_end - s, E_text_Z_s0_R_end(s) - s_end ))
+                if( !E_mem_Q_blk_I_remove( &s, s_end - s, E_text_Z_s0_R_end(s) - s_end ))
                 {   W(s);
                     goto End;
                 }
@@ -499,11 +557,10 @@ for_n_( i, body->entities_n )
                     goto End;
                 }
                 body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].type = entity_type;
-                G_(); Gs0(s); Gd( entity_type );
                 if( entity_type == E_text_syntax_S_entity_builtin )
                 {   body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].builtin = E_text_syntax_R_builtin_by_name(s);
                     if( !~body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].builtin )
-                    {   if( !E_mem_Q_blk_I_rem( &body->entities[ body->entities_n - 1 ].entity, body->entities[ body->entities_n - 1 ].entity_n, 1 ))
+                    {   if( !E_mem_Q_blk_I_remove( &body->entities[ body->entities_n - 1 ].entity, body->entities[ body->entities_n - 1 ].entity_n, 1 ))
                         {   G_();
                         }
                         W(s);
@@ -512,17 +569,15 @@ for_n_( i, body->entities_n )
                     W(s);
                 }
                 else if( entity_type == E_text_syntax_S_entity_string )
-                {   G_();
-                    //if( !E_text_syntax_I_unescape( &s ))
-                    //{   W(s);
-                        //goto End;
-                    //}
-                    G_();
+                {   if( !E_text_syntax_I_unescape( &s ))
+                    {   W(s);
+                        goto End;
+                    }
                     body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].s = s;
                 }else if( entity_type == E_text_syntax_S_entity_uid )
                 {   body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].uid = E_text_syntax_R_entity_by_name( body, s );
                     if( !~body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].uid )
-                    {   if( !E_mem_Q_blk_I_rem( &body->entities[ body->entities_n - 1 ].entity, body->entities[ body->entities_n - 1 ].entity_n, 1 ))
+                    {   if( !E_mem_Q_blk_I_remove( &body->entities[ body->entities_n - 1 ].entity, body->entities[ body->entities_n - 1 ].entity_n, 1 ))
                         {   G_();
                         }
                         W(s);
@@ -531,6 +586,7 @@ for_n_( i, body->entities_n )
                     W(s);
                 }
                 body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].alternative = alternative_entity;
+                body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].optional = optional_entity;
                 body->entities[ body->entities_n - 1 ].entity_n++;
                 if( end_of_entities )
                     break;
@@ -543,9 +599,6 @@ for_n_( i, body->entities_n )
                     goto End;
                 }
                 s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
-for_n_( i, body->entities_n )
-{   G_(); Gs0( body->entities[i].name );
-}
             }
             N pos = E_mem_Q_file_R_pos(file);
             ret = E_mem_Q_file_R_u( file, &u );
@@ -556,10 +609,10 @@ for_n_( i, body->entities_n )
                     goto End;
                 break;
             }
-            G_(); Gd(u);
-            if( u != ' '
-            && u != '\t'
-            )
+            if( body->entities[ body->entities_n - 1 ].repeat
+            || ( u != ' '
+              && u != '\t'
+            ))
             {   E_mem_Q_file_P_pos( file, pos );
                 break;
             }
@@ -573,9 +626,6 @@ for_n_( i, body->entities_n )
             }
             s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
         }
-for_n_( i, body->entities_n )
-{   G_(); Gs0( body->entities[i].name );
-}
     }
     *body_ = body;
     return 0;
@@ -593,5 +643,517 @@ E_text_syntax_W( struct E_text_syntax_Z_body *body
         W( body->entities[i].entity );
     }
     W( body->entities );
+    W(body);
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+N
+E_text_syntax_Q_state_M( struct E_text_syntax_Z_body *body
+, struct E_text_syntax_Z_state **state_
+, N *state_n
+){  Mt_( *state_, 1 );
+    if( !*state_ )
+        return ~0;
+    struct E_text_syntax_Z_state *state = *state_;
+    state->entities_i = body->entities_n - 1;
+    state->entity_i = 0;
+    state->in_space = no;
+    state->in_space_one_more = no;
+    state->once_matched = no;
+    state->s = M(1);
+    if( !state->s )
+        return ~0;
+    state->s[0] = '\0';
+    *state_n = 1;
+    return 0;
+}
+void
+E_text_syntax_Q_state_W( struct E_text_syntax_Z_state *state
+, N state_n
+){  for_n( i, state_n )
+        W( state[i].s );
+    W(state);
+}
+N
+E_text_syntax_Q_state_I_parse_next( I file
+, struct E_text_syntax_Z_body *syntax
+, struct E_text_syntax_Z_state **state_
+, N *state_n
+, N (*entities_func)( struct E_text_syntax_Z_body *, struct E_text_syntax_Z_state *, N )
+){  struct E_text_syntax_Z_state *state;
+    state = *state_;
+    if( state[ *state_n - 1 ].in_space )
+    {   if( !E_mem_Q_blk_I_append( &state, 1 ))
+            goto End;
+        state[ *state_n ].entities_i = syntax->entities[ state[ *state_n - 1 ].entities_i ].space_uid;
+        state[ *state_n ].entity_i = 0;
+        state[ *state_n ].in_space = no;
+        state[ *state_n ].in_space_one_more = no;
+        state[ *state_n ].once_matched = no;
+        state[ *state_n ].s = M(1);
+        if( !state[ *state_n ].s )
+            return ~0;
+        state[ *state_n ].s[0] = '\0';
+        (*state_n)++;
+        *state_ = state;
+        return 0;
+    }
+    struct E_text_syntax_Z_entity *entity = &syntax->entities[ state[ *state_n - 1 ].entities_i ].entity[ state[ *state_n - 1 ].entity_i ];
+    //G_(); Gs0( syntax->entities[ state[ *state_n - 1 ].entities_i ].name ); Gd( entity->type );
+    switch( entity->type )
+    { case E_text_syntax_S_entity_uid:
+            if( !E_mem_Q_blk_I_append( &state, 1 ))
+                goto End;
+            state[ *state_n ].entities_i = entity->uid;
+            state[ *state_n ].entity_i = 0;
+            state[ *state_n ].in_space = no;
+            state[ *state_n ].in_space_one_more = no;
+            state[ *state_n ].once_matched = no;
+            state[ *state_n ].s = M(1);
+            if( !state[ *state_n ].s )
+                return ~0;
+            state[ *state_n ].s[0] = '\0';
+            (*state_n)++;
+            *state_ = state;
+            break;
+      case E_text_syntax_S_entity_builtin:
+        {   N pos = E_mem_Q_file_R_pos(file);
+            U u;
+            N ret = E_mem_Q_file_R_u( file, &u );
+            if( !~ret )
+                goto End;
+            B parsed = no;
+            if( ret == E_mem_Q_file_S_eof )
+            {   if( pos != E_mem_Q_file_R_pos(file) )
+                    goto End;
+                if( entity->builtin == E_text_syntax_S_builtin_eof )
+                    parsed = yes;
+            }
+            Pc s;
+            switch( entity->builtin )
+            { case E_text_syntax_S_builtin_eof:
+                    break;
+              case E_text_syntax_S_builtin_alpha:
+                    if( iswalpha(u) )
+                    {   parsed = yes;
+                        N l = E_text_Z_u_R_s_utf8_G(u);
+                        s = M( l + 1 );
+                        if( !s )
+                            goto End;
+                        E_text_Z_u_R_s_utf8( u, s );
+                        s[l] = '\0';
+                    }
+                    break;
+              case E_text_syntax_S_builtin_digit:
+                    if( iswdigit(u) )
+                    {   parsed = yes;
+                        N l = E_text_Z_u_R_s_utf8_G(u);
+                        s = M( l + 1 );
+                        if( !s )
+                            goto End;
+                        E_text_Z_u_R_s_utf8( u, s );
+                        s[l] = '\0';
+                    }
+                    break;
+              case E_text_syntax_S_builtin_text:
+                    if( iswgraph(u) )
+                    {   parsed = yes;
+                        N l = E_text_Z_u_R_s_utf8_G(u);
+                        s = M( l + 1 );
+                        if( !s )
+                            goto End;
+                        E_text_Z_u_R_s_utf8( u, s );
+                        s[l] = '\0';
+                        O{  N pos = E_mem_Q_file_R_pos(file);
+                            ret = E_mem_Q_file_R_u( file, &u );
+                            if( !~ret )
+                            {   W(s);
+                                goto End;
+                            }
+                            if( ret == E_mem_Q_file_S_eof
+                            || !iswgraph(u)
+                            )
+                            {   E_mem_Q_file_P_pos( file, pos );
+                                break;
+                            }
+                            N l = E_text_Z_u_R_s_utf8_G(u);
+                            C t[l];
+                            E_text_Z_u_R_s_utf8( u, &t[0] );
+                            if( !~E_text_Z_s0_I_s_append( &s, t, t + l ))
+                            {   W(s);
+                                goto End;
+                            }
+                        }
+                        ret = 0;
+                    }
+                    break;
+            }
+            if( ret != E_mem_Q_file_S_eof
+            && parsed
+            )
+            {   if( !~E_text_Z_s0_I_s0_append( &state[ *state_n - 1 ].s, s ))
+                {   W(s);
+                    goto End;
+                }
+                W(s);
+                if( state[ *state_n - 1 ].in_space )
+                    state[ *state_n - 1 ].in_space = no;
+                else
+                {   while( ++state[ *state_n - 1 ].entity_i != syntax->entities[ state[ *state_n - 1 ].entities_i ].entity_n )
+                    {   if( !entity->alternative )
+                            break;
+                        entity++;
+                    }
+                    if( state[ *state_n - 1 ].entity_i == syntax->entities[ state[ *state_n - 1 ].entities_i ].entity_n )
+                    {   if( syntax->entities[ state[ *state_n - 1 ].entities_i ].repeat )
+                        {   state[ *state_n - 1 ].entity_i = 0;
+                            state[ *state_n - 1 ].once_matched = yes;
+                            if( ~syntax->entities[ state[ *state_n - 1 ].entities_i ].space_uid
+                            && !state[ *state_n - 1 ].in_space
+                            )
+                            {   state[ *state_n - 1 ].in_space = yes;
+                                state[ *state_n - 1 ].in_space_one_more = no;
+                                if( !~E_text_syntax_Q_state_I_parse_next( file, syntax, &state, state_n, entities_func ))
+                                    goto End;
+                            }
+                        }else
+                        {   O{  if( entities_func( syntax, state, *state_n ))
+                                    goto End;
+                                if( *state_n > 1 )
+                                    if( !~E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
+                                        goto End;
+                                W( state[ *state_n - 1 ].s );
+                                if( !E_mem_Q_blk_I_remove( &state, --*state_n, 1 ))
+                                    goto End;
+                                if( !*state_n )
+                                {   *state_ = state;
+                                    return E_mem_Q_file_S_eof;
+                                }
+                                if( state[ *state_n - 1 ].in_space )
+                                {   state[ *state_n - 1 ].in_space = no;
+                                    break;
+                                }
+                                entity = &syntax->entities[ state[ *state_n - 1 ].entities_i ].entity[ state[ *state_n - 1 ].entity_i ];
+                                while( ++state[ *state_n - 1 ].entity_i != syntax->entities[ state[ *state_n - 1 ].entities_i ].entity_n )
+                                {   if( !entity->alternative )
+                                        break;
+                                    entity++;
+                                }
+                                if( state[ *state_n - 1 ].entity_i != syntax->entities[ state[ *state_n - 1 ].entities_i ].entity_n )
+                                {   if( *state_n > 1 )
+                                        if( !~E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
+                                            goto End;
+                                    if( !~E_text_Z_s0_I_clear( &state[ *state_n - 1 ].s ))
+                                        goto End;
+                                    break;
+                                }
+                                if( syntax->entities[ state[ *state_n - 1 ].entities_i ].repeat )
+                                {   state[ *state_n - 1 ].entity_i = 0;
+                                    state[ *state_n - 1 ].once_matched = yes;
+                                    if( ~syntax->entities[ state[ *state_n - 1 ].entities_i ].space_uid
+                                    && !state[ *state_n - 1 ].in_space
+                                    )
+                                    {   state[ *state_n - 1 ].in_space = yes;
+                                        state[ *state_n - 1 ].in_space_one_more = no;
+                                        if( !~E_text_syntax_Q_state_I_parse_next( file, syntax, &state, state_n, entities_func ))
+                                            goto End;
+                                    }
+                                    break;
+                                }
+                            }
+                            *state_ = state;
+                        }
+                    }else
+                    {   if( *state_n > 1 )
+                            if( !~E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
+                                goto End;
+                        if( !~E_text_Z_s0_I_clear( &state[ *state_n - 1 ].s ))
+                            goto End;
+                    }
+                    if( ~syntax->entities[ state[ *state_n - 1 ].entities_i ].space_uid
+                    && !state[ *state_n - 1 ].in_space
+                    )
+                    {   state[ *state_n - 1 ].in_space = yes;
+                        state[ *state_n - 1 ].in_space_one_more = no;
+                        if( !~E_text_syntax_Q_state_I_parse_next( file, syntax, &state, state_n, entities_func ))
+                            goto End;
+                        *state_ = state;
+                    }
+                }
+            }else
+            {   if( state[ *state_n - 1 ].in_space )
+                {   state[ *state_n - 1 ].in_space = no;
+                    E_mem_Q_file_P_pos( file, pos );
+                }else if( entity->alternative )
+                {   state[ *state_n - 1 ].entity_i++;
+                    E_mem_Q_file_P_pos( file, pos );
+                }else if( *state_n > 1 )
+                {   B once_matched = state[ *state_n - 1 ].once_matched;
+                    if( !syntax->entities[ state[ *state_n - 1 ].entities_i ].entity[ state[ *state_n - 1 ].entity_i ].optional )
+                    {   if( entities_func( syntax, state, *state_n ))
+                            goto End;
+                        if( *state_n > 1 )
+                            if( !~E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
+                                goto End;
+                        W( state[ *state_n - 1 ].s );
+                        if( !E_mem_Q_blk_I_remove( &state, --*state_n, 1 ))
+                            goto End;
+                        if( !*state_n )
+                        {   *state_ = state;
+                            return E_mem_Q_file_S_eof;
+                        }
+                        if( state[ *state_n - 1 ].in_space )
+                        {   state[ *state_n - 1 ].in_space = no;
+                            *state_ = state;
+                            E_mem_Q_file_P_pos( file, pos );
+                            return 0;
+                        }
+                    }
+                    O{  entity = &syntax->entities[ state[ *state_n - 1 ].entities_i ].entity[ state[ *state_n - 1 ].entity_i ];
+                        if( once_matched )
+                            while( ++state[ *state_n - 1 ].entity_i != syntax->entities[ state[ *state_n - 1 ].entities_i ].entity_n )
+                            {   if( !entity->alternative )
+                                    break;
+                                entity++;
+                            }
+                        else
+                        {   once_matched = state[ *state_n - 1 ].once_matched;
+                            if( ++state[ *state_n - 1 ].entity_i != syntax->entities[ state[ *state_n - 1 ].entities_i ].entity_n )
+                                if( !entity->alternative )
+                                    continue;
+                        }
+                        if( state[ *state_n - 1 ].entity_i == syntax->entities[ state[ *state_n - 1 ].entities_i ].entity_n
+                        && syntax->entities[ state[ *state_n - 1 ].entities_i ].repeat
+                        && ~syntax->entities[ state[ *state_n - 1 ].entities_i ].space_uid
+                        && !state[ *state_n - 1 ].in_space
+                        && !state[ *state_n - 1 ].in_space_one_more
+                        )
+                        {   state[ *state_n - 1 ].entity_i = 0;
+                            state[ *state_n - 1 ].in_space = yes;
+                            state[ *state_n - 1 ].in_space_one_more = yes;
+                            if( !~E_text_syntax_Q_state_I_parse_next( file, syntax, &state, state_n, entities_func ))
+                                goto End;
+                            *state_ = state;
+                            E_mem_Q_file_P_pos( file, pos );
+                            return 0;
+                        }
+                        if( state[ *state_n - 1 ].entity_i != syntax->entities[ state[ *state_n - 1 ].entities_i ].entity_n )
+                        {   *state_ = state;
+                            E_mem_Q_file_P_pos( file, pos );
+                            return 0;
+                        }
+                        if( entities_func( syntax, state, *state_n ))
+                            goto End;
+                        if( *state_n > 1 )
+                            if( !~E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
+                                goto End;
+                        W( state[ *state_n - 1 ].s );
+                        if( !E_mem_Q_blk_I_remove( &state, --*state_n, 1 ))
+                            goto End;
+                        if( !*state_n )
+                        {   *state_ = state;
+                            return E_mem_Q_file_S_eof;
+                        }
+                        if( state[ *state_n - 1 ].in_space )
+                        {   state[ *state_n - 1 ].in_space = no;
+                            *state_ = state;
+                            E_mem_Q_file_P_pos( file, pos );
+                            return 0;
+                        }
+                    }
+                }else
+                    goto End;
+            }
+            break;
+        }
+      case E_text_syntax_S_entity_string:
+        {   N l = E_text_Z_s0_R_l( entity->s );
+            Pc s = M(l);
+            if( !s )
+                goto End;
+            N pos = E_mem_Q_file_R_pos(file);
+            N ret = E_mem_Q_file_R_s( file, s, l );
+            if( !~ret )
+            {   W(s);
+                goto End;
+            }
+            if( ret == E_mem_Q_file_S_eof )
+                l = E_mem_Q_file_R_pos(file) - pos;
+            if( E_text_Z_s_T_s0_eq( s, s + l, entity->s ))
+            {   if( !~E_text_Z_s0_I_s_append( &state[ *state_n - 1 ].s, s, s + l ))
+                {   W(s);
+                    goto End;
+                }
+                W(s);
+                if( state[ *state_n - 1 ].in_space )
+                    state[ *state_n - 1 ].in_space = no;
+                else
+                {   while( ++state[ *state_n - 1 ].entity_i != syntax->entities[ state[ *state_n - 1 ].entities_i ].entity_n )
+                    {   if( !entity->alternative )
+                            break;
+                        entity++;
+                    }
+                    if( state[ *state_n - 1 ].entity_i == syntax->entities[ state[ *state_n - 1 ].entities_i ].entity_n )
+                    {   if( syntax->entities[ state[ *state_n - 1 ].entities_i ].repeat )
+                        {   state[ *state_n - 1 ].entity_i = 0;
+                            state[ *state_n - 1 ].once_matched = yes;
+                            if( ~syntax->entities[ state[ *state_n - 1 ].entities_i ].space_uid
+                            && !state[ *state_n - 1 ].in_space
+                            )
+                            {   state[ *state_n - 1 ].in_space = yes;
+                                state[ *state_n - 1 ].in_space_one_more = no;
+                                if( !~E_text_syntax_Q_state_I_parse_next( file, syntax, &state, state_n, entities_func ))
+                                    goto End;
+                            }
+                        }else
+                        {   O{  if( entities_func( syntax, state, *state_n ))
+                                    goto End;
+                                if( *state_n > 1 )
+                                    if( !~E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
+                                        goto End;
+                                W( state[ *state_n - 1 ].s );
+                                if( !E_mem_Q_blk_I_remove( &state, --*state_n, 1 ))
+                                    goto End;
+                                if( !*state_n )
+                                {   *state_ = state;
+                                    return E_mem_Q_file_S_eof;
+                                }
+                                if( state[ *state_n - 1 ].in_space )
+                                {   state[ *state_n - 1 ].in_space = no;
+                                    break;
+                                }
+                                entity = &syntax->entities[ state[ *state_n - 1 ].entities_i ].entity[ state[ *state_n - 1 ].entity_i ];
+                                while( ++state[ *state_n - 1 ].entity_i != syntax->entities[ state[ *state_n - 1 ].entities_i ].entity_n )
+                                {   if( !entity->alternative )
+                                        break;
+                                    entity++;
+                                }
+                                if( state[ *state_n - 1 ].entity_i != syntax->entities[ state[ *state_n - 1 ].entities_i ].entity_n )
+                                {   if( *state_n > 1 )
+                                        if( !~E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
+                                            goto End;
+                                    if( !~E_text_Z_s0_I_clear( &state[ *state_n - 1 ].s ))
+                                        goto End;
+                                    break;
+                                }
+                                if( syntax->entities[ state[ *state_n - 1 ].entities_i ].repeat )
+                                {   state[ *state_n - 1 ].entity_i = 0;
+                                    state[ *state_n - 1 ].once_matched = yes;
+                                    if( ~syntax->entities[ state[ *state_n - 1 ].entities_i ].space_uid
+                                    && !state[ *state_n - 1 ].in_space
+                                    )
+                                    {   state[ *state_n - 1 ].in_space = yes;
+                                        state[ *state_n - 1 ].in_space_one_more = no;
+                                        if( !~E_text_syntax_Q_state_I_parse_next( file, syntax, &state, state_n, entities_func ))
+                                            goto End;
+                                    }
+                                    break;
+                                }
+                            }
+                            *state_ = state;
+                        }
+                    }else
+                    {   if( *state_n > 1 )
+                            if( !~E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
+                                goto End;
+                        if( !~E_text_Z_s0_I_clear( &state[ *state_n - 1 ].s ))
+                            goto End;
+                    }
+                    if( ~syntax->entities[ state[ *state_n - 1 ].entities_i ].space_uid
+                    && !state[ *state_n - 1 ].in_space
+                    )
+                    {   state[ *state_n - 1 ].in_space = yes;
+                        state[ *state_n - 1 ].in_space_one_more = no;
+                        if( !~E_text_syntax_Q_state_I_parse_next( file, syntax, &state, state_n, entities_func ))
+                            goto End;
+                        *state_ = state;
+                    }
+                }
+            }else
+            {   W(s);
+                if( state[ *state_n - 1 ].in_space )
+                {   state[ *state_n - 1 ].in_space = no;
+                    E_mem_Q_file_P_pos( file, pos );
+                }else if( entity->alternative )
+                {   state[ *state_n - 1 ].entity_i++;
+                    E_mem_Q_file_P_pos( file, pos );
+                }else if( *state_n > 1 )
+                {   B once_matched = state[ *state_n - 1 ].once_matched;
+                    if( !syntax->entities[ state[ *state_n - 1 ].entities_i ].entity[ state[ *state_n - 1 ].entity_i ].optional )
+                    {   if( *state_n > 1 )
+                            if( !~E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
+                                goto End;
+                        W( state[ *state_n - 1 ].s );
+                        if( !E_mem_Q_blk_I_remove( &state, --*state_n, 1 ))
+                            goto End;
+                        if( !*state_n )
+                        {   *state_ = state;
+                            return E_mem_Q_file_S_eof;
+                        }
+                        if( state[ *state_n - 1 ].in_space )
+                        {   state[ *state_n - 1 ].in_space = no;
+                            *state_ = state;
+                            E_mem_Q_file_P_pos( file, pos );
+                            return 0;
+                        }
+                    }
+                    O{  entity = &syntax->entities[ state[ *state_n - 1 ].entities_i ].entity[ state[ *state_n - 1 ].entity_i ];
+                        if( once_matched )
+                            while( ++state[ *state_n - 1 ].entity_i != syntax->entities[ state[ *state_n - 1 ].entities_i ].entity_n )
+                            {   if( !entity->alternative )
+                                    break;
+                                entity++;
+                            }
+                        else
+                        {   once_matched = state[ *state_n - 1 ].once_matched;
+                            if( ++state[ *state_n - 1 ].entity_i != syntax->entities[ state[ *state_n - 1 ].entities_i ].entity_n )
+                                if( !entity->alternative )
+                                    continue;
+                        }
+                        if( state[ *state_n - 1 ].entity_i == syntax->entities[ state[ *state_n - 1 ].entities_i ].entity_n
+                        && syntax->entities[ state[ *state_n - 1 ].entities_i ].repeat
+                        && ~syntax->entities[ state[ *state_n - 1 ].entities_i ].space_uid
+                        && !state[ *state_n - 1 ].in_space
+                        && !state[ *state_n - 1 ].in_space_one_more
+                        )
+                        {   state[ *state_n - 1 ].entity_i = 0;
+                            state[ *state_n - 1 ].in_space = yes;
+                            state[ *state_n - 1 ].in_space_one_more = yes;
+                            if( !~E_text_syntax_Q_state_I_parse_next( file, syntax, &state, state_n, entities_func ))
+                                goto End;
+                            *state_ = state;
+                            E_mem_Q_file_P_pos( file, pos );
+                            return 0;
+                        }
+                        if( state[ *state_n - 1 ].entity_i != syntax->entities[ state[ *state_n - 1 ].entities_i ].entity_n )
+                        {   *state_ = state;
+                            E_mem_Q_file_P_pos( file, pos );
+                            return 0;
+                        }
+                        if( *state_n > 1 )
+                            if( !~E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
+                                goto End;
+                        W( state[ *state_n - 1 ].s );
+                        if( !E_mem_Q_blk_I_remove( &state, --*state_n, 1 ))
+                            goto End;
+                        if( !*state_n )
+                        {   *state_ = state;
+                            return E_mem_Q_file_S_eof;
+                        }
+                        if( state[ *state_n - 1 ].in_space )
+                        {   state[ *state_n - 1 ].in_space = no;
+                            *state_ = state;
+                            E_mem_Q_file_P_pos( file, pos );
+                            return 0;
+                        }
+                    }
+                }else
+                    goto End;
+            }
+            break;
+        }
+    }
+    return 0;
+End:*state_ = state;
+    return ~0;
 }
 /******************************************************************************/
