@@ -1299,7 +1299,6 @@ P
 E_mem_Q_blk_I_remove_( P p
 , N i
 , N n
-, B align_to_all
 ){  if( !n )
         return *( P * )p;
     for_n( allocated_i, E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].n )
@@ -1330,20 +1329,6 @@ E_mem_Q_blk_I_remove_( P p
             {   E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n -= n;
                 E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p += l;
                 P p_ = *( P * )p;
-                if( align_to_all )
-                {   Pc p_align = E_simple_Z_p_I_align_down_to_v2( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p, sizeof(F) );
-                    if( p_align != E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p )
-                    {   E_mem_Q_blk_I_copy( p_align, E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p, E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u );
-                        struct E_mem_Q_blk_Z_free free_p_;
-                        if( !~E_mem_Q_blk_Q_sys_table_mf_P_put( E_mem_Q_blk_S_allocated_S_free_id, (Pc)&free_p_.p - (Pc)&free_p_, (Pc)&free_p_.l - (Pc)&free_p_
-                        , p_align + E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
-                        , E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p - p_align
-                        ))
-                            return 0;
-                        l -= E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p - p_align;
-                        E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p = p_align;
-                    }
-                }
                 struct E_mem_Q_blk_Z_free free_p_;
                 if( !~E_mem_Q_blk_Q_sys_table_mf_P_put( E_mem_Q_blk_S_allocated_S_free_id, (Pc)&free_p_.p - (Pc)&free_p_, (Pc)&free_p_.l - (Pc)&free_p_
                 , p_
@@ -1457,7 +1442,7 @@ E_mem_Q_blk_I_remove( P p
 , N i
 , N n
 ){  _single_thread_begin;
-    P p_ = E_mem_Q_blk_I_remove_( p, i, n, no );
+    P p_ = E_mem_Q_blk_I_remove_( p, i, n );
     E_mem_Q_blk_I_assert_on_return( __LINE__ );
     _single_thread_end;
     if( !~(N)p )
@@ -1547,7 +1532,7 @@ realloc( P p
                 return p_;
             }
             if( i < E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n )
-            {   P p_ = E_mem_Q_blk_I_remove_( &p, i, E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n - i, yes );
+            {   P p_ = E_mem_Q_blk_I_remove_( &p, i, E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n - i );
                 _single_thread_end;
                 return p_;
             }
