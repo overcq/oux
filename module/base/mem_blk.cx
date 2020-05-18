@@ -47,6 +47,7 @@ zależnie od zastosowania powiększania bloku pamięci, w celu niewykonywania ni
 #define _single_thread_begin
 #define _single_thread_end
     #endif
+#define S_align_to_all          ( 2 * sizeof(N) )
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 struct E_mem_Q_blk_Z_mapped ///obszary stron pamięci otrzymane z systemu operacyjnego.
 { Pc p; ///“0” tutaj i w “l” oznacza pusty wpis; ale wystarczy sprawdzić jedno.
@@ -390,7 +391,7 @@ E_mem_Q_blk_Q_table_M_from_free_or_map_0( N allocated_2_table_i
         N i_found;
         N l_align;
         if( align_to_all )
-            l_align = sizeof(F);
+            l_align = S_align_to_all;
         else
             l_align = l > sizeof(F) ? sizeof(F) : E_simple_Z_n_I_align_up_to_first_i2(l);
         struct E_mem_Q_blk_Z_free *free_p = (P)E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_free_id ].p;
@@ -1037,7 +1038,7 @@ E_mem_Q_blk_I_append_( P p
             {   N l_1 = 0;
                 p_0 = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p;
                 struct E_mem_Q_blk_Z_free *free_p = (P)E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_free_id ].p;
-                for_n( free_i, E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_free_id ].n ) ///szukanie wolnego bloku przyległego od góry.
+                for_n( free_i, E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_free_id ].n ) /// Szukanie wolnego bloku przyległego od góry.
                     if( p_0 + l_0 == free_p[ free_i ].p )
                     {   if( free_p[ free_i ].l >= E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u )
                         {   l_1 = free_p[ free_i ].l;
@@ -1057,36 +1058,65 @@ E_mem_Q_blk_I_append_( P p
                     free_p[ free_i ].l -= l_1;
                     E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n += n;
                         #ifdef E_mem_Q_blk_C_debug
-                    E_mem_Q_blk_P_fill_c( p_0 + ( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n - n ) * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u, n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u, 0xa5 ); ///TODO Procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
+                    //E_mem_Q_blk_P_fill_c( p_0 + ( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n - n ) * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u, n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u, 0xa5 ); ///TODO Procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
                         #endif
                     return E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p + l_0;
                 }
-                for_n( free_j, E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_free_id ].n ) ///szukanie wolnego bloku przyległego od dołu.
-                    if( free_p[ free_j ].p + free_p[ free_j ].l == p_0 )
-                    {   if( free_p[ free_j ].l >= l )
-                        {   if( free_p[ free_j ].l == l )
-                                free_p[ free_j ].p = 0;
-                            free_p[ free_j ].l -= l;
-                            if( l_1 )
-                            {   if( free_p[ free_i ].l != l_1 )
-                                    free_p[ free_i ].p += l_1;
-                                else
-                                    free_p[ free_i ].p = 0;
-                                free_p[ free_i ].l -= l_1;
+                if( align_to_all )
+                {   for_n( free_j, E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_free_id ].n ) /// Szukanie wolnego bloku przyległego od dołu.
+                        if( free_p[ free_j ].p + free_p[ free_j ].l == p_0 )
+                        {   Pc p_align = E_simple_Z_p_I_align_up_to_v2( free_p[ free_j ].p, S_align_to_all );
+                            if( free_p[ free_j ].l >= l + ( p_align - free_p[ free_i ].p ))
+                            {   if( free_p[ free_j ].l == l )
+                                    free_p[ free_j ].p = 0;
+                                free_p[ free_j ].l -= l;
+                                if( l_1 )
+                                {   if( free_p[ free_i ].l != l_1 )
+                                        free_p[ free_i ].p += l_1;
+                                    else
+                                        free_p[ free_i ].p = 0;
+                                    free_p[ free_i ].l -= l_1;
+                                }
+                                if( !U_R( E_base_S->E_flow_S_mode, Z_task_table_S_can_read ))
+                                    E_flow_Q_task_I_touch_stack();
+                                E_mem_Q_blk_I_copy( p_align, p_0, l_0 );
+                                *( P * )p = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p = p_align;
+                                E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n += n;
+                                    #ifdef E_mem_Q_blk_C_debug
+                                //E_mem_Q_blk_P_fill_c( p_1, ( p_align - free_p[ free_i ].p ) + n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u, 0xa5 ); ///TODO Procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
+                                    #endif
+                                return E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p + l_0;
                             }
-                            Pc p_1 = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p - l;
-                            if( !U_R( E_base_S->E_flow_S_mode, Z_task_table_S_can_read ))
-                                E_flow_Q_task_I_touch_stack();
-                            E_mem_Q_blk_I_copy( p_1, p_0, l_0 );
-                            *( P * )p = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p = p_1;
-                            E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n += n;
-                                #ifdef E_mem_Q_blk_C_debug
-                            E_mem_Q_blk_P_fill_c( p_1 + l_0, n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u, 0xa5 ); ///TODO Procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
-                                #endif
-                            return E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p + l_0;
+                            break;
                         }
-                        break;
-                    }
+                }else
+                {   for_n( free_j, E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_free_id ].n ) /// Szukanie wolnego bloku przyległego od dołu.
+                        if( free_p[ free_j ].p + free_p[ free_j ].l == p_0 )
+                        {   if( free_p[ free_j ].l >= l )
+                            {   if( free_p[ free_j ].l == l )
+                                    free_p[ free_j ].p = 0;
+                                free_p[ free_j ].l -= l;
+                                if( l_1 )
+                                {   if( free_p[ free_i ].l != l_1 )
+                                        free_p[ free_i ].p += l_1;
+                                    else
+                                        free_p[ free_i ].p = 0;
+                                    free_p[ free_i ].l -= l_1;
+                                }
+                                Pc p_1 = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p - l;
+                                if( !U_R( E_base_S->E_flow_S_mode, Z_task_table_S_can_read ))
+                                    E_flow_Q_task_I_touch_stack();
+                                E_mem_Q_blk_I_copy( p_1, p_0, l_0 );
+                                *( P * )p = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p = p_1;
+                                E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n += n;
+                                    #ifdef E_mem_Q_blk_C_debug
+                                //E_mem_Q_blk_P_fill_c( p_1 + l_0, n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u, 0xa5 ); ///TODO Procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
+                                    #endif
+                                return E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p + l_0;
+                            }
+                            break;
+                        }
+                }
                 l += l_1; /// Przywraca oryginalną wartość sprzed scalenia od dołu, skoro był blok przyległy od dołu, a zabrakło do pełnej liczby od góry.
             }
             P p_1 = E_mem_Q_blk_Q_table_M_from_free_or_map_0( allocated_i
@@ -1462,8 +1492,7 @@ P
 E_mem_Q_blk_M_tab_calloc(
   N u
 , N n
-){  J_assert(u);
-    _single_thread_begin;
+){  _single_thread_begin;
     struct E_mem_Q_blk_Z_allocated allocated_p;
     N allocated_i = E_mem_Q_blk_Q_sys_table_R_new_id( E_base_S->E_mem_Q_blk_S_table_allocated_id, (Pc)&allocated_p.p - (Pc)&allocated_p, (Pc)&allocated_p.n - (Pc)&allocated_p, 0, 0 );
     if( !~allocated_i )

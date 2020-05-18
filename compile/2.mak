@@ -209,6 +209,9 @@ CFLAGS += -flto -Wa,-emit-llvm
     ifeq (,$(H_make_C_debug))
 CFLAGS += -DNDEBUG
     endif
+    ifeq (,$(E_mem_Q_blk_C_debug))
+CFLAGS += -DE_mem_Q_blk_C_debug
+    endif
 #-------------------------------------------------------------------------------
     ifeq (Linux,$(H_make_S_os))
 LDFLAGS += -Wl,--gc-sections,--as-needed
