@@ -369,6 +369,7 @@ E_text_syntax_M( I file
             goto End;
         }
         s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+        G_();
         while( s_start == s ) /// Brak odstępów na początku linii, to linia deklaracji.
         {   W(s);
             if( u == '/' )
@@ -428,6 +429,7 @@ E_text_syntax_M( I file
             }else
                 goto End;
         }
+        G_();
         O{  O{  W(s);
                 ret = E_mem_Q_file_R_u_upto( file, ",|" E_text_syntax_S_newline, &s );
                 if( !~ret )
@@ -435,6 +437,7 @@ E_text_syntax_M( I file
                 B end_of_entities = no;
                 if( ret == E_mem_Q_file_S_eof )
                     end_of_entities = yes;
+                G_();
                 enum E_text_syntax_Z_entity_Z entity_type;
                 if( u == '@' )
                 {   if( E_text_Z_s0_R_l(s) == ( end_of_entities ? 0 : 1 ))
@@ -473,6 +476,7 @@ E_text_syntax_M( I file
                 {   W(s);
                     goto End;
                 }
+                G_();
                 s_end = E_text_Z_s0_R_end(s) - 1;
                 if( !end_of_entities )
                     end_of_entities = *s_end == '\n';
@@ -516,6 +520,7 @@ E_text_syntax_M( I file
                         body->entities[ body->entities_n - 1 ].repeat = yes;
                     }
                 }
+                G_();
                 B optional_entity = no;
                 if( !alternative_entity
                 && ( body->entities[ body->entities_n - 1 ].entity_n == 0 
@@ -552,10 +557,12 @@ E_text_syntax_M( I file
                 {   W(s);
                     goto End;
                 }
+                G_();
                 if( !E_mem_Q_blk_I_append( &body->entities[ body->entities_n - 1 ].entity, 1 ))
                 {   W(s);
                     goto End;
                 }
+                G_();
                 body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].type = entity_type;
                 if( entity_type == E_text_syntax_S_entity_builtin )
                 {   body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].builtin = E_text_syntax_R_builtin_by_name(s);
@@ -585,6 +592,7 @@ E_text_syntax_M( I file
                     }
                     W(s);
                 }
+                G_();
                 body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].alternative = alternative_entity;
                 body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].optional = optional_entity;
                 body->entities[ body->entities_n - 1 ].entity_n++;
@@ -600,6 +608,7 @@ E_text_syntax_M( I file
                 }
                 s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
             }
+            G_();
             N pos = E_mem_Q_file_R_pos(file);
             ret = E_mem_Q_file_R_u( file, &u );
             if( !~ret )
@@ -626,6 +635,7 @@ E_text_syntax_M( I file
             }
             s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
         }
+        G_();
     }
     *body_ = body;
     return 0;

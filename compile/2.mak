@@ -209,7 +209,7 @@ CFLAGS += -flto -Wa,-emit-llvm
     ifeq (,$(H_make_C_debug))
 CFLAGS += -DNDEBUG
     endif
-    ifeq (,$(E_mem_Q_blk_C_debug))
+    ifneq (,$(E_mem_Q_blk_C_debug))
 CFLAGS += -DE_mem_Q_blk_C_debug
     endif
 #-------------------------------------------------------------------------------
