@@ -83,7 +83,7 @@ E_simple_T_multiply_overflow(
 _inline
 B
 E_simple_Z_n_T_power_2( N n
-){  return n ? ( _v( n, 1 ) << E_asm_I_bsf(n) ) == n : yes;
+){  return n ? ( _v( n, 1 ) << E_asm_I_bsf(n) ) == n : no;
 }
 _inline
 B
