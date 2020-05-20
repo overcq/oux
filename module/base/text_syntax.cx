@@ -27,7 +27,7 @@ struct E_text_syntax_Z_entity
   { N uid;
     enum E_text_syntax_Z_builtin builtin;
     Pc s;
-  };
+  }data;
   B alternative;
   B optional;
 };
@@ -558,8 +558,8 @@ E_text_syntax_M( I file
                 }
                 body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].type = entity_type;
                 if( entity_type == E_text_syntax_S_entity_builtin )
-                {   body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].builtin = E_text_syntax_R_builtin_by_name(s);
-                    if( !~body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].builtin )
+                {   body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].data.builtin = E_text_syntax_R_builtin_by_name(s);
+                    if( !~body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].data.builtin )
                     {   if( !E_mem_Q_blk_I_remove( &body->entities[ body->entities_n - 1 ].entity, body->entities[ body->entities_n - 1 ].entity_n, 1 ))
                         {   G_();
                         }
@@ -573,10 +573,10 @@ E_text_syntax_M( I file
                     {   W(s);
                         goto End;
                     }
-                    body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].s = s;
+                    body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].data.s = s;
                 }else if( entity_type == E_text_syntax_S_entity_uid )
-                {   body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].uid = E_text_syntax_R_entity_by_name( body, s );
-                    if( !~body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].uid )
+                {   body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].data.uid = E_text_syntax_R_entity_by_name( body, s );
+                    if( !~body->entities[ body->entities_n - 1 ].entity[ body->entities[ body->entities_n - 1 ].entity_n ].data.uid )
                     {   if( !E_mem_Q_blk_I_remove( &body->entities[ body->entities_n - 1 ].entity, body->entities[ body->entities_n - 1 ].entity_n, 1 ))
                         {   G_();
                         }
@@ -639,7 +639,7 @@ E_text_syntax_W( struct E_text_syntax_Z_body *body
     {   W( body->entities[i].name );
         for_n( j, body->entities[i].entity_n )
             if( body->entities[i].entity[j].type == E_text_syntax_S_entity_string )
-                W( body->entities[i].entity[j].s );
+                W( body->entities[i].entity[j].data.s );
         W( body->entities[i].entity );
     }
     W( body->entities );
@@ -698,12 +698,14 @@ E_text_syntax_Q_state_I_parse_next( I file
         return 0;
     }
     struct E_text_syntax_Z_entity *entity = &syntax->entities[ state[ *state_n - 1 ].entities_i ].entity[ state[ *state_n - 1 ].entity_i ];
-    //G_(); Gs0( syntax->entities[ state[ *state_n - 1 ].entities_i ].name ); Gd( entity->type );
+    //G_(); Gs0( syntax->entities[ syntax->entities_n - 1 ].name );
     switch( entity->type )
-    { case E_text_syntax_S_entity_uid:
-            if( !E_mem_Q_blk_I_append( &state, 1 ))
+    { default:
+            V();
+      case E_text_syntax_S_entity_uid:
+        {   if( !E_mem_Q_blk_I_append( &state, 1 ))
                 goto End;
-            state[ *state_n ].entities_i = entity->uid;
+            state[ *state_n ].entities_i = entity->data.uid;
             state[ *state_n ].entity_i = 0;
             state[ *state_n ].in_space = no;
             state[ *state_n ].in_space_one_more = no;
@@ -715,6 +717,7 @@ E_text_syntax_Q_state_I_parse_next( I file
             (*state_n)++;
             *state_ = state;
             break;
+        }
       case E_text_syntax_S_entity_builtin:
         {   N pos = E_mem_Q_file_R_pos(file);
             U u;
@@ -725,11 +728,11 @@ E_text_syntax_Q_state_I_parse_next( I file
             if( ret == E_mem_Q_file_S_eof )
             {   if( pos != E_mem_Q_file_R_pos(file) )
                     goto End;
-                if( entity->builtin == E_text_syntax_S_builtin_eof )
+                if( entity->data.builtin == E_text_syntax_S_builtin_eof )
                     parsed = yes;
             }
             Pc s;
-            switch( entity->builtin )
+            switch( entity->data.builtin )
             { case E_text_syntax_S_builtin_eof:
                     break;
               case E_text_syntax_S_builtin_alpha:
@@ -778,7 +781,7 @@ E_text_syntax_Q_state_I_parse_next( I file
                             N l = E_text_Z_u_R_s_utf8_G(u);
                             C t[l];
                             E_text_Z_u_R_s_utf8( u, &t[0] );
-                            if( !~E_text_Z_s0_I_s_append( &s, t, t + l ))
+                            if( !E_text_Z_s0_I_s_append( &s, t, t + l ))
                             {   W(s);
                                 goto End;
                             }
@@ -790,7 +793,7 @@ E_text_syntax_Q_state_I_parse_next( I file
             if( ret != E_mem_Q_file_S_eof
             && parsed
             )
-            {   if( !~E_text_Z_s0_I_s0_append( &state[ *state_n - 1 ].s, s ))
+            {   if( !E_text_Z_s0_I_s0_append( &state[ *state_n - 1 ].s, s ))
                 {   W(s);
                     goto End;
                 }
@@ -819,7 +822,7 @@ E_text_syntax_Q_state_I_parse_next( I file
                         {   O{  if( entities_func( syntax, state, *state_n ))
                                     goto End;
                                 if( *state_n > 1 )
-                                    if( !~E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
+                                    if( !E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
                                         goto End;
                                 W( state[ *state_n - 1 ].s );
                                 if( !E_mem_Q_blk_I_remove( &state, --*state_n, 1 ))
@@ -840,7 +843,7 @@ E_text_syntax_Q_state_I_parse_next( I file
                                 }
                                 if( state[ *state_n - 1 ].entity_i != syntax->entities[ state[ *state_n - 1 ].entities_i ].entity_n )
                                 {   if( *state_n > 1 )
-                                        if( !~E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
+                                        if( !E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
                                             goto End;
                                     if( !~E_text_Z_s0_I_clear( &state[ *state_n - 1 ].s ))
                                         goto End;
@@ -864,7 +867,7 @@ E_text_syntax_Q_state_I_parse_next( I file
                         }
                     }else
                     {   if( *state_n > 1 )
-                            if( !~E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
+                            if( !E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
                                 goto End;
                         if( !~E_text_Z_s0_I_clear( &state[ *state_n - 1 ].s ))
                             goto End;
@@ -893,7 +896,7 @@ E_text_syntax_Q_state_I_parse_next( I file
                         {   if( entities_func( syntax, state, *state_n ))
                                 goto End;
                             if( *state_n > 1 )
-                                if( !~E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
+                                if( !E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
                                     goto End;
                         }
                         W( state[ *state_n - 1 ].s );
@@ -947,7 +950,7 @@ E_text_syntax_Q_state_I_parse_next( I file
                         {   if( entities_func( syntax, state, *state_n ))
                                 goto End;
                             if( *state_n > 1 )
-                                if( !~E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
+                                if( !E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
                                     goto End;
                         }
                         W( state[ *state_n - 1 ].s );
@@ -970,7 +973,7 @@ E_text_syntax_Q_state_I_parse_next( I file
             break;
         }
       case E_text_syntax_S_entity_string:
-        {   N l = E_text_Z_s0_R_l( entity->s );
+        {   N l = E_text_Z_s0_R_l( entity->data.s );
             Pc s = M(l);
             if( !s )
                 goto End;
@@ -982,8 +985,8 @@ E_text_syntax_Q_state_I_parse_next( I file
             }
             if( ret == E_mem_Q_file_S_eof )
                 l = E_mem_Q_file_R_pos(file) - pos;
-            if( E_text_Z_s_T_s0_eq( s, s + l, entity->s ))
-            {   if( !~E_text_Z_s0_I_s_append( &state[ *state_n - 1 ].s, s, s + l ))
+            if( E_text_Z_s_T_s0_eq( s, s + l, entity->data.s ))
+            {   if( !E_text_Z_s0_I_s_append( &state[ *state_n - 1 ].s, s, s + l ))
                 {   W(s);
                     goto End;
                 }
@@ -1012,7 +1015,7 @@ E_text_syntax_Q_state_I_parse_next( I file
                         {   O{  if( entities_func( syntax, state, *state_n ))
                                     goto End;
                                 if( *state_n > 1 )
-                                    if( !~E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
+                                    if( !E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
                                         goto End;
                                 W( state[ *state_n - 1 ].s );
                                 if( !E_mem_Q_blk_I_remove( &state, --*state_n, 1 ))
@@ -1033,7 +1036,7 @@ E_text_syntax_Q_state_I_parse_next( I file
                                 }
                                 if( state[ *state_n - 1 ].entity_i != syntax->entities[ state[ *state_n - 1 ].entities_i ].entity_n )
                                 {   if( *state_n > 1 )
-                                        if( !~E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
+                                        if( !E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
                                             goto End;
                                     if( !~E_text_Z_s0_I_clear( &state[ *state_n - 1 ].s ))
                                         goto End;
@@ -1057,7 +1060,7 @@ E_text_syntax_Q_state_I_parse_next( I file
                         }
                     }else
                     {   if( *state_n > 1 )
-                            if( !~E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
+                            if( !E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
                                 goto End;
                         if( !~E_text_Z_s0_I_clear( &state[ *state_n - 1 ].s ))
                             goto End;
@@ -1087,7 +1090,7 @@ E_text_syntax_Q_state_I_parse_next( I file
                         {   if( entities_func( syntax, state, *state_n ))
                                 goto End;
                             if( *state_n > 1 )
-                                if( !~E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
+                                if( !E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
                                     goto End;
                         }
                         W( state[ *state_n - 1 ].s );
@@ -1141,7 +1144,7 @@ E_text_syntax_Q_state_I_parse_next( I file
                         {   if( entities_func( syntax, state, *state_n ))
                                 goto End;
                             if( *state_n > 1 )
-                                if( !~E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
+                                if( !E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
                                     goto End;
                         }
                         W( state[ *state_n - 1 ].s );
