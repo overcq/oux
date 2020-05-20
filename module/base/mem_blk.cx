@@ -73,7 +73,7 @@ E_mem_Q_blk_T_new_0( P p
     V1p_( p_end = sbrk(0) );
     return (Pc)p < p_end;
 }
-//NDFN potrzebne jest utworzenie nowej sekwencji testów— kompletnych.
+//NDFN Potrzebne jest utworzenie nowej sekwencji testów — kompletnych.
 _internal
 void
 E_mem_Q_blk_I_assert_on_return( N line
@@ -576,7 +576,7 @@ E_mem_Q_blk_Q_table_M_from_free_or_map_0( N allocated_2_table_i
                 if( src_page < src_page_end )
                 {   dst_page = p_1 + dst_rel;
                     p_ = dst_page - ( src_page - (Pc)p );
-                    if( src_page != p )
+                    if( src_page - (Pc)p )
                         E_mem_Q_blk_I_copy( p_, p, src_page - (Pc)p );
                     p_ -= l_rel;
                     Pc src_page_ = src_page, dst_page_end = dst_page;
@@ -609,7 +609,8 @@ E_mem_Q_blk_Q_table_M_from_free_or_map_0( N allocated_2_table_i
                     ));
                     Pc dst_page_end = dst_page + ( src_page_end - src_page );
                         #endif
-                    E_mem_Q_blk_I_copy( dst_page_end, src_page_end, (Pc)p + l - src_page_end );
+                    if( (Pc)p + l - src_page_end )
+                        E_mem_Q_blk_I_copy( dst_page_end, src_page_end, (Pc)p + l - src_page_end );
                 }else
                     E_mem_Q_blk_I_copy( p_1 + l_rel, p, l );
                 if( allocated_2_table_i == E_base_S->E_mem_Q_blk_S_table_allocated_id )
@@ -996,7 +997,6 @@ E_mem_Q_blk_I_add_( P p
                         *n_appended = 0;
                     return E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p + l_1;
                 }
-#if 0
                 for_n( free_j, E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_free_id ].n ) /// Szukanie wolnego bloku przyległego od góry.
                     if( p_0 + l_0 == free_p[ free_j ].p )
                     {   if( free_p[ free_j ].l >= l )
@@ -1028,7 +1028,6 @@ E_mem_Q_blk_I_add_( P p
                         }
                         break;
                     }
-#endif
                 l += l_1; /// Przywraca oryginalną wartość sprzed scalenia od dołu, skoro był blok przyległy od dołu, zabrakło do pełnej liczby od góry.
             }
             struct E_mem_Q_blk_Z_free free_p_;
@@ -1170,14 +1169,12 @@ E_mem_Q_blk_I_append_( P p
                         #endif
                     return E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p + l_0;
                 }
-#if 0
                 if( align_to_all )
                 {   for_n( free_j, E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_free_id ].n ) /// Szukanie wolnego bloku przyległego od dołu.
                         if( free_p[ free_j ].p + free_p[ free_j ].l == p_0 )
                         {   Pc p_align = E_simple_Z_p_I_align_up_to_v2( free_p[ free_j ].p, S_align_to_all );
                             if( free_p[ free_j ].l >= l + ( p_align - free_p[ free_i ].p ))
-                            {   Pc old_free_p = free_p[ free_j ].p;
-                                if( free_p[ free_j ].l == l )
+                            {   if( free_p[ free_j ].l == l )
                                     free_p[ free_j ].p = 0;
                                 free_p[ free_j ].l -= l;
                                 if( l_1 )
@@ -1192,8 +1189,7 @@ E_mem_Q_blk_I_append_( P p
                                 }
                                 if( !U_R( E_base_S->E_flow_S_mode, Z_task_table_S_can_read ))
                                     E_flow_Q_task_I_touch_stack();
-                                if( p_align != old_free_p )
-                                    E_mem_Q_blk_I_copy( p_align, p_0, l_0 );
+                                E_mem_Q_blk_I_copy( p_align, p_0, l_0 );
                                 E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n += n;
                                 *( P * )p = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p = p_align;
                                     #ifdef E_mem_Q_blk_C_debug
@@ -1220,7 +1216,7 @@ E_mem_Q_blk_I_append_( P p
                                     E_mem_Q_blk_P_fill_c( p_0 + l_0, l_1, 0xa5 ); ///TODO Procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
                                         #endif
                                 }
-                                Pc p_1 = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p - l;
+                                Pc p_1 = p_0 - l;
                                 if( !U_R( E_base_S->E_flow_S_mode, Z_task_table_S_can_read ))
                                     E_flow_Q_task_I_touch_stack();
                                 E_mem_Q_blk_I_copy( p_1, p_0, l_0 );
@@ -1234,7 +1230,6 @@ E_mem_Q_blk_I_append_( P p
                             break;
                         }
                 }
-#endif
                 l += l_1; /// Przywraca oryginalną wartość sprzed scalenia od dołu, skoro był blok przyległy od dołu, a zabrakło do pełnej liczby od góry.
             }
             struct E_mem_Q_blk_Z_free free_p_;
