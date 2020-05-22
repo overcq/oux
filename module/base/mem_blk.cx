@@ -219,7 +219,9 @@ P
 E_mem_Q_blk_I_copy_auto( P dst
 , P src
 , N l
-){  if( (Pc)dst >= (Pc)src + l || (Pc)dst < (Pc)src )
+){  if( (Pc)dst < (Pc)src
+    || (Pc)dst >= (Pc)src + l
+    )
         return E_mem_Q_blk_I_copy( dst, src, l );
     return E_mem_Q_blk_I_copy_rev( dst, src, l );
 }
@@ -476,9 +478,9 @@ E_mem_Q_blk_Q_table_M_from_free_or_map_0( N allocated_2_table_i
             l_1 += E_base_S->E_mem_Q_blk_S_allocated[ allocated_2_table_i ].u;
         }
         N l_align;
-        if( allocated_2_table_i == E_mem_Q_blk_S_allocated_S_mapped_id
-        || allocated_2_table_i == E_base_S->E_mem_Q_blk_S_table_allocated_id
+        if( allocated_2_table_i == E_base_S->E_mem_Q_blk_S_table_allocated_id
         || allocated_2_table_i == E_mem_Q_blk_S_allocated_S_free_id
+        || allocated_2_table_i == E_mem_Q_blk_S_allocated_S_mapped_id
         )
             l_align = 1;
         else if( align_to_all )
@@ -576,8 +578,7 @@ E_mem_Q_blk_Q_table_M_from_free_or_map_0( N allocated_2_table_i
                 if( src_page < src_page_end )
                 {   dst_page = p_1 + dst_rel;
                     p_ = dst_page - ( src_page - (Pc)p );
-                    if( src_page - (Pc)p )
-                        E_mem_Q_blk_I_copy( p_, p, src_page - (Pc)p );
+                    E_mem_Q_blk_I_copy( p_, p, src_page - (Pc)p );
                     p_ -= l_rel;
                     Pc src_page_ = src_page, dst_page_end = dst_page;
                     while( src_page_ != src_page_end )
@@ -609,8 +610,7 @@ E_mem_Q_blk_Q_table_M_from_free_or_map_0( N allocated_2_table_i
                     ));
                     Pc dst_page_end = dst_page + ( src_page_end - src_page );
                         #endif
-                    if( (Pc)p + l - src_page_end )
-                        E_mem_Q_blk_I_copy( dst_page_end, src_page_end, (Pc)p + l - src_page_end );
+                    E_mem_Q_blk_I_copy( dst_page_end, src_page_end, (Pc)p + l - src_page_end );
                 }else
                     E_mem_Q_blk_I_copy( p_1 + l_rel, p, l );
                 if( allocated_2_table_i == E_base_S->E_mem_Q_blk_S_table_allocated_id )
