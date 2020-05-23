@@ -802,7 +802,6 @@ E_text_syntax_Q_state_I_parse( I file
     state = *state_;
 Cont:
     O{  struct E_text_syntax_Z_entity *entity = &syntax->entities[ state[ *state_n - 1 ].entities_i ].entity[ state[ *state_n - 1 ].entity_i ];
-        G_(); Gs0( syntax->entities[ state[ *state_n - 1 ].entities_i ].name ); Gd( entity->type );
         switch( entity->type )
         { case E_text_syntax_S_entity_uid:
             {   if( !E_mem_Q_blk_I_append( &state, 1 ))
@@ -817,7 +816,6 @@ Cont:
                     goto End;
                 state[ *state_n ].s[0] = '\0';
                 (*state_n)++;
-                *state_ = state;
                 break;
             }
           case E_text_syntax_S_entity_builtin:
@@ -921,7 +919,7 @@ Cont:
                                         goto End;
                                 }
                             }else
-                            {   O{  if( entities_func( syntax, state, *state_n ))
+                                O{  if( entities_func( syntax, state, *state_n ))
                                         goto End;
                                     if( *state_n > 1 )
                                         if( !E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
@@ -965,8 +963,6 @@ Cont:
                                         break;
                                     }
                                 }
-                                *state_ = state;
-                            }
                         }else
                         {   if( *state_n > 1 )
                                 if( !E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
@@ -981,7 +977,6 @@ Cont:
                             state[ *state_n - 1 ].in_space_one_more = no;
                             if( !~E_text_syntax_Q_state_I_in_space( syntax, &state, state_n ))
                                 goto End;
-                            *state_ = state;
                         }
                     }
                 }else
@@ -993,24 +988,30 @@ Cont:
                         E_mem_Q_file_P_pos( file, pos );
                     }else if( *state_n > 1 )
                     {   B once_matched = state[ *state_n - 1 ].once_matched;
-                        if( E_text_Z_s0_R_l( state[ *state_n - 1 ].s ))
-                        {   if( entities_func( syntax, state, *state_n ))
-                                goto End;
-                            if( *state_n > 1 )
-                                if( !E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
+                        if( !syntax->entities[ state[ *state_n - 1 ].entities_i ].entity[ state[ *state_n - 1 ].entity_i ].optional )
+                        {   if( E_text_Z_s0_R_l( state[ *state_n - 1 ].s ))
+                            {   if( entities_func( syntax, state, *state_n ))
                                     goto End;
-                        }
-                        W( state[ *state_n - 1 ].s );
-                        if( !E_mem_Q_blk_I_remove( &state, --*state_n, 1 ))
-                            goto End;
-                        if( !*state_n )
-                        {   *state_ = state;
-                            return E_mem_Q_file_S_eof;
-                        }
-                        if( state[ *state_n - 1 ].in_space )
-                        {   state[ *state_n - 1 ].in_space = no;
-                            E_mem_Q_file_P_pos( file, pos );
-                            goto Cont;
+                                if( *state_n > 1 )
+                                    if( !E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
+                                        goto End;
+                            }
+                            W( state[ *state_n - 1 ].s );
+                            if( !E_mem_Q_blk_I_remove( &state, --*state_n, 1 ))
+                                goto End;
+                            if( !*state_n )
+                            {   *state_ = state;
+                                return E_mem_Q_file_S_eof;
+                            }
+                            if( state[ *state_n - 1 ].in_space )
+                            {   state[ *state_n - 1 ].in_space = no;
+                                E_mem_Q_file_P_pos( file, pos );
+                                goto Cont;
+                            }
+                            if( syntax->entities[ state[ *state_n - 1 ].entities_i ].entity[ state[ *state_n - 1 ].entity_i ].optional )
+                            {   E_mem_Q_file_P_pos( file, pos );
+                                goto Optional;
+                            }
                         }
                         O{  entity = &syntax->entities[ state[ *state_n - 1 ].entities_i ].entity[ state[ *state_n - 1 ].entity_i ];
                             if( once_matched )
@@ -1062,7 +1063,14 @@ Cont:
                                 E_mem_Q_file_P_pos( file, pos );
                                 goto Cont;
                             }
+                            if( syntax->entities[ state[ *state_n - 1 ].entities_i ].entity[ state[ *state_n - 1 ].entity_i ].optional )
+                            {   E_mem_Q_file_P_pos( file, pos );
+                                goto Optional;
+                            }
                         }
+                    }else if( ret == E_mem_Q_file_S_eof )
+                    {   *state_ = state;
+                        return E_mem_Q_file_S_eof;
                     }else
                         goto End;
                 }
@@ -1144,7 +1152,7 @@ Cont:
                                         goto End;
                                 }
                             }else
-                            {   O{  if( entities_func( syntax, state, *state_n ))
+                                O{  if( entities_func( syntax, state, *state_n ))
                                         goto End;
                                     if( *state_n > 1 )
                                         if( !E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
@@ -1188,8 +1196,6 @@ Cont:
                                         break;
                                     }
                                 }
-                                *state_ = state;
-                            }
                         }else
                         {   if( *state_n > 1 )
                                 if( !E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
@@ -1204,7 +1210,6 @@ Cont:
                             state[ *state_n - 1 ].in_space_one_more = no;
                             if( !~E_text_syntax_Q_state_I_in_space( syntax, &state, state_n ))
                                 goto End;
-                            *state_ = state;
                         }
                     }
                 }else
@@ -1216,24 +1221,30 @@ Cont:
                         E_mem_Q_file_P_pos( file, pos );
                     }else if( *state_n > 1 )
                     {   B once_matched = state[ *state_n - 1 ].once_matched;
-                        if( E_text_Z_s0_R_l( state[ *state_n - 1 ].s ))
-                        {   if( entities_func( syntax, state, *state_n ))
-                                goto End;
-                            if( *state_n > 1 )
-                                if( !E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
+                        if( !syntax->entities[ state[ *state_n - 1 ].entities_i ].entity[ state[ *state_n - 1 ].entity_i ].optional )
+                        {   if( E_text_Z_s0_R_l( state[ *state_n - 1 ].s ))
+                            {   if( entities_func( syntax, state, *state_n ))
                                     goto End;
-                        }
-                        W( state[ *state_n - 1 ].s );
-                        if( !E_mem_Q_blk_I_remove( &state, --*state_n, 1 ))
-                            goto End;
-                        if( !*state_n )
-                        {   *state_ = state;
-                            return E_mem_Q_file_S_eof;
-                        }
-                        if( state[ *state_n - 1 ].in_space )
-                        {   state[ *state_n - 1 ].in_space = no;
-                            E_mem_Q_file_P_pos( file, pos );
-                            goto Cont;
+                                if( *state_n > 1 )
+                                    if( !E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
+                                        goto End;
+                            }
+                            W( state[ *state_n - 1 ].s );
+                            if( !E_mem_Q_blk_I_remove( &state, --*state_n, 1 ))
+                                goto End;
+                            if( !*state_n )
+                            {   *state_ = state;
+                                return E_mem_Q_file_S_eof;
+                            }
+                            if( state[ *state_n - 1 ].in_space )
+                            {   state[ *state_n - 1 ].in_space = no;
+                                E_mem_Q_file_P_pos( file, pos );
+                                goto Cont;
+                            }
+                            if( syntax->entities[ state[ *state_n - 1 ].entities_i ].entity[ state[ *state_n - 1 ].entity_i ].optional )
+                            {   E_mem_Q_file_P_pos( file, pos );
+                                goto Optional;
+                            }
                         }
                         O{  entity = &syntax->entities[ state[ *state_n - 1 ].entities_i ].entity[ state[ *state_n - 1 ].entity_i ];
                             if( once_matched )
@@ -1285,6 +1296,10 @@ Cont:
                                 E_mem_Q_file_P_pos( file, pos );
                                 goto Cont;
                             }
+                            if( syntax->entities[ state[ *state_n - 1 ].entities_i ].entity[ state[ *state_n - 1 ].entity_i ].optional )
+                            {   E_mem_Q_file_P_pos( file, pos );
+                                goto Optional;
+                            }
                         }
                     }else
                         goto End;
@@ -1302,7 +1317,6 @@ Cont:
                 {   W(s);
                     goto End;
                 }
-                G_(); Gsl( s, l );
                 if( ret == E_mem_Q_file_S_eof )
                     l = E_mem_Q_file_R_pos(file) - pos;
                 if( E_text_Z_s_T_s0_eq( s, s + l, entity->data.s ))
@@ -1332,7 +1346,7 @@ Cont:
                                         goto End;
                                 }
                             }else
-                            {   O{  if( entities_func( syntax, state, *state_n ))
+                                O{  if( entities_func( syntax, state, *state_n ))
                                         goto End;
                                     if( *state_n > 1 )
                                         if( !E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
@@ -1349,7 +1363,7 @@ Cont:
                                         break;
                                     }
                                     entity = &syntax->entities[ state[ *state_n - 1 ].entities_i ].entity[ state[ *state_n - 1 ].entity_i ];
-                                    while( ++state[ *state_n - 1 ].entity_i != syntax->entities[ state[ *state_n - 1 ].entities_i ].entity_n )
+Optional:                           while( ++state[ *state_n - 1 ].entity_i != syntax->entities[ state[ *state_n - 1 ].entities_i ].entity_n )
                                     {   if( !entity->alternative )
                                             break;
                                         entity++;
@@ -1376,8 +1390,6 @@ Cont:
                                         break;
                                     }
                                 }
-                                *state_ = state;
-                            }
                         }else
                         {   if( *state_n > 1 )
                                 if( !E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
@@ -1392,7 +1404,6 @@ Cont:
                             state[ *state_n - 1 ].in_space_one_more = no;
                             if( !~E_text_syntax_Q_state_I_in_space( syntax, &state, state_n ))
                                 goto End;
-                            *state_ = state;
                         }
                     }
                 }else
@@ -1405,24 +1416,30 @@ Cont:
                         E_mem_Q_file_P_pos( file, pos );
                     }else if( *state_n > 1 )
                     {   B once_matched = state[ *state_n - 1 ].once_matched;
-                        if( E_text_Z_s0_R_l( state[ *state_n - 1 ].s ))
-                        {   if( entities_func( syntax, state, *state_n ))
-                                goto End;
-                            if( *state_n > 1 )
-                                if( !E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
+                        if( !syntax->entities[ state[ *state_n - 1 ].entities_i ].entity[ state[ *state_n - 1 ].entity_i ].optional )
+                        {   if( E_text_Z_s0_R_l( state[ *state_n - 1 ].s ))
+                            {   if( entities_func( syntax, state, *state_n ))
                                     goto End;
-                        }
-                        W( state[ *state_n - 1 ].s );
-                        if( !E_mem_Q_blk_I_remove( &state, --*state_n, 1 ))
-                            goto End;
-                        if( !*state_n )
-                        {   *state_ = state;
-                            return E_mem_Q_file_S_eof;
-                        }
-                        if( state[ *state_n - 1 ].in_space )
-                        {   state[ *state_n - 1 ].in_space = no;
-                            E_mem_Q_file_P_pos( file, pos );
-                            goto Cont;
+                                if( *state_n > 1 )
+                                    if( !E_text_Z_s0_I_s0_append( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
+                                        goto End;
+                            }
+                            W( state[ *state_n - 1 ].s );
+                            if( !E_mem_Q_blk_I_remove( &state, --*state_n, 1 ))
+                                goto End;
+                            if( !*state_n )
+                            {   *state_ = state;
+                                return E_mem_Q_file_S_eof;
+                            }
+                            if( state[ *state_n - 1 ].in_space )
+                            {   state[ *state_n - 1 ].in_space = no;
+                                E_mem_Q_file_P_pos( file, pos );
+                                goto Cont;
+                            }
+                            if( syntax->entities[ state[ *state_n - 1 ].entities_i ].entity[ state[ *state_n - 1 ].entity_i ].optional )
+                            {   E_mem_Q_file_P_pos( file, pos );
+                                goto Optional;
+                            }
                         }
                         O{  entity = &syntax->entities[ state[ *state_n - 1 ].entities_i ].entity[ state[ *state_n - 1 ].entity_i ];
                             if( once_matched )
@@ -1473,6 +1490,10 @@ Cont:
                             {   state[ *state_n - 1 ].in_space = no;
                                 E_mem_Q_file_P_pos( file, pos );
                                 goto Cont;
+                            }
+                            if( syntax->entities[ state[ *state_n - 1 ].entities_i ].entity[ state[ *state_n - 1 ].entity_i ].optional )
+                            {   E_mem_Q_file_P_pos( file, pos );
+                                goto Optional;
                             }
                         }
                     }else

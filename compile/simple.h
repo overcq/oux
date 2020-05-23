@@ -6,7 +6,7 @@
 *         simple common procedures
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2015‒4‒28 *
 *******************************************************************************/
-//NDFN rozwiązanie “inline” tylko dla tego pliku.
+//NDFN Rozwiązanie “inline” tylko dla tego pliku.
 #define _inline                     static __attribute__ ((__unused__))
 //==============================================================================
 _inline
