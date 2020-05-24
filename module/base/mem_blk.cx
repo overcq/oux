@@ -282,20 +282,20 @@ E_mem_Q_blk_Q_sys_table_mf_P_put( N table_i
 ){  if( !E_mem_Q_blk_Q_sys_table_mf_I_unite( table_i, rel_addr_p, rel_addr_l, p, l ))
     {   if( table_i == E_mem_Q_blk_S_allocated_S_free_id
         && l >= E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u
-        ){  if( (Pc)p + l == E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p ) ///nowy blok jest przyległy od dołu do tablicy bloków.
+        ){  if( (Pc)p + l == E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p ) /// Nowy blok jest przyległy od dołu do tablicy bloków.
             {   E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p -= E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u;
                 E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n++;
                 struct E_mem_Q_blk_Z_free *free_p = (P)E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p;
-                free_p[0].p = l != E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u ? p : 0;
                 free_p[0].l = l - E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u;
+                free_p[0].p = free_p[0].l ? p : 0;
                 return 0;
             }
-            if( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u == p ) ///nowy blok jest przyległy od góry do tablicy bloków.
+            if( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u == p ) /// Nowy blok jest przyległy od góry do tablicy bloków.
             {   struct E_mem_Q_blk_Z_free *free_p = (P)E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p;
-                free_p[ E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n ].p = l != E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u
+                free_p[ E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n ].l = l - E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u;
+                free_p[ E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n ].p = free_p[ E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n ].l
                   ? (Pc)p + E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u
                   : 0;
-                free_p[ E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n ].l = l - E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u;
                 E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n++;
                 return 0;
             }
@@ -311,8 +311,8 @@ N
 E_mem_Q_blk_Q_sys_table_R_new_id( N table_i
 , N rel_addr_p
 , N rel_addr_l
-, P p ///adres do nowego wpisu.
-, N l ///i rozmiar.
+, P p /// Adres do nowego wpisu.
+, N l /// I rozmiar.
 ){  Pc p_0 = E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p;
     N l_0 = E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u;
     if( table_i == E_mem_Q_blk_S_allocated_S_free_id ) ///TODO Rezerwacja dwóch wpisów także z przyległych bloków poniżej.
@@ -356,8 +356,8 @@ E_mem_Q_blk_Q_sys_table_R_new_id( N table_i
         for_n( free_j, E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_free_id ].n ) /// Szukanie wolnego bloku przyległego od góry.
             if( p_0 + l_0 == free_p[ free_j ].p )
             {   if( free_p[ free_j ].l >= l_ )
-                {   if( l_ == E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u ) /// Znaleziono wcześniej blok przyległy od dołu.
-                    {   free_p[ free_i ].l -= E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u;
+                {   if( l_ != 2 * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u ) /// Znaleziono wcześniej blok przyległy od dołu.
+                    {   free_p[ free_i ].l -= 2 * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u - l_;
                         if( !free_p[ free_i ].l )
                             free_p[ free_i ].p = 0;
                         *( N * )( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p - E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u + rel_addr_l ) = 0;
@@ -377,12 +377,13 @@ E_mem_Q_blk_Q_sys_table_R_new_id( N table_i
                     if( table_i != E_base_S->E_mem_Q_blk_S_table_allocated_id )
                         *( N * )( p_0 + l_0 + rel_addr_l ) = l;
                     *( P * )( p_0 + l_0 + rel_addr_p ) = p;
-                    if( l_ != E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u )
+                    N n = E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n;
+                    if( l_ == 2 * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u )
                     {   *( N * )( p_0 + l_0 + E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u + rel_addr_l ) = 0;
                         *( P * )( p_0 + l_0 + E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u + rel_addr_p ) = 0;
+                        E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n++;
                     }
-                    N n = E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n;
-                    E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n += ( l_ == E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u ? 1 : 2 );
+                    E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n++;
                     return n;
                 }
                 break;
@@ -431,7 +432,7 @@ E_mem_Q_blk_Q_sys_table_R_new_id( N table_i
     }
     Pc p_1 = E_mem_Q_blk_Q_table_M_from_free_or_map_0( table_i
     , E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u
-    , E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n + 1 + ( table_i == E_mem_Q_blk_S_allocated_S_free_id ? 1 : 0 )
+    , E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n + 1 + ( table_i == E_mem_Q_blk_S_allocated_S_free_id ? 2 : 0 )
     , E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n ? p_0 : 0
     , l_0
     , 0
@@ -440,7 +441,9 @@ E_mem_Q_blk_Q_sys_table_R_new_id( N table_i
     if( !p_1 )
         return ~0;
     if( table_i == E_mem_Q_blk_S_allocated_S_free_id )
-    {   *( P * )( p_1 + ( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n - 2 ) * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u + rel_addr_p ) = 0;
+    {   *( P * )( p_1 + ( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n - 3 ) * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u + rel_addr_p ) = 0;
+        *( N * )( p_1 + ( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n - 3 ) * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u + rel_addr_l ) = 0;
+        *( P * )( p_1 + ( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n - 2 ) * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u + rel_addr_p ) = 0;
         *( N * )( p_1 + ( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n - 2 ) * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u + rel_addr_l ) = 0;
     }
     if( table_i == E_mem_Q_blk_S_allocated_S_mapped_id
@@ -1447,8 +1450,7 @@ P
 E_mem_Q_blk_I_remove_( P p
 , N i
 , N n
-){  if( !n )
-        return *( P * )p;
+){  J_assert(n);
     for_n( allocated_i, E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].n )
         if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p == *( P * )p )
         {   J_assert( i + n <= E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n );
@@ -1640,13 +1642,11 @@ malloc( size_t l
 P
 calloc( size_t n
 , size_t u
-){  if( !u )
-        u = 1;
-    if( E_simple_T_multiply_overflow( n, u ))
+){  if( E_simple_T_multiply_overflow( n, u ))
     {   _errno = ENOMEM;
         return 0;
     }
-    P p = E_mem_Q_blk_M_tab_calloc( u, n );
+    P p = E_mem_Q_blk_M_tab_calloc( 1, n * u );
     if( !p )
         _errno = ENOMEM;
     else
@@ -1673,9 +1673,8 @@ realloc( P p
                 _single_thread_end;
                 return 0;
             }
-            N i = E_simple_Z_n_I_align_up_to_u_R_count( l, E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u );
-            if( i > E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n )
-            {   P p_ = E_mem_Q_blk_I_append_( &p, i - E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n, yes );
+            if( l > E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n )
+            {   P p_ = E_mem_Q_blk_I_append_( &p, l - E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n, yes );
                 _single_thread_end;
                 if( p_ )
                     p_ = p;
@@ -1683,8 +1682,8 @@ realloc( P p
                     _errno = ENOMEM;
                 return p_;
             }
-            if( i < E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n )
-            {   P p_ = E_mem_Q_blk_I_remove_( &p, i, E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n - i );
+            if( l < E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n )
+            {   P p_ = E_mem_Q_blk_I_remove_( &p, l, E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n - l );
                 _single_thread_end;
                 return p_;
             }
