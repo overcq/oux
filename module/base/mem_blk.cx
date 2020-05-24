@@ -6,34 +6,34 @@
 *         memory blocks manager
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2015‒4‒28 *
 *******************************************************************************/
-/**menedżer bloków pamięci alokowanej dynamicznie, ale nie do niepotrzebnego alokowania i zwalniania w pętlach, przechowujący rozmiar pojedynczego elementu bloku tylko do własnej administracji pamięcią.
-implementacyjnie– w “E_mem_Q_blk” uchwytami są adresy elementów (ponad zmienianymi numerami elementów), a w “E_mem_Q_tab”– numery elementów (ponad zmienianymi adresami). czyli w sensie funkcjonalnym z zewnątrz– ten pierwszy jest menedżerem tablic rzeczywistych (ciągłych w pamięci), a ten drugi– zarządzanych.
+/** Menedżer bloków pamięci alokowanej dynamicznie, ale nie do niepotrzebnego alokowania i zwalniania w pętlach, przechowujący rozmiar pojedynczego elementu bloku tylko do własnej administracji pamięcią.
+implementacyjnie– w “E_mem_Q_blk” uchwytami są adresy elementów (ponad zmienianymi numerami elementów), a w “E_mem_Q_tab”– numery elementów (ponad zmienianymi adresami). Czyli w sensie funkcjonalnym z zewnątrz– ten pierwszy jest menedżerem tablic rzeczywistych (ciągłych w pamięci), a ten drugi– zarządzanych.
 ⁂
-deterministyczna strategia modyfikacji pamięci stosowana w tym menedżerze i globalnie wewnętrznie w miejscu użycia jego funkcji.
-struktura osadzenia przepływu wykonania menedżera:
-⁃w punkcie wejścia oraz wyjścia przepływu wykonania ‹zadania› z funkcji menedżera stan pamięci zarządzanej jest integralny. funkcja może zmienić adres tylko tego bloku pamięci spośród udostępnionych przez menedżera, względem którego została wywołana.
-⁃w trakcie posiadania przepływu wykonania przez menedżera może wystąpić przerwanie zabierające przepływ wykonania— w postaci “sygnału” ‘uniksowego’, którego procedura obsługi może ewentualnie wykonywać dostęp do bloku pamięci zarządzanego przez tego menedżera; teksty procedur obsługi są w “menedżerze przepływu wykonania”.
-⁃jednak “sygnały” ‘uniksowe’ czytające lub zmieniające konkretne bloki pamięci są blokowane przed przejęciem przepływu wykonania podczas ich modyfikacji, ponieważ te konkretne bloki są używane poprzez któregoś menedżera ·struktur· pamięci (menedżera pamięci wyższego poziomu), który nie potrafiłby wykonać swoich funkcji “atomowo” ze względu na złożoność danych, więc “sygnał” ‘uniksowy’ nie wystąpi podczas zmiany adresu bloku pamięci, z którego korzysta.
-⁃jakkolwiek “sygnał” ‘uniksowy’ “SEGV” używany nie jako błąd —do automatycznego ‘doalokowywania’ stron pamięci “stosów” ‹zadań› z wcześniej zarezerwowanego obszaru przestrzeni adresowej— może wystąpić kiedykolwiek po przesunięciu niżej wierzchołka “stosu” ‹zadania› w procedurze tego menedżera przez ‘kompilator’, a procedura obsługi tego “sygnału” czyta i zmienia dane w tablicy ‹zadań›. więc w konkretnej implementacji zmieniania tablicy ‹zadań› “stos” ‹zadania› jest ‘prealokowany’ (“E_flow_Q_task_I_touch_stack”), a dla innego “thread”– ustawiany ‹przełącznik› zabraniający czytania tej tablicy w procedurze obsługi “sygnału” “SEGV”.
-struktura “atomowości” menedżera:
-⁃w tekście programu menedżera jest gwarantowane ‘implicite’ ze składni języka (tzn. z domyślnej alokacji zmiennych lokalnych na “stosie” ·przed ich użyciem· jako wartość wyrażenia przypisywanego), że wpis w tablicy systemowej menedżera (adres, rozmiar bloku) zostanie zmieniony “atomowo” względem poszczególnego elementu wpisu (adres lub rozmiar), oraz z linii programu– zawsze tak, by przed i po “atomowej” zmianie odczyt całego wpisu był poprawny względem chwilowo obecnego bloku pamięci z zawartością. to umożliwia przerwanie przepływu wykonania przez “sygnał” lub “wątek” systemu operacyjnego i poprawny dostęp do pamięci udostępnionej przez menedżera, ale nie wywołanie funkcji menedżera. (czy to ma jakieś zastosowanie, gdy funkcje i tak muszą być blokowane?)
-⁃pomiędzy wszystkimi tablicami systemowymi menedżera integralność jest zachowywana przez realizację właściwej sekwencji zmieniania wpisów, w których to sekwencjach blok pamięci jest utrzymywany w pierwszej funkcji na nim się wykonującej— przez utrzymywanie jego wpisu w zmiennych lokalnych, a usuniętego z tablicy wolnych bloków, niedostępnego dla kolejnych funkcji. (kolejność zmian “atomowych” dla chwilowej poprawności w trakcie zmiany pojedynczego wpisu nie została jeszcze sprawdzona.) to umożliwia rekurencyjne wywoływanie uniwersalnych funkcji wewnętrz menedżera oraz po dodaniu odpowiednich instrukcji synchronizacji “międzywątkowych” umożliwi przerywanie przepływu wykonania menedżera przez system operacyjny “wywłaszczający” dla kolejnego “wątku” spośród tych (nie synchronizowanych w “menedżerze przepływu wykonania”) nałożonych na program w technologii ‟oux” wymaganiami którejś ‘dokompilowanej’ “biblioteki”— i wykonanie funkcji menedżera przez program “biblioteczny” (np. zastąpionej procedury “biblioteki” ‟C”: “malloc”, “calloc”, “realloc”, “free”).
-⁃natomiast kopiowanie zawartości bloku pamięci podczas ‘realokacji’ obejmujące zwalnianie pamięci odrazu do systemu operacyjnego lub obszary zachodzące musi być realizowane tak, by nie nastąpiło przerwanie, a w szczególności– przez “SIGSEGV”.
+Deterministyczna strategia modyfikacji pamięci stosowana w tym menedżerze i globalnie wewnętrznie w miejscu użycia jego funkcji.
+Struktura osadzenia przepływu wykonania menedżera:
+⁃ W punkcie wejścia oraz wyjścia przepływu wykonania ‹zadania› z funkcji menedżera stan pamięci zarządzanej jest integralny. Funkcja może zmienić adres tylko tego bloku pamięci spośród udostępnionych przez menedżera, względem którego została wywołana.
+⁃ W trakcie posiadania przepływu wykonania przez menedżera może wystąpić przerwanie zabierające przepływ wykonania— w postaci “sygnału” ‘uniksowego’, którego procedura obsługi może ewentualnie wykonywać dostęp do bloku pamięci zarządzanego przez tego menedżera; teksty procedur obsługi są w “menedżerze przepływu wykonania”.
+⁃ Jednak “sygnały” ‘uniksowe’ czytające lub zmieniające konkretne bloki pamięci są blokowane przed przejęciem przepływu wykonania podczas ich modyfikacji, ponieważ te konkretne bloki są używane poprzez któregoś menedżera ·struktur· pamięci (menedżera pamięci wyższego poziomu), który nie potrafiłby wykonać swoich funkcji “atomowo” ze względu na złożoność danych, więc “sygnał” ‘uniksowy’ nie wystąpi podczas zmiany adresu bloku pamięci, z którego korzysta.
+⁃ Jakkolwiek “sygnał” ‘uniksowy’ “SEGV” używany nie jako błąd —do automatycznego ‘doalokowywania’ stron pamięci “stosów” ‹zadań› z wcześniej zarezerwowanego obszaru przestrzeni adresowej— może wystąpić kiedykolwiek po przesunięciu niżej wierzchołka “stosu” ‹zadania› w procedurze tego menedżera przez ‘kompilator’, a procedura obsługi tego “sygnału” czyta i zmienia dane w tablicy ‹zadań›. Więc w konkretnej implementacji zmieniania tablicy ‹zadań› “stos” ‹zadania› jest ‘prealokowany’ (“E_flow_Q_task_I_touch_stack”), a dla innego “thread”– ustawiany ‹przełącznik› zabraniający czytania tej tablicy w procedurze obsługi “sygnału” “SEGV”.
+Struktura “atomowości” menedżera:
+⁃ W tekście programu menedżera jest gwarantowane ‘implicite’ ze składni języka (tzn. z domyślnej alokacji zmiennych lokalnych na “stosie” ·przed ich użyciem· jako wartość wyrażenia przypisywanego), że wpis w tablicy systemowej menedżera (adres, rozmiar bloku) zostanie zmieniony “atomowo” względem poszczególnego elementu wpisu (adres lub rozmiar), oraz z linii programu– zawsze tak, by przed i po “atomowej” zmianie odczyt całego wpisu był poprawny względem chwilowo obecnego bloku pamięci z zawartością. To umożliwia przerwanie przepływu wykonania przez “sygnał” lub “wątek” systemu operacyjnego i poprawny dostęp do pamięci udostępnionej przez menedżera, ale nie wywołanie funkcji menedżera. (Czy to ma jakieś zastosowanie, gdy funkcje i tak muszą być blokowane?)
+⁃ Pomiędzy wszystkimi tablicami systemowymi menedżera integralność jest zachowywana przez realizację właściwej sekwencji zmieniania wpisów, w których to sekwencjach blok pamięci jest utrzymywany w pierwszej funkcji na nim się wykonującej— przez utrzymywanie jego wpisu w zmiennych lokalnych, a usuniętego z tablicy wolnych bloków, niedostępnego dla kolejnych funkcji. (Kolejność zmian “atomowych” dla chwilowej poprawności w trakcie zmiany pojedynczego wpisu nie została jeszcze sprawdzona.) To umożliwia rekurencyjne wywoływanie uniwersalnych funkcji wewnętrz menedżera oraz po dodaniu odpowiednich instrukcji synchronizacji “międzywątkowych” umożliwi przerywanie przepływu wykonania menedżera przez system operacyjny “wywłaszczający” dla kolejnego “wątku” spośród tych (nie synchronizowanych w “menedżerze przepływu wykonania”) nałożonych na program w technologii ‟oux” wymaganiami którejś ‘dokompilowanej’ “biblioteki”— i wykonanie funkcji menedżera przez program “biblioteczny” (np. zastąpionej procedury “biblioteki” ‟C”: “malloc”, “calloc”, “realloc”, “free”).
+⁃ Natomiast kopiowanie zawartości bloku pamięci podczas ‘realokacji’ obejmujące zwalnianie pamięci odrazu do systemu operacyjnego lub obszary zachodzące musi być realizowane tak, by nie nastąpiło przerwanie, a w szczególności– przez “SIGSEGV”.
 ⁂
-można alokować zero jednostek pamięci: ‘alokowany’ jest symboliczny adres będący małą liczbą, traktowany tak samo jak adres rzeczywisty.
-parametry podawane do funkcji nie mogą oznaczać pustych operacji; jest to wymagane dla niewyjścia poza integralność programu.
-funkcje podają “0” przy braku możliwosci ‘alokacji’ nowej pamięci, a przy nieznalezieniu wpisu w rejestrze ‘alokowanych’ bloków generują ‹niepowodzenie zakańczające›.
+Można alokować zero jednostek pamięci: ‘alokowany’ jest symboliczny adres będący małą liczbą, traktowany tak samo jak adres rzeczywisty.
+Parametry podawane do funkcji nie mogą oznaczać pustych operacji; jest to wymagane dla niewyjścia poza integralność programu.
+Funkcje podają “0” przy braku możliwosci ‘alokacji’ nowej pamięci, a przy nieznalezieniu wpisu w rejestrze ‘alokowanych’ bloków generują ‹niepowodzenie zakańczające›.
 ⁂
-zależnie od zastosowania powiększania bloku pamięci, w celu niewykonywania niepotrzebnych instrukcji należy wybrać pierwszą funkcję w kolejności: “add” (nie zależy, gdzie dodane), [“prepend_append”], “append”, “prepend”, “insert” (gdy musi być konkretne miejsce).
+Zależnie od zastosowania powiększania bloku pamięci, w celu niewykonywania niepotrzebnych instrukcji należy wybrać pierwszą funkcję w kolejności: “add” (nie zależy, gdzie dodane), [“prepend_append”], “append”, “prepend”, “insert” (gdy musi być konkretne miejsce).
 */
 //------------------------------------------------------------------------------
 //TODO mapped free
-//TODO zestandaryzować zakresy parametrów, tak, by można było używać dowolnych wartości.
-//TODO sprawdzić, czy gwarantuje poprawne ‘alokowanie’ bloków pamięci przekraczających 0. nie należy przekraczać 0, ponieważ jest ono używane jako wartość niepoprawnego adresu w systemie operacyjnym i strona o tym adresie nie jest ‘alokowana’, ale ostatnia strona przestrzeni adresowej może być (~0 ma znaczenie tylko dla ‹identyfikatorów›, a inne to tylko w systemie operacyjnym).
-//TODO funkcje “move” oprócz obecnych “copy”, by można było w nich użyć “remap”, jeśli jest dostępne.
-//funkcja porządkująca tablice w dostępnym nadmiarowo czasie wykonania? obecnie nic aktywnie nie porządkuje ani tablic systemowych, ani pamięci bloków, a tylko pasywnie podczas wykonywania żądanych funkcji, jeśli coś jest oczywiste w wykonywaniu funkcji.
-//dodać ewentualnie wyrównywanie adresu, a rezerwację pamięci na bloki typu tablica.
-//zaimplementować ‘alokacje’ sfragmentowane (listy bloków ‘alokowanego’) i optymalizacje przy braku pamieci z projektowanego kiedyś menedżera pamięci (“mem_mng– use”).
+//TODO Zestandaryzować zakresy parametrów, tak, by można było używać dowolnych wartości.
+//TODO Sprawdzić, czy gwarantuje poprawne ‘alokowanie’ bloków pamięci przekraczających 0. Nie należy przekraczać 0, ponieważ jest ono używane jako wartość niepoprawnego adresu w systemie operacyjnym i strona o tym adresie nie jest ‘alokowana’, ale ostatnia strona przestrzeni adresowej może być (~0 ma znaczenie tylko dla ‹identyfikatorów›, a inne to tylko w systemie operacyjnym).
+//TODO Funkcje “move” oprócz obecnych “copy”, by można było w nich użyć “remap”, jeśli jest dostępne.
+// Funkcja porządkująca tablice w dostępnym nadmiarowo czasie wykonania? obecnie nic aktywnie nie porządkuje ani tablic systemowych, ani pamięci bloków, a tylko pasywnie podczas wykonywania żądanych funkcji, jeśli coś jest oczywiste w wykonywaniu funkcji.
+// Dodać ewentualnie wyrównywanie adresu, a rezerwację pamięci na bloki typu tablica.
+// Zaimplementować ‘alokacje’ sfragmentowane (listy bloków ‘alokowanego’) i optymalizacje przy braku pamieci z projektowanego kiedyś menedżera pamięci (“mem_mng– use”).
 //==============================================================================
     #ifdef C_to_libs_C_replace_c_alloc
         #ifdef C_pthreads
@@ -50,18 +50,18 @@ zależnie od zastosowania powiększania bloku pamięci, w celu niewykonywania ni
 //------------------------------------------------------------------------------
 #define S_align_to_all          ( 2 * sizeof(N) )
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-struct E_mem_Q_blk_Z_mapped ///obszary stron pamięci otrzymane z systemu operacyjnego.
-{ Pc p; ///“0” tutaj i w “l” oznacza pusty wpis; ale wystarczy sprawdzić jedno.
+struct E_mem_Q_blk_Z_mapped /// obszary stron pamięci otrzymane z systemu operacyjnego.
+{ Pc p; /// “0” tutaj i w “l” oznacza pusty wpis; ale wystarczy sprawdzić jedno.
   N l;
 };
-struct E_mem_Q_blk_Z_free ///dla optymalizacji wyszukiwania obszaru nowej ‘alokacji’.
-{ Pc p; ///“0” tutaj i w “l” oznacza pusty wpis; ale wystarczy sprawdzić jedno.
+struct E_mem_Q_blk_Z_free /// Dla optymalizacji wyszukiwania obszaru nowej ‘alokacji’.
+{ Pc p; /// “0” tutaj i w “l” oznacza pusty wpis; ale wystarczy sprawdzić jedno.
   N l;
 };
-struct E_mem_Q_blk_Z_allocated ///dla kontroli poprawności wydawania i oddawania ‘alokacji’.
-{ Pc p; ///“0” oznacza pusty wpis.
-  N u; ///‘unit’
-  N n; ///w niepustym wpisie— “0” oznacza ‛zerowy wpis’.
+struct E_mem_Q_blk_Z_allocated /// Dla kontroli poprawności wydawania i oddawania ‘alokacji’.
+{ Pc p; /// “0” oznacza pusty wpis.
+  N u; /// ‘unit’
+  N n; /// W niepustym wpisie— “0” oznacza ‛zerowy wpis’.
 };
 //==============================================================================
     #ifdef E_mem_Q_blk_C_debug
@@ -166,7 +166,7 @@ E_mem_Q_blk_I_assert_on_return( N line
     {   if( !free_p[j].p )
             continue;
         if( !T_sign( free_p[j].l ))
-        {   G_(); Gd(line); Gh( free_p[j].p ); V(); ///lost
+        {   G_(); Gd(line); Gh( free_p[j].p ); Gd( free_p[j].l ); V(); ///lost
         }
         free_p[j].l = ~free_p[j].l;
     }
@@ -1607,8 +1607,7 @@ P
 E_mem_Q_blk_M_tab_calloc(
   N u
 , N n
-){  J_assert( !E_simple_T_multiply_overflow( n, u ));
-    _single_thread_begin;
+){  _single_thread_begin;
     struct E_mem_Q_blk_Z_allocated allocated_p;
     N allocated_i = E_mem_Q_blk_Q_sys_table_R_new_id( E_base_S->E_mem_Q_blk_S_table_allocated_id, (Pc)&allocated_p.p - (Pc)&allocated_p, (Pc)&allocated_p.n - (Pc)&allocated_p, 0, 0 );
     if( !~allocated_i )
@@ -1633,9 +1632,7 @@ E_mem_Q_blk_M_tab_calloc(
 }
 P
 malloc( size_t l
-){  if( !l ) /// Wyłączenie funkcji ‛alokacji pustych’.
-        return 0;
-    P p = E_mem_Q_blk_M_malloc(l);
+){  P p = E_mem_Q_blk_M_malloc(l);
     if( !p )
         _errno = ENOMEM;
     return p;
@@ -1643,8 +1640,12 @@ malloc( size_t l
 P
 calloc( size_t n
 , size_t u
-){  if( !n || !u ) /// Wyłączenie funkcji ‛alokacji pustych’.
+){  if( !u )
+        u = 1;
+    if( E_simple_T_multiply_overflow( n, u ))
+    {   _errno = ENOMEM;
         return 0;
+    }
     P p = E_mem_Q_blk_M_tab_calloc( u, n );
     if( !p )
         _errno = ENOMEM;
@@ -1662,11 +1663,13 @@ realloc( P p
         if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p == p )
         {   if( !l )
             {   E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p = 0;
-                struct E_mem_Q_blk_Z_free free_p_;
-                E_mem_Q_blk_Q_sys_table_mf_P_put( E_mem_Q_blk_S_allocated_S_free_id, (Pc)&free_p_.p - (Pc)&free_p_, (Pc)&free_p_.l - (Pc)&free_p_
-                , p
-                , E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
-                );
+                if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n )
+                {   struct E_mem_Q_blk_Z_free free_p_;
+                    E_mem_Q_blk_Q_sys_table_mf_P_put( E_mem_Q_blk_S_allocated_S_free_id, (Pc)&free_p_.p - (Pc)&free_p_, (Pc)&free_p_.l - (Pc)&free_p_
+                    , p
+                    , E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
+                    );
+                }
                 _single_thread_end;
                 return 0;
             }
@@ -1704,8 +1707,10 @@ free( P p
     for_n( allocated_i, E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].n )
         if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p == p )
         {   E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p = 0;
-            struct E_mem_Q_blk_Z_free free_p_;
-            E_mem_Q_blk_Q_sys_table_mf_P_put( E_mem_Q_blk_S_allocated_S_free_id, (Pc)&free_p_.p - (Pc)&free_p_, (Pc)&free_p_.l - (Pc)&free_p_, p, E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u );
+            if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n )
+            {   struct E_mem_Q_blk_Z_free free_p_;
+                E_mem_Q_blk_Q_sys_table_mf_P_put( E_mem_Q_blk_S_allocated_S_free_id, (Pc)&free_p_.p - (Pc)&free_p_, (Pc)&free_p_.l - (Pc)&free_p_, p, E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u );
+            }
             _single_thread_end;
             return;
         }

@@ -6,7 +6,7 @@
 *         storage memory
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”              2016‒2‒5 U
 *******************************************************************************/
-// Obsługę plików zrobić jako obiekt pamięci implementujący niegdyś wymyślone pojęcie dostępu do bloków pamięci masowej bez obecności tzw. “wymiatania na dysk”. teraz byłby to raczej obiekt pamięci operacyjnej do umieszczania w nim danych zachowywanych w postaci integralnej pomiędzy ‘wywaleniami’ programu. czyli bazować na automatycznych mechanizmach systemu operacyjnego zapisujących zawartość pamięci do wcześniej gwarantowanego miejsca na dysku— dopiero w momencie konieczności, np. ‘wywalenia’ programu.
+// Obsługę plików zrobić jako obiekt pamięci implementujący niegdyś wymyślone pojęcie dostępu do bloków pamięci masowej bez obecności tzw. “wymiatania na dysk”. Teraz byłby to raczej obiekt pamięci operacyjnej do umieszczania w nim danych zachowywanych w postaci integralnej pomiędzy ‘wywaleniami’ programu. Czyli bazować na automatycznych mechanizmach systemu operacyjnego zapisujących zawartość pamięci do wcześniej gwarantowanego miejsca na dysku— dopiero w momencie konieczności, np. ‘wywalenia’ programu.
 // Trzeba podjąć decyzje strukturalne co do sposobu bezpośredniego indeksowania bloków, bloku bieżącego— w przepływie wykonania funkcji ‹modułu›.
 // Odczyt dostępnego bloku pamięci do podanej wielkości rozmiaru danych.
 //==============================================================================
@@ -519,7 +519,7 @@ E_mem_Q_file_R_u( I id
 N
 E_mem_Q_file_R_u_upto( I id
 , Pc upto
-, Pc *s ///Nowo alokowany ciąg znaków “utf-8”.
+, Pc *s /// Nowo alokowany ciąg znaków “utf-8”.
 ){  U u;
     *s = M(1);
     if( !*s )
@@ -559,7 +559,7 @@ E_mem_Q_file_R_u_upto( I id
 N
 E_mem_Q_file_R_u_outof( I id
 , Pc outof
-, Pc *s ///Nowo alokowany ciąg znaków “utf-8”.
+, Pc *s /// Nowo alokowany ciąg znaków “utf-8”.
 ){  U u;
     *s = M(1);
     if( !*s )
@@ -602,8 +602,7 @@ N
 E_mem_Q_file_P_c( I id
 , C c
 ){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
-    if( U_R( file->mode, readonly ))
-        return ~0;
+    J_assert( !U_R( file->mode, readonly ));
     if(( file->st_mode & S_IFMT ) == S_IFBLK )
         if( file->pos >= file->l )
             return ~0;
@@ -792,9 +791,8 @@ E_mem_Q_file_P_insert_s( I id
 , N n
 ){  J_assert(n); /// Nieoptymalne użycie tej procedury.
     struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
-    if( U_R( file->mode, readonly )
-    || ( file->st_mode & S_IFMT ) == S_IFBLK
-    )
+    J_assert( !U_R( file->mode, readonly ));
+    if(( file->st_mode & S_IFMT ) == S_IFBLK )
         return ~0;
     U_L( file->current_blk, valid );
     U_L( file->current_blk, valid_sob );
@@ -889,9 +887,8 @@ E_mem_Q_file_P_rem_s( I id
 , N n
 ){  J_assert(n); ///Nieoptymalne użycie tej procedury.
     struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
-    if( U_R( file->mode, readonly )
-    || ( file->st_mode & S_IFMT ) == S_IFBLK
-    )
+    J_assert( !U_R( file->mode, readonly ));
+    if(( file->st_mode & S_IFMT ) == S_IFBLK )
         return ~0;
     U_L( file->current_blk, valid );
     U_L( file->current_blk, valid_sob );

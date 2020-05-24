@@ -604,8 +604,14 @@ E_text_syntax_M( I file
                     {   W(s);
                         goto End;
                     }
-                    if( regcomp( &syntax->entities[ syntax->entities_n - 1 ].entity[ syntax->entities[ syntax->entities_n - 1 ].entity_n ].data.re, s, REG_EXTENDED | REG_NOSUB ))
+                    int e;
+                    if( e = regcomp( &syntax->entities[ syntax->entities_n - 1 ].entity[ syntax->entities[ syntax->entities_n - 1 ].entity_n ].data.re, s, REG_EXTENDED | REG_NOSUB ))
                     {   W(s);
+                        N l = regerror( e, &syntax->entities[ syntax->entities_n - 1 ].entity[ syntax->entities[ syntax->entities_n - 1 ].entity_n ].data.re, 0, 0 );
+                        s = M(l);
+                        regerror( e, &syntax->entities[ syntax->entities_n - 1 ].entity[ syntax->entities[ syntax->entities_n - 1 ].entity_n ].data.re, s, l );
+                        G_(); Gs0(s);
+                        W(s);
                         goto End;
                     }
                     W(s);
