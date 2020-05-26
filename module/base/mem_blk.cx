@@ -7,7 +7,7 @@
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2015‒4‒28 *
 *******************************************************************************/
 /** Menedżer bloków pamięci alokowanej dynamicznie, ale nie do niepotrzebnego alokowania i zwalniania w pętlach, przechowujący rozmiar pojedynczego elementu bloku tylko do własnej administracji pamięcią.
-implementacyjnie– w “E_mem_Q_blk” uchwytami są adresy elementów (ponad zmienianymi numerami elementów), a w “E_mem_Q_tab”– numery elementów (ponad zmienianymi adresami). Czyli w sensie funkcjonalnym z zewnątrz– ten pierwszy jest menedżerem tablic rzeczywistych (ciągłych w pamięci), a ten drugi– zarządzanych.
+Implementacyjnie– w “E_mem_Q_blk” uchwytami są adresy elementów (ponad zmienianymi numerami elementów), a w “E_mem_Q_tab”– numery elementów (ponad zmienianymi adresami). Czyli w sensie funkcjonalnym z zewnątrz– ten pierwszy jest menedżerem tablic rzeczywistych (ciągłych w pamięci), a ten drugi– zarządzanych.
 ⁂
 Deterministyczna strategia modyfikacji pamięci stosowana w tym menedżerze i globalnie wewnętrznie w miejscu użycia jego funkcji.
 Struktura osadzenia przepływu wykonania menedżera:
@@ -28,11 +28,9 @@ Zależnie od zastosowania powiększania bloku pamięci, w celu niewykonywania ni
 */
 //------------------------------------------------------------------------------
 //TODO mapped free
-//TODO Zestandaryzować zakresy parametrów, tak, by można było używać dowolnych wartości.
 //TODO Sprawdzić, czy gwarantuje poprawne ‘alokowanie’ bloków pamięci przekraczających 0. Nie należy przekraczać 0, ponieważ jest ono używane jako wartość niepoprawnego adresu w systemie operacyjnym i strona o tym adresie nie jest ‘alokowana’, ale ostatnia strona przestrzeni adresowej może być (~0 ma znaczenie tylko dla ‹identyfikatorów›, a inne to tylko w systemie operacyjnym).
 //TODO Funkcje “move” oprócz obecnych “copy”, by można było w nich użyć “remap”, jeśli jest dostępne.
-// Funkcja porządkująca tablice w dostępnym nadmiarowo czasie wykonania? obecnie nic aktywnie nie porządkuje ani tablic systemowych, ani pamięci bloków, a tylko pasywnie podczas wykonywania żądanych funkcji, jeśli coś jest oczywiste w wykonywaniu funkcji.
-// Dodać ewentualnie wyrównywanie adresu, a rezerwację pamięci na bloki typu tablica.
+// Funkcja porządkująca tablice w dostępnym nadmiarowo czasie wykonania? Obecnie nic aktywnie nie porządkuje ani tablic systemowych, ani pamięci bloków, a tylko pasywnie podczas wykonywania żądanych funkcji, jeśli coś jest oczywiste w wykonywaniu funkcji.
 // Zaimplementować ‘alokacje’ sfragmentowane (listy bloków ‘alokowanego’) i optymalizacje przy braku pamieci z projektowanego kiedyś menedżera pamięci (“mem_mng– use”).
 //==============================================================================
     #ifdef C_to_libs_C_replace_c_alloc
@@ -48,7 +46,7 @@ Zależnie od zastosowania powiększania bloku pamięci, w celu niewykonywania ni
 #define _single_thread_end
     #endif
 //------------------------------------------------------------------------------
-#define S_align_to_all          ( 2 * sizeof(N) )
+#define E_mem_Q_blk_S_align_to_all  ( 2 * sizeof(N) )
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 struct E_mem_Q_blk_Z_mapped /// obszary stron pamięci otrzymane z systemu operacyjnego.
 { Pc p; /// “0” tutaj i w “l” oznacza pusty wpis; ale wystarczy sprawdzić jedno.
@@ -485,9 +483,9 @@ E_mem_Q_blk_Q_table_M_from_free_or_map_0( N allocated_2_table_i
         || allocated_2_table_i == E_mem_Q_blk_S_allocated_S_free_id
         || allocated_2_table_i == E_mem_Q_blk_S_allocated_S_mapped_id
         )
-            l_align = 1;
+            l_align = sizeof(N);
         else if( align_to_all )
-            l_align = S_align_to_all;
+            l_align = E_mem_Q_blk_S_align_to_all;
         else if( u > sizeof(N) && u % sizeof(N) == 0 )
             l_align = u > sizeof(N) ? sizeof(N) : u;
         else if( u <= sizeof(N) && E_simple_Z_n_T_power_2(u) )
@@ -883,6 +881,7 @@ E_mem_Q_blk_M_replace_tab( P p
 , N u
 , N n
 ){  J_assert(u);
+    J_assert( !E_simple_T_multiply_overflow( n, u ));
     _single_thread_begin;
     for_n( allocated_i, E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].n )
         if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p == p )
@@ -911,7 +910,8 @@ __attribute__ ((__malloc__))
 P
 E_mem_Q_blk_M_split( P p
 , N i
-){  _single_thread_begin;
+){  J_assert(i);
+    _single_thread_begin;
     struct E_mem_Q_blk_Z_allocated allocated_p;
     N allocated_i = E_mem_Q_blk_Q_sys_table_R_new_id( E_base_S->E_mem_Q_blk_S_table_allocated_id, (Pc)&allocated_p.p - (Pc)&allocated_p, (Pc)&allocated_p.n - (Pc)&allocated_p, 0, 0 );
     if( !~allocated_i )
@@ -1175,7 +1175,7 @@ E_mem_Q_blk_I_append_( P p
                 if( align_to_all )
                 {   for_n( free_j, E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_free_id ].n ) /// Szukanie wolnego bloku przyległego od dołu.
                         if( free_p[ free_j ].p + free_p[ free_j ].l == p_0 )
-                        {   Pc p_align = E_simple_Z_p_I_align_up_to_v2( free_p[ free_j ].p, S_align_to_all );
+                        {   Pc p_align = E_simple_Z_p_I_align_up_to_v2( free_p[ free_j ].p, E_mem_Q_blk_S_align_to_all );
                             if( free_p[ free_j ].l >= l + ( p_align - free_p[ free_i ].p ))
                             {   if( free_p[ free_j ].l == l )
                                     free_p[ free_j ].p = 0;

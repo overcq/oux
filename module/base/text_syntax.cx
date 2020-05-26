@@ -220,7 +220,7 @@ E_text_syntax_T_name( Pc s
     U u, u_prev; /// Procedura nadrzędna zapewnia, że zawsze będzie poprawny tekst UTF-8 i “iswalpha” pierwszego znaku.
     while( *s_start )
     {   Pc s_end = E_text_Z_s_Z_utf8_R_u( s_start, &u );
-        if(( !iswalpha(u)
+        if(( !iswalnum(u)
           && u != ' '
         )
         || ( u == ' '
@@ -268,12 +268,15 @@ E_text_syntax_M( I file
         && *( s_start - 1 ) != '\n'
         )
         {   W(s);
+            G_();
             goto End;
         }
         if( !iswalpha(u) )
         {   W(s);
             if( u != '/' )
+            {   G_();
                 goto End;
+            }
             /// Komentarz linowy w osobnej linii.
             ret = E_mem_Q_file_R_u_outof( file, "/", &s );
             if( !~ret )
@@ -282,7 +285,9 @@ E_text_syntax_M( I file
             if( ret == E_mem_Q_file_S_eof )
             {   W(s);
                 if( s_end - s == 0 )
+                {   G_();
                     goto End;
+                }
                 break;
             }
             s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
@@ -337,11 +342,13 @@ E_text_syntax_M( I file
                   && u != '\t'
                 ))
                 {   W(s);
+                    G_();
                     goto End;
                 }
             }
             if( *s_end )
             {   W(s);
+                G_();
                 goto End;
             }
             W(s);
@@ -364,13 +371,16 @@ E_text_syntax_M( I file
         E_text_Z_s_P_s_copy_0( syntax->entities[ syntax->entities_n - 1 ].name + i, s, s_end );
         W(s);
         if( !E_text_syntax_T_name( syntax->entities[ syntax->entities_n - 1 ].name ))
+        {   G_();
             goto End;
+        }
         ret = E_mem_Q_file_R_u_outof( file, E_text_syntax_S_line_space, &s );
         if( !~ret )
             goto End;
         s_end = E_text_Z_s0_R_end(s);
         if( ret == E_mem_Q_file_S_eof )
         {   W(s);
+            G_();
             goto End;
         }
         s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
@@ -378,12 +388,15 @@ E_text_syntax_M( I file
         {   W(s);
             if( u == '/' )
             {   if( syntax->entities[ syntax->entities_n - 1 ].space.s )
+                {   G_();
                     goto End;
+                }
                 ret = E_mem_Q_file_R_u_outof( file, E_text_syntax_S_line_space, &s );
                 if( !~ret )
                     goto End;
                 if( ret == E_mem_Q_file_S_eof )
                 {   W(s);
+                    G_();
                     goto End;
                 }
                 s_end = E_text_Z_s0_R_end(s);
@@ -394,6 +407,7 @@ E_text_syntax_M( I file
                     goto End;
                 if( ret == E_mem_Q_file_S_eof )
                 {   W(s);
+                    G_();
                     goto End;
                 }
                 if( !E_mem_Q_blk_I_prepend( &s, s_end - s_start ))
@@ -422,11 +436,14 @@ E_text_syntax_M( I file
                 s_end = E_text_Z_s0_R_end(s);
                 if( ret == E_mem_Q_file_S_eof )
                 {   W(s);
+                    G_();
                     goto End;
                 }
                 s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
             }else
+            {   G_();
                 goto End;
+            }
         }
         O{  O{  ret = E_mem_Q_file_R_u_upto( file, ",|" E_text_syntax_S_newline, &s );
                 if( !~ret )
@@ -438,6 +455,7 @@ E_text_syntax_M( I file
                 if( u == '@' )
                 {   if( E_text_Z_s0_R_l(s) == ( end_of_entities ? 0 : 1 ))
                     {   W(s);
+                        G_();
                         goto End;
                     }
                     s_start = s;
@@ -457,12 +475,14 @@ E_text_syntax_M( I file
                 }else if( u == '/' )
                 {   if( E_text_Z_s0_R_l(s) < ( end_of_entities ? 2 : 3 ))
                     {   W(s);
+                        G_();
                         goto End;
                     }
                     entity_type = E_text_syntax_S_entity_regex;
                 }else if( u == '\"' )
                 {   if( E_text_Z_s0_R_l(s) < ( end_of_entities ? 2 : 3 ))
                     {   W(s);
+                        G_();
                         goto End;
                     }
                     entity_type = E_text_syntax_S_entity_string;
@@ -475,6 +495,7 @@ E_text_syntax_M( I file
                     entity_type = E_text_syntax_S_entity_uid;
                 }else
                 {   W(s);
+                    G_();
                     goto End;
                 }
                 s_end = E_text_Z_s0_R_end(s) - 1;
@@ -509,11 +530,13 @@ E_text_syntax_M( I file
                         || i != 3
                         )
                         {   W(s);
+                            G_();
                             goto End;
                         }
                         s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
                         if( *s_start != ' ' )
                         {   W(s);
+                            G_();
                             goto End;
                         }
                         s_end = s_start;
@@ -532,11 +555,13 @@ E_text_syntax_M( I file
                     {   s_end = s_start;
                         if( s_end == s )
                         {   W(s);
+                            G_();
                             goto End;
                         }
                         s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
                         if( *s_start != ' ' )
                         {   W(s);
+                            G_();
                             goto End;
                         }
                         s_end = s_start;
@@ -548,6 +573,7 @@ E_text_syntax_M( I file
                     || s_end == s + 1
                     )
                     {   W(s);
+                        G_();
                         goto End;
                     }
                     s_end--;
@@ -555,14 +581,16 @@ E_text_syntax_M( I file
                     while( s_start != s_end )
                     {   s_start = E_text_Z_s_Z_utf8_R_u( s_start, &u );
                         if( u == '/'
-                        && s_start - 2 > s
+                        && s_start - 2 >= s
                         && *( s_start - 2 ) == '\\'
                         )
                         {   N s_start_i = s_start - s;
+                            N s_end_i = s_end - s;
                             if( !E_mem_Q_blk_I_remove( &s, s_start - 2 - s, 1 ))
                             {   GV_(NA);
                             }
                             s_start = s + s_start_i - 1;
+                            s_end = s + s_end_i - 1;
                         }
                     }
                 }else if( entity_type == E_text_syntax_S_entity_string )
@@ -570,6 +598,7 @@ E_text_syntax_M( I file
                     || s_end == s + 1
                     )
                     {   W(s);
+                        G_();
                         goto End;
                     }
                     s_end--;
@@ -590,12 +619,14 @@ E_text_syntax_M( I file
                         {   G_();
                         }
                         W(s);
+                        G_();
                         goto End;
                     }
                     W(s);
                 }else if( entity_type == E_text_syntax_S_entity_regex )
                 {   if( !E_text_syntax_I_unescape( &s ))
                     {   W(s);
+                        G_();
                         goto End;
                     }
                     if( !E_text_Z_s_I_s0_prepend( &s, "^(" )
@@ -604,20 +635,16 @@ E_text_syntax_M( I file
                     {   W(s);
                         goto End;
                     }
-                    int e;
-                    if( e = regcomp( &syntax->entities[ syntax->entities_n - 1 ].entity[ syntax->entities[ syntax->entities_n - 1 ].entity_n ].data.re, s, REG_EXTENDED | REG_NOSUB ))
+                    if( regcomp( &syntax->entities[ syntax->entities_n - 1 ].entity[ syntax->entities[ syntax->entities_n - 1 ].entity_n ].data.re, s, REG_EXTENDED | REG_NOSUB ))
                     {   W(s);
-                        N l = regerror( e, &syntax->entities[ syntax->entities_n - 1 ].entity[ syntax->entities[ syntax->entities_n - 1 ].entity_n ].data.re, 0, 0 );
-                        s = M(l);
-                        regerror( e, &syntax->entities[ syntax->entities_n - 1 ].entity[ syntax->entities[ syntax->entities_n - 1 ].entity_n ].data.re, s, l );
-                        G_(); Gs0(s);
-                        W(s);
+                        G_();
                         goto End;
                     }
                     W(s);
                 }else if( entity_type == E_text_syntax_S_entity_string )
                 {   if( !E_text_syntax_I_unescape( &s ))
                     {   W(s);
+                        G_();
                         goto End;
                     }
                     syntax->entities[ syntax->entities_n - 1 ].entity[ syntax->entities[ syntax->entities_n - 1 ].entity_n ].data.s = s;
@@ -634,6 +661,7 @@ E_text_syntax_M( I file
                 s_end = E_text_Z_s0_R_end(s);
                 if( ret == E_mem_Q_file_S_eof )
                 {   W(s);
+                    G_();
                     goto End;
                 }
                 s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
@@ -645,7 +673,9 @@ E_text_syntax_M( I file
                 goto End;
             if( ret == E_mem_Q_file_S_eof )
             {   if( E_mem_Q_file_R_pos(file) - pos )
+                {   G_();
                     goto End;
+                }
                 break;
             }
             if( syntax->entities[ syntax->entities_n - 1 ].repeat
@@ -661,6 +691,7 @@ E_text_syntax_M( I file
             s_end = E_text_Z_s0_R_end(s);
             if( ret == E_mem_Q_file_S_eof )
             {   W(s);
+                G_();
                 goto End;
             }
             s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
