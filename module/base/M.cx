@@ -118,7 +118,7 @@ E_mem_M_blk( void
     if( !~( page_size = sysconf( _SC_PAGESIZE )))
     {   GV_(NA); V();
     }
-    N initial_size = E_simple_Z_n_I_align_up_to_v2( sizeof( *E_base_S ) + sizeof( struct E_mem_Q_blk_Z_mapped ) + 3 * sizeof( struct E_mem_Q_blk_Z_free ) + 4 * sizeof( struct E_mem_Q_blk_Z_allocated ), page_size );
+    N initial_size = E_simple_Z_n_I_align_up_to_v2( sizeof( *E_base_S ) + ( 1 + E_mem_Q_blk_S_sys_table_n_reserved ) * sizeof( struct E_mem_Q_blk_Z_mapped ) + ( 1 + E_mem_Q_blk_S_sys_table_n_reserved ) * sizeof( struct E_mem_Q_blk_Z_free ) + 4 * sizeof( struct E_mem_Q_blk_Z_allocated ), page_size );
         #if defined( __gnu_linux__ )
     if( !~(N)( E_base_S = mmap( 0
     , initial_size
@@ -170,13 +170,13 @@ E_mem_M_blk( void
         #endif
     E_base_S->E_flow_S_exe_pid = getpid();
     E_base_S->E_mem_Q_blk_S_table_allocated_id = 2;
-    E_base_S->E_mem_Q_blk_S_allocated = (P)( (Pc)E_base_S + sizeof( *E_base_S ) + sizeof( struct E_mem_Q_blk_Z_mapped ) + 3 * sizeof( struct E_mem_Q_blk_Z_free ));
+    E_base_S->E_mem_Q_blk_S_allocated = (P)( (Pc)E_base_S + sizeof( *E_base_S ) + ( 1 + E_mem_Q_blk_S_sys_table_n_reserved ) * sizeof( struct E_mem_Q_blk_Z_mapped ) + ( 1 + E_mem_Q_blk_S_sys_table_n_reserved ) * sizeof( struct E_mem_Q_blk_Z_free ));
     E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_mapped_id ].p = (Pc)E_base_S + sizeof( *E_base_S );
     E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_mapped_id ].u = sizeof( struct E_mem_Q_blk_Z_mapped );
-    E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_mapped_id ].n = 1;
-    E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_free_id ].p = (P)( (Pc)E_base_S + sizeof( *E_base_S ) + sizeof( struct E_mem_Q_blk_Z_mapped ));
+    E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_mapped_id ].n = 1 + E_mem_Q_blk_S_sys_table_n_reserved;
+    E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_free_id ].p = (P)( (Pc)E_base_S + sizeof( *E_base_S ) + ( 1 + E_mem_Q_blk_S_sys_table_n_reserved ) * sizeof( struct E_mem_Q_blk_Z_mapped ));
     E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_free_id ].u = sizeof( struct E_mem_Q_blk_Z_free );
-    E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_free_id ].n = 3;
+    E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_free_id ].n = 1 + E_mem_Q_blk_S_sys_table_n_reserved;
     E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].p = (P)E_base_S->E_mem_Q_blk_S_allocated;
     E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].u = sizeof( struct E_mem_Q_blk_Z_allocated );
     E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].n = 4;
@@ -184,15 +184,21 @@ E_mem_M_blk( void
     E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id + 1 ].u = 1;
     E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id + 1 ].n = sizeof( *E_base_S );
     struct E_mem_Q_blk_Z_mapped *mapped_p = (P)E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_mapped_id ].p;
-    mapped_p->p = (P)E_base_S;
-    mapped_p->l = initial_size;
+    mapped_p[0].p = (P)E_base_S;
+    mapped_p[0].l = initial_size;
+    for_n( i, E_mem_Q_blk_S_sys_table_n_reserved )
+    {   mapped_p[ 1 + i ].p = 0;
+        mapped_p[ 1 + i ].l = 0;
+    }
     struct E_mem_Q_blk_Z_free *free_p = (P)E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_free_id ].p;
     free_p[0].p = (P)( (Pc)E_base_S->E_mem_Q_blk_S_allocated + E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].n * E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].u );
-    free_p[0].l = mapped_p->p + mapped_p->l - free_p->p;
-    free_p[1].p = 0;
-    free_p[1].l = 0;
-    free_p[2].p = 0;
-    free_p[2].l = 0;
+    free_p[0].l = mapped_p[0].p + mapped_p[0].l - free_p[0].p;
+    if( !free_p[0].l )
+        free_p[0].p = 0;
+    for_n_( i, E_mem_Q_blk_S_sys_table_n_reserved )
+    {   free_p[ 1 + i ].p = 0;
+        free_p[ 1 + i ].l = 0;
+    }
         #ifdef C_to_libs_C_replace_c_alloc
             #ifdef C_pthreads
     E_base_S->E_mem_Q_blk_S_threads_sync_mutex = no;

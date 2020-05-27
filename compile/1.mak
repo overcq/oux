@@ -22,7 +22,7 @@ E_io_C_aio := 1
 # Czy włączyć wewnętrzne testy poprawności?
 H_make_C_debug := 1
 # Włącza kontrolę poprawności pamięci ‘alokatora’ bloków.
-#E_mem_Q_blk_C_debug := 1
+E_mem_Q_blk_C_debug := 1
 #===============================================================================
 H_make_S_os := $(shell uname -s)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
