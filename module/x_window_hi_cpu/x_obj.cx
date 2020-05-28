@@ -191,18 +191,20 @@ E_x_Q_object_I_rem_descendants( struct E_x_Q_window_Z *window
         return ~0;
     for_n( child_i, object->child_n )
         ids[ child_i ] = object->child[ child_i ];
-    E_mem_Q_blk_I_remove( &object->child, 0, object->child_n );
-    object->child_n = 0;
-    for_n( ids_i, ids_n )
-    {   object = E_mem_Q_tab_R( window->object, ids[ ids_i ] );
-        if( !E_mem_Q_blk_I_append( &ids, object->child_n ))
-            return ~0;
-        for_n( child_i, object->child_n )
-            ids[ ids_n + child_i ] = object->child[ child_i ];
-        ids_n += object->child_n;
+    if( object->child_n )
+    {   E_mem_Q_blk_I_remove( &object->child, 0, object->child_n );
+        object->child_n = 0;
+        for_n( ids_i, ids_n )
+        {   object = E_mem_Q_tab_R( window->object, ids[ ids_i ] );
+            if( !E_mem_Q_blk_I_append( &ids, object->child_n ))
+                return ~0;
+            for_n( child_i, object->child_n )
+                ids[ ids_n + child_i ] = object->child[ child_i ];
+            ids_n += object->child_n;
+        }
+        for_n_( ids_i, ids_n )
+            E_mem_Q_tab_I_rem( window->object, ids[ ids_i ] );
     }
-    for_n_( ids_i, ids_n )
-        E_mem_Q_tab_I_rem( window->object, ids[ ids_i ] );
     W(ids);
     return 0;
 }

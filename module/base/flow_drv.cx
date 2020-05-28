@@ -1486,22 +1486,15 @@ E_flow_Z_signal_V_process_call_req( int uid
     if( !~(N)( shm = E_mem_Q_shared_Q_blk_M( siginfo->si_value.sival_int )))
         #else
     N l = E_text_Z_n_N_s_G( siginfo->si_pid, sizeof( siginfo->si_pid ), 10 );
-    Pc s = M( 6 + l + 1 );
-    if( !s )
-    {   G_();
-        _errno = errno_;
-        return;
-    }
+    C s[ 6 + l + 1 ];
     E_text_Z_s_P_s0_copy( s, "/proc/" );
-    E_text_Z_n_N_s( s + 6 + l, siginfo->si_pid, sizeof( siginfo->si_pid ), 10 );
-    *( s + 6 + l ) = '\0';
+    E_text_Z_n_N_s( &s[0] + 6 + l, siginfo->si_pid, sizeof( siginfo->si_pid ), 10 );
+    *( &s[0] + 6 + l ) = '\0';
     key_t key;
     V1( key = ftok( s, E_flow_Q_process_call_S_ftok_id ))
-    {   W(s);
-        _errno = errno_;
+    {   _errno = errno_;
         return;
     }
-    W(s);
     int shm_id;
     if( !~( shm_id = E_mem_Q_shared_R(key))
     || !~(N)( shm = E_mem_Q_shared_Q_blk_M( shm_id ))

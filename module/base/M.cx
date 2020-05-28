@@ -20,7 +20,7 @@ struct E_base_Z
   E_mem_Q_blk_I_libc_realloc_Z E_mem_Q_blk_I_libc_realloc;
   E_mem_Q_blk_I_libc_free_Z E_mem_Q_blk_I_libc_free;
         #ifdef C_pthreads
-  volatile B E_mem_Q_blk_S_threads_sync_mutex;
+  pthread_mutex_t E_mem_Q_blk_S_threads_sync_mutex;
         #endif
     #endif
   N E_mem_S_page_size;
@@ -193,7 +193,10 @@ E_mem_M_blk( void
         free_p[0].p = 0;
         #ifdef C_to_libs_C_replace_c_alloc
             #ifdef C_pthreads
-    E_base_S->E_mem_Q_blk_S_threads_sync_mutex = no;
+    pthread_mutexattr_t mutexattr;
+    Vr_( pthread_mutexattr_init( &mutexattr ));
+    Vr_( pthread_mutex_init( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex, &mutexattr ));
+    Vr_( pthread_mutexattr_destroy( &mutexattr ));
             #endif
     ///jeśli któraś użyta do tego miejsca procedura systemu operacyjnego używałaby menedżera pamięci z “libc”, to trzeba by zrobić specjalny sposób alokowania pamięci początkowej.
     P libc;
