@@ -149,7 +149,6 @@ typedef struct timespec Z_clock_time;
   }
     #endif
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#define E_mem_Q_blk_S_sys_table_n_reserved  0
 #define E_mem_Q_blk_S_allocated_S_mapped_id ( E_base_S->E_mem_Q_blk_S_table_allocated_id - 2 )
 #define E_mem_Q_blk_S_allocated_S_free_id   ( E_base_S->E_mem_Q_blk_S_table_allocated_id - 1 )
 //------------------------------------------------------------------------------
