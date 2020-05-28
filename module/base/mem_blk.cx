@@ -536,7 +536,7 @@ E_mem_Q_blk_Q_table_M_from_free_or_map_0( N allocated_2_table_i
     {   if( allocated_2_table_i == E_mem_Q_blk_S_allocated_S_free_id
         && p /// Uprzedni obszar tablicy staje się wolnym blokiem.
         ){  n++;
-            l_1 += E_base_S->E_mem_Q_blk_S_allocated[ allocated_2_table_i ].u;
+            l_1 += u;
         }
         N l_align;
         if( allocated_2_table_i == E_base_S->E_mem_Q_blk_S_table_allocated_id
@@ -547,11 +547,15 @@ E_mem_Q_blk_Q_table_M_from_free_or_map_0( N allocated_2_table_i
         else if( align_to_all )
             l_align = E_mem_Q_blk_S_align_to_all;
         else if( u > sizeof(N) && u % sizeof(N) == 0 )
-            l_align = u > sizeof(N) ? sizeof(N) : u;
+            l_align = sizeof(N);
         else if( u <= sizeof(N) && E_simple_Z_n_T_power_2(u) )
             l_align = u;
         else
             l_align = 1;
+        if( allocated_2_table_i == E_mem_Q_blk_S_allocated_S_free_id ) /// Obszar przed wyrównanym adresem staje się wolnym blokiem.
+        {   n++;
+            l_1 += u;
+        }
         N l_ = ~0;
         N i_found;
         struct E_mem_Q_blk_Z_free *free_p = (P)E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_free_id ].p;
@@ -567,35 +571,39 @@ E_mem_Q_blk_Q_table_M_from_free_or_map_0( N allocated_2_table_i
         }
         if( !~l_ )
         {   /// Jeśli żądanie ‘alokacji’ tablicy systemowej “mapped” lub “free” przyszło z rekurencji, to wtedy żądanie ‘alokacji’ takiej tablicy oznacza brak wolnych wpisów na poprzednią czekającą ‘alokację’ ogólną lub tablicy “allocated”, a za chwilę będą być może potrzebne jeszcze kolejne wpisy na bieżącą ‘alokację’. dlatego należy ‘alokować’ odrazu minimalną ilość rezerwowych wpisów (dla jednej tablicy, by nie wymuszać statycznie jednoczesnej ‘realokacji’ obu tablic), ponieważ w pesymistycznym przypadku ewentualne ‘doalokowanie’ jednej nadmiarowej strony pamięci na nie wykorzystane rezerwowe wpisy mniej kosztuje niż drugie kopiowanie tej samej tablicy dla ‘alokacji’ kolejnych wpisów w tej kolejnej rekurencji.
+            if( allocated_2_table_i == E_mem_Q_blk_S_allocated_S_free_id ) /// Obszar przed wyrównanym adresem nie staje się wolnym blokiem.
+            {   n--;
+                l_1 -= u;
+            }
             Pc src_page, src_page_end;
-            if(p) ///będzie kopiowanie, a teraz przygotowanie do ‘remapowania’ ‚środka’ zamiast kopiowania.
+            if(p) /// Będzie kopiowanie, a teraz przygotowanie do ‘remapowania’ ‚środka’ zamiast kopiowania.
             {   src_page = E_simple_Z_p_I_align_up_to_v2( (Pc)p, E_base_S->E_mem_S_page_size );
                 src_page_end = E_simple_Z_p_I_align_down_to_v2( (Pc)p + l, E_base_S->E_mem_S_page_size );
-                ///zapewnienie liczby wpisów w tablicy systemowej właśnie ‘realokowanej’— potrzebnej dla pesymistycznego przypadku niescalenia z już obecnymi nowych bloków dodawanych w tym wywołaniu procedury do takiej tablicy— by nie mogło wystąpić rekurencyjne, zapętlające wywołanie tej procedury dla tej samej tablicy bez możliwości uzyskania nowych wpisów.
-                if( src_page < src_page_end ) ///będzie ‘remapowanie’ wewnętrznych “stron” pamięci (bloków o adresach wyrównanych do rozmiaru “strony”).
-                {   if( allocated_2_table_i == E_mem_Q_blk_S_allocated_S_free_id ) ///zostaną one wzięte z obszaru dostępnych wolnych bloków (‘przemapowane’), a krańcowe pozostałości (od obszaru wyrównanego do “stron” pamięci) staną się wolnymi blokami.
-                    {   n--; ///nie będzie potrzeba osobno wpisywać uprzedniego rozmiaru tablicy.
-                        l_1 -= E_base_S->E_mem_Q_blk_S_allocated[ allocated_2_table_i ].u;
+                /// Zapewnienie liczby wpisów w tablicy systemowej właśnie ‘realokowanej’— potrzebnej dla pesymistycznego przypadku niescalenia z już obecnymi nowych bloków dodawanych w tym wywołaniu procedury do takiej tablicy— by nie mogło wystąpić rekurencyjne, zapętlające wywołanie tej procedury dla tej samej tablicy bez możliwości uzyskania nowych wpisów.
+                if( src_page < src_page_end ) /// Będzie ‘remapowanie’ wewnętrznych “stron” pamięci (bloków o adresach wyrównanych do rozmiaru “strony”).
+                {   if( allocated_2_table_i == E_mem_Q_blk_S_allocated_S_free_id ) /// Zostaną one wzięte z obszaru dostępnych wolnych bloków (‘przemapowane’), a krańcowe pozostałości (od obszaru wyrównanego do “stron” pamięci) staną się wolnymi blokami.
+                    {   n--; /// Nie będzie potrzeba osobno wpisywać uprzedniego rozmiaru tablicy.
+                        l_1 -= u;
                         if( src_page != p ) ///będzie wolny początkowy fragment w pierwszej “stronie” pamięci: w źródłowym bloku i nowym.
                         {   n += 2;
-                            l_1 += 2 * E_base_S->E_mem_Q_blk_S_allocated[ allocated_2_table_i ].u;
+                            l_1 += 2 * u;
                         }
-                        if( src_page_end != (Pc)p + l ) ///będzie wolny końcowy fragment w ostatniej “stronie” pamięci: w źródłowym bloku i nowym.
+                        if( src_page_end != (Pc)p + l ) /// Będzie wolny końcowy fragment w ostatniej “stronie” pamięci: w źródłowym bloku i nowym.
                         {   n += 2;
-                            l_1 += 2 * E_base_S->E_mem_Q_blk_S_allocated[ allocated_2_table_i ].u;
+                            l_1 += 2 * u;
                         }
-                    }else if( allocated_2_table_i == E_mem_Q_blk_S_allocated_S_mapped_id ) ///zostaną one wzięte z obszaru ‘zmapowanych’, a krańcowe “strony” staną się osobnymi ‘zmapowanymi’ blokami.
+                    }else if( allocated_2_table_i == E_mem_Q_blk_S_allocated_S_mapped_id ) /// Zostaną one wzięte z obszaru ‘zmapowanych’, a krańcowe “strony” staną się osobnymi ‘zmapowanymi’ blokami.
                     {   n += 2;
-                        l_1 += 2 * E_base_S->E_mem_Q_blk_S_allocated[ allocated_2_table_i ].u;
+                        l_1 += 2 * u;
                     }
-                }else if( allocated_2_table_i == E_mem_Q_blk_S_allocated_S_mapped_id ///nowy blok, ‘zmapowany’ na tablicę ‘zmapowanych’— musi być wpisany do tablicy.
-                || allocated_2_table_i == E_mem_Q_blk_S_allocated_S_free_id ///fragment pozostały do wyrównania do rozmiaru “stron” pamięci staje się wolnym blokiem.
+                }else if( allocated_2_table_i == E_mem_Q_blk_S_allocated_S_mapped_id /// Nowy blok, ‘zmapowany’ na tablicę ‘zmapowanych’— musi być wpisany do tablicy.
+                || allocated_2_table_i == E_mem_Q_blk_S_allocated_S_free_id /// Fragment pozostały do wyrównania do rozmiaru “stron” pamięci staje się wolnym blokiem.
                 ){  n++;
-                    l_1 += E_base_S->E_mem_Q_blk_S_allocated[ allocated_2_table_i ].u;
+                    l_1 += u;
                 }
-            }else if( allocated_2_table_i == E_mem_Q_blk_S_allocated_S_free_id ) ///fragment pozostały do wyrównania do rozmiaru “stron” pamięci staje się wolnym blokiem.
+            }else if( allocated_2_table_i == E_mem_Q_blk_S_allocated_S_free_id ) /// Fragment pozostały do wyrównania do rozmiaru “stron” pamięci staje się wolnym blokiem.
             {   n++;
-                l_1 += E_base_S->E_mem_Q_blk_S_allocated[ allocated_2_table_i ].u;
+                l_1 += u;
             }
             N dst_rel = 0;
             if( p
@@ -760,7 +768,7 @@ E_mem_Q_blk_Q_table_M_from_free_or_map_0( N allocated_2_table_i
                 {   if( l_ != l_1 )
                         if( !~E_mem_Q_blk_Q_sys_table_mf_P_put( E_mem_Q_blk_S_allocated_S_free_id, (Pc)&free_p_.p - (Pc)&free_p_, (Pc)&free_p_.l - (Pc)&free_p_, p_1 + l_1, l_ - l_1 ))
                             return 0;
-                    if(p)
+  	                  if(p)
                         if( !~E_mem_Q_blk_Q_sys_table_mf_P_put( E_mem_Q_blk_S_allocated_S_free_id, (Pc)&free_p_.p - (Pc)&free_p_, (Pc)&free_p_.l - (Pc)&free_p_, p, l ))
                             return 0;
                 }
@@ -831,17 +839,25 @@ E_mem_Q_blk_Q_table_M_from_free_or_map_0( N allocated_2_table_i
             free_p[ i_found ].p += ( p_1 - old_free_p ) + l_1;
         else
             free_p[ i_found ].p = 0;
-        if( p_1 - old_free_p )
-        {   struct E_mem_Q_blk_Z_free free_p_;
-            if( !~E_mem_Q_blk_Q_sys_table_mf_P_put( E_mem_Q_blk_S_allocated_S_free_id, (Pc)&free_p_.p - (Pc)&free_p_, (Pc)&free_p_.l - (Pc)&free_p_, old_free_p, p_1 - old_free_p ))
-                return 0;
-        }
         if(p)
         {   if( !U_R( E_base_S->E_flow_S_mode, Z_task_table_S_can_read ))
                 E_flow_Q_task_I_touch_stack();
-            E_mem_Q_blk_I_copy_auto( p_1 + l_rel, p, l );
+            E_mem_Q_blk_I_copy( p_1 + l_rel, p, l );
             if( allocated_2_table_i == E_base_S->E_mem_Q_blk_S_table_allocated_id )
                 E_base_S->E_mem_Q_blk_S_allocated = (P)p_1;
+        }
+        free_p = (P)( p_1 + l_rel );
+        if( p_1 - old_free_p )
+        {   struct E_mem_Q_blk_Z_free free_p_;
+            if( allocated_2_table_i == E_mem_Q_blk_S_allocated_S_free_id )
+            {   free_p[ E_base_S->E_mem_Q_blk_S_allocated[ allocated_2_table_i ].n + 1 ].p = old_free_p;
+                free_p[ E_base_S->E_mem_Q_blk_S_allocated[ allocated_2_table_i ].n + 1 ].l = p_1 - old_free_p;
+            }else
+                if( !~E_mem_Q_blk_Q_sys_table_mf_P_put( E_mem_Q_blk_S_allocated_S_free_id, (Pc)&free_p_.p - (Pc)&free_p_, (Pc)&free_p_.l - (Pc)&free_p_, old_free_p, p_1 - old_free_p ))
+                    return 0;
+        }else if( allocated_2_table_i == E_mem_Q_blk_S_allocated_S_free_id )
+        {   free_p[ E_base_S->E_mem_Q_blk_S_allocated[ allocated_2_table_i ].n + 1 ].p = 0;
+            free_p[ E_base_S->E_mem_Q_blk_S_allocated[ allocated_2_table_i ].n + 1 ].l = 0;
         }
     }else if( !( p_1 = E_mem_Q_blk_R_new_0() ))
         return 0;
@@ -860,8 +876,9 @@ E_mem_Q_blk_Q_table_M_from_free_or_map_0( N allocated_2_table_i
                 free_p[ E_base_S->E_mem_Q_blk_S_allocated[ allocated_2_table_i ].n ].l = l;
             }
         }else
-            if( !~E_mem_Q_blk_Q_sys_table_mf_P_put( E_mem_Q_blk_S_allocated_S_free_id, (Pc)&free_p_.p - (Pc)&free_p_, (Pc)&free_p_.l - (Pc)&free_p_, p, l ))
+        {   if( !~E_mem_Q_blk_Q_sys_table_mf_P_put( E_mem_Q_blk_S_allocated_S_free_id, (Pc)&free_p_.p - (Pc)&free_p_, (Pc)&free_p_.l - (Pc)&free_p_, p, l ))
                 return 0;
+        }
     }
     E_base_S->E_mem_Q_blk_S_allocated[ allocated_2_table_i ].n = n; /// Końcowe wpisy i tak nie zawierałyby danych dla powyższego “unite”, a “E_mem_Q_blk_S_allocated_S_mapped_id” może wystąpić tylko w końcowym wywołaniu rekurencyjnym (pojedynczy poziom rekurencji), nie w odzewnętrznym, początkowym wywołaniu tej procedury, więc powiększenie tablicy dopiero tutaj.
     return p_1;
@@ -1014,7 +1031,8 @@ E_mem_Q_blk_W( P p
             if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n )
             {   struct E_mem_Q_blk_Z_free free_p_;
                 if( !~E_mem_Q_blk_Q_sys_table_mf_P_put( E_mem_Q_blk_S_allocated_S_free_id, (Pc)&free_p_.p - (Pc)&free_p_, (Pc)&free_p_.l - (Pc)&free_p_, p, E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u ))
-                {   _single_thread_end;
+                {   E_mem_Q_blk_I_assert_on_return( __LINE__ );
+                    _single_thread_end;
                     return ~0;
                 }
             }
