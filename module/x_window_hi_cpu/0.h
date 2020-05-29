@@ -1,7 +1,7 @@
 /*******************************************************************************
 *   ___   publicplace
-*  ¦OUX¦  ‟Coux”
-*  ¦Inc¦  component
+*  ¦OUX¦  C+
+*  ¦/C+¦  component
 *   ---   ‟Xorg” —high ‘cpu’
 *         global defines
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”              2015‒9‒4 *
@@ -31,7 +31,7 @@
 , _( _NET_WM_WINDOW_TYPE ) \
 , _( _NET_WM_WINDOW_TYPE_DND ) \
 , _( _NET_WM_WINDOW_TYPE_NORMAL ) \
-//tutaj kolejne używane ‘atomy’ ‘x’.
+// Tutaj kolejne używane ‘atomy’ ‘x’.
 //==============================================================================
 #define _(atom) J_ab( XCB_ATOM_, atom )
 enum E_x_Q_display_Z_atom

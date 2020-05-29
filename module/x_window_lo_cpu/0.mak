@@ -1,7 +1,7 @@
 ################################################################################
 #   ___   publicplace
 #  ¦OUX¦  ‟GNU” “make”
-#  ¦Inc¦  component
+#  ¦/C+¦  component
 #   ---   ‟Xorg” —low ‘cpu’
 #         module makefile
 # ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2015‒4‒28 #

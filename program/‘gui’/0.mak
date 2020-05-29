@@ -1,7 +1,7 @@
 ################################################################################
 #   ___   laboratory
 #  ¦OUX¦  ‟GNU” “make”
-#  ¦Inc¦  ‘gui’ sample
+#  ¦/C+¦  ‘gui’ sample
 #   ---   ‟Xorg” window manager orphan
 #         program makefile
 # ©overcq                on ‟Gentoo Linux 13.0” “x86_64”              2015‒1‒6 #

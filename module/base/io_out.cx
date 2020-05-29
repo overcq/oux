@@ -1,19 +1,19 @@
 /*******************************************************************************
 *   ___   publicplace
-*  ¦OUX¦  ‟Coux”
-*  ¦Inc¦  component
+*  ¦OUX¦  C+
+*  ¦/C+¦  component
 *   ---   base
 *         low‐level stream driver
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”              2015‒7‒2 *
 *******************************************************************************/
-///implementacja “stream” “out” “terminala” i “pipe”, z przygotowaniem na resztę nie wymagającą “writev”.
-/**przy “stream” “out”.
+/// Implementacja “stream” “out” “terminala” i “pipe”, z przygotowaniem na resztę nie wymagającą “writev”.
+/** Przy “stream” “out”.
 “terminal” (“stderr == 2”): ‟OpenBSD” nie wysyła “SIGIO”, ‟Linux” wysyła.
 “pipe” (“2>&1|”): ‟OpenBSD”– nieobsługiwane “F_SETOWN”, ‟Linux” wysyła.
 */
-//NDFN dla “pipe” i “O_ASYNC”: przy zmianach “gotowości” “strumienia” blokuje wypisywanie na zewnętrznym końcu do czasu zakończenia programu. przypuszczalnie dzieje się to wtedy, gdy mimo braku “gotowości” “strumienia” jest coś wypisywanie (np. komunikaty błędów).
-//DFN w systemie operacyjnym “flagi” są włączane przez jeden “deskryptor” dla wszystkich na danym “terminalu”, np. “standardowe” wejścia/wyjścia.
-//“E_io_Q_stream_out_C_sig” tymczasowo oznacza, że “SIGIO” jest wogóle używany (bo teraz jest obsługa tylko “stream” ·“out”· korzystającego z “SIGIO”).
+//NDFN Dla “pipe” i “O_ASYNC”: przy zmianach “gotowości” “strumienia” blokuje wypisywanie na zewnętrznym końcu do czasu zakończenia programu. Przypuszczalnie dzieje się to wtedy, gdy mimo braku “gotowości” “strumienia” jest coś wypisywanie (np. komunikaty błędów).
+//DFN W systemie operacyjnym “flagi” są włączane przez jeden “deskryptor” dla wszystkich na danym “terminalu”, np. “standardowe” wejścia/wyjścia.
+// “E_io_Q_stream_out_C_sig” tymczasowo oznacza, że “SIGIO” jest wogóle używany (bo teraz jest obsługa tylko “stream” ·“out”· korzystającego z “SIGIO”).
 //==============================================================================
 //#define E_io_Q_stream_out_S_async_max_single_write    1994
 //==============================================================================
@@ -258,9 +258,9 @@ E_io_Q_stream_out_W_( I id
         #if defined( E_io_C_aio ) || defined( E_io_C_sig_has_fd )
     U_F( stream->state, closing );
     U_L( stream->state, io_ready );
-    Yi_M( io, aiocb_w_before_rem ); //NDFN niedocelowe zastosowanie ‹impulsatora›, tutaj wymagające tworzenia i usuwania przy każdym użyciu— potrzebuje być rozwiązane projektowo przez utworzenie czegoś w rodzaju 〈opóźnienia〉, które korzystałoby z wpisu bez unikalnej nazwy na cały program.
+    Yi_M( io, aiocb_w_before_rem ); //NDFN Niedocelowe zastosowanie ‹impulsatora›, tutaj wymagające tworzenia i usuwania przy każdym użyciu— potrzebuje być rozwiązane projektowo przez utworzenie czegoś w rodzaju 〈opóźnienia〉, które korzystałoby z wpisu bez unikalnej nazwy na cały program.
     Yi_F( io, aiocb_w_before_rem, E_io_Q_stream_out_S_delay );
-    Yi_B( io, aiocb_w_before_rem ) //NDFN obecnie nie może wystąpić druga instrukcja przełączenia, jeśli sygnalizowane jest wyjście: nie przeanalizowane.
+    Yi_B( io, aiocb_w_before_rem ) //NDFN Obecnie nie może wystąpić druga instrukcja przełączenia, jeśli sygnalizowane jest wyjście: nie przeanalizowane.
         return;
     Yi_W( io, aiocb_w_before_rem );
     stream = E_mem_Q_tab_R( E_base_S->E_io_Q_stream_out_S, id );
@@ -504,7 +504,7 @@ D( io, stream_write )
                     )
                     {
                             #ifndef E_io_Q_stream_out_C_sig
-                        //NDFN rozwiązanie tymczasowe: sprawdzanie po każdym obiegu “schedulera”, czy można pisać.
+                        //NDFN Rozwiązanie tymczasowe: sprawdzanie po każdym obiegu “schedulera”, czy można pisać.
                         U_F( E_base_S->E_flow_S_signal, io_ready );
                         U_F( E_base_S->E_flow_S_signal, wake );
                             #endif

@@ -1,14 +1,11 @@
 ################################################################################
 #   ___   publicplace
 #  ¦OUX¦  ‟GNU” “make”
-#  ¦Inc¦  component
+#  ¦/C+¦  component
 #   ---   base
 #         module makefile
 # ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2015‒4‒28 #
 ################################################################################
-    ifneq ($(H_make_S_os),OpenBSD)
-S_packages := ncursesw
-    endif
 S_libraries := m
 S_headers := errno.h limits.h signal.h sys/time.h time.h
     ifeq ($(H_make_S_os),Linux)
@@ -20,7 +17,6 @@ CFLAGS += -D_BSD_SOURCE -D_XOPEN_SOURCE_EXTENDED
     endif
 #-------------------------------------------------------------------------------
     ifneq (,$(and $(H_make_C_to_libs),$(H_make_C_to_libs_C_replace_c_alloc)))
-#S_headers += dlfcn.h sys/sem.h
         ifeq ($(H_make_S_os),Linux)
 S_libraries += dl
         endif

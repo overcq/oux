@@ -1,7 +1,7 @@
 /*******************************************************************************
 *   ___   workplace
-*  ¦OUX¦  ‟Coux”
-*  ¦Inc¦  bieżący integrator systemowy
+*  ¦OUX¦  C+
+*  ¦/C+¦  bieżący integrator systemowy
 *   ---   server
 *         ‟rox filer” file commands
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”              2015‒7‒4 *
@@ -16,7 +16,7 @@ struct E_rox_filer_Z_mime_db
   Pc *mime;
 }*E_rox_filer_S_mime_db;
 //==============================================================================
-void
+N
 E_rox_filer_M( void
 ){  struct E_rox_filer_Z_mime_db *E_rox_filer_S_mime_db_ = ( struct E_rox_filer_Z_mime_db [] )
     { { ( Pc [] ){ "mplayer", "--", 0 }
@@ -331,12 +331,16 @@ E_rox_filer_M( void
     N l = 0;
     for( struct E_rox_filer_Z_mime_db *p = E_rox_filer_S_mime_db_; p->mime; p++ )
         l++;
-    E_rox_filer_S_mime_db = E_mem_Q_blk_M_tab( sizeof( struct E_rox_filer_Z_mime_db ), l + 1 );
+    Mt_( E_rox_filer_S_mime_db, l + 1 );
+    if( !E_rox_filer_S_mime_db )
+        return ~0;
     for_n( i, l )
     {   N l_ = 0;
         for( Pc *p = E_rox_filer_S_mime_db_[i].argv; *p; p++ )
             l_++;
-        E_rox_filer_S_mime_db[i].argv = E_mem_Q_blk_M_tab( sizeof(P), l_ + 1 );
+        Mt_( E_rox_filer_S_mime_db[i].argv, l_ + 1 );
+        if( !E_rox_filer_S_mime_db[i].argv )
+            return ~0;
         for( N i_ = 0; i_ < l_; i_++ )
         {   E_rox_filer_S_mime_db[i].argv[ i_ ] = E_mem_Q_blk_M( E_text_Z_s0_R_0_l( E_rox_filer_S_mime_db_[i].argv[ i_ ] ));
             E_text_Z_s_P_s0_copy_0( E_rox_filer_S_mime_db[i].argv[ i_ ], E_rox_filer_S_mime_db_[i].argv[ i_ ] );
@@ -346,7 +350,9 @@ E_rox_filer_M( void
         l_ = 0;
         for( Pc *p = E_rox_filer_S_mime_db_[i].mime; *p; p++ )
             l_++;
-        E_rox_filer_S_mime_db[i].mime = E_mem_Q_blk_M_tab( sizeof(P), l_ + 1 );
+        Mt_( E_rox_filer_S_mime_db[i].mime, l_ + 1 );
+        if( !E_rox_filer_S_mime_db[i].mime )
+            return ~0;
         for( N i_ = 0; i_ < l_; i_++ )
         {   E_rox_filer_S_mime_db[i].mime[ i_ ] = E_mem_Q_blk_M( E_text_Z_s0_R_0_l( E_rox_filer_S_mime_db_[i].mime[ i_ ] ));
             E_text_Z_s_P_s0_copy_0( E_rox_filer_S_mime_db[i].mime[ i_ ], E_rox_filer_S_mime_db_[i].mime[ i_ ] );
@@ -357,12 +363,16 @@ E_rox_filer_M( void
     l = 0;
     for( struct E_rox_filer_Z_mime_def *p = E_rox_filer_S_mime_def_; p->mime; p++ )
         l++;
-    E_rox_filer_S_mime_def = E_mem_Q_blk_M_tab( sizeof( struct E_rox_filer_Z_mime_def ), l + 1 );
+    Mt_( E_rox_filer_S_mime_def, l + 1 );
+    if( !E_rox_filer_S_mime_def )
+        return ~0;
     for_n_( i, l )
     {   N l_ = 0;
         for( Pc *p = E_rox_filer_S_mime_def_[i].mime; *p; p++ )
             l_++;
-        E_rox_filer_S_mime_def[i].mime = E_mem_Q_blk_M_tab( sizeof(P), l_ + 1 );
+        Mt_( E_rox_filer_S_mime_def[i].mime, l_ + 1 );
+        if( !E_rox_filer_S_mime_def[i].mime )
+            return ~0;
         for( N i_ = 0; i_ < l_; i_++ )
         {   E_rox_filer_S_mime_def[i].mime[ i_ ] = E_mem_Q_blk_M( E_text_Z_s0_R_0_l( E_rox_filer_S_mime_def_[i].mime[ i_ ] ));
             E_text_Z_s_P_s0_copy_0( E_rox_filer_S_mime_def[i].mime[ i_ ], E_rox_filer_S_mime_def_[i].mime[ i_ ] );
@@ -372,6 +382,7 @@ E_rox_filer_M( void
         E_text_Z_s_P_s0_copy_0( E_rox_filer_S_mime_def[i].def, E_rox_filer_S_mime_def_[i].def );
     }
     E_rox_filer_S_mime_def[l] = E_rox_filer_S_mime_def_[l];
+    return 0;
 }
 void
 E_rox_filer_W( void
@@ -410,14 +421,14 @@ E_rox_filer_I_func( P data
     if( s_ != data_c
     && *( s_ + 1 ) != '\0'
     ){  mime = mime_action;
-        mime_action = s_; ///może pozostać z ukośnikami na końcu, a wtedy wyszukiwanie nie znajdzie tekstu.
+        mime_action = s_; /// Może pozostać z ukośnikami na końcu, a wtedy wyszukiwanie nie znajdzie tekstu.
     }
     data_c = E_text_Z_s0_R_0_end( data_c );
     if( !mime
     || *mime != '.'
     )
     {   mime = mime_action;
-        if( E_text_Z_s0_T_s0_eq( mime, "application_octet-stream" ) //NDFN instalować plik tego typu niezależnie od tego, czy nie ma wpisów na listach akcji.
+        if( E_text_Z_s0_T_s0_eq( mime, "application_octet-stream" ) //NDFN Instalować plik tego typu niezależnie od tego, czy nie ma wpisów na listach akcji.
         && *( s = E_text_Z_s0_R_c_search_last( data_c, '.' ))
         )
         {   s++;

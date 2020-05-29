@@ -1,7 +1,7 @@
 /*******************************************************************************
 *   ___   publicplace
-*  ¦OUX¦  ‟GNU” “make”
-*  ¦Inc¦  component
+*  ¦OUX¦  C+
+*  ¦/C+¦  component
 *   ---   base
 *         global defines
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”              2015‒7‒6 *

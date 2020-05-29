@@ -1,7 +1,7 @@
 ##############################################################################
 #   ___   workplace
 #  ¦OUX¦  ‟GNU” “make”
-#  ¦Inc¦  file editor
+#  ¦/C+¦  file editor
 #   ---   ncurses text editor
 #         program makefile
 # ©overcq                on ‟Gentoo Linux 13.0” “x86_64”              2015‒1‒6 #

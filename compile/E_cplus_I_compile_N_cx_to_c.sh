@@ -2,8 +2,8 @@
 ################################################################################
 #   ___   publicplace
 #  ¦OUX¦  ‘unix’ “sh” environment
-#  ¦Inc¦  compile
-#   ---   ‟Coux”
+#  ¦/C+¦  compile
+#   ---   C+
 #         “.cx” to “.c” utility for structure fragments from a source file written in conformance to the strict syntax style
 # ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2015‒1‒13 #
 ################################################################################
