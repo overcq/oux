@@ -842,15 +842,14 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                     {   G(); Gs0_( "reparent" );
                         break;
                     }
-                  case XCB_RESIZE_REQUEST: ///to “zdarzenie” ‘x’ jest używane po to, by po zmianie rozmiaru okna przez operatora ‘server’ ‟X” nie wypełniał wstępnie tła okna (niepowtarzalną) zawartością okna z poprzedniego, mniejszego rozmiaru; jest wyłączana “pixmapa” okna.
+                  case XCB_RESIZE_REQUEST: /// To “zdarzenie” ‘x’ jest używane po to, by po zmianie rozmiaru okna przez operatora ‘server’ ‟X” nie wypełniał wstępnie tła okna (niepowtarzalną) zawartością okna z poprzedniego, mniejszego rozmiaru; jest wyłączana “pixmapa” okna.
                     {   xcb_resize_request_event_t *x_resize_req = (P)x_event;
                         G(); Gs0_( "resize request" ); Gd( x_resize_req->width ); Gd( x_resize_req->height );
                         if( window->width_new != x_resize_req->width
                         || window->height_new != x_resize_req->height
                         )
-                        {   if( !U_R( window->mode, resize ))
-                                U_F( window->mode, resize );
-                            //if( window != &screen->dnd_window ) ///“resize request” nie wystąpi dla okna ‘dnd’, ponieważ brak do tego dostępnego ‘interfejsu’ okna (np. ramki do zmiany rozmiaru przez operatora).
+                        {   U_F( window->mode, resize );
+                            //if( window != &screen->dnd_window ) /// “resize request” nie wystąpi dla okna ‘dnd’, ponieważ brak do tego dostępnego ‘interfejsu’ okna (np. ramki do zmiany rozmiaru przez operatora).
                                 xcb_change_window_attributes( display->x_display
                                 , window->x_window
                                 , XCB_CW_OVERRIDE_REDIRECT
@@ -866,7 +865,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                               , x_resize_req->height
                               }
                             );
-                            //if( window != &screen->dnd_window ) ///jw.
+                            //if( window != &screen->dnd_window ) /// jw.
                                 xcb_change_window_attributes( display->x_display
                                 , window->x_window
                                 , XCB_CW_OVERRIDE_REDIRECT
@@ -883,12 +882,12 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                         break;
                     }
                   default:
-                        //czy da się zrobić uproszczone zabezpieczenie przed “zdarzeniami” ‘x’ przychodzącymi nie z ‘servera’ ‟X”— przez rozpoznawanie tych od “menedżera okien” ‟X”?
+                        // Czy da się zrobić uproszczone zabezpieczenie przed “zdarzeniami” ‘x’ przychodzącymi nie z ‘servera’ ‟X”— przez rozpoznawanie tych od “menedżera okien” ‟X”?
                         switch( XCB_EVENT_RESPONSE_TYPE( x_event ))
                         { case XCB_CONFIGURE_NOTIFY:
                             {   xcb_configure_notify_event_t *x_configure = (P)x_event;
                                 G(); Gs0_( "configure notify" ); Gd( x_configure->above_sibling ); Gd( x_configure->x ); Gd( x_configure->y ); Gd( x_configure->width ); Gd( x_configure->height );
-                                //NDFN nie wiadomo co robić z obiektami, jeśli nie mieszczą się w nowym rozmiarze okna. uniemożliwiać zmniejszanie okna tak, że zakrywałoby obiekty?
+                                //NDFN Nie wiadomo co robić z obiektami, jeśli nie mieszczą się w nowym rozmiarze okna. uniemożliwiać zmniejszanie okna tak, że zakrywałoby obiekty?
                                 window->width_new = x_configure->width;
                                 window->height_new = x_configure->height;
                                 U_L( window->mode, resize );
@@ -941,7 +940,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                 {   xcb_get_atom_name_cookie_t ret_id = xcb_get_atom_name_unchecked( display->x_display, x_client->data.data8[0] );
                                     xcb_get_atom_name_reply_t *ret = xcb_get_atom_name_reply( display->x_display, ret_id, 0 );
                                     Pc message_type = xcb_get_atom_name_name(ret);
-                                    GV(NKN); Gs0( message_type ); ///unhandled client message subtype.
+                                    GV(NKN); Gs0( message_type ); /// Unhandled client message subtype.
                                     free(ret);
                                 }
                                 break;
@@ -950,20 +949,20 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                       break;
                 }
 Loop:           free( x_event );
-            }while( x_event = xcb_poll_for_queued_event( display->x_display )); //NDFN ograniczyć liczbę ‘iteracji’ realizowanych jednorazowo.
-            ///poniżej jest punkt przełączenia tymczasowego trybu “drag && drag_stop” na “drag_stop”, więc tylko w powyższym “switch” może być ten pierwszy (złożony), ale już nic nie mający aktywować.
+            }while( x_event = xcb_poll_for_queued_event( display->x_display )); //NDFN Ograniczyć liczbę ‘iteracji’ realizowanych jednorazowo.
+            /// Poniżej jest punkt przełączenia tymczasowego trybu “drag && drag_stop” na “drag_stop”, więc tylko w powyższym “switch” może być ten pierwszy (złożony), ale już nic nie mający aktywować.
             if( U_R( display->mode, drag_stop )
             && U_E( display->mode, drag )
             )
             {   if( !U_R( display->mode_ex, drag_stop_S_cancel ))
-                {   //TODO sprawdź miejsce ‘drop’.
+                {   //TODO Sprawdź miejsce ‘drop’.
                     if( U_R( display->mode_ex, drag_S_copy ))
                     {   for_n( i, display->drag_S_object_src_n )
                         {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->drag_S_object_src[i].window_id );
                             U_F( window->req, draw );
                             struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->drag_S_object_src[i].object_id );
                             U_L( object->mode, drag_src );
-                            //TODO join object into destination window.
+                            //TODO Join object into destination window.
                         }
                     }else
                     {   for_n( i, display->drag_S_object_src_n )
@@ -1012,7 +1011,7 @@ Loop:           free( x_event );
                     U_L( display->mode, drag_stop );
                 U_F( display->req, draw );
                 U_F( display->req, flush );
-            }else if( !U_R( display->mode, drag_stop ) ///‘drag’ jest wyjątkowym trybem dla interpretacji “pointer_button”, bo ‘grabnięcie’ jest względem okna ‘dnd’— i poniższy blok nie może do czasu ‘odgrabnięcia’ czytać danych z tego okna, ponieważ jest ukryte, zasoby wyrzucone.
+            }else if( !U_R( display->mode, drag_stop ) /// ‘drag’ jest wyjątkowym trybem dla interpretacji “pointer_button”, bo ‘grabnięcie’ jest względem okna ‘dnd’— i poniższy blok nie może do czasu ‘odgrabnięcia’ czytać danych z tego okna, ponieważ jest ukryte, zasoby wyrzucone.
             && display->pointer_button_S_seq_i
             )
             {   struct E_x_Q_window_Z *window;
@@ -1039,7 +1038,7 @@ Loop:           free( x_event );
                 , display->pointer_button_S_grab_time
                 );
                 xcb_grab_pointer_reply_t *ret = xcb_grab_pointer_reply( display->x_display, ret_id, 0 );
-                if( ret->status == XCB_GRAB_STATUS_SUCCESS ) ///czy aktualny stan od pierwszego kliknięcia serii.
+                if( ret->status == XCB_GRAB_STATUS_SUCCESS ) /// Czy aktualny stan od pierwszego kliknięcia serii.
                 {   free(ret);
                     U_F( display->req, pointer_S_ungrab );
                     xcb_timestamp_t grab_time = display->pointer_button_S_time + ( display->pointer_button_S_seq_i & 1 ? display->pointer_button_C_release_timeout : display->pointer_button_C_seq_timeout );
@@ -1054,12 +1053,12 @@ Loop:           free( x_event );
                     , grab_time
                     );
                     xcb_grab_pointer_reply_t *ret = xcb_grab_pointer_reply( display->x_display, ret_id, 0 );
-                    if( ret->status == XCB_GRAB_STATUS_SUCCESS ) ///czy upłynął czas akceptacji serii.
+                    if( ret->status == XCB_GRAB_STATUS_SUCCESS ) /// Czy upłynął czas akceptacji serii.
                     {   free(ret);
                         display->pointer_button_S_grab_time = grab_time;
                         G(); Gs0_( "click" ); Gd( display->pointer_button ); Gd( display->pointer_button_S_seq_i );
                         if( !U_R( display->mode, drag ))
-                        {   if( ~display->cursor_window ) ///wyczyszczenie widocznego kursora.
+                        {   if( ~display->cursor_window ) /// Wyczyszczenie widocznego kursora.
                             {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->cursor_window );
                                 struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->cursor_object );
                                 struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
@@ -1072,7 +1071,7 @@ Loop:           free( x_event );
                             && display->pointer_button_S_y >= 0
                             && display->pointer_button_S_y < window->height
                             )
-                                xbutton_object_id = window->object_mask[ display->pointer_button_S_x + display->pointer_button_S_y * window->width ];
+                                xbutton_object_id = window->object_mask[ display->pointer_button_S_y * window->width + display->pointer_button_S_x ];
                             else
                                 xbutton_object_id = ~0;
                             if( ~xbutton_object_id )
@@ -1276,12 +1275,12 @@ Drag_start_error:                   {   GV_(NA);
             )
             {   U_L( display->mode, drag_stop );
                 U_F( display->req, flush );
-                xcb_ungrab_pointer( display->x_display, display->pointer_button_S_grab_time ); //NDFN niedoskonałość zachowania: w określonych zestawieniach czasowych (opóźnień) wskaźnik zostanie ‘odgrabnięty’ nad cudzym oknem przy dowolnym zestawie przycisków naciśniętych pomiędzy kolejnymi otrzymanymi pakietami “zdarzeń” ‘x’ (co spowoduje reakcję tamtego okna na “ButtonRelease” lub już “MotionNotify” —np. uchwycenie ramki okna w menedżerze okien ‟Fluxbox”). jeśli użytkownik klika pusto, to i tak nic nie pomoże oprócz normalnego ‘timeoutu’: sprawdzić, czy obsługuje właściwie “pointer_button_C_restart_delay” w całym trybie “drag_stop”, a wtedy pozostanie tylko niemożliwa do uniknięcia sytuacja trafienia z ‘ungrabnięciem’ w moment, gdy znowu rozpoczęto klikanie, które jakkolwiek wtedy ze względu na zaszły ‘timeout’ ‘restartu’ jest rozumiane przez ‹operatora› jako rozpoczęcie klikania w miejscu, gdzie właśnie ‘odgrabnięto’. a po tym– komentarz do usunięcia.
+                xcb_ungrab_pointer( display->x_display, display->pointer_button_S_grab_time ); //NDFN Niedoskonałość zachowania: w określonych zestawieniach czasowych (opóźnień) wskaźnik zostanie ‘odgrabnięty’ nad cudzym oknem przy dowolnym zestawie przycisków naciśniętych pomiędzy kolejnymi otrzymanymi pakietami “zdarzeń” ‘x’ (co spowoduje reakcję tamtego okna na “ButtonRelease” lub już “MotionNotify” —np. uchwycenie ramki okna w menedżerze okien ‟Fluxbox”). Jeśli użytkownik klika pusto, to i tak nic nie pomoże oprócz normalnego ‘timeoutu’: sprawdzić, czy obsługuje właściwie “pointer_button_C_restart_delay” w całym trybie “drag_stop”, a wtedy pozostanie tylko niemożliwa do uniknięcia sytuacja trafienia z ‘ungrabnięciem’ w moment, gdy znowu rozpoczęto klikanie, które jakkolwiek wtedy ze względu na zaszły ‘timeout’ ‘restartu’ jest rozumiane przez ‹operatora› jako rozpoczęcie klikania w miejscu, gdzie właśnie ‘odgrabnięto’. A po tym– komentarz do usunięcia.
             }
             if( U_R( display->mode, drag )
             && U_R( drag, motion )
             )
-            {   //TODO sprawdź i wizualizuj możliwość ‘drop’ w tym miejscu.
+            {   //TODO Sprawdź i wizualizuj możliwość ‘drop’ w tym miejscu.
                 if( !U_R( drag_S_motion, oth_screen )
                 || drag_S_motion_x_root_window == screen->x_root_window
                 )
@@ -1303,7 +1302,7 @@ Drag_start_error:                   {   GV_(NA);
                     }
                     display->drag_S_dnd_window_screen_id = screen_id;
                     struct E_x_Q_window_Z *dnd_window = &screen_last->dnd_window;
-                    //zmienić tak, by okna ‘dnd’ były jednocześnie widoczne do czasu utraty widoczności na jednym z wyświetlaczy. (nie można teraz, ponieważ nie mam konfiguracji bez ‟Xineramy”.)
+                    // Zmienić tak, by okna ‘dnd’ były jednocześnie widoczne do czasu utraty widoczności na jednym z wyświetlaczy. (Nie można teraz, ponieważ nie mam konfiguracji bez ‟Xineramy”.)
                     xcb_configure_window( display->x_display
                     , dnd_window->x_window
                     , XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT

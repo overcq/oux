@@ -23,13 +23,22 @@ E_io_C_aio := 1
 H_make_C_debug := 1
 # Włącza kontrolę poprawności pamięci ‘alokatora’ bloków.
 #E_mem_Q_blk_C_debug := 1
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+H_make_S_usr_lib := /usr/lib64
+CMP := cmp -s
+INSTALL := install
+LIBTOOL := libtool
 #===============================================================================
 H_make_S_os := $(shell uname -s)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Wybór ‘kompilatora’.
 H_make_S_cc := clang gcc
 #-------------------------------------------------------------------------------
-H_make_S_cc := $(firstword $(foreach path,/usr/bin /usr/local/bin $(shell clang -print-search-dirs | awk '/^programs:/ { match( $$2, /[=:]\/usr\/lib\/llvm\/[^:]*/ ); print substr( $$2, RSTART + 1, RLENGTH - 1 ); }' ) $(shell gcc-config -c | sed -e 's`\(.*\)-\([^-][^-]*\)`\1/gcc-bin/\2`' ),$(wildcard $(path)/$(H_make_S_cc))))
+H_make_S_cc := $(firstword $(foreach path \
+, /usr/bin /usr/local/bin \
+  $(shell clang -print-search-dirs | awk '/^programs:/ { match( $$2, /[=:]\/usr\/lib\/llvm\/[^:]*/ ); print substr( $$2, RSTART + 1, RLENGTH - 1 ); }' ) \
+  $(shell gcc-config -c | sed -e 's`\(.*\)-\([^-][^-]*\)`\1/gcc-bin/\2`' ) \
+, $(wildcard $(path)/$(H_make_S_cc))))
     ifneq (,$(H_make_S_cc))
 CC := $(H_make_S_cc)
 H_make_S_cc_version := $(shell $(H_make_S_cc) -dumpversion)
