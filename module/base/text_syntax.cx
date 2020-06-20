@@ -864,11 +864,8 @@ Cont:
                     goto End;
                 B parsed = no;
                 if( ret == E_mem_Q_file_S_eof )
-                {   if( pos != E_mem_Q_file_R_pos(file) )
+                    if( pos != E_mem_Q_file_R_pos(file) )
                         goto End;
-                    if( entity->data.builtin == E_text_syntax_S_builtin_eof )
-                        parsed = yes;
-                }
                 Pc s;
                 switch( entity->data.builtin )
                 { case E_text_syntax_S_builtin_eof:
@@ -928,9 +925,7 @@ Cont:
                         }
                         break;
                 }
-                if( ret != E_mem_Q_file_S_eof
-                && parsed
-                )
+                if(parsed)
                 {   if( !E_text_Z_s0_I_s0_append( &state[ *state_n - 1 ].s, s ))
                     {   W(s);
                         goto End;
@@ -1017,6 +1012,9 @@ Optional:                           while( ++state[ *state_n - 1 ].entity_i != s
                                 goto End;
                         }
                     }
+                }else if( ret == E_mem_Q_file_S_eof )
+                {   *state_ = state;
+                    return E_mem_Q_file_S_eof;
                 }else
                 {   if( state[ *state_n - 1 ].in_space )
                     {   state[ *state_n - 1 ].in_space = no;
@@ -1106,9 +1104,6 @@ Optional:                           while( ++state[ *state_n - 1 ].entity_i != s
                                 goto Optional;
                             }
                         }
-                    }else if( ret == E_mem_Q_file_S_eof )
-                    {   *state_ = state;
-                        return E_mem_Q_file_S_eof;
                     }else
                         goto End;
                 }

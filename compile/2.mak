@@ -301,7 +301,7 @@ $(addprefix $(H_make_S_compile_path)/,1.mak 2.mak) \
         done ;\
         echo '#include "E_cplus_S_machine.h"' ;\
         echo '#include "E_cplus_S_language.h"' ;\
-        $(H_make_Z_shell_cmd_N_cx_to_c) -f $(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,%,$(H_make_S_cx_sources))) $(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(module)/),$(call H_make_Z_shell_cmd_arg_I_quote_for,$(sort $(patsubst %.cx,%,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))))))) ;\
+        $(H_make_Z_shell_cmd_N_cx_to_c) -f $(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(module)/),$(call H_make_Z_shell_cmd_arg_I_quote_for,$(sort $(patsubst %.cx,%,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))))))) $(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,%,$(H_make_S_cx_sources))) ;\
         $(if $(H_make_C_to_libs), \
         $(H_make_Z_shell_cmd_N_cx_to_c) -h1_ $(foreach module,$(H_make_S_modules),$(call H_make_Z_shell_cmd_arg_I_quote_for,$(wildcard $(H_make_S_root_path)/module/$(module)/*.cx))) ;\
         ) \
@@ -336,7 +336,7 @@ $(addprefix $(H_make_S_compile_path)/,1.mak 2.mak) \
         $(foreach module,$(H_make_S_modules),$(call H_make_Q_main_header_I_module_0,$(module)) ;) \
         echo '#include "E_cplus_S_machine.h"' ;\
         echo '#include "E_cplus_S_language.h"' ;\
-        $(H_make_Z_shell_cmd_N_cx_to_c) -f $(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,%,$(H_make_S_cx_sources))) $(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(module)/),$(call H_make_Z_shell_cmd_arg_I_quote_for,$(sort $(patsubst %.cx,%,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))))))) ;\
+        $(H_make_Z_shell_cmd_N_cx_to_c) -f $(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(module)/),$(call H_make_Z_shell_cmd_arg_I_quote_for,$(sort $(patsubst %.cx,%,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))))))) $(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,%,$(H_make_S_cx_sources))) ;\
         $(H_make_Z_shell_cmd_N_cx_to_c) -h1_ $(foreach module,$(H_make_S_modules),$(call H_make_Z_shell_cmd_arg_I_quote_for,$(wildcard $(H_make_S_root_path)/module/$(module)/*.cx))) ;\
         $(foreach module,$(H_make_S_modules),$(call H_make_Q_main_header_I_module_0h,$(module)) ;) \
         $(foreach module,$(H_make_S_modules),$(call H_make_Q_main_header_I_module_1,$(module)) ;) \
