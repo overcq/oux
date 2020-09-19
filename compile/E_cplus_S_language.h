@@ -365,8 +365,7 @@ typedef P           *Pp; /// Wskaźnik do tablic adresów.
               && too_small_errno \
               && errno_ == ( too_small_errno ) \
               ) \
-              {   ( pointer_variable ) = E_mem_Q_blk_M_replace(( pointer_variable ), J_autogen_line(l) += J_autogen_line(l) < E_base_S->E_mem_S_page_size ? J_autogen_line(l) : E_base_S->E_mem_S_page_size ); \
-                  if( !( pointer_variable )) \
+              {   if( !E_mem_Q_blk_M_replace( &( pointer_variable ), J_autogen_line(l) += J_autogen_line(l) < E_base_S->E_mem_S_page_size ? J_autogen_line(l) : E_base_S->E_mem_S_page_size )) \
                   {   GV_(NA); V(); \
                   } \
                   continue; \
@@ -380,8 +379,7 @@ typedef P           *Pp; /// Wskaźnik do tablic adresów.
           {   J_autogen_line( p_end )++; \
               break; \
           } \
-          ( pointer_variable ) = E_mem_Q_blk_M_replace(( pointer_variable ), J_autogen_line(l) += J_autogen_line(l) < E_base_S->E_mem_S_page_size ? J_autogen_line(l) : E_base_S->E_mem_S_page_size ); \
-          if( !( pointer_variable )) \
+          if( !E_mem_Q_blk_M_replace( &( pointer_variable ), J_autogen_line(l) += J_autogen_line(l) < E_base_S->E_mem_S_page_size ? J_autogen_line(l) : E_base_S->E_mem_S_page_size )) \
           {   GV_(NA); V(); \
           } \
       } \
