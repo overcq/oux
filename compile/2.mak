@@ -179,7 +179,7 @@ CFLAGS += -std=$(H_make_S_c_std_alt)14
 		else ifneq (0,$(shell expr $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_number) >= 4.0)))
 CFLAGS += -std=$(H_make_S_c_std_alt)11
 		endif
-CFLAGS += -O1 -finline -Qunused-arguments -Wno-incompatible-pointer-types-discards-qualifiers
+CFLAGS += -O2 -finline -Qunused-arguments -Wno-incompatible-pointer-types-discards-qualifiers
     else #nie “clang”.
         ifeq (gcc,$(H_make_S_cc))
 H_make_S_words := $(subst ., ,$(H_make_S_cc_version))
