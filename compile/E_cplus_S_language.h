@@ -59,7 +59,7 @@ typedef P           *Pp; /// Wskaźnik do tablic adresów.
 #define for_each_pop_out_(out,id_var,p,q) \
   for( \
   ; ~( id_var = J_a_b(q,Z_iter_R_prev)( (p), ~0, (out) )) \
-  ; E_mem_Q_tab_I_rem( (p), id_var ) \
+  ; E_mem_Q_tab_I_remove( (p), id_var ) \
   )
 #define for_each_pop_out(out,id_var,p,q)    I id_var; for_each_pop_out_((out),id_var,(p),q)
 #define for_each_pop_(id_var,p,q)           for_each_pop_out_(~0,id_var,(p),q)

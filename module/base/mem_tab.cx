@@ -100,6 +100,8 @@ E_mem_Q_tab_I_add( struct E_mem_Q_tab_Z *tab
 ){  for_i( id, tab->index_n )
         if( !tab->index[id] )
             break;
+    if( !~id )
+        return id;
     Pc data = tab->data;
     N n_prepended;
     if( !E_mem_Q_blk_I_add( &tab->data, 1, &n_prepended, 0 ))
@@ -141,7 +143,7 @@ E_mem_Q_tab_I_add( struct E_mem_Q_tab_Z *tab
 I
 E_mem_Q_tab_I_add_i( struct E_mem_Q_tab_Z *tab
 , I id
-){  J_assert( !E_mem_Q_tab_T( tab, id ));
+){  J_assert( ~id && !E_mem_Q_tab_T( tab, id ));
     Pc data = tab->data;
     N n_prepended;
     if( !E_mem_Q_blk_I_add( &tab->data, 1, &n_prepended, 0 ))
@@ -236,7 +238,7 @@ E_mem_Q_tab_I_segv_add_end( struct E_mem_Q_tab_Z *tab
     return id;
 }
 N
-E_mem_Q_tab_I_rem( struct E_mem_Q_tab_Z *tab
+E_mem_Q_tab_I_remove( struct E_mem_Q_tab_Z *tab
 , I id
 ){  J_assert( E_mem_Q_tab_T( tab, id ));
     if( tab->iterator )
@@ -300,7 +302,7 @@ E_mem_Q_tab_I_move(
 , I src_id
 , struct E_mem_Q_tab_Z *tab_dest
 ){  I dest_id = E_mem_Q_tab_I_copy( tab_src, src_id, tab_dest );
-    E_mem_Q_tab_I_rem( tab_src, src_id );
+    E_mem_Q_tab_I_remove( tab_src, src_id );
     return dest_id;
 }
 #endif
@@ -368,7 +370,7 @@ E_mem_Q_tab_Q_iter_M( struct E_mem_Q_tab_Z *tab
     Mt_( iterator->index, n );
     if( !iterator->index )
     {   if( iterator_id )
-            E_mem_Q_tab_I_rem( tab->iterator, iterator_id );
+            E_mem_Q_tab_I_remove( tab->iterator, iterator_id );
         else
             W_tab_( tab->iterator );
         return ~0;
@@ -393,7 +395,7 @@ E_mem_Q_tab_Q_iter_W( struct E_mem_Q_tab_Z *tab
 ){  struct E_mem_Q_tab_S_iterator_Z *iterator = (P)tab->iterator->index[ iterator_id ];
     W( iterator->index );
     if( tab->iterator->data_n != 1 )
-        E_mem_Q_tab_I_rem( tab->iterator, iterator_id );
+        E_mem_Q_tab_I_remove( tab->iterator, iterator_id );
     else
         W_tab_( tab->iterator );
 }
