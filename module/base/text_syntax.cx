@@ -865,9 +865,10 @@ Cont:
                 if( !~ret )
                     goto End;
                 B parsed = no;
+                B builtin_eof = entity->data.builtin == E_text_syntax_S_builtin_eof;
                 if( ret == E_mem_Q_file_S_eof )
                     if( pos == E_mem_Q_file_R_pos(file)
-                    && entity->data.builtin != E_text_syntax_S_builtin_eof
+                    && !builtin_eof
                     )
                         goto Bi_no;
                 Pc s;
@@ -877,7 +878,7 @@ Cont:
                         {   if( entities_func( syntax, state, *state_n ))
                                 goto End;
                             *state_ = state;
-                            return E_mem_Q_file_S_eof;
+                            return 0;
                         }
                         break;
                   case E_text_syntax_S_builtin_alpha:
@@ -1043,7 +1044,7 @@ Bi_no:          {   if( state[ *state_n - 1 ].in_space )
                                 goto End;
                             if( !*state_n )
                             {   *state_ = state;
-                                return E_mem_Q_file_S_eof;
+                                return builtin_eof ? 0 : E_mem_Q_file_S_eof;
                             }
                             if( state[ *state_n - 1 ].in_space )
                             {   state[ *state_n - 1 ].in_space = no;
@@ -1116,7 +1117,7 @@ Bi_no:          {   if( state[ *state_n - 1 ].in_space )
                                 goto End;
                             if( !*state_n )
                             {   *state_ = state;
-                                return E_mem_Q_file_S_eof;
+                                return builtin_eof ? 0 : E_mem_Q_file_S_eof;
                             }
                             if( state[ *state_n - 1 ].in_space )
                             {   state[ *state_n - 1 ].in_space = no;

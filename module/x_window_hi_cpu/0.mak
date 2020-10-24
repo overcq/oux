@@ -20,7 +20,7 @@ S_headers += xkbcommon/xkbcommon-x11.h
 S_packages += xcb-shape
 S_headers += xcb/shape.h
 CFLAGS += -DC_xcb_shape
-endif
+    endif
     ifeq (0,)
 S_packages += xcb-glx
 S_headers += xcb/glx.h

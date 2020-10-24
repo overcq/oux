@@ -88,10 +88,7 @@ H_make_C_pthreads := $$(if $$(C_pthreads),1)
 
         endef
 
-$(foreach module \
-, $(H_make_S_modules) \
-, $(if $(wildcard $(H_make_S_module_path)/$(module)/0.mak) \
-  , $(eval $(call H_make_I_module,$(module),$(call H_make_Z_list_I_index,$(module),$(H_make_S_modules))))))
+$(foreach module,$(H_make_S_modules),$(if $(wildcard $(H_make_S_module_path)/$(module)/0.mak),$(eval $(call H_make_I_module,$(module),$(call H_make_Z_list_I_index,$(module),$(H_make_S_modules))))))
 
 E_module_S_packages := $(sort $(E_module_S_packages))
 E_module_S_headers := $(sort $(E_module_S_headers))
@@ -207,7 +204,10 @@ undefine H_make_S_number
         else #nie “clang”, nie “gcc”
 CFLAGS += -std=c99 -D_unreachable=no
         endif
-CFLAGS += -O2 -Wno-old-style-declaration -Wno-overflow -Wno-shift-negative-value
+CFLAGS += -O2 -Wno-overflow
+        ifneq (OpenBSD,$(H_make_S_os))
+CFLAGS += -Wno-old-style-declaration -Wno-shift-negative-value
+		endif
     endif
 CFLAGS += -pedantic -fno-common -Wall -Wextra -Wno-missing-braces -Wno-parentheses -Wno-sign-compare -Wstrict-prototypes -Wno-unused-parameter \
 -fno-stack-protector -fno-trapping-math -fwrapv \
@@ -433,8 +433,8 @@ clean: mostlyclean
       , $(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,%.lo,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx)))) \
       )), \
       $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(H_make_S_base_module)/$(H_make_S_base_driver).lo), \
-      $(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/.libs/) \
-      , $(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,%.o,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx)))) \
+      $(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/.libs/), \
+        $(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,%.o,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx)))) \
       )) \
       $(foreach module,$(H_make_S_modules),$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/.libs)) \
     )
@@ -444,21 +444,21 @@ clean: mostlyclean
 distclean:
 	$(RM) a.out ;\
 	$(call H_make_I_libtool_I_clean \
-    , $(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/) \
-      , $(call H_make_Z_shell_cmd_arg_I_quote,lib$(H_make_S_lib_prefix)$(module).so) \
+    , $(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/), \
+        $(call H_make_Z_shell_cmd_arg_I_quote,lib$(H_make_S_lib_prefix)$(module).so) \
         $(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,%.lo,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx)))) \
       )), \
       $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(H_make_S_base_module)/$(H_make_S_base_driver).lo), \
-      $(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/.libs/) \
-      , $(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,%.o,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx)))) \
+      $(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/.libs/), \
+        $(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,%.o,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx)))) \
       )) \
       $(foreach module,$(H_make_S_modules),$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/.libs)) \
     ) ;\
 	$(RM) E_cplus_S_0_main_not_to_libs.h \
       $(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,E_cplus_S_0_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,E_cplus_S_1_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,E_cplus_S_2_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,%.c,$(H_make_S_cx_sources))) \
       $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/E_cplus_S_0_to_libs.h) \
-      $(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/) \
-      , $(call H_make_Z_shell_cmd_arg_I_quote_for \
+      $(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/), \
+        $(call H_make_Z_shell_cmd_arg_I_quote_for \
         , $(patsubst %.cx,E_cplus_S_0_%.h,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))) \
           $(patsubst %.cx,E_cplus_S_1_%.h,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))) \
           $(patsubst %.cx,E_cplus_S_2_%.h,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))) \

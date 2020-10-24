@@ -1,0 +1,538 @@
+/*******************************************************************************
+*   ___   publicplace
+*  ¦OUX¦  C+
+*  ¦/C+¦  component
+*   ---   base
+*         math big numbers
+* ©overcq                on ‟Gentoo Linux 17.1” “x86_64”            2020‒10‒24 M
+*******************************************************************************/
+struct E_math_bignum_Z_num
+{ N *digits;
+  N digits_n;
+  N floating_point;
+};
+//==============================================================================
+struct E_math_bignum_Z_num *
+E_math_bignum_M( void
+){  struct E_math_bignum_Z_num *M_(num);
+    if( !num )
+        return 0;
+    Mt_( num->digits, 1 );
+    if( !num->digits )
+    {   W(num);
+        return 0;
+    }
+    *num->digits = 0;
+    num->digits_n = 1;
+    num->floating_point = 0;
+    return num;
+}
+struct E_math_bignum_Z_num *
+E_math_bignum_M_num( struct E_math_bignum_Z_num *num_0
+){  struct E_math_bignum_Z_num *M_(num);
+    if( !num )
+        return 0;
+    Mt_( num->digits, num_0->digits_n );
+    if( !num->digits )
+    {   W(num);
+        return 0;
+    }
+    for_n( i, num_0->digits_n )
+        num->digits[i] = num_0->digits[i];
+    num->digits_n = num_0->digits_n;
+    num->floating_point = num_0->floating_point;
+    return num;
+}
+void
+E_math_bignum_W( struct E_math_bignum_Z_num *num
+){  W( num->digits );
+    W(num);
+}
+B
+E_mat_bignum_R_sign( struct E_math_bignum_Z_num *num
+){  return (S)num->digits[ num->digits_n - 1 ] < 0;
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void
+E_mat_bignum_I_print( struct E_math_bignum_Z_num *num
+){  
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+_internal
+N
+E_math_bignum_I_add_subtract_prepare(
+  struct E_math_bignum_Z_num *num_0
+, struct E_math_bignum_Z_num *num_1
+){  if( num_1->floating_point > num_0->floating_point )
+    {   if( !E_mem_Q_blk_I_prepend( num_0->digits, num_1->floating_point - num_0->floating_point ))
+            return ~0;
+        for_n( i, num_1->floating_point - num_0->floating_point )
+            *( num_0->digits + i ) = 0;
+        num_0->digits_n += num_1->floating_point - num_0->floating_point;
+        num_0->floating_point = num_1->floating_point;
+    }
+    if( num_1->digits_n > num_0->digits_n )
+    {   if( !E_mem_Q_blk_I_append( num_0->digits, num_1->digits_n - num_0->digits_n ))
+            return ~0;
+        for_n( i, num_1->digits_n - num_0->digits_n )
+            *( num_0->digits + num_0->digits_n + i ) = 0;
+        num_0->digits_n = num_1->digits_n;
+    }
+    return 0;
+}
+_internal
+N
+E_math_bignum_I_add_(
+  struct E_math_bignum_Z_num *num_0
+, struct E_math_bignum_Z_num *num_1
+){  if( !~E_math_bignum_I_add_subtract_prepare( num_0, num_1 ))
+        return ~0;
+    N n;
+    __asm__ goto (
+    #if defined( __i386__ ) || defined( __x86_64__ )
+        #if defined( __i386__ )
+    "\n" "mov       (%1),%%eax"
+    "\n" "add       %%eax,(%0)"
+    "\n 1:decl      %2"
+    "\n" "jz        1f"
+    "\n" "lea       (%0,%3),%0"
+    "\n" "lea       (%1,%3),%1"
+    "\n" "mov       (%1),%%eax"
+    "\n" "adcl      %%eax,(%0)"
+    "\n" "jmp       1b"
+    "\n 1:jnc        %l[Next]"
+        #else
+    "\n" "mov       (%1),%%rax"
+    "\n" "add       %%rax,(%0)"
+    "\n 1:decq      %2"
+    "\n" "jz        1f"
+    "\n" "lea       (%0,%3),%0"
+    "\n" "lea       (%1,%3),%1"
+    "\n" "mov       (%1),%%rax"
+    "\n" "adcq      %%rax,(%0)"
+    "\n" "jmp       1b"
+    "\n 1:jnc        %l[Next]"
+        #endif
+    #else
+#error not implemented
+    #endif
+    :
+    : "r" ( num_0->digits )
+    , "r" ( num_1->digits )
+    , "rm" ( num_1->digits_n )
+    , "r" ( sizeof(N) )
+    : "cc"
+    #if defined( __i386__ ) || defined( __x86_64__ )
+        #if defined( __i386__ )
+    , "eax"
+        #else
+    , "rax"
+        #endif
+    #endif
+    : Next
+    );
+    N *p = E_mem_Q_blk_I_append( num_0->digits, 1 );
+    if( !p )
+        return ~0;
+    *p = 1;
+    num_0->digits_n++;
+Next:
+    n = 0;
+    for_n( i, num_0->digits_n - 1 )
+    {   if( num_0->digits[i] != 0 )
+            break;
+        n++;
+    }
+    if(n)
+    {   if( !E_mem_Q_blk_I_remove( num_0->digits, 0, n ))
+            return ~0;
+        num_0->floating_point -= n;
+    }
+    return 0;
+}
+_internal
+N
+E_math_bignum_I_subtract_(
+  struct E_math_bignum_Z_num *num_0
+, struct E_math_bignum_Z_num *num_1
+){  if( !~E_math_bignum_I_add_subtract_prepare( num_0, num_1 ))
+        return ~0;
+    N n;
+    __asm__ goto (
+    #if defined( __i386__ ) || defined( __x86_64__ )
+        #if defined( __i386__ )
+    "\n" "mov       (%1),%%eax"
+    "\n" "sub       %%eax,(%0)"
+    "\n 1:decl      %2"
+    "\n" "jz        1f"
+    "\n" "lea       (%0,%3),%0"
+    "\n" "lea       (%1,%3),%1"
+    "\n" "mov       (%1),%%eax"
+    "\n" "sbbl      %%eax,(%0)"
+    "\n" "jmp       1b"
+    "\n 1:jnc        %l[Next]"
+        #else
+    "\n" "mov       (%1),%%rax"
+    "\n" "sub       %%rax,(%0)"
+    "\n 1:decq      %2"
+    "\n" "jz        1f"
+    "\n" "lea       (%0,%3),%0"
+    "\n" "lea       (%1,%3),%1"
+    "\n" "mov       (%1),%%rax"
+    "\n" "sbbq      %%rax,(%0)"
+    "\n" "jmp       1b"
+    "\n 1:jnc        %l[Next]"
+        #endif
+    #else
+#error not implemented
+    #endif
+    :
+    : "r" ( num_0->digits )
+    , "r" ( num_1->digits )
+    , "rm" ( num_1->digits_n )
+    , "r" ( sizeof(N) )
+    : "cc"
+    #if defined( __i386__ ) || defined( __x86_64__ )
+        #if defined( __i386__ )
+    , "eax"
+        #else
+    , "rax"
+        #endif
+    #endif
+    : Next
+    );
+    N *p = E_mem_Q_blk_I_append( num_0->digits, 1 );
+    if( !p )
+        return ~0;
+    *p = ~0;
+    num_0->digits_n++;
+    goto Next_2;
+Next:    
+    n = 0;
+    for_n_rev( i, num_0->digits_n - 1 )
+    {   if( num_0->digits[ i + 1 ] != 0
+        || ( num_0->digits[i] & ~( (N)~0 >> 1 ))
+        )
+            break;
+        n++;
+    }
+    if(n)
+        if( !E_mem_Q_blk_I_remove( num_0->digits, num_0->digits_n - n, n ))
+            return ~0;
+Next_2:
+    n = 0;
+    for_n_( i, num_0->digits_n - 1 )
+    {   if( num_0->digits[i] != 0 )
+            break;
+        n++;
+    }
+    if(n)
+        if( !E_mem_Q_blk_I_remove( num_0->digits, 0, n ))
+            return ~0;
+    return 0;
+}
+_internal
+N
+E_math_bignum_I_multiply_n(
+  struct E_math_bignum_Z_num *num_0
+, N n
+){  N over = 0, base;
+    for_n( i, num_0->digits_n - 1 )
+    {   base = num_0->digits[i];
+        __asm__ (
+    #if defined( __i386__ ) || defined( __x86_64__ )
+        #if defined( __i386__ )
+        "\n" "mov       %0,%%ebx"
+        "\n" "mull      %2"
+        "\n" "add       %%ebx,%1"
+        "\n" "adcl      $0,%0"
+        #else
+        "\n" "mov       %0,%%rbx"
+        "\n" "mulq      %2"
+        "\n" "add       %%rbx,%1"
+        "\n" "adcq      $0,%0"
+            #endif
+        #else
+#error not implemented
+        #endif
+        : "+d" (over)
+        , "+a" (base)
+        : "rm" (n)
+        : "cc"
+        #if defined( __i386__ ) || defined( __x86_64__ )
+            #if defined( __i386__ )
+        , "ebx"
+            #else
+        , "rbx"
+            #endif
+        #endif
+        );
+        num_0->digits[i] = base;
+    }
+    base = num_0->digits[ num_0->digits_n - 1 ];
+    if( (S)n < 0 )
+    {   S sign_ext = (S)base & ~( (N)~0 >> 1 ) ? ~( (N)~0 >> 1 ) : 0;
+        base &= (N)~0 >> 1;
+        __asm__ (
+    #if defined( __i386__ ) || defined( __x86_64__ )
+        #if defined( __i386__ )
+        "\n" "mov       %0,%%ebx"
+        "\n" "mull      %2"
+        "\n" "add       %%ebx,%1"
+        "\n" "adcl      $0,%0"
+        #else
+        "\n" "mov       %0,%%rbx"
+        "\n" "mulq      %2"
+        "\n" "add       %%rbx,%1"
+        "\n" "adcq      $0,%0"
+            #endif
+        #else
+#error not implemented
+        #endif
+        : "+d" (over)
+        , "+a" (base)
+        : "rm" (n)
+        : "cc"
+        #if defined( __i386__ ) || defined( __x86_64__ )
+            #if defined( __i386__ )
+        , "ebx"
+            #else
+        , "rbx"
+            #endif
+        #endif
+        );
+        if( over
+        || ( base & ~( (N)~0 >> 1 ))
+        )
+        {   num_0->digits[i] = base;
+            N *p = E_mem_Q_blk_I_append( num_0->digits, over & ~( (N)~0 >> 1 ) ? 2 : 1 );
+            if( !p )
+                return ~0;
+            if( over & ~( (N)~0 >> 1 ))
+            {   p[0] = over;
+                p[1] = sign_ext;
+                num_0->digits_n += 2;
+            }else
+            {   *p = sign_ext | over;
+                num_0->digits_n++;
+            }
+        }else
+            num_0->digits[i] = base | sign_ext;
+    }else
+    {   B carry;
+        __asm__ (
+        #if defined( __i386__ ) || defined( __x86_64__ )
+            #if defined( __i386__ )
+        "\n" "mov       %1,%%ebx"
+        "\n" "imull     %3"
+        "\n" "setc      %0"
+        "\n" "add       %%ebx,%2"
+        "\n" "adcl      $0,%1"
+            #else
+        "\n" "mov       %1,%%rbx"
+        "\n" "imulq     %3"
+        "\n" "setc      %0"
+        "\n" "add       %%rbx,%2"
+        "\n" "adcq      $0,%1"
+            #endif
+        #else
+#error not implemented
+        #endif
+        : "=r" (carry)
+        , "+d" (over)
+        , "+a" (base)
+        : "rm" (n)
+        : "cc"
+        #if defined( __i386__ ) || defined( __x86_64__ )
+            #if defined( __i386__ )
+        , "ebx"
+            #else
+        , "rbx"
+            #endif
+        #endif
+        );
+        num_0->digits[i] = base;
+        if(carry)
+        {   N *p = E_mem_Q_blk_I_append( num_0->digits, 1 );
+            if( !p )
+                return ~0;
+            *p = over;
+            num_0->digits_n++;
+        }
+    }
+    return 0;
+}
+_internal
+N
+E_math_bignum_I_multiply_s(
+  struct E_math_bignum_Z_num *num_0
+, S n_
+){  N n = (N)n_ & ( (N)~0 >> 1 );
+    N over = 0, base;
+    for_n( i, num_0->digits_n - 1 )
+    {   base = num_0->digits[i];
+        __asm__ (
+        #if defined( __i386__ ) || defined( __x86_64__ )
+            #if defined( __i386__ )
+        "\n" "mov       %0,%%ebx"
+        "\n" "mull      %2"
+        "\n" "add       %%ebx,%1"
+        "\n" "adcl      $0,%0"
+            #else
+        "\n" "mov       %0,%%rbx"
+        "\n" "mulq      %2"
+        "\n" "add       %%rbx,%1"
+        "\n" "adcq      $0,%0"
+            #endif
+        #else
+#error not implemented
+        #endif
+        : "+d" (over)
+        , "+a" (base)
+        : "rm" (n)
+        : "cc"
+        #if defined( __i386__ ) || defined( __x86_64__ )
+            #if defined( __i386__ )
+        , "ebx"
+            #else
+        , "rbx"
+            #endif
+        #endif
+        );
+        num_0->digits[i] = base;
+    }
+    base = num_0->digits[ num_0->digits_n - 1 ];
+    B carry;
+    __asm__ (
+    #if defined( __i386__ ) || defined( __x86_64__ )
+        #if defined( __i386__ )
+    "\n" "mov       %1,%%ebx"
+    "\n" "imull     %3"
+    "\n" "setc      %0"
+    "\n" "add       %%ebx,%2"
+    "\n" "adcl      $0,%1"
+        #else
+    "\n" "mov       %1,%%rbx"
+    "\n" "imulq     %3"
+    "\n" "setc      %0"
+    "\n" "add       %%rbx,%2"
+    "\n" "adcq      $0,%1"
+        #endif
+    #else
+#error not implemented
+    #endif
+    : "=r" (carry)
+    , "+d" (over)
+    , "+a" (base)
+    : "rm" ( n_ )
+    : "cc"
+    #if defined( __i386__ ) || defined( __x86_64__ )
+        #if defined( __i386__ )
+    , "ebx"
+        #else
+    , "rbx"
+        #endif
+    #endif
+    );
+    num_0->digits[i] = base;
+    if(carry)
+    {   N *p = E_mem_Q_blk_I_append( num_0->digits, 1 );
+        if( !p )
+            return ~0;
+        *p = over;
+        num_0->digits_n++;
+    }
+    return 0;
+}
+//------------------------------------------------------------------------------
+N
+E_math_bignum_I_add(
+  struct E_math_bignum_Z_num *num_0
+, struct E_math_bignum_Z_num *num_1
+){  if(( E_mat_bignum_R_sign( num_0 ) && E_mat_bignum_R_sign( num_1 ))
+    || ( !E_mat_bignum_R_sign( num_0 ) && !E_mat_bignum_R_sign( num_1 ))
+    )
+        return E_math_bignum_I_add_( num_0, num_1 );
+    return E_math_bignum_I_subtract_( num_0, num_1 );
+}
+N
+E_math_bignum_I_subtract(
+  struct E_math_bignum_Z_num *num_0
+, struct E_math_bignum_Z_num *num_1
+){  if(( E_mat_bignum_R_sign( num_0 ) && E_mat_bignum_R_sign( num_1 ))
+    || ( !E_mat_bignum_R_sign( num_0 ) && !E_mat_bignum_R_sign( num_1 ))
+    )
+        return E_math_bignum_I_subtract_( num_0, num_1 );
+    return E_math_bignum_I_add_( num_0, num_1 );
+}
+N
+E_math_bignum_I_multiply(
+  struct E_math_bignum_Z_num *num_0
+, struct E_math_bignum_Z_num *num_1
+){  struct E_math_bignum_Z_num *num = E_math_bignum_M_num( num_0 );
+    if( !num )
+        return ~0;
+    num->floating_point = 0;
+    struct E_math_bignum_Z_num *num_ = num;
+    if( num_1->digits_n >= 2 )
+    {   if( !~E_math_bignum_I_multiply_n( num, num_1->digits[0] ))
+        {   E_math_bignum_W(num);
+            return ~0;
+        }
+        for_n( i, num_1->digits_n - 2 )
+        {   num = E_math_bignum_M_num( num_0 );
+            if( !num )
+            {   E_math_bignum_W( num_ );
+                return ~0;
+            }
+            num->floating_point = 0;
+            if( !~E_math_bignum_I_multiply_n( num, num_1->digits[ i + 1 ] ))
+            {   E_math_bignum_W(num);
+                E_math_bignum_W( num_ );
+                return ~0;
+            }
+            if( !E_mem_Q_blk_I_prepend( num->digits, i + 1 ))
+            {   E_math_bignum_W(num);
+                E_math_bignum_W( num_ );
+                return ~0;
+            }
+            for_n( j, i + 1 )
+                num->digits[j] = 0;
+            if( !~E_math_bignum_I_add_( num_, num ))
+            {   E_math_bignum_W(num);
+                E_math_bignum_W( num_ );
+                return ~0;
+            }
+            E_math_bignum_W(num);
+        }
+    }
+    num = E_math_bignum_M_num( num_0 );
+    if( !num )
+    {   E_math_bignum_W( num_ );
+        return ~0;
+    }
+    num->floating_point = 0;
+    if( !~E_math_bignum_I_multiply_s( num, num_1->digits[ num_1->digits_n - 1 ] ))
+    {   E_math_bignum_W(num);
+        E_math_bignum_W( num_ );
+        return ~0;
+    }
+    if( !E_mem_Q_blk_I_prepend( num->digits, num_1->digits_n - 1 ))
+    {   E_math_bignum_W(num);
+        E_math_bignum_W( num_ );
+        return ~0;
+    }
+    for_n( j, num_1->digits_n - 1 )
+        num->digits[j] = 0;
+    if( !~E_math_bignum_I_add_( num_, num ))
+    {   E_math_bignum_W(num);
+        E_math_bignum_W( num_ );
+        return ~0;
+    }
+    E_math_bignum_W(num);
+    num_->floating_point = num_0->floating_point + num_1->floating_point;
+    E_math_bignum_W( num_0 );
+    num_0 = num_;
+    return 0;
+}
+/******************************************************************************/
