@@ -470,12 +470,12 @@ distclean:
 # Uruchamianie rezultatu nie zainstalowanego.
 run: build
 	libs=$(if $(H_make_C_to_libs) \
-	, "$$( "$$SHELL" -c ' \
+	,"$$( "$$SHELL" -c ' \
 	    if [ -n "$$1" ]; then \
-	        s="$$1"; \
+	        s="$$1" ;\
 	        shift; \
 	        while [ -n "$$1" ]; do \
-	            s="$${s}:$$1"; \
+	            s="$${s}:$$1" ;\
 	            shift; \
 	        done; \
 	    fi; \
@@ -485,25 +485,25 @@ run: build
 	  )"\
 	) ;\
     cmd=' \
-    trap sleep\ 1000 EXIT; \
-    cd "$$1" || exit 1; \
+    trap sleep\ 1000 EXIT ;\
+    cd "$$1" || exit 1 ;\
     shift; \
     $(if $(H_make_C_to_libs) \
-    , LD_LIBRARY_PATH="$$1"; \
-      shift; \
+    , export LD_LIBRARY_PATH="$$1" ;\
+      shift ;\
       $(if $(H_make_C_to_libs_C_replace_c_alloc) \
       , LD_PRELOAD=lib$(H_make_S_lib_prefix)$(H_make_S_base_module).so)) \
     ./a.out "$$@"' ;\
     if [ -n "$$( which ocq 2>/dev/null )" ]; then \
-        ocq term-args "$$cmd" "$$SHELL" "$$PWD" $(if $(H_make_C_to_libs),"$$libs") $(call H_make_Z_shell_cmd_arg_I_quote_for,$(_)) ;\
+        ocq term-args "$$cmd" "$$SHELL" "$$PWD" $(if $(H_make_C_to_libs),"$$libs") $(call H_make_Z_shell_cmd_arg_I_quote_for,$(S_cmd_arg)) ;\
     elif [ -n "$$( which xterm 2>/dev/null )" ]; then \
-        xterm -maximized -e "$$SHELL" -c "$$cmd" "$$SHELL" "$$PWD" $(if $(H_make_C_to_libs),"$$libs") $(call H_make_Z_shell_cmd_arg_I_quote_for,$(_)) ;\
+        xterm -maximized -e "$$SHELL" -c "$$cmd" "$$SHELL" "$$PWD" $(if $(H_make_C_to_libs),"$$libs") $(call H_make_Z_shell_cmd_arg_I_quote_for,$(S_cmd_arg)) ;\
     else \
         $(if $(H_make_C_to_libs) \
-        , LD_LIBRARY_PATH="$$libs" \
+        , export LD_LIBRARY_PATH="$$libs" ;\
           $(if $(H_make_C_to_libs_C_replace_c_alloc) \
           , LD_PRELOAD=lib$(H_make_S_lib_prefix)$(H_make_S_base_module).so)) \
-        ./a.out $(call H_make_Z_shell_cmd_arg_I_quote_for,$(_)) ;\
+        ./a.out $(call H_make_Z_shell_cmd_arg_I_quote_for,$(S_cmd_arg)) ;\
     fi
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 install-0:

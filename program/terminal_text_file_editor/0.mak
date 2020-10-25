@@ -11,7 +11,7 @@ S_libraries := ncurses
 	else
 S_packages := ncursesw
 	endif
-_ := test
+S_cmd_arg := test
 #===============================================================================
 install:
 	{ $(CMP) /usr/bin/direct_oux /usr/bin/tept \
