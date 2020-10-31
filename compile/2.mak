@@ -52,10 +52,7 @@ H_make_C_pthreads := $$(if $$(C_pthreads),1)
             endif
         endef
 
-$(foreach module \
-, $(H_make_S_modules) \
-, $(if $(wildcard $(H_make_S_module_path)/$(module)/0.mak) \
-  , $(eval $(call H_make_I_module,$(module)))))
+$(foreach module,$(H_make_S_modules),$(if $(wildcard $(H_make_S_module_path)/$(module)/0.mak),$(eval $(call H_make_I_module,$(module)))))
 
 E_main_S_packages := $(sort $(E_main_S_packages))
 E_main_S_libraries := $(sort $(E_main_S_libraries))
@@ -420,59 +417,28 @@ fi
 mostlyclean:
 	$(RM) a.out
     ifneq (,$(H_make_C_to_libs))
-	$(call H_make_I_libtool_I_clean \
-    , $(foreach module,$(H_make_S_modules) \
-      , $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so) \
-      ), \
-      $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(H_make_S_base_module)/lib$(H_make_S_lib_prefix)$(H_make_S_base_module).so) \
-    )
+	$(call H_make_I_libtool_I_clean,$(foreach module,$(H_make_S_modules),$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so)),$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(H_make_S_base_module)/lib$(H_make_S_lib_prefix)$(H_make_S_base_module).so))
     endif
 
 clean: mostlyclean
     ifneq (,$(H_make_C_to_libs))
-	$(call H_make_I_libtool_I_clean \
-    , $(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/) \
-      , $(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,%.lo,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx)))) \
-      )), \
-      $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(H_make_S_base_module)/$(H_make_S_base_driver).lo), \
-      $(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/.libs/), \
-        $(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,%.o,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx)))) \
-      )) \
-      $(foreach module,$(H_make_S_modules),$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/.libs)) \
-    )
+	$(call H_make_I_libtool_I_clean,$(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/),$(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,%.lo,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx)))))),$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(H_make_S_base_module)/$(H_make_S_base_driver).lo),$(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/.libs/),$(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,%.o,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx)))))) $(foreach module,$(H_make_S_modules),$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/.libs)))
     endif
 	$(RM) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/E_cplus_S_0_to_libs.h) E_cplus_S_0_main_not_to_libs.h
 
 distclean:
 	$(RM) a.out ;\
-	$(call H_make_I_libtool_I_clean \
-    , $(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/), \
-        $(call H_make_Z_shell_cmd_arg_I_quote,lib$(H_make_S_lib_prefix)$(module).so) \
-        $(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,%.lo,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx)))) \
-      )), \
-      $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(H_make_S_base_module)/$(H_make_S_base_driver).lo), \
-      $(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/.libs/), \
-        $(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,%.o,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx)))) \
-      )) \
-      $(foreach module,$(H_make_S_modules),$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/.libs)) \
-    ) ;\
+	$(call H_make_I_libtool_I_clean,$(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/),$(call H_make_Z_shell_cmd_arg_I_quote,lib$(H_make_S_lib_prefix)$(module).so) $(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,%.lo,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx)))))),$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(H_make_S_base_module)/$(H_make_S_base_driver).lo),$(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/.libs/),$(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,%.o,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx)))))) $(foreach module,$(H_make_S_modules),$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/.libs))) ;\
 	$(RM) E_cplus_S_0_main_not_to_libs.h \
       $(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,E_cplus_S_0_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,E_cplus_S_1_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,E_cplus_S_2_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,%.c,$(H_make_S_cx_sources))) \
       $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/E_cplus_S_0_to_libs.h) \
-      $(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/), \
-        $(call H_make_Z_shell_cmd_arg_I_quote_for \
-        , $(patsubst %.cx,E_cplus_S_0_%.h,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))) \
-          $(patsubst %.cx,E_cplus_S_1_%.h,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))) \
-          $(patsubst %.cx,E_cplus_S_2_%.h,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))) \
-          $(patsubst %.cx,%.c,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))) \
-      ))) ;\
+      $(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/),$(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,E_cplus_S_0_%.h,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))) $(patsubst %.cx,E_cplus_S_1_%.h,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))) $(patsubst %.cx,E_cplus_S_2_%.h,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))) $(patsubst %.cx,%.c,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx)))))) ;\
     $(RM) $(H_make_S_compile_path)/_0.h ;\
 	$(RM) $(H_make_S_compile_path)/headers_db
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Uruchamianie rezultatu nie zainstalowanego.
 run: build
-	libs=$(if $(H_make_C_to_libs) \
-	,"$$( "$$SHELL" -c ' \
+	libs=$(if $(H_make_C_to_libs),"$$( "$$SHELL" -c ' \
 	    if [ -n "$$1" ]; then \
 	        s="$$1" ;\
 	        shift; \
@@ -483,27 +449,22 @@ run: build
 	    fi; \
 	    printf %s "$$s"' \
 	    "$$SHELL" \
-	    $(foreach module,$(H_make_S_modules),$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module))) \
-	  )"\
-	) ;\
+	    $(foreach module,$(H_make_S_modules),$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module))))") ;\
     cmd=' \
     trap sleep\ 1000 EXIT ;\
     cd "$$1" || exit 1 ;\
     shift; \
-    $(if $(H_make_C_to_libs) \
-    , libs="$$1" ;\
+    $(if $(H_make_C_to_libs),libs="$$1" ;\
       shift ;\
       LD_LIBRARY_PATH="$$libs" \
-      $(if $(H_make_C_to_libs_C_replace_c_alloc) \
-      , LD_PRELOAD=lib$(H_make_S_lib_prefix)$(H_make_S_base_module).so)) \
+      $(if $(H_make_C_to_libs_C_replace_c_alloc), LD_PRELOAD=lib$(H_make_S_lib_prefix)$(H_make_S_base_module).so)) \
     ./a.out "$$@"' ;\
     if [ -n "$$( which ocq 2>/dev/null )" ]; then \
         ocq term-args "$$cmd" "$$SHELL" "$$PWD" $(if $(H_make_C_to_libs),"$$libs") $(call H_make_Z_shell_cmd_arg_I_quote_for,$(S_cmd_arg)) ;\
     elif [ -n "$$( which xterm 2>/dev/null )" ]; then \
         xterm -maximized -e "$$SHELL" -c "$$cmd" "$$SHELL" "$$PWD" $(if $(H_make_C_to_libs),"$$libs") $(call H_make_Z_shell_cmd_arg_I_quote_for,$(S_cmd_arg)) ;\
     else \
-        $(if $(H_make_C_to_libs) \
-        , LD_LIBRARY_PATH="$$libs" \
+        $(if $(H_make_C_to_libs), LD_LIBRARY_PATH="$$libs" \
           $(if $(H_make_C_to_libs_C_replace_c_alloc) \
           , LD_PRELOAD=lib$(H_make_S_lib_prefix)$(H_make_S_base_module).so)) \
         ./a.out $(call H_make_Z_shell_cmd_arg_I_quote_for,$(S_cmd_arg)) ;\
