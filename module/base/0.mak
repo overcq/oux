@@ -9,7 +9,7 @@
 S_libraries := m
 S_headers := errno.h limits.h signal.h sys/time.h time.h
     ifeq ($(H_make_S_os),Linux)
-S_headers += error.h
+S_headers += error.h unistd.h
 CFLAGS += -D_GNU_SOURCE
     else ifeq ($(H_make_S_os),OpenBSD)
 S_headers += sys/param.h
