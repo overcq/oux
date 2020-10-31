@@ -52,9 +52,9 @@ done \
 | sort \
 | awk '
     {
-        if( $1 != func )
+        if( $1 != f )
         {   print $0
-            func = $1
+            f = $1
         }
     }
 '
