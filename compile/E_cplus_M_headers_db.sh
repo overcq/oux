@@ -51,13 +51,10 @@ done \
 ' \
 | sort \
 | awk '
-    BEGIN {
-        func=""
-    }
     {
         if( $1 != func )
-        {   print $@
-            func=$1
+        {   print $0
+            func = $1
         }
     }
 '
