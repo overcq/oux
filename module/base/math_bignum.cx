@@ -22,13 +22,13 @@ E_math_bignum_M( void
     {   W(num);
         return 0;
     }
-    *num->digits = 0;
+    num->digits[0] = 0;
     num->digits_n = 1;
     num->exponent = 0;
     return num;
 }
 struct E_math_bignum_Z_num *
-E_math_bignum_M_num( struct E_math_bignum_Z_num *num_0
+E_math_bignum_M_copy( struct E_math_bignum_Z_num *num_0
 ){  struct E_math_bignum_Z_num *M_(num);
     if( !num )
         return 0;
@@ -42,6 +42,19 @@ E_math_bignum_M_num( struct E_math_bignum_Z_num *num_0
     num->digits_n = num_0->digits_n;
     num->exponent = num_0->exponent;
     return num;
+}
+void
+E_math_bignum_M_move( struct E_math_bignum_Z_num *num_0
+, struct E_math_bignum_Z_num *num_1
+){  W( num_0->digits );
+    E_math_bignum_M_move_( num_0, num_1 );
+}
+void
+E_math_bignum_M_move_( struct E_math_bignum_Z_num *num_0
+, struct E_math_bignum_Z_num *num_1
+){  num_0->digits = num_1->digits;
+    num_0->digits_n = num_1->digits_n;
+    num_0->exponent = num_1->exponent;
 }
 _internal
 struct E_math_bignum_Z_num *
@@ -80,14 +93,14 @@ E_math_bignum_I_add_subtract_prepare(
 , struct E_math_bignum_Z_num *num_1
 ){  if( num_0->exponent != num_1->exponent )
     {   if( num_0->exponent > num_1->exponent )
-        {   if( !E_mem_Q_blk_I_prepend( num_0->digits, num_0->exponent - num_1->exponent ))
+        {   if( !E_mem_Q_blk_I_prepend( &num_0->digits, num_0->exponent - num_1->exponent ))
                 return ~0;
             for_n( i, num_0->exponent - num_1->exponent )
                 num_0->digits[i] = 0;
             num_0->digits_n += num_0->exponent - num_1->exponent;
             num_0->exponent = num_1->exponent;
         }else
-        {   if( !E_mem_Q_blk_I_prepend( num_1->digits, num_1->exponent - num_0->exponent ))
+        {   if( !E_mem_Q_blk_I_prepend( &num_1->digits, num_1->exponent - num_0->exponent ))
                 return ~0;
             for_n( i, num_1->exponent - num_0->exponent )
                 num_0->digits[i] = 0;
@@ -96,7 +109,7 @@ E_math_bignum_I_add_subtract_prepare(
         }
     }
     if( num_1->digits_n > num_0->digits_n )
-    {   if( !E_mem_Q_blk_I_append( num_0->digits, num_1->digits_n - num_0->digits_n ))
+    {   if( !E_mem_Q_blk_I_append( &num_0->digits, num_1->digits_n - num_0->digits_n ))
             return ~0;
         for_n( i, num_1->digits_n - num_0->digits_n )
             num_0->digits[ num_0->digits_n + i ] = 0;
@@ -170,7 +183,7 @@ E_math_bignum_I_multiply_n(
         || ( base & ~( (N)~0 >> 1 ))
         )
         {   num_0->digits[i] = base;
-            N *p = E_mem_Q_blk_I_append( num_0->digits, over & ~( (N)~0 >> 1 ) ? 2 : 1 );
+            N *p = E_mem_Q_blk_I_append( &num_0->digits, over & ~( (N)~0 >> 1 ) ? 2 : 1 );
             if( !p )
                 return ~0;
             if( over & ~( (N)~0 >> 1 ))
@@ -214,7 +227,7 @@ E_math_bignum_I_multiply_n(
         );
         num_0->digits[i] = base;
         if(carry)
-        {   N *p = E_mem_Q_blk_I_append( num_0->digits, 1 );
+        {   N *p = E_mem_Q_blk_I_append( &num_0->digits, 1 );
             if( !p )
                 return ~0;
             *p = over;
@@ -289,7 +302,7 @@ E_math_bignum_I_multiply_s(
     );
     num_0->digits[i] = base;
     if(carry)
-    {   N *p = E_mem_Q_blk_I_append( num_0->digits, 1 );
+    {   N *p = E_mem_Q_blk_I_append( &num_0->digits, 1 );
         if( !p )
             return ~0;
         *p = over;
@@ -302,24 +315,32 @@ S
 E_math_bignum_I_compare(
   struct E_math_bignum_Z_num *num_0
 , struct E_math_bignum_Z_num *num_1
-){  if(( E_math_bignum_R_sign( num_0 ) && E_math_bignum_R_sign( num_1 ))
-    || ( !E_math_bignum_R_sign( num_0 ) && !E_math_bignum_R_sign( num_1 ))
+){  if(( !E_math_bignum_R_sign( num_0 ) && !E_math_bignum_R_sign( num_1 ))
+    || ( E_math_bignum_R_sign( num_0 ) && E_math_bignum_R_sign( num_1 ))
     )
-    {   if( !~E_math_bignum_I_subtract( num_0, num_1 ))
+    {   struct E_math_bignum_Z_num *num_0_ = E_math_bignum_M_copy( num_0 );
+        if( !num_0_ )
             return ~0;
-        if( num_0->digits_n == 1
-        && num_0->digits[0] == 0
+        if( !~E_math_bignum_I_subtract( num_0_, num_1 ))
+        {   E_math_bignum_W( num_0_ );
+            return ~0;
+        }
+        if( num_0_->digits_n == 1
+        && num_0_->digits[0] == 0
         )
+        {   E_math_bignum_W( num_0_ );
             return 0;
-        if(( E_math_bignum_R_sign( num_0 ) && E_math_bignum_R_sign( num_1 ))
-        || ( !E_math_bignum_R_sign( num_0 ) && !E_math_bignum_R_sign( num_1 ))
-        )
+        }
+        if( !E_math_bignum_R_sign( num_0_ ))
+        {   E_math_bignum_W( num_0_ );
             return 2;
+        }
+        E_math_bignum_W( num_0_ );
         return -2;
     }
     if( !E_math_bignum_R_sign( num_0 ))
-        return -2;
-    return 2;
+        return 2;
+    return -2;
 }
 N
 E_math_bignum_I_add(
@@ -367,7 +388,7 @@ E_math_bignum_I_add(
     #endif
     : Next
     );
-    N *p = E_mem_Q_blk_I_append( num_0->digits, 1 );
+    N *p = E_mem_Q_blk_I_append( &num_0->digits, 1 );
     if( !p )
         return ~0;
     *p = E_math_bignum_R_sign( num_0 ) ? ~0 : 1;
@@ -432,7 +453,7 @@ E_math_bignum_I_subtract(
     #endif
     : Next
     );
-    N *p = E_mem_Q_blk_I_append( num_0->digits, 1 );
+    N *p = E_mem_Q_blk_I_append( &num_0->digits, 1 );
     if( !p )
         return ~0;
     *p = E_math_bignum_R_sign( num_0 ) ? ~0 : 1;
@@ -468,18 +489,18 @@ N
 E_math_bignum_I_multiply(
   struct E_math_bignum_Z_num *num_0
 , struct E_math_bignum_Z_num *num_1
-){  struct E_math_bignum_Z_num *num = E_math_bignum_M_num( num_0 );
+){  struct E_math_bignum_Z_num *num = E_math_bignum_M_copy( num_0 );
     if( !num )
         return ~0;
     num->exponent = 0;
-    struct E_math_bignum_Z_num *num_ = num;
+    struct E_math_bignum_Z_num *num_ = E_math_bignum_M();
     if( num_1->digits_n >= 2 )
     {   if( !~E_math_bignum_I_multiply_n( num, num_1->digits[0] ))
         {   E_math_bignum_W(num);
             return ~0;
         }
         for_n( i, num_1->digits_n - 2 )
-        {   num = E_math_bignum_M_num( num_0 );
+        {   num = E_math_bignum_M_copy( num_0 );
             if( !num )
             {   E_math_bignum_W( num_ );
                 return ~0;
@@ -490,7 +511,7 @@ E_math_bignum_I_multiply(
                 E_math_bignum_W( num_ );
                 return ~0;
             }
-            if( !E_mem_Q_blk_I_prepend( num->digits, i + 1 ))
+            if( !E_mem_Q_blk_I_prepend( &num->digits, i + 1 ))
             {   E_math_bignum_W(num);
                 E_math_bignum_W( num_ );
                 return ~0;
@@ -505,7 +526,7 @@ E_math_bignum_I_multiply(
             E_math_bignum_W(num);
         }
     }
-    num = E_math_bignum_M_num( num_0 );
+    num = E_math_bignum_M_copy( num_0 );
     if( !num )
     {   E_math_bignum_W( num_ );
         return ~0;
@@ -516,13 +537,15 @@ E_math_bignum_I_multiply(
         E_math_bignum_W( num_ );
         return ~0;
     }
-    if( !E_mem_Q_blk_I_prepend( num->digits, num_1->digits_n - 1 ))
-    {   E_math_bignum_W(num);
-        E_math_bignum_W( num_ );
-        return ~0;
+    if( num_1->digits_n - 1 )
+    {   if( !E_mem_Q_blk_I_prepend( &num->digits, num_1->digits_n - 1 ))
+        {   E_math_bignum_W(num);
+            E_math_bignum_W( num_ );
+            return ~0;
+        }
+        for_n( j, num_1->digits_n - 1 )
+            num->digits[j] = 0;
     }
-    for_n( j, num_1->digits_n - 1 )
-        num->digits[j] = 0;
     if( !~E_math_bignum_I_add( num_, num ))
     {   E_math_bignum_W(num);
         E_math_bignum_W( num_ );
@@ -530,8 +553,8 @@ E_math_bignum_I_multiply(
     }
     E_math_bignum_W(num);
     num_->exponent = num_0->exponent + num_1->exponent;
-    E_math_bignum_W( num_0 );
-    num_0 = num_;
+    E_math_bignum_M_move( num_0, num_ );
+    W( num_ );
     return 0;
 }
 N
@@ -540,56 +563,83 @@ E_math_bignum_I_divide_modulo(
 , struct E_math_bignum_Z_num *num_1
 ){  num_0->exponent -= num_1->exponent;
     if( num_0->exponent > 0 )
-    {   if( !E_mem_Q_blk_I_prepend( num_0->digits, num_0->exponent ))
+    {   if( !E_mem_Q_blk_I_prepend( &num_0->digits, num_0->exponent ))
             return ~0;
         for_n( i, num_0->exponent )
             num_0->digits[i] = 0;
         num_0->exponent = 0;
     }
     if( num_0->digits_n < num_1->digits_n )
-    {   struct E_math_bignum_Z_num *num_mod = E_math_bignum_M();
-        if( !num_mod )
+    {   struct E_math_bignum_Z_num *num_div = E_math_bignum_M();
+        if( !num_div )
             return ~0;
-        E_math_bignum_W( num_1 );
-        num_1 = num_0;
-        num_0 = num_mod;
+        E_math_bignum_M_move( num_1, num_0 );
+        E_math_bignum_M_move_( num_0, num_div );
+        W( num_div );
         return 0;
     }
     struct E_math_bignum_Z_num *num_mod = E_math_bignum_M_num_cut( num_0, num_0->digits_n - num_1->digits_n, num_1->digits_n );
     if( !num_mod )
         return ~0;
     num_1->exponent = 0;
+    struct E_math_bignum_Z_num *num_inc = E_math_bignum_M();
+    if( !num_inc )
+    {   E_math_bignum_W( num_mod );
+        return ~0;
+    }
+    if(( E_math_bignum_R_sign( num_0 ) && !E_math_bignum_R_sign( num_1 ))
+    || ( !E_math_bignum_R_sign( num_0 ) && E_math_bignum_R_sign( num_1 ))
+    )
+    {   struct E_math_bignum_Z_num *num_1_ = E_math_bignum_M();
+        if( !num_1_ )
+        {   E_math_bignum_W( num_inc );
+            E_math_bignum_W( num_mod );
+            return ~0;
+        }
+        if( !~E_math_bignum_I_subtract( num_1_, num_1 ))
+        {   E_math_bignum_W( num_1_ );
+            E_math_bignum_W( num_inc );
+            E_math_bignum_W( num_mod );
+            return ~0;
+        }
+        E_math_bignum_M_move( num_1, num_1_ );
+        W( num_1_ );
+        num_inc->digits[0] = -1;
+    }else
+        num_inc->digits[0] = 1;
     S cmp = E_math_bignum_I_compare( num_mod, num_1 );
     if( !~cmp )
     {   E_math_bignum_W( num_mod );
         return ~0;
     }
-    struct E_math_bignum_Z_num *num_inc = E_math_bignum_M();
-    num_inc->digits[0] = 1;
     num_inc->exponent = num_0->digits_n - num_mod->digits_n;
-    if( cmp < 0 )
-    {   if( num_0->digits_n == num_1->digits_n )
+    if(( !E_math_bignum_R_sign( num_0 ) && cmp < 0 )
+    || ( E_math_bignum_R_sign( num_0 ) && cmp > 0 )
+    )
+    {   if( !num_inc->exponent )
         {   E_math_bignum_W( num_inc );
             E_math_bignum_W( num_mod );
-            struct E_math_bignum_Z_num *num_mod = E_math_bignum_M();
-            if( !num_mod )
+            struct E_math_bignum_Z_num *num_div = E_math_bignum_M();
+            if( !num_div )
                 return ~0;
-            E_math_bignum_W( num_1 );
-            num_1 = num_0;
-            num_0 = num_mod;
+            E_math_bignum_M_move( num_1, num_0 );
+            E_math_bignum_M_move_( num_0, num_div );
+            W( num_div );
             return 0;
         }
-        if( !E_mem_Q_blk_I_prepend( num_mod->digits, 1 ))
+        if( !E_mem_Q_blk_I_prepend( &num_mod->digits, 1 ))
         {   E_math_bignum_W( num_inc );
             E_math_bignum_W( num_mod );
             return ~0;
         }
-        num_mod->digits_n++;
-        num_mod->digits[0] = num_0->digits[ num_0->digits_n - num_mod->digits_n ];
         num_inc->exponent--;
+        num_mod->digits[0] = num_0->digits[ num_inc->exponent ];
+        num_mod->digits_n++;
     }
+    G_(); Gd( num_mod->digits[0] ); Gd( num_mod->digits[1] ); Gd( num_mod->digits_n ); Gd( num_1->digits[0] ); Gd( num_1->digits_n ); V();
     struct E_math_bignum_Z_num *num_div = E_math_bignum_M();
-    O{  O{  if( !~E_math_bignum_I_subtract( num_mod, num_1 ))
+    O{  O{  G_(); Gd( num_mod->digits[0] ); Gd( num_mod->digits[1] ); Gd( num_mod->digits_n ); Gd( num_1->digits[0] ); Gd( num_1->digits_n );
+            if( !~E_math_bignum_I_subtract( num_mod, num_1 ))
             {   E_math_bignum_W( num_div );
                 E_math_bignum_W( num_inc );
                 E_math_bignum_W( num_mod );
@@ -602,29 +652,32 @@ E_math_bignum_I_divide_modulo(
                 E_math_bignum_W( num_mod );
                 return ~0;
             }
-            if( cmp < 0 )
-                break;
             if( !~E_math_bignum_I_add( num_div, num_inc ))
             {   E_math_bignum_W( num_div );
                 E_math_bignum_W( num_inc );
                 E_math_bignum_W( num_mod );
                 return ~0;
             }
-            if( !cmp )
+            if( !cmp
+            || ( !E_math_bignum_R_sign( num_0 ) && cmp < 0 )
+            || ( E_math_bignum_R_sign( num_0 ) && cmp > 0 )
+            )
                 break;
         }
-        if( num_0->digits_n - num_inc->exponent < num_1->digits_n - num_mod->digits_n )
-            break;
-        if( !E_mem_Q_blk_I_prepend( num_mod->digits, num_1->digits_n - num_mod->digits_n ))
-        {   E_math_bignum_W( num_div );
-            E_math_bignum_W( num_inc );
-            E_math_bignum_W( num_mod );
-            return ~0;
+        if( num_1->digits_n - num_mod->digits_n )
+        {   if( num_inc->exponent < num_1->digits_n - num_mod->digits_n )
+                break;
+            if( !E_mem_Q_blk_I_prepend( &num_mod->digits, num_1->digits_n - num_mod->digits_n ))
+            {   E_math_bignum_W( num_div );
+                E_math_bignum_W( num_inc );
+                E_math_bignum_W( num_mod );
+                return ~0;
+            }
+            num_inc->exponent -= num_1->digits_n - num_mod->digits_n;
+            for_n( i, num_1->digits_n - num_mod->digits_n )
+                num_mod->digits[i] = num_0->digits[ num_inc->exponent + i ];
+            num_mod->digits_n += num_1->digits_n - num_mod->digits_n;
         }
-        num_inc->exponent -= num_1->digits_n - num_mod->digits_n;
-        for_n( i, num_1->digits_n - num_mod->digits_n )
-            num_mod->digits[i] = num_0->digits[ num_inc->exponent + i ];
-        num_mod->digits_n += num_1->digits_n - num_mod->digits_n;
         S cmp = E_math_bignum_I_compare( num_mod, num_1 );
         if( !~cmp )
         {   E_math_bignum_W( num_div );
@@ -632,10 +685,12 @@ E_math_bignum_I_divide_modulo(
             E_math_bignum_W( num_mod );
             return ~0;
         }
-        if( cmp < 0 )
+        if(( !E_math_bignum_R_sign( num_0 ) && cmp < 0 )
+        || ( E_math_bignum_R_sign( num_0 ) && cmp > 0 )
+        )
         {   if( !num_inc->exponent )
                 break;
-            if( !E_mem_Q_blk_I_prepend( num_mod->digits, 1 ))
+            if( !E_mem_Q_blk_I_prepend( &num_mod->digits, 1 ))
             {   E_math_bignum_W( num_div );
                 E_math_bignum_W( num_inc );
                 E_math_bignum_W( num_mod );
@@ -647,18 +702,97 @@ E_math_bignum_I_divide_modulo(
         }
     }
     E_math_bignum_W( num_inc );
-    E_math_bignum_W( num_1 );
     num_div->exponent = num_0->exponent;
-    E_math_bignum_W( num_0 );
-    num_1 = num_mod;
-    num_0 = num_div;
+    E_math_bignum_M_move( num_1, num_mod );
+    E_math_bignum_M_move( num_0, num_div );
+    W( num_div );
+    return 0;
+}
+N
+E_math_bignum_I_abs( struct E_math_bignum_Z_num *num
+){  if( !E_math_bignum_R_sign(num) )
+        return 0;
+    struct E_math_bignum_Z_num *num_ = E_math_bignum_M();
+    if( !num_ )
+        return ~0;
+    if( !~E_math_bignum_I_subtract( num_, num ))
+    {   E_math_bignum_W( num_ );
+        return ~0;
+    }
+    E_math_bignum_M_move( num, num_ );
+    W( num_ );
     return 0;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-void
+Pc
 E_math_bignum_I_print( struct E_math_bignum_Z_num *num
-){  if( E_math_bignum_R_sign(num) )
-        E_flow_Z_line_report_I_write_Z_c( '-' );
-    
+){  Pc Mt_( s, 0 );
+    if( !s )
+        return 0;
+    struct E_math_bignum_Z_num *num_div = E_math_bignum_M_copy(num);
+    O{  struct E_math_bignum_Z_num *num_mod = E_math_bignum_M();
+        num_mod->digits[0] = 10;
+        if( !~E_math_bignum_I_divide_modulo( num_div, num_mod ))
+        {   E_math_bignum_W( num_mod );
+            E_math_bignum_W( num_div );
+            W(s);
+            return 0;
+        }
+        E_math_bignum_I_abs( num_mod );
+        if( !E_mem_Q_blk_I_prepend( &s, 1 ))
+        {   E_math_bignum_W( num_mod );
+            E_math_bignum_W( num_div );
+            W(s);
+            return 0;
+        }
+        *s = '0' + num_mod->digits[0];
+        E_math_bignum_W( num_mod );
+        if( num_div->digits_n == 1
+        && num_div->digits[0] == 0
+        )
+            break;
+    }
+    E_math_bignum_W( num_div );
+    if( E_math_bignum_R_sign(num) )
+    {   if( !E_mem_Q_blk_I_prepend( &s, 1 ))
+        {   W(s);
+            return 0;
+        }
+        s[0] = '-';
+    }
+    N exponent = num->exponent;
+    if(exponent)
+    {   Pc p = E_mem_Q_blk_I_append( &s, 1 );
+        if( !p )
+        {   W(s);
+            return 0;
+        }
+        *p = 'e';
+        if( exponent < 0 )
+        {   p = E_mem_Q_blk_I_append( &s, 1 );
+            if( !p )
+            {   W(s);
+                return 0;
+            }
+            *p = '-';
+        }
+        O{  p = E_mem_Q_blk_I_append( &s, 1 );
+            if( !p )
+            {   W(s);
+                return 0;
+            }
+            *p = '0' + exponent % 10;
+            exponent /= 10;
+            if( !exponent )
+                break;
+        }
+    }
+    Pc p = E_mem_Q_blk_I_append( &s, 1 );
+    if( !p )
+    {   W(s);
+        return 0;
+    }
+    *p = '\0';
+    return s;
 }
 /******************************************************************************/

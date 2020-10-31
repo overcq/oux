@@ -489,8 +489,9 @@ run: build
     cd "$$1" || exit 1 ;\
     shift; \
     $(if $(H_make_C_to_libs) \
-    , export LD_LIBRARY_PATH="$$1" ;\
+    , libs="$$1" ;\
       shift ;\
+      LD_LIBRARY_PATH="$$libs" \
       $(if $(H_make_C_to_libs_C_replace_c_alloc) \
       , LD_PRELOAD=lib$(H_make_S_lib_prefix)$(H_make_S_base_module).so)) \
     ./a.out "$$@"' ;\
@@ -500,7 +501,7 @@ run: build
         xterm -maximized -e "$$SHELL" -c "$$cmd" "$$SHELL" "$$PWD" $(if $(H_make_C_to_libs),"$$libs") $(call H_make_Z_shell_cmd_arg_I_quote_for,$(S_cmd_arg)) ;\
     else \
         $(if $(H_make_C_to_libs) \
-        , export LD_LIBRARY_PATH="$$libs" ;\
+        , LD_LIBRARY_PATH="$$libs" \
           $(if $(H_make_C_to_libs_C_replace_c_alloc) \
           , LD_PRELOAD=lib$(H_make_S_lib_prefix)$(H_make_S_base_module).so)) \
         ./a.out $(call H_make_Z_shell_cmd_arg_I_quote_for,$(S_cmd_arg)) ;\
