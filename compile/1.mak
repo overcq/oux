@@ -34,16 +34,16 @@ H_make_S_os := $(shell uname -s)
 # Wybór ‘kompilatora’.
 H_make_S_cc := clang gcc
 #-------------------------------------------------------------------------------
-H_make_S_cc := $(firstword $(foreach path,/usr/bin /usr/local/bin \
+H_make_S_cc := $(firstword $(foreach cc,$(H_make_S_cc),$(wildcard $(addsuffix /$(cc),/usr/bin /usr/local/bin \
   $(shell clang -print-search-dirs | awk '/^programs:/ { match( $$2, /[=:]\/usr\/lib\/llvm\/[^:]*/ ); print substr( $$2, RSTART + 1, RLENGTH - 1 ); }' ) \
-  $(shell gcc-config -c | sed -e 's`\(.*\)-\([^-][^-]*\)`\1/gcc-bin/\2`' ),$(wildcard $(addprefix $(path)/,$(H_make_S_cc)))))
+  $(shell gcc-config -c | sed -e 's`\(.*\)-\([^-][^-]*\)`\1/gcc-bin/\2`' )))))
     ifneq (,$(H_make_S_cc))
 CC := $(H_make_S_cc)
-H_make_S_cc_version := $(shell $(H_make_S_cc) -dumpversion)
+H_make_S_cc_version := $(shell $(H_make_S_cc) -dumpversion | sed -e 's`^\([0-9][0-9]*\.[0-9][0-9]*\).*`\1`' )
 H_make_S_cc := $(notdir $(H_make_S_cc))
     else
 H_make_S_cc := $(CC)
-H_make_S_cc_version := $(shell $(H_make_S_cc) -dumpversion)
+H_make_S_cc_version := $(shell $(H_make_S_cc) -dumpversion | sed -e 's`^\([0-9][0-9]*\.[0-9][0-9]*\).*`\1`' )
     endif
 #===============================================================================
     ifneq (,$(H_make_C_middle_code))

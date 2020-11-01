@@ -165,37 +165,33 @@ CFLAGS += -DC_pthreads -pthread
 H_make_S_c_std_alt := gnu
     endif
     ifeq (clang,$(H_make_S_cc))
-H_make_S_words := $(subst ., ,$(H_make_S_cc_version))
-H_make_S_number := $(word 1,$(H_make_S_words)).$(word 2,$(H_make_S_words))
 # Tylko spekulacje wersji “clang” obsługujących standardy ‟C”.
-		ifneq (0,$(shell expr $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_number) >= 9.0)))
+		ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) >= 9.0) | bc ))
 CFLAGS += -std=$(H_make_S_c_std_alt)17
-		else ifneq (0,$(shell expr $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_number) >= 5.0)))
+		else ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) >= 5.0) | bc ))
 CFLAGS += -std=$(H_make_S_c_std_alt)14
-		else ifneq (0,$(shell expr $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_number) >= 4.0)))
+		else ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) >= 4.0) | bc ))
 CFLAGS += -std=$(H_make_S_c_std_alt)11
 		endif
 CFLAGS += -O2 -finline -Qunused-arguments -Wno-incompatible-pointer-types-discards-qualifiers
     else #nie “clang”.
         ifeq (gcc,$(H_make_S_cc))
-H_make_S_words := $(subst ., ,$(H_make_S_cc_version))
-H_make_S_number := $(word 1,$(H_make_S_words)).$(word 2,$(H_make_S_words))
-            ifneq (0,$(shell expr $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_number) >= 8.3)))
+            ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) >= 8.3) | bc ))
 CFLAGS += -std=$(H_make_S_c_std_alt)17
-            else ifneq (0,$(shell expr $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_number) >= 4.7)))
+            else ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) >= 4.7) | bc ))
 CFLAGS += -std=$(H_make_S_c_std_alt)11
 CFLAGS += -fno-signed-zeros
-            else ifneq (0,$(shell expr $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_number) = 4.6))) #“gcc” z “c1x”
+            else ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) = 4.6) | bc )) #“gcc” z “c1x”
 CFLAGS += -std=$(H_make_S_c_std_alt)1x
-            else ifneq (0,$(shell expr $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_number) >= 2.95))) #“gcc” bez “c11”
+            else ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) >= 2.95) | bc )) #“gcc” bez “c11”
 CFLAGS += -std=$(H_make_S_c_std_alt)99
-                ifneq (0,$(shell expr $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_number) >= 4.3)))
+                ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) >= 4.3) | bc ))
 CFLAGS += -fno-signed-zeros
                 endif
             else #“gcc” bez “c99”
 $(error gcc too old)
             endif
-            ifneq (0,$(shell expr $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_number) <= 4.4)))
+            ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) <= 4.4) | bc ))
 CFLAGS += -D_unreachable=no
             endif
 undefine H_make_S_words
@@ -474,19 +470,14 @@ install-0:
 	tmp_file=$$( mktemp ) ;\
 	trap '$(RM) "$$tmp_file"' EXIT ;\
 	{ echo '#!/bin/sh' ;\
-	$(if $(H_make_C_to_libs_C_replace_c_alloc) \
-	, echo 'exec env LD_PRELOAD=liboux-base.so "$$@"', \
-	  echo 'exec "$$@"' \
-	) ;} > "$$tmp_file" ;\
+	$(if $(H_make_C_to_libs_C_replace_c_alloc),echo 'exec env LD_PRELOAD=liboux-base.so "$$@"',echo 'exec "$$@"'); } > "$$tmp_file" ;\
 	{ $(CMP) "$$tmp_file" /usr/bin/oux \
 	|| $(INSTALL) -m 755 "$$tmp_file" /usr/bin/oux; \
 	} \
 	&& { $(CMP) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_root_path)/direct_oux) /usr/bin/direct_oux \
 	|| $(INSTALL) -m 755 $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_root_path)/direct_oux) /usr/bin/direct_oux; \
 	} \
-	$(if $(H_make_C_to_libs), \
-        $(foreach module,$(H_make_S_modules), \
-        && { $(CMP) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_usr_lib)/lib$(H_make_S_lib_prefix)$(module).so) \
+	$(if $(H_make_C_to_libs),$(foreach module,$(H_make_S_modules), && { $(CMP) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_usr_lib)/lib$(H_make_S_lib_prefix)$(module).so) \
         || $(INSTALL) -m 755 $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_usr_lib)/lib$(H_make_S_lib_prefix)$(module).so); \
         } \
     ))

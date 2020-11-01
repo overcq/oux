@@ -405,7 +405,11 @@ E_base_M(
     /// Ustawienie procedury “sygnału” “SEGV”— do obsługi pamięci stosów ‹zadań›.
     stack_t alt_stack =
     { .ss_flags = 0
+        #if defined( __gnu_linux__ )
     , .ss_size = 2 * E_base_S->E_mem_S_page_size //CONF
+        #elif defined( __OpenBSD__ )
+    , .ss_size = MINSIGSTKSZ //CONF
+        #endif
     };
         #if defined( __gnu_linux__ )
     V1p_( alt_stack.ss_sp = mmap( 0
