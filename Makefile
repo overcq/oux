@@ -1,3 +1,4 @@
-.PHONY: $(MAKECMDGOALS)
-$(MAKECMDGOALS):
-	$(MAKE) -C program/gui $(MAKECMDGOALS)
+S_goals := $(if $(MAKECMDGOALS),$(MAKECMDGOALS),build)
+.PHONY: $(S_goals)
+$(S_goals):
+	$(MAKE) -C program/gui $(S_goals)

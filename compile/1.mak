@@ -24,7 +24,7 @@ H_make_C_debug := 1
 # Włącza kontrolę poprawności pamięci ‘alokatora’ bloków.
 #E_mem_Q_blk_C_debug := 1
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-H_make_S_usr_lib := /usr/lib64
+H_make_S_usr_lib := $(if $(wildcard /usr/lib64/libc.so),/usr/lib64,/usr/lib)
 CMP := cmp -s
 INSTALL := install
 LIBTOOL := libtool
