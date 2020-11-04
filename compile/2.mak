@@ -14,7 +14,6 @@
 #NDFN W ‘kompilacji’ do “bibliotek”— podczas tworzenia każdego pliku ‘kompilator’ otrzymuje wynik “pkg-config” tylko dla deklaracji “packages” tego, bieżącego ‹modułu›. Lista “bibliotek” wymaganych dla każdego ‹modułu› z osobna powinna być tak podawana, ale teksty pozostałe z “--libs” być może będą potrzebne z pozostałych ‹modułów›, by zachować integrację sposobu utworzenia każdego pliku. Jednak nie wiadomo, jak to rozumieć w sensie integralności ‘linkera’ wymaganej przez “packages”.
 #DFN Podstawienie dla “bibliotek” procedur menedżera pamięci (w ‘kompilacji’ do “bibliotek”) zawsze będzie funkcjonalnością opcjonalną, mimo że bardzo stabilizuje, a także przyspiesza działanie programów “bibliotecznych” dołączanych do ‘kompilowanego’ programu oraz ich ‘serverów’ komunikacji, jednak otwiera “menedżera pamięci” na obce oprogramowanie, które nie jest gwarantowane, i w ten sposób eliminuje gwarancje dla całego programu, gdy byłaby realizowana niewłaściwa obsługa “menedżera pamięci” przez te obce programy.
 #===============================================================================
-H_make_S_root_path := $(shell up=..; cd ..; while [ ! -e Makefile ]; do up="$${up}/.."; cd ..; done; echo -n "$$up" )
 H_make_S_compile_path := $(H_make_S_root_path)/compile
 H_make_S_module_path := $(H_make_S_root_path)/module
 H_make_S_base_module := base
