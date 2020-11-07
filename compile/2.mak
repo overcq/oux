@@ -172,7 +172,7 @@ CFLAGS += -std=$(H_make_S_c_std_alt)14
 		else ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) >= 4.0) | bc ))
 CFLAGS += -std=$(H_make_S_c_std_alt)11
 		endif
-CFLAGS += -Os -finline -Qunused-arguments -Wno-incompatible-pointer-types-discards-qualifiers
+CFLAGS += -O2 -finline -Qunused-arguments -Wno-incompatible-pointer-types-discards-qualifiers
     else #nie “clang”.
         ifeq (gcc,$(H_make_S_cc))
             ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) >= 8.3) | bc ))
@@ -198,7 +198,7 @@ undefine H_make_S_number
         else #nie “clang”, nie “gcc”
 CFLAGS += -std=c99 -D_unreachable=no
         endif
-CFLAGS += -Os -Wno-overflow
+CFLAGS += -O2 -Wno-overflow
         ifneq (OpenBSD,$(H_make_S_os))
 CFLAGS += -Wno-old-style-declaration -Wno-shift-negative-value
 		endif
@@ -222,7 +222,7 @@ CFLAGS += -DE_mem_Q_blk_C_debug
     ifeq (Linux,$(H_make_S_os))
 LDFLAGS += -Wl,--gc-sections,--as-needed
     endif
-LDFLAGS += -Wl,-O1,--enable-new-dtags
+LDFLAGS += -Wl,--enable-new-dtags
 #-------------------------------------------------------------------------------
 TARGET_ARCH += -march=native
 #===============================================================================
