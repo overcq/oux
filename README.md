@@ -16,4 +16,4 @@ Blog in Polish: https://ocq430.wixsite.com/website
 
 From my desktop: https://youtu.be/ff9olrjh3HI
 
-<iframe src="https://discordapp.com/widget?id=777149205532770305&theme=dark" width="350" height="500" allowtransparency="true" frameborder="0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
+Chat on Discord: https://discord.gg/raBeaBeKXp
