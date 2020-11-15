@@ -206,28 +206,40 @@ _internal
 N
 E_math_bignum_I_multiply_s(
   struct E_math_bignum_Z_num *num
-, S n_
-){  N n = (N)n_ & ( (N)~0 >> 1 );
-    N over = 0, base;
+, S n
+){  N n_;
+    N add_one;
+    if( n < 0 )
+    {   n_ = n & ( (N)~0 >> 1 ) ? -n : (N)~0 >> 1;
+        add_one = n & ( (N)~0 >> 1 ) ? 0 : n_;
+    }else
+    {   n_ = n;
+        add_one = 0;
+    }
+    N over = 0;
     for_n( i, num->digits_n - 1 )
-    {   base = num->digits[i];
         __asm__ (
         #if defined( __i386__ )
         "\n" "mov       %0,%%ebx"
         "\n" "mull      %2"
         "\n" "add       %%ebx,%1"
         "\n" "adcl      $0,%0"
+        "\n" "add       %3,%1"
+        "\n" "adcl      $0,%0"
         #elif defined( __x86_64__ )
         "\n" "mov       %0,%%rbx"
         "\n" "mulq      %2"
         "\n" "add       %%rbx,%1"
         "\n" "adcq      $0,%0"
+        "\n" "add       %3,%1"
+        "\n" "adcq      $0,%0"
         #else
 #error not implemented
         #endif
         : "+d" (over)
-        , "+a" (base)
-        : "rm" (n)
+        , "+a" ( num->digits[i] )
+        : "rm" ( n_ )
+        , "rm" ( add_one )
         : "cc"
         #if defined( __i386__ )
         , "ebx"
@@ -235,30 +247,23 @@ E_math_bignum_I_multiply_s(
         , "rbx"
         #endif
         );
-        num->digits[i] = base;
-    }
-    base = num->digits[ num->digits_n - 1 ];
-    B carry;
     __asm__ (
     #if defined( __i386__ )
-    "\n" "mov       %1,%%ebx"
-    "\n" "imull     %3"
-    "\n" "setc      %0"
-    "\n" "add       %%ebx,%2"
-    "\n" "adcl      $0,%1"
+    "\n" "mov       %0,%%ebx"
+    "\n" "imull     %2"
+    "\n" "add       %%ebx,%1"
+    "\n" "adcl      $0,%0"
     #elif defined( __x86_64__ )
-    "\n" "mov       %1,%%rbx"
-    "\n" "imulq     %3"
-    "\n" "setc      %0"
-    "\n" "add       %%rbx,%2"
-    "\n" "adcq      $0,%1"
+    "\n" "mov       %0,%%rbx"
+    "\n" "imulq     %2"
+    "\n" "add       %%rbx,%1"
+    "\n" "adcq      $0,%0"
     #else
 #error not implemented
     #endif
-    : "=r" (carry)
-    , "+d" (over)
-    , "+a" (base)
-    : "rm" ( n_ )
+    : "+d" (over)
+    , "+a" ( num->digits[ num->digits_n - 1 ] )
+    : "rm" (n)
     : "cc"
     #if defined( __i386__ )
     , "ebx"
@@ -266,13 +271,12 @@ E_math_bignum_I_multiply_s(
     , "rbx"
     #endif
     );
-    num->digits[i] = base;
-    if(carry)
+    if(over)
     {   N *p = E_mem_Q_blk_I_append( &num->digits, 1 );
         if( !p )
             return ~0;
-        *p = over;
         num->digits_n++;
+        *p = over;
     }
     if( !~E_math_bignum_I_multiply_sn_end(num) )
         return ~0;
@@ -283,9 +287,8 @@ N
 E_math_bignum_I_multiply_n(
   struct E_math_bignum_Z_num *num
 , N n
-){  N over = 0, base;
+){  N over = 0;
     for_n( i, num->digits_n - 1 )
-    {   base = num->digits[i];
         __asm__ (
         #if defined( __i386__ )
         "\n" "mov       %0,%%ebx"
@@ -301,7 +304,7 @@ E_math_bignum_I_multiply_n(
 #error not implemented
         #endif
         : "+d" (over)
-        , "+a" (base)
+        , "+a" ( num->digits[i] )
         : "rm" (n)
         : "cc"
         #if defined( __i386__ )
@@ -310,74 +313,86 @@ E_math_bignum_I_multiply_n(
         , "rbx"
         #endif
         );
-        num->digits[i] = base;
-    }
-    base = num->digits[ num->digits_n - 1 ];
-    if( (S)n < 0 )
-    {   S sign_ext = (S)base & ~( (N)~0 >> 1 ) ? ~( (N)~0 >> 1 ) : 0;
-        base &= (N)~0 >> 1;
-        __asm__ (
-        #if defined( __i386__ )
-        "\n" "mov       %0,%%ebx"
-        "\n" "mull      %2"
-        "\n" "add       %%ebx,%1"
-        "\n" "adcl      $0,%0"
-        #elif defined( __x86_64__ )
-        "\n" "mov       %0,%%rbx"
-        "\n" "mulq      %2"
-        "\n" "add       %%rbx,%1"
-        "\n" "adcq      $0,%0"
-        #else
-#error not implemented
-        #endif
-        : "+d" (over)
-        , "+a" (base)
-        : "rm" (n)
-        : "cc"
-        #if defined( __i386__ )
-        , "ebx"
-        #elif defined( __x86_64__ )
-        , "rbx"
-        #endif
-        );
-        if( over
-        || ( base & ~( (N)~0 >> 1 ))
-        )
-        {   num->digits[i] = base;
-            N *p = E_mem_Q_blk_I_append( &num->digits, over & ~( (N)~0 >> 1 ) ? 2 : 1 );
-            if( !p )
-                return ~0;
-            if( over & ~( (N)~0 >> 1 ))
-            {   p[0] = over;
-                p[1] = sign_ext;
-                num->digits_n += 2;
-            }else
-            {   *p = sign_ext | over;
-                num->digits_n++;
-            }
-        }else
-            num->digits[i] = base | sign_ext;
-    }else
-    {   B carry;
+    if( (S)num->digits[ num->digits_n - 1 ] < 0 )
+    {   N n_ = (N)~0 >> 1;
+        N carry = 0;
         __asm__ (
         #if defined( __i386__ )
         "\n" "mov       %1,%%ebx"
+        "\n" "mov       %2,%%ecx"
         "\n" "imull     %3"
-        "\n" "setc      %0"
+        "\n" "mov       %2,%%edi"
+        "\n" "mov       %1,%%esi"
+        "\n" "mov       %%ecx,%2"
+        "\n" "imull     %4"
+        "\n" "add       %4,%2"
+        "\n" "adcl      %%esi,%1"
+        "\n" "adcl      $0,%0"
+        "\n" "add       %%edi,%2"
+        "\n" "adcl      $0,%1"
+        "\n" "adcl      $0,%0"
         "\n" "add       %%ebx,%2"
         "\n" "adcl      $0,%1"
+        "\n" "adcl      $0,%0"
         #elif defined( __x86_64__ )
         "\n" "mov       %1,%%rbx"
+        "\n" "mov       %2,%%rcx"
         "\n" "imulq     %3"
-        "\n" "setc      %0"
+        "\n" "mov       %2,%%rdi"
+        "\n" "mov       %1,%%rsi"
+        "\n" "mov       %%rcx,%2"
+        "\n" "imulq     %4"
+        "\n" "add       %4,%2"
+        "\n" "adcq      %%rsi,%1"
+        "\n" "adcq      $0,%0"
+        "\n" "add       %%rdi,%2"
+        "\n" "adcq      $0,%1"
+        "\n" "adcq      $0,%0"
         "\n" "add       %%rbx,%2"
         "\n" "adcq      $0,%1"
+        "\n" "adcq      $0,%0"
         #else
 #error not implemented
         #endif
-        : "=r" (carry)
+        : "+r" (carry)
         , "+d" (over)
-        , "+a" (base)
+        , "+a" ( num->digits[ num->digits_n - 1 ] )
+        : "rm" ( n & ( (N)~0 >> 1 ))
+        , "rm" ( n_ )
+        : "cc"
+        #if defined( __i386__ )
+        , "ebx", "ecx", "esi", "edi"
+        #elif defined( __x86_64__ )
+        , "rbx", "rcx", "rsi", "rdi"
+        #endif
+        );
+        if(over)
+        {   n = carry ? 2 : 1;
+            N *p = E_mem_Q_blk_I_append( &num->digits, n );
+            if( !p )
+                return ~0;
+            num->digits_n += n;
+            p[0] = over;
+            if(carry)
+                p[1] = -carry;
+        }
+    }else
+    {   __asm__ (
+        #if defined( __i386__ )
+        "\n" "mov       %0,%%ebx"
+        "\n" "mull      %2"
+        "\n" "add       %%ebx,%1"
+        "\n" "adcl      $0,%0"
+        #elif defined( __x86_64__ )
+        "\n" "mov       %0,%%rbx"
+        "\n" "mulq      %2"
+        "\n" "add       %%rbx,%1"
+        "\n" "adcq      $0,%0"
+        #else
+#error not implemented
+        #endif
+        : "+d" (over)
+        , "+a" ( num->digits[ num->digits_n - 1 ] )
         : "rm" (n)
         : "cc"
         #if defined( __i386__ )
@@ -386,13 +401,19 @@ E_math_bignum_I_multiply_n(
         , "rbx"
         #endif
         );
-        num->digits[i] = base;
-        if(carry)
+        if(over)
         {   N *p = E_mem_Q_blk_I_append( &num->digits, 1 );
             if( !p )
                 return ~0;
-            *p = over;
             num->digits_n++;
+            *p = over;
+        }
+        if( (S)num->digits[ num->digits_n - 1 ] < 0 )
+        {   N *p = E_mem_Q_blk_I_append( &num->digits, 1 );
+            if( !p )
+                return ~0;
+            num->digits_n++;
+            *p = 0;
         }
     }
     if( !~E_math_bignum_I_multiply_sn_end(num) )
@@ -543,9 +564,16 @@ E_math_bignum_I_multiply(
     struct E_math_bignum_Z_num *num_;
     if( num_1->digits_n >= 2 )
     {   num_ = E_math_bignum_M_copy( num_0 );
+        for_n( j, num_->digits_n )
+        {   G_(); Gd(j); Gh( num_->digits[j] );
+        }
+        G_(); Gh( num_1->digits[0] );
         if( !~E_math_bignum_I_multiply_n( num_, num_1->digits[0] ))
         {   E_math_bignum_W( num_ );
             return ~0;
+        }
+        for_n_( j, num_->digits_n )
+        {   G_(); Gd(j); Gh( num_->digits[j] );
         }
         for_n( i, num_1->digits_n - 2 )
         {   num = E_math_bignum_M_copy( num_0 );
@@ -554,7 +582,11 @@ E_math_bignum_I_multiply(
                 return ~0;
             }
             num->exponent = 0;
-            if( !~E_math_bignum_I_multiply_n( num, num_1->digits[i] ))
+            for_n( j, num->digits_n )
+            {   G_(); Gd(j); Gh( num->digits[j] );
+            }
+            G_(); Gh( num_1->digits[ i + 1 ] );
+            if( !~E_math_bignum_I_multiply_n( num, num_1->digits[ i + 1 ] ))
             {   E_math_bignum_W(num);
                 E_math_bignum_W( num_ );
                 return ~0;
@@ -564,7 +596,10 @@ E_math_bignum_I_multiply(
                 E_math_bignum_W( num_ );
                 return ~0;
             }
-            for_n( j, i + 1 )
+            for_n_( j, num->digits_n )
+            {   G_(); Gd(j); Gh( num->digits[j] );
+            }
+            for_n_( j, i + 1 )
                 num->digits[j] = 0;
             if( !~E_math_bignum_I_add( num_, num ))
             {   E_math_bignum_W(num);
@@ -581,19 +616,26 @@ E_math_bignum_I_multiply(
         return ~0;
     }
     num->exponent = 0;
+    for_n( j, num->digits_n )
+    {   G_(); Gd(j); Gh( num->digits[j] );
+    }
+    G_(); Gh( num_1->digits[ num_1->digits_n - 1 ] );
     if( !~E_math_bignum_I_multiply_s( num, (S)num_1->digits[ num_1->digits_n - 1 ] ))
     {   E_math_bignum_W(num);
         E_math_bignum_W( num_ );
         return ~0;
     }
-    if( num_1->digits_n - 1 )
-    {   if( !E_mem_Q_blk_I_prepend( &num->digits, num_1->digits_n - 1 ))
+    if( num_1->digits_n > 2 )
+    {   if( !E_mem_Q_blk_I_prepend( &num->digits, num_1->digits_n - 2 ))
         {   E_math_bignum_W(num);
             E_math_bignum_W( num_ );
             return ~0;
         }
-        for_n( j, num_1->digits_n - 1 )
+        for_n( j, num_1->digits_n - 2 )
             num->digits[j] = 0;
+    }
+    for_n_( j, num->digits_n )
+    {   G_(); Gd(j); Gh( num->digits[j] );
     }
     if( !~E_math_bignum_I_add( num_, num ))
     {   E_math_bignum_W(num);
@@ -892,7 +934,7 @@ E_math_bignum_I_divide_modulo_min_prec(
                                 n_0 <<= j;
                                 n_0 |= num_0->digits[ e_0 ] >> k_0;
                             }else
-                            {   k_0 = sizeof(N) * 8 - j;
+                            {   k_0 -= j;
                                 n_0 = num_0->digits[ e_0 ] >> k_0;
                             }
                             G_(); Gd(k); Gd( k_0 ); Gd( k_1 ); Gh( n_0 ); Gh( n_1 ); Gh( num_0->digits[ e_0 ] );
@@ -1008,6 +1050,8 @@ E_math_bignum_I_divide_modulo_min_prec(
             }
             G_(); Gd(k); Gd( k_0 ); Gd( k_1 ); Gh( n_0 ); Gh( n_1 ); Gh( num_0->digits[ e_0 ] );
             n_0 -= n_1;
+            G_(); Gd(k); Gd( k_0 ); Gd( k_1 ); Gh( n_0 ); Gh( n_1 ); Gh( num_0->digits[ e_0 ] );
+            J_assert( n_0 < num_1->digits[ e_1 ] );
         }else
 After_shift_one:
         {   N n_0_ = n_0;
@@ -1048,7 +1092,7 @@ After_shift_one:
                             n_0_ += num_1->digits[ e_1 + 1 ];
                             n_0_ <<= 1;
                             n_0_ |= ( num_1->digits[ e_1 ] >> k_0 ) & 1;
-                            n_0_ -= num_1->digits[ e_1 + 1 ];
+                            n_0_ -= num_1->digits[ e_1 + 1 ] + 1;
                             n_0 = n_0_;
                             k = E_asm_I_bsr( n_0 ) + 1;
                             G_(); Gh( n_0 );
@@ -1086,7 +1130,7 @@ After_shift_one:
                         n_0_ += num_1->digits[ e_1 + 1 ];
                         n_0_ <<= 1;
                         n_0_ |= ( num_1->digits[ e_1 ] >> k_0 ) & 1;
-                        n_0_ -= num_1->digits[ e_1 + 1 ];
+                        n_0_ -= num_1->digits[ e_1 + 1 ] + 1;
                         n_0 = n_0_;
                         k = E_asm_I_bsr( n_0 ) + 1;
                         G_(); Gh( n_0 ); Gd( k_0 );
@@ -1124,18 +1168,22 @@ After_shift_one:
         else
         {   div |= (N)1 << k_0;
             G_(); Gh(div);
-            if( e_0 < num_1->digits_n )
+            if( num_1->digits_n != 1
+            && e_0 < num_1->digits_n
+            )
             {   N j = sizeof(N) * 8 - k_0;
                 N n_0_;
                 if( j != sizeof(N) * 8 )
                     n_0_ = num_0->digits[ e_0 ] & ( (N)~0 >> j );
                 else
                     n_0_ = 0;
+                J_assert( n_0_ < num_1->digits[ e_1 ] );
                 num_0->digits[ e_0 ] = div;
                 if( k_0 != sizeof(N) * 8 )
                 {   n_0_ |= n_0 << k_0;
                     n_0 >>= j;
                 }
+                J_assert( n_0 < num_1->digits[ e_1 ] );
                 if( n_0 /// Czy zostało coś z nadmiaru słowa reszty z dzielenia?
                 || num_mod->digits_n
                 )
@@ -1152,6 +1200,17 @@ After_shift_one:
                 }
                 num_mod->digits_n++;
                 num_mod->digits[0] = n_0_;
+                if( e_0 )
+                {   if( !E_mem_Q_blk_I_prepend( &num_mod->digits, e_0 ))
+                    {   E_math_bignum_W( num_mod );
+                        return ~0;
+                    }
+                    num_mod->digits_n += e_0;
+                    for_n( i, e_0 )
+                    {   num_mod->digits[0] = num_0->digits[i];
+                        num_0->digits[0] = 0;
+                    }
+                }
                 break;
             }
             e_1 = num_1->digits_n - 1;
@@ -1172,18 +1231,7 @@ After_shift_one:
             k_0 = sizeof(N) * 8;
         }
     }
-End:if( e_0 )
-    {   if( !E_mem_Q_blk_I_prepend( &num_mod->digits, e_0 ))
-        {   E_math_bignum_W( num_mod );
-            return ~0;
-        }
-        num_mod->digits_n += e_0;
-        for_n( i, e_0 )
-        {   num_0->digits[0] = 0;
-            num_mod->digits[0] = num_0->digits[i];
-        }
-    }
-    num_mod->exponent = num_0->exponent;
+End:num_mod->exponent = num_0->exponent;
     E_math_bignum_M_move( num_1, num_mod );
     W( num_mod );
     N n;
@@ -1218,6 +1266,12 @@ End:if( e_0 )
             return ~0;
         num_0->digits_n -= n;
         num_0->exponent += n;
+    }
+    if( (S)num_1->digits[ num_1->digits_n - 1 ] < 0 )
+    {   if( !E_mem_Q_blk_I_append( &num_1->digits, 1 ))
+            return ~0;
+        num_1->digits[ num_1->digits_n ] = 0;
+        num_1->digits_n++;
     }
     G_(); Gh( num_0->exponent );
     for_n_( j, num_0->digits_n )
