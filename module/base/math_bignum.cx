@@ -728,16 +728,10 @@ E_math_bignum_I_divide_modulo_min_prec(
     N e_div = 0;
     N k_0 = E_asm_I_bsr( num_0->digits[ e_0 ] ) + 1;
     N n_0 = 0;
-    N debug_i = 0;
-    O{  if( ++debug_i == 1000 )
-            V();
-        G_(); Gd( num_1->digits_n );
-        N n_1 = num_1->digits[ e_1 ];
+    O{  N n_1 = num_1->digits[ e_1 ];
         N k = E_asm_I_bsr( n_0 ) + 1;
         G_(); Gd(k); Gd( k_0 ); Gh( n_0 ); Gh( n_1 ); Gh( num_0->digits[ e_0 ] );
         J_assert( k_0 <= sizeof(N) * 8 );
-        G_(); Gd( e_div ); Gd( num_div->digits_n );
-        J_assert( !num_div->digits_n || e_div < num_div->digits_n );
         if( e_1 == num_1->digits_n - 1 )
         {   N k_1 = E_asm_I_bsr( n_1 );
             G_(); Gd( k_1 );
@@ -1188,23 +1182,25 @@ E_math_bignum_I_divide_modulo_min_prec(
                 num_div->digits[0] |= (N)1 << k_0;
             }
         }else
-After_shift_one:
-        {   N n_0_ = n_0;
-            if( e_1 != num_1->digits_n - 2 )
-                k = sizeof(N) * 8;
-            N j = J_min( sizeof(N) * 8 - k, k_0 );
-            if(j)
-            {   k_0 -= j;
-                if( j != sizeof(N) * 8 )
-                {   n_0 <<= j;
-                    n_0 |= ( num_0->digits[ e_0 ] >> k_0 ) & ( (N)~0 >> ( sizeof(N) * 8 - j ));
-                }else
-                    n_0 = num_0->digits[ e_0 ];
+        {   if( num_mod->digits_n
+            || n_0
+            )
+            {   if( !E_mem_Q_blk_I_prepend( &num_mod->digits, 1 ))
+                {   E_math_bignum_W( num_mod );
+                    E_math_bignum_W( num_div );
+                    return ~0;
+                }
+                num_mod->digits_n++;
+                num_mod->digits[0] = n_0;
             }
+            for_n( i, num_mod->digits_n )
+            {   G_(); Gd(i); Gh( num_mod->digits[i] );
+            }
+            N n_0_ = n_0;
+            n_0 = num_0->digits[ e_0 ];
+            N j = sizeof(N) * 8 - k_0;
             G_(); Gd(j); Gd(k); Gd( k_0 ); Gh( n_0 ); Gh( n_1 ); Gh( num_0->digits[ e_0 ] );
-            k = sizeof(N) * 8 - k - j; /// Ile brakuje do pełnego słowa?
-            G_(); Gd(j); Gd(k); Gd( k_0 ); Gh( n_0 ); Gh( n_1 ); Gh( num_0->digits[ e_0 ] );
-            if(k)
+            if(j)
             {   if( !e_0 )
                 {   if( !e_1 )
                     {   if( !E_mem_Q_blk_I_prepend( &num_mod->digits, 1 ))
@@ -1230,82 +1226,58 @@ After_shift_one:
                     }
                 }else
                     e_div--;
-                N k_0_ = k_0;
-                k_0 = sizeof(N) * 8 - k;
-                n_0 <<= k;
-                n_0 |= ( num_0->digits[ e_0 ] >> k_0 ) & ( (N)~0 >> ( sizeof(N) * 8 - k ));
+                n_0 <<= j;
+                n_0 |= ( num_0->digits[ e_0 ] >> k_0 ) & ( (N)~0 >> ( sizeof(N) * 8 - j ));
                 G_(); Gd(j); Gd(k); Gd( k_0 ); Gh( n_0 ); Gh( n_1 ); Gh( num_0->digits[ e_0 ] );
                 if( n_0 < n_1 )
-                {   if( !n_0_ )
-                    {   if( e_1 == num_1->digits_n - 2 )
-                        {   k_0_ += j;
-                            if( k_0_ )
-                            {   k_0 = k_0_ - 1;
-                                e_0++;
-                                if( num_div->digits_n )
-                                    e_div++;
-                            }else
-                                k_0 = sizeof(N) * 8 - 1;
-                            n_0_ += num_1->digits[ e_1 + 1 ];
-                            n_0_ <<= 1;
-                            n_0_ |= ( num_0->digits[ e_0 ] >> k_0 ) & 1;
-                            n_0_ -= num_1->digits[ e_1 + 1 ] + 1;
-                            n_0 = n_0_;
-                            k = E_asm_I_bsr( n_0 ) + 1;
-                            G_(); Gh( n_0 );
-                            goto After_shift_one;
-                        }
-                        N e = 0;
-                        do
-                        {   if( e == num_mod->digits_n )
-                                break;
-                            n_0_ = num_mod->digits[e];
-                            num_mod->digits[e]--;
-                            e++;
-                        }while( !n_0_ );
-                    }
-                    n_0 -= (N)1 << sizeof(N) * 8 - k;
-                }
-            }else if( n_0 < n_1 )
-                if( !n_0_ )
-                {   if( e_1 == num_1->digits_n - 2 )
-                    {   k_0 += j - 1;
-                        n_0_ += num_1->digits[ e_1 + 1 ];
+                {   if( !num_mod->digits_n )
+                    {   if( k_0 )
+                        {   k_0--;
+                            e_0++;
+                            if( num_div->digits_n )
+                                e_div++;
+                        }else
+                            k_0 = sizeof(N) * 8 - 1;
+                        n_0_ = num_1->digits[ e_1 + 1 ];
                         n_0_ <<= 1;
                         n_0_ |= ( num_0->digits[ e_0 ] >> k_0 ) & 1;
                         n_0_ -= num_1->digits[ e_1 + 1 ] + 1;
                         n_0 = n_0_;
-                        k = E_asm_I_bsr( n_0 ) + 1;
                         G_(); Gh( n_0 ); Gd( k_0 );
                         goto After_shift_one;
                     }
                     N e = 0;
                     do
-                    {   if( e == num_mod->digits_n )
-                            break;
-                        n_0_ = num_mod->digits[e];
+                    {   n_0_ = num_mod->digits[e];
                         num_mod->digits[e]--;
                         e++;
                     }while( !n_0_ );
-                }else
-                    n_0 -= (N)1 << sizeof(N) * 8 - k;
+                }
+            }else
+            {   if( n_0 < n_1 )
+                {   if( !num_mod->digits_n )
+                    {   k_0--;
+                        n_0_ = num_1->digits[ e_1 + 1 ];
+                        n_0_ <<= 1;
+                        n_0_ |= ( num_0->digits[ e_0 ] >> k_0 ) & 1;
+                        n_0_ -= num_1->digits[ e_1 + 1 ] + 1;
+                        n_0 = n_0_;
+                        G_(); Gh( n_0 ); Gd( k_0 );
+                        goto After_shift_one;
+                    }
+                    N e = 0;
+                    do
+                    {   n_0_ = num_mod->digits[e];
+                        num_mod->digits[e]--;
+                        e++;
+                    }while( !n_0_ );
+                }
+                k_0 = 0;
+            }
             G_(); Gd(k); Gd( k_0 ); Gh( n_0 ); Gh( n_1 ); Gh( num_0->digits[ e_0 ] );
             n_0 -= n_1;
             G_(); Gd(k); Gd( k_0 ); Gh( n_0 ); Gh( n_1 ); Gh( num_0->digits[ e_0 ] );
-            if( e_1 )
-            {   if( n_0
-                || num_mod->digits_n
-                )
-                {   if( !E_mem_Q_blk_I_prepend( &num_mod->digits, 1 ))
-                    {   E_math_bignum_W( num_mod );
-                        E_math_bignum_W( num_div );
-                        return ~0;
-                    }
-                    num_mod->digits_n++;
-                    num_mod->digits[0] = n_0;
-                    n_0 = 0;
-                }
-            }else
+            if( !e_1 )
             {   if( !num_div->digits_n )
                 {   if( !E_mem_Q_blk_I_prepend( &num_div->digits, 1 ))
                     {   E_math_bignum_W( num_mod );
@@ -1315,10 +1287,16 @@ After_shift_one:
                     num_div->digits_n = 1;
                     num_div->digits[0] = 0;
                 }
+                J_assert( e_div < num_div->digits_n );
                 num_div->digits[ e_div ] |= (N)1 << k_0;
                 G_(); Gd( e_div ); Gh( num_div->digits[ e_div ] );
-                if(( num_mod->digits_n + 1 + e_0 ) * sizeof(N) * 8 + k_0 >= ( num_1->digits_n - 1 ) * sizeof(N) * 8 + E_asm_I_bsr( num_1->digits[ num_1->digits_n - 1 ] ) + 1 )
-                {   num_0->digits[ e_0 ] = ( n_0 << k_0 ) | ( num_0->digits[ e_0 ] & ( (N)~0 >> ( sizeof(N) * 8 - k_0 )));
+                G_(); Gd( num_mod->digits_n ); Gd( num_mod->digits_n ? E_asm_I_bsr( num_mod->digits[ num_mod->digits_n - 1 ] ) + 1 : 0 ); Gd( e_0 ); Gd( k_0 ); Gd( num_1->digits_n ); Gd( E_asm_I_bsr( num_1->digits[ num_1->digits_n - 1 ] ) + 1 );
+                G_(); Gd((( num_mod->digits_n ? num_mod->digits_n - 1 : 0 ) + 1 + e_0 ) * sizeof(N) * 8 + ( num_mod->digits_n ? E_asm_I_bsr( num_mod->digits[ num_mod->digits_n - 1 ] ) + 1 : 0 ) + k_0 ); Gd(( num_1->digits_n - 1 ) * sizeof(N) * 8 + E_asm_I_bsr( num_1->digits[ num_1->digits_n - 1 ] ) + 1 );
+                if((( num_mod->digits_n ? num_mod->digits_n - 1 : 0 ) + 1 + e_0 ) * sizeof(N) * 8 + ( num_mod->digits_n ? E_asm_I_bsr( num_mod->digits[ num_mod->digits_n - 1 ] ) + 1 : 0 ) + k_0
+                >= ( num_1->digits_n - 1 ) * sizeof(N) * 8 + E_asm_I_bsr( num_1->digits[ num_1->digits_n - 1 ] ) + 1
+                )
+                {   num_0->digits[ e_0 ] &= (N)~0 >> ( sizeof(N) * 8 - k_0 );
+                    num_0->digits[ e_0 ] |= n_0 << k_0;
                     n_0 >>= sizeof(N) * 8 - k_0;
                     if( num_mod->digits_n )
                     {   for_n( i, num_mod->digits_n - 1 )
@@ -1331,21 +1309,30 @@ After_shift_one:
                         e_0++;
                         if( num_div->digits_n )
                             e_div++;
+                        k = E_asm_I_bsr( num_mod->digits[ num_mod->digits_n - 1 ] ) + 1;
                         num_0->digits[ e_0 ] = ( num_mod->digits[ num_mod->digits_n - 1 ] << k_0 ) | n_0;
                         n_0 = num_mod->digits[  num_mod->digits_n - 1 ] >> ( sizeof(N) * 8 - k_0 );
-                        if( !E_mem_Q_blk_I_remove( &num_0->digits, 0, num_mod->digits_n ))
+                        if( !E_mem_Q_blk_I_remove( &num_mod->digits, 0, num_mod->digits_n ))
                         {   E_math_bignum_W( num_mod );
                             E_math_bignum_W( num_div );
                             return ~0;
                         }
                         num_mod->digits_n = 0;
+                        k_0 += k;
+                        if( k_0 > sizeof(N) * 8 )
+                        {   k_0 -= sizeof(N) * 8;
+                            e_0++;
+                            if( num_div->digits_n )
+                                e_div++;
+                            num_0->digits[ e_0 ] = n_0;
+                        }
+                    }else
+                    {   e_0++;
+                        if( num_div->digits_n )
+                            e_div++;
+                        num_0->digits[ e_0 ] = n_0;
+                        k_0 = E_asm_I_bsr( num_0->digits[ e_0 ] ) + 1;
                     }
-                    e_0++;
-                    if( num_div->digits_n )
-                        e_div++;
-                    G_(); Gd( k_0 ); Gh( n_0 ); Gh( num_0->digits[ e_0 ] ); Gd( e_div );
-                    num_0->digits[ e_0 ] = n_0;
-                    k_0 = E_asm_I_bsr( num_0->digits[ e_0 ] ) + 1;
                     n_0 = 0;
                 }
             }
@@ -1354,8 +1341,10 @@ After_shift_one:
         if( e_1 )
             e_1--;
         else
-        {   if( num_1->digits_n != 1
-            && ( 1 + e_0 ) * sizeof(N) * 8 + k_0 < ( num_1->digits_n - 1 ) * sizeof(N) * 8 + E_asm_I_bsr( num_1->digits[ num_1->digits_n - 1 ] ) + 1
+        {   G_(); Gd( e_0 ); Gd( k_0 ); Gd( num_1->digits_n ); Gd( E_asm_I_bsr( num_1->digits[ num_1->digits_n - 1 ] ) + 1 );
+            if( num_1->digits_n != 1
+            && ( 1 + e_0 ) * sizeof(N) * 8 + k_0
+              < ( num_1->digits_n - 1 ) * sizeof(N) * 8 + E_asm_I_bsr( num_1->digits[ num_1->digits_n - 1 ] ) + 1
             )
             {   N j = sizeof(N) * 8 - k_0;
                 N n_0_;
@@ -1365,11 +1354,15 @@ After_shift_one:
                     n_0_ = 0;
                 if( k_0 != sizeof(N) * 8 )
                 {   n_0_ |= n_0 << k_0;
-                    n_0 >>= j;
+                    if( j != sizeof(N) * 8 )
+                        n_0 >>= j;
+                    else
+                        n_0 = 0;
                 }
-                if( n_0 /// Czy zostało coś z nadmiaru słowa reszty z dzielenia?
-                || num_mod->digits_n
-                )
+                for_n( i, num_mod->digits_n )
+                {   G_(); Gd(i); Gh( num_mod->digits[i] );
+                }
+                if( n_0 ) /// Czy zostało coś z nadmiaru słowa reszty z dzielenia?
                 {   if( !E_mem_Q_blk_I_prepend( &num_mod->digits, 1 ))
                     {   E_math_bignum_W( num_mod );
                         E_math_bignum_W( num_div );
@@ -1377,6 +1370,9 @@ After_shift_one:
                     }
                     num_mod->digits_n++;
                     num_mod->digits[0] = n_0;
+                }
+                for_n_( i, num_mod->digits_n )
+                {   G_(); Gd(i); Gh( num_mod->digits[i] );
                 }
                 if( !E_mem_Q_blk_I_prepend( &num_mod->digits, 1 ))
                 {   E_math_bignum_W( num_mod );
@@ -1393,14 +1389,13 @@ After_shift_one:
                     }
                     num_mod->digits_n += e_0;
                     for_n( i, e_0 )
-                    {   num_mod->digits[0] = num_0->digits[i];
-                        num_0->digits[0] = 0;
-                    }
+                        num_mod->digits[0] = num_0->digits[i];
                 }
                 break;
             }
             e_1 = num_1->digits_n - 1;
         }
+After_shift_one:
         if( !k_0 )
         {   if( !e_0 )
             {   if( !E_mem_Q_blk_I_prepend( &num_mod->digits, 1 ))
@@ -1434,7 +1429,6 @@ End:num_div->exponent = num_0->exponent + e_0;
     W( num_div );
     E_math_bignum_M_move( num_1, num_mod );
     W( num_mod );
-    N n;
     if( !num_0->digits_n )
     {   if( !E_mem_Q_blk_I_prepend( &num_0->digits, 1 ))
             return ~0;
@@ -1446,20 +1440,8 @@ End:num_div->exponent = num_0->exponent + e_0;
         num_0->digits[ num_0->digits_n ] = 0;
         num_0->digits_n++;
     }
-    n = 0;
-    for_n( i, num_0->digits_n - 1 )
-    {   if( num_0->digits[i] != 0 )
-            break;
-        n++;
-    }
-    if(n)
-    {   if( !E_mem_Q_blk_I_remove( &num_0->digits, 0, n ))
-            return ~0;
-        num_0->digits_n -= n;
-        num_0->exponent += n;
-    }
-    n = 0;
-    for_n_( i, num_1->digits_n - 1 )
+    N n = 0;
+    for_n( i, num_1->digits_n - 1 )
     {   if( num_1->digits[i] != 0 )
             break;
         n++;
@@ -1475,6 +1457,13 @@ End:num_div->exponent = num_0->exponent + e_0;
             return ~0;
         num_1->digits[ num_1->digits_n ] = 0;
         num_1->digits_n++;
+    }else if( num_1->digits_n > 1
+    && !num_1->digits[ num_1->digits_n - 1 ]
+    && (S)num_1->digits[ num_1->digits_n - 2 ] >= 0
+    )
+    {   if( !E_mem_Q_blk_I_remove( &num_1->digits, num_1->digits_n - 1, 1 ))
+            return ~0;
+        num_1->digits_n--;
     }
     G_(); Gh( num_0->exponent );
     for_n_( j, num_0->digits_n )
