@@ -91,7 +91,8 @@ E_mem_Q_blk_I_assert_on_return( N line
     for_n( j, allocated_n )
         if( allocated_p[j].p
         && E_mem_Q_blk_T_new_0( allocated_p[j].p )
-        ){  for_n( i, allocated_n )
+        )
+        {   for_n( i, allocated_n )
             {   if( i == j )
                     continue;
                 if( allocated_p[i].p == allocated_p[j].p )
@@ -102,7 +103,8 @@ E_mem_Q_blk_I_assert_on_return( N line
     for_n_( j, free_n )
     {   if( !free_p[j].p
         && free_p[j].l
-        ){  G_(); Gd(line); Gh( free_p[j].p ); Gd( free_p[j].l ); V(); ///inconsistent
+        )
+        {   G_(); Gd(line); Gh( free_p[j].p ); Gd( free_p[j].l ); V(); ///inconsistent
         }
     }
     for_n_( j, mapped_n )
@@ -333,7 +335,8 @@ E_mem_Q_blk_Q_sys_table_mf_P_put( N table_i
 ){  if( !E_mem_Q_blk_Q_sys_table_mf_I_unite( table_i, rel_addr_p, rel_addr_l, p, l ))
     {   if( table_i == E_mem_Q_blk_S_allocated_S_free_id
         && l >= E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u
-        ){  if( (Pc)p + l == E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p ) /// Nowy blok jest przyległy od dołu do tablicy bloków.
+        )
+        {   if( (Pc)p + l == E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p ) /// Nowy blok jest przyległy od dołu do tablicy bloków.
             {   E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p -= E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u;
                 E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n++;
                 struct E_mem_Q_blk_Z_free *free_p = (P)E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p;
@@ -495,7 +498,8 @@ E_mem_Q_blk_Q_table_M_from_free_or_map_0( N allocated_2_table_i
     if(n)
     {   if( allocated_2_table_i == E_mem_Q_blk_S_allocated_S_free_id
         && p /// Uprzedni obszar tablicy staje się wolnym blokiem.
-        ){  n++;
+        )
+        {   n++;
             l_1 += u;
         }
         N l_align;
@@ -523,7 +527,8 @@ E_mem_Q_blk_Q_table_M_from_free_or_map_0( N allocated_2_table_i
         {   p_1 = E_simple_Z_p_I_align_up_to_v2( free_p[ free_i ].p, l_align );
             if( free_p[ free_i ].l >= ( p_1 - free_p[ free_i ].p ) + l_1
             && free_p[ free_i ].l < l_
-            ){  l_ = free_p[ free_i ].l;
+            )
+            {   l_ = free_p[ free_i ].l;
                 i_found = free_i;
                 if( l_ == ( p_1 - free_p[ free_i ].p ) + l_1 )
                     break;
@@ -544,7 +549,7 @@ E_mem_Q_blk_Q_table_M_from_free_or_map_0( N allocated_2_table_i
                 {   if( allocated_2_table_i == E_mem_Q_blk_S_allocated_S_free_id ) /// Zostaną one wzięte z obszaru dostępnych wolnych bloków (‘przemapowane’), a krańcowe pozostałości (od obszaru wyrównanego do “stron” pamięci) staną się wolnymi blokami.
                     {   n--; /// Nie będzie potrzeba osobno wpisywać uprzedniego rozmiaru tablicy.
                         l_1 -= u;
-                        if( src_page != p ) ///będzie wolny początkowy fragment w pierwszej “stronie” pamięci: w źródłowym bloku i nowym.
+                        if( src_page != p ) /// Będzie wolny początkowy fragment w pierwszej “stronie” pamięci: w źródłowym bloku i nowym.
                         {   n += 2;
                             l_1 += 2 * u;
                         }
@@ -558,7 +563,8 @@ E_mem_Q_blk_Q_table_M_from_free_or_map_0( N allocated_2_table_i
                     }
                 }else if( allocated_2_table_i == E_mem_Q_blk_S_allocated_S_mapped_id /// Nowy blok, ‘zmapowany’ na tablicę ‘zmapowanych’— musi być wpisany do tablicy.
                 || allocated_2_table_i == E_mem_Q_blk_S_allocated_S_free_id /// Fragment pozostały do wyrównania do rozmiaru “stron” pamięci staje się wolnym blokiem.
-                ){  n++;
+                )
+                {   n++;
                     l_1 += u;
                 }
             }else if( allocated_2_table_i == E_mem_Q_blk_S_allocated_S_free_id ) /// Fragment pozostały do wyrównania do rozmiaru “stron” pamięci staje się wolnym blokiem.
@@ -738,7 +744,7 @@ E_mem_Q_blk_Q_table_M_from_free_or_map_0( N allocated_2_table_i
             if( allocated_2_table_i == E_mem_Q_blk_S_allocated_S_mapped_id )
             {   if( src_page < src_page_end )
                 {   struct E_mem_Q_blk_Z_mapped *mapped_p = (P)p_;
-                    for_i( i, E_base_S->E_mem_Q_blk_S_allocated[ allocated_2_table_i ].n )
+                    for_n( i, E_base_S->E_mem_Q_blk_S_allocated[ allocated_2_table_i ].n )
                     {   Pc p_end = mapped_p->p + mapped_p->l;
                         if( mapped_p->p <= (Pc)p
                         && (Pc)p < p_end
@@ -746,6 +752,7 @@ E_mem_Q_blk_Q_table_M_from_free_or_map_0( N allocated_2_table_i
                         {   mapped_p->l = src_page - mapped_p->p;
                             if( mapped_p->p == p )
                                 mapped_p->p = 0;
+                            mapped_p = (P)p_;
                             if( (Pc)p + l != p_end )
                             {   mapped_p[ E_base_S->E_mem_Q_blk_S_allocated[ allocated_2_table_i ].n ].p = src_page_end;
                                 mapped_p[ E_base_S->E_mem_Q_blk_S_allocated[ allocated_2_table_i ].n ].l = p_end - src_page_end;
@@ -770,13 +777,14 @@ E_mem_Q_blk_Q_table_M_from_free_or_map_0( N allocated_2_table_i
             }else
             {   if( p
                 && src_page < src_page_end
-                ){  struct E_mem_Q_blk_Z_mapped *mapped_p = (P)E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_mapped_id ].p;
-                    for_i( i, E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_mapped_id ].n )
-                    {   if( mapped_p->p <= (Pc)p
-                        && mapped_p->p + mapped_p->l > (Pc)p
+                )
+                {   struct E_mem_Q_blk_Z_mapped *mapped_p = (P)E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_mapped_id ].p;
+                    for_n( i, E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_mapped_id ].n )
+                    {   Pc p_end = mapped_p->p + mapped_p->l;
+                        if( mapped_p->p <= (Pc)p
+                        && (Pc)p < p_end
                         )
-                        {   Pc p_end = mapped_p->p + mapped_p->l;
-                            mapped_p->l = src_page - mapped_p->p;
+                        {   mapped_p->l = src_page - mapped_p->p;
                             if( mapped_p->p == p )
                                 mapped_p->p = 0;
                             if( (Pc)p + l != p_end )
@@ -861,7 +869,8 @@ E_mem_Q_blk_R_new_0( void
             }
             if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p < p_end
             && E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p > p
-            ){  p = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p;
+            )
+            {   p = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p;
                 exists = yes;
                 break;
             }
@@ -1140,7 +1149,8 @@ E_mem_Q_blk_I_prepend_append_( P p
                     }
                 if( !n_append
                 && !l
-                ){  free_p[ free_i ].l -= l_1;
+                )
+                {   free_p[ free_i ].l -= l_1;
                     if( !free_p[ free_i ].l )
                         free_p[ free_i ].p = 0;
                     *( P * )p = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p -= l_1;

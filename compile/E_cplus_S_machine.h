@@ -37,7 +37,7 @@
 /// Przełącza na jeszcze mniejszy rozmiar identyfikatorów.
 #define C_id_small
 /// Przechowuje adres “errno” zamiast za każdym razem używać makra “errno”, które wywołuje procedurę podającą ten adres. wyjście poza standard implementacji ‟C”, ale działa, a optymalizuje program.
-//#define E_flow_C_errno_p
+#define E_flow_C_errno_p
 //==============================================================================
 /// Podejście ‘asemblerowe’ wysokiego poziomu.
 /// Nadzwyczajne typy danych:

@@ -709,12 +709,6 @@ E_flow_Q_task_I_touch_stack( void
         : "memory", "cc"
         );
 }
-//------------------------------------------------------------------------------
-B
-E_flow_Q_task_R_exit( void
-){  struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
-    return task->run_state == E_flow_Z_run_state_S_stopping_by_task;
-}
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 I
 E_flow_Q_report_M( N uid
@@ -1363,6 +1357,11 @@ E_flow_Q_task_I_switch( I task_to
     #endif
     );
 }
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    #ifdef E_flow_C_errno_p
+#undef _errno
+#define _errno errno
+    #endif
 //------------------------------------------------------------------------------
 _internal
 void
@@ -1617,6 +1616,11 @@ E_flow_Z_signal_V_io_ready( int uid
     _errno = errno_;
 }
 #endif
+//------------------------------------------------------------------------------
+    #ifdef E_flow_C_errno_p
+#undef _errno
+#define _errno ( *E_base_S->E_flow_S_errno )
+    #endif
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 I
 E_flow_Q_process_call_M( N l

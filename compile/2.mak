@@ -109,7 +109,7 @@ S_libraries := $(sort ncursesw $(E_main_S_libraries))
 H_make_S_lib_prefix := oux-
 #-------------------------------------------------------------------------------
 #NDFN Wymienione, ponieważ są inne pliki “.h” w tym katalogu.
-H_make_S_compiler_cx_sources := simple.h
+H_make_S_compiler_cx_sources := simple.h base.h
 H_make_S_cx_sources := $(wildcard *.cx)
 H_make_S_headers := stdbool.h
 H_make_S_base_driver := flow_drv
