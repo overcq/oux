@@ -177,6 +177,57 @@ E_math_bignum_I_multiply_sn_end( struct E_math_bignum_Z_num *num
 //------------------------------------------------------------------------------
 _internal
 N
+E_math_bignum_I_multiply_2(
+  struct E_math_bignum_Z_num *num
+){  B sign = E_math_bignum_R_sign(num);
+    N over = 0;
+    for_n( i, num->digits_n )
+        __asm__ (
+        #if defined( __i386__ )
+        "\n" "mov       %0,%%ebx"
+        "\n" "shl       %1"
+        "\n" "setc      %%al"
+        "\n" "or        %%ebx,%1"
+        #elif defined( __x86_64__ )
+        "\n" "mov       %0,%%rbx"
+        "\n" "shl       %1"
+        "\n" "setc      %%al"
+        "\n" "or        %%rbx,%1"
+        #else
+#error not implemented
+        #endif
+        : "+a" (over)
+        , "+rm" ( num->digits[i] )
+        :
+        : "cc"
+        #if defined( __i386__ )
+        , "ebx"
+        #elif defined( __x86_64__ )
+        , "rbx"
+        #endif
+        );
+    if(over)
+    {   N *p = E_mem_Q_blk_I_append( &num->digits, 1 );
+        if( !p )
+            return ~0;
+        num->digits_n++;
+        *p = sign ? ~0 : 1;
+    }
+    if( !sign
+    && E_math_bignum_R_sign(num)
+    )
+    {   N *p = E_mem_Q_blk_I_append( &num->digits, 1 );
+        if( !p )
+            return ~0;
+        num->digits_n++;
+        *p = 0;
+    }
+    if( !~E_math_bignum_I_multiply_sn_end(num) )
+        return ~0;
+    return 0;
+}
+_internal
+N
 E_math_bignum_I_multiply_s(
   struct E_math_bignum_Z_num *num
 , S n
@@ -251,7 +302,8 @@ E_math_bignum_I_multiply_s(
             return ~0;
         num->digits_n++;
         *p = over;
-    }else if( !sign
+    }
+    if( !sign
     && E_math_bignum_R_sign(num)
     )
     {   N *p = E_mem_Q_blk_I_append( &num->digits, 1 );
@@ -295,7 +347,7 @@ E_math_bignum_I_multiply_n(
         , "rbx"
         #endif
         );
-    if( (S)num->digits[ num->digits_n - 1 ] < 0 )
+    if( E_math_bignum_R_sign(num) )
     {   N n_ = (N)~0 >> 1;
         N carry = 0;
         __asm__ (
@@ -390,7 +442,7 @@ E_math_bignum_I_multiply_n(
             num->digits_n++;
             *p = over;
         }
-        if( (S)num->digits[ num->digits_n - 1 ] < 0 )
+        if( E_math_bignum_R_sign(num) )
         {   N *p = E_mem_Q_blk_I_append( &num->digits, 1 );
             if( !p )
                 return ~0;
@@ -1587,7 +1639,7 @@ E_math_bignum_I_print( struct E_math_bignum_Z_num *num
                 W(s);
                 return 0;
             }
-            if( !~E_math_bignum_I_multiply_n( num_div, 2 )) //TODO Zamienić na “E_math_bignum_I_multiply_2” używające “shl”.
+            if( !~E_math_bignum_I_multiply_2( num_div ))
             {   E_math_bignum_W( num_mul );
                 E_math_bignum_W( num_frac );
                 E_math_bignum_W( num_div );
@@ -1930,6 +1982,7 @@ N
 E_math_bignum_I_factorial( struct E_math_bignum_Z_num *num
 )
 {   J_assert( num->exponent >= 0 ); /// liczba całkowita
+    J_assert( !E_math_bignum_R_sign(num) ); /// liczba nieujemna
     J_assert( num->exponent || num->digits[0] ); /// != 0
     struct E_math_bignum_Z_num *num_ = E_math_bignum_M_copy(num);
     if( !num_ )
@@ -1942,7 +1995,7 @@ E_math_bignum_I_factorial( struct E_math_bignum_Z_num *num
     num_one->digits[0] = 1;
     while( num->exponent
     || num->digits_n != 1
-    || num->digits[0] != 1
+    || num->digits[0] > 2
     )
     {   if( !~E_math_bignum_I_subtract( num, num_one ))
         {   E_math_bignum_W( num_one );
