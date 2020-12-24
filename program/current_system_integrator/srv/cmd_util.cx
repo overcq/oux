@@ -58,12 +58,30 @@ E_cmd_Z_argv_I_exec_I_terminal_mplayer( Pc cwd
 , Pc *mime_argv
 , Pc *cmd_argv
 , N cmd_argc
-){  for_n( i, cmd_argc )
-        if( *cmd_argv[i] == '/' )
-        {   Pc s = M( 7 + E_text_Z_s0_R_0_l( cmd_argv[i] ));
-            E_text_Z_s_P_s0_copy_0( E_text_Z_s_P_s0_copy( s, "file:/""/" ), cmd_argv[i] );
-            cmd_argv[i] = s;
+){  if( cmd_argc == 1 )
+    {   Pc s = E_text_Z_s_R_c_search_last( cmd_argv[0], E_text_Z_s0_R_end( cmd_argv[0] ), E_mem_Q_file_S_filename_separator );
+        if( s != cmd_argv[0] )
+        {   V0( chdir(cwd) )
+                return;
+            cwd = M( s - cmd_argv[0] + 1 );
+            if( !cwd )
+                return;
+            E_text_Z_s_P_s_copy_0( cwd, cmd_argv[0], s );
+            V0( chdir(cwd) )
+                return;
+            W_(cwd);
+            cmd_argv[0] = s + 1;
         }
+    }else
+    {   for_n( i, cmd_argc )
+            if( *cmd_argv[i] == E_mem_Q_file_S_filename_separator )
+            {   Pc s = M( 7 + E_text_Z_s0_R_0_l( cmd_argv[i] ));
+                if( !s )
+                    return;
+                E_text_Z_s_P_s0_copy_0( E_text_Z_s_P_s0_copy( s, "file:/""/" ), cmd_argv[i] );
+                cmd_argv[i] = s;
+            }
+    }
     E_cmd_Z_argv_I_exec_I_terminal( cwd, mime_argv, cmd_argv, cmd_argc );
 }
 /******************************************************************************/
