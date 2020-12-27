@@ -479,31 +479,52 @@ N
 E_math_bignum_I_add(
   struct E_math_bignum_Z_num *num_0
 , struct E_math_bignum_Z_num *num_1
-){  if( !~E_math_bignum_I_add_subtract_begin( num_0, num_1 ))
+){  B sign = E_math_bignum_R_sign( num_0 );
+    if( !~E_math_bignum_I_add_subtract_begin( num_0, num_1 ))
         return ~0;
     __asm__ goto (
     #if defined( __i386__ )
     "\n" "mov       (%1),%%eax"
     "\n" "add       %%eax,(%0)"
-    "\n 1:decl      %2"
-    "\n" "jz        1f"
-    "\n" "lea       (%0,%3),%0"
-    "\n" "lea       (%1,%3),%1"
+    "\n 1:decl      %3"
+    "\n" "jz        3f"
+    "\n" "decl      %2"
+    "\n" "jz        2f"
+    "\n" "lea       (%0,%4),%0"
+    "\n" "lea       (%1,%4),%1"
     "\n" "mov       (%1),%%eax"
-    "\n" "adcl      %%eax,(%0)"
+    "\n" "adc       %%eax,(%0)"
+    "\n" "seto      %%cl"
     "\n" "jmp       1b"
-    "\n 1:jno        %l[Next]"
+    "\n 2:lea       (%0,%4),%0"
+    "\n" "adcl      $0,(%0)"
+    "\n" "jnc       %l[Next]"
+    "\n" "seto      %%cl"
+    "\n" "decl      %3"
+    "\n" "jnz       2b"
+    "\n 3:test      %%cl,%%cl"
+    "\n" "jz        %l[Next]"
     #elif defined( __x86_64__ )
     "\n" "mov       (%1),%%rax"
     "\n" "add       %%rax,(%0)"
-    "\n 1:decq      %2"
-    "\n" "jz        1f"
-    "\n" "lea       (%0,%3),%0"
-    "\n" "lea       (%1,%3),%1"
+    "\n 1:decq      %3"
+    "\n" "jz        3f"
+    "\n" "decq      %2"
+    "\n" "jz        2f"
+    "\n" "lea       (%0,%4),%0"
+    "\n" "lea       (%1,%4),%1"
     "\n" "mov       (%1),%%rax"
-    "\n" "adcq      %%rax,(%0)"
+    "\n" "adc       %%rax,(%0)"
+    "\n" "seto      %%cl"
     "\n" "jmp       1b"
-    "\n 1:jno        %l[Next]"
+    "\n 2:lea       (%0,%4),%0"
+    "\n" "adcq      $0,(%0)"
+    "\n" "jnc       %l[Next]"
+    "\n" "seto      %%cl"
+    "\n" "decq      %3"
+    "\n" "jnz       2b"
+    "\n 3:test      %%cl,%%cl"
+    "\n" "jz        %l[Next]"
     #else
 #error not implemented
     #endif
@@ -511,19 +532,20 @@ E_math_bignum_I_add(
     : "r" ( num_0->digits )
     , "r" ( num_1->digits )
     , "rm" ( num_1->digits_n )
+    , "rm" ( num_0->digits_n )
     , "r" ( sizeof(N) )
     : "cc"
     #if defined( __i386__ )
-    , "eax"
+    , "eax", "cl"
     #elif defined( __x86_64__ )
-    , "rax"
+    , "rax", "cl"
     #endif
     : Next
     );
     N *p = E_mem_Q_blk_I_append( &num_0->digits, 1 );
     if( !p )
         return ~0;
-    *p = E_math_bignum_R_sign( num_0 ) ? ~0 : 1;
+    *p = sign ? ~0 : 1;
     num_0->digits_n++;
 Next:
     if( !~E_math_bignum_I_add_subtract_end( num_0, num_1 ))
@@ -534,31 +556,46 @@ N
 E_math_bignum_I_subtract(
   struct E_math_bignum_Z_num *num_0
 , struct E_math_bignum_Z_num *num_1
-){  if( !~E_math_bignum_I_add_subtract_begin( num_0, num_1 ))
+){  B sign = E_math_bignum_R_sign( num_0 );
+    if( !~E_math_bignum_I_add_subtract_begin( num_0, num_1 ))
         return ~0;
     __asm__ goto (
     #if defined( __i386__ )
     "\n" "mov       (%1),%%eax"
     "\n" "sub       %%eax,(%0)"
-    "\n 1:decl      %2"
-    "\n" "jz        1f"
-    "\n" "lea       (%0,%3),%0"
-    "\n" "lea       (%1,%3),%1"
+    "\n 1:decl      %3"
+    "\n" "jz        3f"
+    "\n" "decl      %2"
+    "\n" "jz        2f"
+    "\n" "lea       (%0,%4),%0"
+    "\n" "lea       (%1,%4),%1"
     "\n" "mov       (%1),%%eax"
-    "\n" "sbbl      %%eax,(%0)"
+    "\n" "sbb       %%eax,(%0)"
     "\n" "jmp       1b"
-    "\n 1:jno        %l[Next]"
+    "\n 2:lea       (%0,%4),%0"
+    "\n" "sbbl      $0,(%0)"
+    "\n" "jnc       %l[Next]"
+    "\n" "decl      %3"
+    "\n" "jnz       2b"
+    "\n 3:jnc       %l[Next]"
     #elif defined( __x86_64__ )
     "\n" "mov       (%1),%%rax"
     "\n" "sub       %%rax,(%0)"
-    "\n 1:decq      %2"
-    "\n" "jz        1f"
-    "\n" "lea       (%0,%3),%0"
-    "\n" "lea       (%1,%3),%1"
+    "\n 1:decq      %3"
+    "\n" "jz        3f"
+    "\n" "decq      %2"
+    "\n" "jz        2f"
+    "\n" "lea       (%0,%4),%0"
+    "\n" "lea       (%1,%4),%1"
     "\n" "mov       (%1),%%rax"
-    "\n" "sbbq      %%rax,(%0)"
+    "\n" "sbb       %%rax,(%0)"
     "\n" "jmp       1b"
-    "\n 1:jno        %l[Next]"
+    "\n 2:lea       (%0,%4),%0"
+    "\n" "sbbq      $0,(%0)"
+    "\n" "jnc       %l[Next]"
+    "\n" "decq      %3"
+    "\n" "jnz       2b"
+    "\n 3:jnc       %l[Next]"
     #else
 #error not implemented
     #endif
@@ -566,6 +603,7 @@ E_math_bignum_I_subtract(
     : "r" ( num_0->digits )
     , "r" ( num_1->digits )
     , "rm" ( num_1->digits_n )
+    , "rm" ( num_0->digits_n )
     , "r" ( sizeof(N) )
     : "cc"
     #if defined( __i386__ )
@@ -575,11 +613,15 @@ E_math_bignum_I_subtract(
     #endif
     : Next
     );
-    N *p = E_mem_Q_blk_I_append( &num_0->digits, 1 );
-    if( !p )
-        return ~0;
-    *p = E_math_bignum_R_sign( num_0 ) ? ~0 : 1;
-    num_0->digits_n++;
+    if( sign
+    && !E_math_bignum_R_sign( num_0 )
+    )
+    {   N *p = E_mem_Q_blk_I_append( &num_0->digits, 1 );
+        if( !p )
+            return ~0;
+        *p = ~0;
+        num_0->digits_n++;
+    }
 Next:
     if( !~E_math_bignum_I_add_subtract_end( num_0, num_1 ))
         return ~0;
@@ -652,7 +694,7 @@ E_math_bignum_I_multiply(
         return ~0;
     }
     E_math_bignum_W(num);
-    num_->exponent = num_0->exponent + num_1->exponent;
+    num_->exponent += num_0->exponent + num_1->exponent;
     E_math_bignum_M_move( num_0, num_ );
     W( num_ );
     N n = 0;
@@ -1461,7 +1503,19 @@ End:num_div->exponent = num_0->exponent + e_0;
         num_0->digits_n++;
     }
     N n = 0;
-    for_n( i, num_1->digits_n - 1 )
+    for_n( i, num_0->digits_n - 1 )
+    {   if( num_0->digits[i] != 0 )
+            break;
+        n++;
+    }
+    if(n)
+    {   if( !E_mem_Q_blk_I_remove( &num_0->digits, 0, n ))
+            return ~0;
+        num_0->digits_n -= n;
+        num_0->exponent += n;
+    }
+    n = 0;
+    for_n_( i, num_1->digits_n - 1 )
     {   if( num_1->digits[i] != 0 )
             break;
         n++;
@@ -1529,6 +1583,10 @@ E_math_bignum_I_print( struct E_math_bignum_Z_num *num
             num_div->digits_n -= -num->exponent;
             num_div->exponent = 0;
         }
+        //G_(); Gh( num_div->exponent );
+        //for_n( j, num_div->digits_n )
+        //{   G_(); Gd(j); Gh( num_div->digits[j] );
+        //}
         do
         {   struct E_math_bignum_Z_num *num_mod = E_math_bignum_M();
             if( !num_mod )
@@ -1571,7 +1629,7 @@ E_math_bignum_I_print( struct E_math_bignum_Z_num *num
         {   W(s);
             return 0;
         }
-        S i = num_div->digits_n - -num->exponent;
+        S i = (S)num_div->digits_n - -num->exponent;
         if( i > 0 )
         {   if( (S)num_div->digits[ -num->exponent + i - 2 ] < 0 )
                 i--;
@@ -1605,9 +1663,10 @@ E_math_bignum_I_print( struct E_math_bignum_Z_num *num
             && num_div_->digits[ num_div_->digits_n - 1 ]
             )
             {   if( num_div_->digits[ num_div_->digits_n - 1 ] < 5 )
-                    start_zero_n--;
+                    ;//start_zero_n--;
                 break;
             }
+            start_zero_n++;
         }
         E_math_bignum_W( num_div_ );
         struct E_math_bignum_Z_num *num_frac = E_math_bignum_M();
@@ -1625,6 +1684,7 @@ E_math_bignum_I_print( struct E_math_bignum_Z_num *num
         }
         num_mul->digits[0] = 1;
         B start_zero_done = no;
+        N debug_i = 0;
         do
         {   if( !~E_math_bignum_I_multiply_n( num_mul, 5 ))
             {   E_math_bignum_W( num_mul );
@@ -1680,7 +1740,7 @@ E_math_bignum_I_print( struct E_math_bignum_Z_num *num
                 }else
                     num_div->digits[ num_div->digits_n - 1 ] = 0;
             }else if( !start_zero_done )
-                start_zero_n++;
+                ;//start_zero_n++;
         }while( num_div->exponent < 0 );
         E_math_bignum_W( num_mul );
         E_math_bignum_W( num_div );
@@ -1688,7 +1748,7 @@ E_math_bignum_I_print( struct E_math_bignum_Z_num *num
         //{   G_(); Gd(j); Gh( num_frac->digits[j] );
         //}
         //G_(); Gd( start_zero_n );
-        start_zero_n = 5 * start_zero_n / 16 + ( 5 * start_zero_n % 16 == 15 ? 1 : 0 );
+        //start_zero_n = 5 * start_zero_n / 16 + ( 5 * start_zero_n % 16 == 15 ? 1 : 0 );
         if( start_zero_n )
         {   p = E_mem_Q_blk_I_append( &s, start_zero_n );
             if( !p )
@@ -1980,7 +2040,7 @@ E_math_bignum_I_power_n( struct E_math_bignum_Z_num *num
         return ~0;
     num_->digits[0] = 1;
     while(n)
-    {   if( n % 2 == 1 )
+    {   if( n & 1 )
             if( !~E_math_bignum_I_multiply( num_, num ))
             {   E_math_bignum_W( num_ );
                 return ~0;
@@ -1989,7 +2049,7 @@ E_math_bignum_I_power_n( struct E_math_bignum_Z_num *num
         {   E_math_bignum_W( num_ );
             return ~0;
         }
-        n /= 2;
+        n >>= 1;
     }
     E_math_bignum_M_move( num, num_ );
     W( num_ );
@@ -2055,7 +2115,8 @@ struct E_math_bignum_Z_num *
 E_math_bignum_I_pi( N digits_h
 , N prec
 )
-{   struct E_math_bignum_Z_num *num = E_math_bignum_M();
+{   J_assert( digits_h <= ( (N)~0 - 6 ) / 8 );
+    struct E_math_bignum_Z_num *num = E_math_bignum_M();
     if( !num )
         return 0;
     for_n( k, digits_h )
