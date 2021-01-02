@@ -320,7 +320,7 @@ E_x_Q_window_I_fill_Z_points(
     //TODO
 
 }
-void
+N
 E_x_Q_window_I_fill_Z_rectangles(
   struct E_x_Q_display_Z *display
 , struct E_x_Q_screen_Z *screen
@@ -328,8 +328,33 @@ E_x_Q_window_I_fill_Z_rectangles(
 , N32 n
 , xcb_rectangle_t *rectangles
 ){  J_assert(n);
-    //TODO
-
+    xcb_segment_t *Mt_( segments, 0 );
+    if( !segments )
+        return ~0;
+    N segment_n = 0;
+    for_n( i, n )
+    {   if( !E_mem_Q_blk_I_append( &segments, rectangles[i].height ))
+        {   W(segments);
+            return ~0;
+        }
+        for_n( dy, rectangles[i].height )
+        {   segments[ segment_n++ ] = ( xcb_segment_t )
+            { .x1 = rectangles[i].x
+            , .y1 = rectangles[i].y + dy
+            , .x2 = rectangles[i].x + rectangles[i].width - 1
+            , .y2 = rectangles[i].y + dy
+            };
+        }
+    }
+    if( !~E_x_Q_window_I_draw_Z_segments( display, screen, window
+    , segment_n
+    , segments
+    ))
+    {   W(segments);
+        return ~0;
+    }
+    W(segments);
+    return 0;
 }
 void
 E_x_Q_window_I_fill_Z_arcs(
