@@ -1802,13 +1802,10 @@ E_math_bignum_I_scan( Pc s
     B exponent_2_sign = no;
     struct E_math_bignum_Z_num *num = E_math_bignum_M();
     if( !num )
-    {   W(s);
         return 0;
-    }
     struct E_math_bignum_Z_num *digit = E_math_bignum_M();
     if( !num )
     {   E_math_bignum_W(num);
-        W(s);
         return 0;
     }
     do
@@ -1858,7 +1855,6 @@ E_math_bignum_I_scan( Pc s
         }else
         {   E_math_bignum_W(digit);
             E_math_bignum_W(num);
-            W(s);
             return 0;
         }
     }while( *++s );
@@ -1867,31 +1863,38 @@ E_math_bignum_I_scan( Pc s
         exponent_2 = -exponent_2;
     S exponent = exponent_1 + exponent_2;
     if( exponent > 0 )
-    {   while( exponent-- )
-            if( !~E_math_bignum_I_multiply_n( num, 10 ))
-            {   E_math_bignum_W(num);
-                return 0;
-            }
+    {   struct E_math_bignum_Z_num *num_mod = E_math_bignum_M();
+        if( !num_mod )
+        {   E_math_bignum_W(num);
+            return 0;
+        }
+        num_mod->digits[0] = 10;
+        if( !~E_math_bignum_I_power_n( num_mod, exponent ))
+        {   E_math_bignum_W(num);
+            return 0;
+        }
+        if( !~E_math_bignum_I_multiply( num, num_mod ))
+        {   E_math_bignum_W( num_mod );
+            E_math_bignum_W(num);
+            return 0;
+        }
+        E_math_bignum_W( num_mod );
     }else if( exponent < 0 )
     {   N min_precision = ( -exponent + ( sizeof(N) * 5 / 4 )) / ( sizeof(N) * 5 / 2 ) + 1;
         struct E_math_bignum_Z_num *num_mod = E_math_bignum_M();
         if( !num_mod )
         {   E_math_bignum_W(num);
-            W(s);
             return 0;
         }
-        num_mod->digits[0] = 1;
-        while( exponent++ )
-            if( !~E_math_bignum_I_multiply_n( num_mod, 10 ))
-            {   E_math_bignum_W( num_mod );
-                E_math_bignum_W(num);
-                W(s);
-                return 0;
-            }
+        num_mod->digits[0] = 10;
+        if( !~E_math_bignum_I_power_n( num_mod, -exponent ))
+        {   E_math_bignum_W( num_mod );
+            E_math_bignum_W(num);
+            return 0;
+        }
         if( !~E_math_bignum_I_divide_modulo_min_prec( num, num_mod, min_precision ))
         {   E_math_bignum_W( num_mod );
             E_math_bignum_W(num);
-            W(s);
             return 0;
         }
         E_math_bignum_W( num_mod );
