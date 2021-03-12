@@ -298,7 +298,7 @@ E_x_Q_window_I_draw_Z_rectangles(
     W(segments);
     return 0;
 }
-void
+N
 E_x_Q_window_I_draw_Z_arcs(
   struct E_x_Q_display_Z *display
 , struct E_x_Q_screen_Z *screen
@@ -307,7 +307,65 @@ E_x_Q_window_I_draw_Z_arcs(
 , xcb_arc_t *arcs
 ){  J_assert(n);
     //TODO
-
+    xcb_point_t *Mt_( points, 0 );
+    if( !points )
+        return ~0;
+    for_n( i, n )
+    {   N16 x_start, y_start, x_stop, y_stop;
+        if( arcs[i].angle1 % ( 90 * 64 ))
+        {   F tan_alfa = tan( arcs[i].angle1 * M_PI / ( 180 * 64 ));
+            x_start = M_SQRT1_2 * arcs[i].height * tan_alfa;
+            y_start = M_SQRT1_2 * arcs[i].width / tan_alfa;
+            tan_alfa = tan( arcs[i].angle2 * M_PI / ( 180 * 64 ));
+            x_stop = M_SQRT1_2 * arcs[i].height * tan_alfa;
+            y_stop = M_SQRT1_2 * arcs[i].width / tan_alfa;
+        }else
+        {   x_start = arcs[i].x;
+            switch( abs( arcs[i].angle1 % ( 360 * 64 )))
+            { case 0:
+                    x_start += arcs[i].width;
+                    break;
+              case 180:
+                    x_start -= arcs[i].width;
+                    break;
+            }
+            y_start = arcs[i].y;
+            switch( arcs[i].angle1 % ( 360 * 64 ))
+            { case 90:
+              case -270:
+                    x_start += arcs[i].height;
+                    break;
+              case 270:
+              case -90:
+                    x_start -= arcs[i].height;
+                    break;
+            }
+            x_stop = arcs[i].x;
+            switch( abs( arcs[i].angle2 % ( 360 * 64 )))
+            { case 0:
+                    x_start += arcs[i].width;
+                    break;
+              case 180:
+                    x_start -= arcs[i].width;
+                    break;
+            }
+            y_stop = arcs[i].y;
+            switch( arcs[i].angle2 % ( 360 * 64 ))
+            { case 90:
+              case -270:
+                    x_start += arcs[i].height;
+                    break;
+              case 270:
+              case -90:
+                    x_start -= arcs[i].height;
+                    break;
+            }
+        }
+        S16 x = 0, y = 0, e = 0;
+        
+    }
+    W(points);
+    return 0;
 }
 void
 E_x_Q_window_I_fill_Z_points(

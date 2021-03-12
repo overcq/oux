@@ -1,11 +1,13 @@
 /*******************************************************************************
-*   ___   workplace
+*   ___   publick
 *  ¦OUX¦  C+
 *  ¦/C+¦  filesystem
 *   ---   mkfs
 *         main
 * ©overcq                on ‟Gentoo Linux 17.0” “x86_64”             2019‒3‒10 b
 *******************************************************************************/
+#define Z_inode_flags_1_S_persistent  0x4000
+//==============================================================================
 Pc device;
 I file_id;
 //==============================================================================
@@ -26,13 +28,71 @@ main(
         goto Error;
     if( !~( file_id = E_mem_Q_file_M( device, no )))
         goto Error;
-    if( E_mem_Q_file_P_s( file_id, "\xeb\x76\x90", 3 ))
+    struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, file_id );
+    C cluster_address_size_power_bit;
+    if( file->l > ( (N64)(N32)~0 + 1 ) * 4096 )
+        cluster_address_size_power_bit = 6;
+    else if( file->l > ( (N)(N16)~0 + 1 ) * 4096 )
+        cluster_address_size_power_bit = 5;
+    else if( file->l > ( (N)(N8)~0 + 1 ) * 4096 )
+        cluster_address_size_power_bit = 4;
+    else
+        cluster_address_size_power_bit = 3;
+    N table_of_files_offset = file->l - 2; /// Rozmiar w ostatnim klastrze i flagi.
+    table_of_files_offset -= 2; /// Start w klastrze i flagi.
+    table_of_files_offset -= ( 1 << cluster_address_size_power_bit ) / 8; /// Rozmiar pliku: liczba pełnych klastrów.
+    table_of_files_offset -= ( 1 << cluster_address_size_power_bit ) / 8; /// Adres pliku: numer klastra.
+    table_of_files_offset -= ( 1 << cluster_address_size_power_bit ) / 8; /// Numer wpisu w tablicy plików nadrzędnego katalogu.
+    table_of_files_offset -= 4; /// Nazwa pliku: “VBR”.
+    if( !~( E_mem_Q_file_P_pos( file_id, 500 )))
         goto Error;
-    if( E_mem_Q_file_P_s( file_id, "OUX", 3 ))
+    if( E_mem_Q_file_P_64( file_id, table_of_files_offset ))
         goto Error;
-    if( E_mem_Q_file_P_c( file_id, 8 )) //CONF
+    if( E_mem_Q_file_P_c( file_id, cluster_address_size_power_bit ))
         goto Error;
-    if( E_mem_Q_file_P_64( file_id, 0 )) ///end of table
+    if( E_mem_Q_file_P_c( file_id, 1 )) /// Wersja systemu plików.
+        goto Error;
+    if( !~( E_mem_Q_file_P_pos( file_id, table_of_files_offset )))
+        goto Error;
+    if( E_mem_Q_file_P_s( file_id, "MBR", 4 ))
+        goto Error;
+    switch( cluster_address_size_power_bit )
+    { case 6:
+            if( E_mem_Q_file_P_64( file_id, ~0 ))
+                goto Error;
+            if( E_mem_Q_file_P_64( file_id, 0 ))
+                goto Error;
+            if( E_mem_Q_file_P_64( file_id, 0 ))
+                goto Error;
+            break;
+      case 5:
+            if( E_mem_Q_file_P_32( file_id, ~0 ))
+                goto Error;
+            if( E_mem_Q_file_P_32( file_id, 0 ))
+                goto Error;
+            if( E_mem_Q_file_P_32( file_id, 0 ))
+                goto Error;
+            break;
+      case 4:
+            if( E_mem_Q_file_P_16( file_id, ~0 ))
+                goto Error;
+            if( E_mem_Q_file_P_16( file_id, 0 ))
+                goto Error;
+            if( E_mem_Q_file_P_16( file_id, 0 ))
+                goto Error;
+            break;
+      case 3:
+            if( E_mem_Q_file_P_c( file_id, ~0 ))
+                goto Error;
+            if( E_mem_Q_file_P_c( file_id, 0 ))
+                goto Error;
+            if( E_mem_Q_file_P_c( file_id, 0 ))
+                goto Error;
+            break;
+    }
+    if( E_mem_Q_file_P_16( file_id, Z_inode_flags_1_S_persistent | 0 )) /// Flaga: nieusuwalny.
+        goto Error;
+    if( E_mem_Q_file_P_16( file_id, 512 ))
         goto Error;
     if( E_mem_Q_file_W( file_id ))
         goto Error;
