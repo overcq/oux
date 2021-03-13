@@ -6,18 +6,10 @@
 *         main
 * ©overcq                on ‟Gentoo Linux 17.0” “x86_64”             2019‒3‒10 b
 *******************************************************************************/
-#define Z_inode_flags_2_S_empty     0x8000
 #define Z_inode_flags_2_S_directory 0x1000
+#define Z_inode_flags_2_S_empty     0x8000
 #define S_size_of_cluster           4096
 //==============================================================================
-Pc device;
-Pc directory;
-I device_file_id;
-C device_n_size;
-int fuse_fd;
-N fuse_major;
-N fuse_minor;
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 struct E_main_Z_file_handle
 { N64 inode;
 };
@@ -42,8 +34,8 @@ main(
   int argc
 , char *argv[]
 ){  E_base_M( argc, argv );
-    device = 0;
-    directory = 0;
+    Pc device = 0;
+    Pc directory = 0;
     B option = no;
     for( int i = 1; i != argc; i++ )
     {   if( option )
@@ -67,13 +59,13 @@ main(
         else
             device = argv[i];
     }
-
     if( !device
     || !directory
     || option
     ){  E_base_W();
         return 1;
     }
+    I device_file_id;
     if( !~( device_file_id = E_mem_Q_file_M( device, no )))
     {   E_base_W();
         return 1;
@@ -91,13 +83,14 @@ main(
     ){  E_base_W();
         return 1;
     }
-    device_n_size = ( 1 << cluster_address_size_power_bit ) / 8;
+    C device_n_size = ( 1 << cluster_address_size_power_bit ) / 8;
     C filesystem_version;
     if( E_mem_Q_file_R_c( device_file_id, &filesystem_version )
     || filesystem_version != 1
     ){  E_base_W();
         return 1;
     }
+    int fuse_fd;
     VO1( fuse_fd = open( "/dev/fuse", O_RDWR ))
     {   E_base_W();
         return 1;
@@ -168,6 +161,8 @@ main(
         E_base_W();
         return 1;
     }
+    N fuse_major;
+    N fuse_minor;
     file_handles = E_mem_Q_tab_M( sizeof( struct E_main_Z_file_handle ), 0 );
     O{  int error;
         VO1e( buffer_read = read( fuse_fd, buffer, buffer_size ), error )
@@ -325,25 +320,22 @@ main(
                             N file_size_clusters;
                             if( E_mem_Q_file_R_N( device_file_id, &file_size_clusters, device_n_size ))
                                 goto Error;
-                            N file_pos_in_first_cluster;
-                            if( E_mem_Q_file_R_16( device_file_id, &file_pos_in_first_cluster ))
+                            N file_pos_in_the_only_cluster;
+                            if( E_mem_Q_file_R_16( device_file_id, &file_pos_in_the_only_cluster ))
                                 goto Error;
                             N file_size_in_last_cluster;
                             if( E_mem_Q_file_R_16( device_file_id, &file_size_in_last_cluster ))
                                 goto Error;
                             flags_2 = file_size_in_last_cluster & 0xf000;
-                            file_size_in_last_cluster &= 0xfff;
                             if( inode == in_buf->nodeid )
                                 break;
                         }
-                        if( inode != in_buf->nodeid )
-                        {   out_buf.error = -ENOENT;
-                            goto End_access;
-                        }
-                        if( flags_2 & Z_inode_flags_2_S_empty )
+                        if( inode != in_buf->nodeid
+                        || flags_2 & Z_inode_flags_2_S_empty
+                        )
                             out_buf.error = -ENOENT;
                     }
-End_access:         ;struct iovec bufs[1] =
+                    struct iovec bufs[1] =
                     { { &out_buf, sizeof( out_buf ) }
                     };
                     VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
@@ -374,9 +366,23 @@ End_access:         ;struct iovec bufs[1] =
                         N parent_dir_inode;
                         if( E_mem_Q_file_R_N( device_file_id, &parent_dir_inode, device_n_size ))
                             goto Error;
+                        N file_pos_cluster;
+                        if( E_mem_Q_file_R_N( device_file_id, &file_pos_cluster, device_n_size ))
+                            goto Error;
+                        N file_size_clusters;
+                        if( E_mem_Q_file_R_N( device_file_id, &file_size_clusters, device_n_size ))
+                            goto Error;
+                        N file_pos_in_the_only_cluster;
+                        if( E_mem_Q_file_R_16( device_file_id, &file_pos_in_the_only_cluster ))
+                            goto Error;
+                        N file_size_in_last_cluster;
+                        if( E_mem_Q_file_R_16( device_file_id, &file_size_in_last_cluster ))
+                            goto Error;
+                        N16 flags_2 = file_size_in_last_cluster & 0xf000;
+                        if( flags_2 & Z_inode_flags_2_S_empty )
+                            continue;
                         if( parent_dir_inode == in_buf->nodeid )
-                        {   N i = 0;
-                            Pc s = M(0);
+                        {   Pc s = M(0);
                             if( !s )
                             {   out_buf.error = -ENOMEM;
                                 struct iovec bufs[1] =
@@ -387,6 +393,7 @@ End_access:         ;struct iovec bufs[1] =
                                 goto End_lookup;
                             }
                             E_mem_Q_file_P_pos( device_file_id, inode_pos );
+                            N i = 0;
                             O{  if( !E_mem_Q_blk_I_append( &s, 1 ))
                                 {   W(s);
                                     out_buf.error = -ENOMEM;
@@ -409,22 +416,6 @@ End_access:         ;struct iovec bufs[1] =
                             {   W(s);
                                 out_buf_2.nodeid = out_buf_2.attr.ino = inode;
                                 out_buf_2.attr.nlink = 1;
-                                N parent_dir_inode;
-                                if( E_mem_Q_file_R_N( device_file_id, &parent_dir_inode, device_n_size ))
-                                    goto Error;
-                                N file_pos_cluster;
-                                if( E_mem_Q_file_R_N( device_file_id, &file_pos_cluster, device_n_size ))
-                                    goto Error;
-                                N file_size_clusters;
-                                if( E_mem_Q_file_R_N( device_file_id, &file_size_clusters, device_n_size ))
-                                    goto Error;
-                                N file_pos_in_first_cluster;
-                                if( E_mem_Q_file_R_16( device_file_id, &file_pos_in_first_cluster ))
-                                    goto Error;
-                                N file_size_in_last_cluster;
-                                if( E_mem_Q_file_R_16( device_file_id, &file_size_in_last_cluster ))
-                                    goto Error;
-                                N16 flags_2 = file_size_in_last_cluster & 0xf000;
                                 if( flags_2 & Z_inode_flags_2_S_directory )
                                 {   out_buf_2.attr.mode = S_IFDIR | 0777;
                                     E_mem_Q_file_P_pos( device_file_id, table_of_files_offset );
@@ -448,14 +439,17 @@ End_access:         ;struct iovec bufs[1] =
                                         N file_size_clusters;
                                         if( E_mem_Q_file_R_N( device_file_id, &file_size_clusters, device_n_size ))
                                             goto Error;
-                                        N file_pos_in_first_cluster;
-                                        if( E_mem_Q_file_R_16( device_file_id, &file_pos_in_first_cluster ))
+                                        N file_pos_in_the_only_cluster;
+                                        if( E_mem_Q_file_R_16( device_file_id, &file_pos_in_the_only_cluster ))
                                             goto Error;
                                         N file_size_in_last_cluster;
                                         if( E_mem_Q_file_R_16( device_file_id, &file_size_in_last_cluster ))
                                             goto Error;
-                                        if( parent_dir_inode == in_buf->nodeid )
-                                        {   out_buf_2.attr.size += i + device_n_size * 3 + 2;
+                                        N16 flags_2 = file_size_in_last_cluster & 0xf000;
+                                        if( parent_dir_inode == in_buf->nodeid
+                                        && !( flags_2 & Z_inode_flags_2_S_empty )
+                                        )
+                                        {   out_buf_2.attr.size += i + 3 * device_n_size + 2 * 2;
                                             out_buf_2.attr.nlink++;
                                         }
                                     }
@@ -474,19 +468,7 @@ End_access:         ;struct iovec bufs[1] =
                                 goto End_lookup;
                             }
                             W(s);
-                        }else
-                        {   N file_pos_cluster;
-                            if( E_mem_Q_file_R_N( device_file_id, &file_pos_cluster, device_n_size ))
-                                goto Error;
-                            N file_size_clusters;
-                            if( E_mem_Q_file_R_N( device_file_id, &file_size_clusters, device_n_size ))
-                                goto Error;
-                            N file_pos_in_first_cluster;
-                            if( E_mem_Q_file_R_16( device_file_id, &file_pos_in_first_cluster ))
-                                goto Error;
-                            N file_size_in_last_cluster;
-                            if( E_mem_Q_file_R_16( device_file_id, &file_size_in_last_cluster ))
-                                goto Error;
+                            E_mem_Q_file_P_pos( device_file_id, device->pos + i + 3 * device_n_size + 2 * 2 );
                         }
                     }
 End_lookup:         in_buf = (P)( (Pc)in_buf + sizeof( *in_buf ));
@@ -541,8 +523,8 @@ End_lookup:         in_buf = (P)( (Pc)in_buf + sizeof( *in_buf ));
                                 goto Error;
                             if( E_mem_Q_file_R_N( device_file_id, &file_size_clusters, device_n_size ))
                                 goto Error;
-                            N file_pos_in_first_cluster;
-                            if( E_mem_Q_file_R_16( device_file_id, &file_pos_in_first_cluster ))
+                            N file_pos_in_the_only_cluster;
+                            if( E_mem_Q_file_R_16( device_file_id, &file_pos_in_the_only_cluster ))
                                 goto Error;
                             if( E_mem_Q_file_R_16( device_file_id, &file_size_in_last_cluster ))
                                 goto Error;
@@ -550,7 +532,9 @@ End_lookup:         in_buf = (P)( (Pc)in_buf + sizeof( *in_buf ));
                             if( inode == out_buf_2.attr.ino )
                                 break;
                         }
-                        if( inode != out_buf_2.attr.ino )
+                        if( inode != out_buf_2.attr.ino
+                        || flags_2 & Z_inode_flags_2_S_empty
+                        )
                         {   out_buf.error = -ENOENT;
                             struct iovec bufs[1] =
                             { { &out_buf, sizeof( out_buf ) }
@@ -562,7 +546,7 @@ End_lookup:         in_buf = (P)( (Pc)in_buf + sizeof( *in_buf ));
                         }
                     }else
                         flags_2 |= Z_inode_flags_2_S_directory;
-                    if( flags_2 &= Z_inode_flags_2_S_directory )
+                    if( flags_2 & Z_inode_flags_2_S_directory )
                     {   out_buf_2.attr.mode = S_IFDIR | 0777;
                         out_buf_2.attr.nlink = 2;
                         E_mem_Q_file_P_pos( device_file_id, table_of_files_offset );
@@ -583,14 +567,17 @@ End_lookup:         in_buf = (P)( (Pc)in_buf + sizeof( *in_buf ));
                             N file_size_clusters;
                             if( E_mem_Q_file_R_N( device_file_id, &file_size_clusters, device_n_size ))
                                 goto Error;
-                            N file_pos_in_first_cluster;
-                            if( E_mem_Q_file_R_16( device_file_id, &file_pos_in_first_cluster ))
+                            N file_pos_in_the_only_cluster;
+                            if( E_mem_Q_file_R_16( device_file_id, &file_pos_in_the_only_cluster ))
                                 goto Error;
                             N file_size_in_last_cluster;
                             if( E_mem_Q_file_R_16( device_file_id, &file_size_in_last_cluster ))
                                 goto Error;
-                            if( parent_dir_inode == out_buf_2.attr.ino )
-                            {   out_buf_2.attr.size += i + device_n_size * 3 + 2;
+                            N16 flags_2 = file_size_in_last_cluster & 0xf000;
+                            if( parent_dir_inode == out_buf_2.attr.ino
+                            && !( flags_2 & Z_inode_flags_2_S_empty )
+                            )
+                            {   out_buf_2.attr.size += i + 3 * device_n_size + 2 * 2;
                                 out_buf_2.attr.nlink++;
                             }
                         }
@@ -665,8 +652,8 @@ End_lookup:         in_buf = (P)( (Pc)in_buf + sizeof( *in_buf ));
                             N file_size_clusters;
                             if( E_mem_Q_file_R_N( device_file_id, &file_size_clusters, device_n_size ))
                                 goto Error;
-                            N file_pos_in_first_cluster;
-                            if( E_mem_Q_file_R_16( device_file_id, &file_pos_in_first_cluster ))
+                            N file_pos_in_the_only_cluster;
+                            if( E_mem_Q_file_R_16( device_file_id, &file_pos_in_the_only_cluster ))
                                 goto Error;
                             N file_size_in_last_cluster;
                             if( E_mem_Q_file_R_16( device_file_id, &file_size_in_last_cluster ))
@@ -675,7 +662,9 @@ End_lookup:         in_buf = (P)( (Pc)in_buf + sizeof( *in_buf ));
                             if( inode == in_buf->nodeid )
                                 break;
                         }
-                        if( inode != in_buf->nodeid )
+                        if( inode != in_buf->nodeid
+                        || flags_2 & Z_inode_flags_2_S_empty
+                        )
                         {  out_buf.error = -ENOENT;
                             struct iovec bufs[1] =
                             { { &out_buf, sizeof( out_buf ) }
@@ -713,14 +702,17 @@ End_lookup:         in_buf = (P)( (Pc)in_buf + sizeof( *in_buf ));
                             N file_size_clusters;
                             if( E_mem_Q_file_R_N( device_file_id, &file_size_clusters, device_n_size ))
                                 goto Error;
-                            N file_pos_in_first_cluster;
-                            if( E_mem_Q_file_R_16( device_file_id, &file_pos_in_first_cluster ))
+                            N file_pos_in_the_only_cluster;
+                            if( E_mem_Q_file_R_16( device_file_id, &file_pos_in_the_only_cluster ))
                                 goto Error;
                             N file_size_in_last_cluster;
                             if( E_mem_Q_file_R_16( device_file_id, &file_size_in_last_cluster ))
                                 goto Error;
-                            if( parent_dir_inode == out_buf_2.attr.ino )
-                            {   out_buf_2.attr.size += i + device_n_size * 3 + 2;
+                            N16 flags_2 = file_size_in_last_cluster & 0xf000;
+                            if( parent_dir_inode == out_buf_2.attr.ino
+                            && !( flags_2 & Z_inode_flags_2_S_empty )
+                            )
+                            {   out_buf_2.attr.size += i + 3 * device_n_size + 2 * 2;
                                 out_buf_2.attr.nlink++;
                             }
                         }
@@ -747,6 +739,7 @@ End_setattr:        in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                     in_buf_2 = (P)( (Pc)in_buf + sizeof( *in_buf ));
                     if( in_buf->nodeid != FUSE_ROOT_ID )
                     {   N inode = FUSE_ROOT_ID;
+                        N16 flags_2;
                         E_mem_Q_file_P_pos( device_file_id, table_of_files_offset );
                         struct E_mem_Q_file_Z *device = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, device_file_id );
                         O{  if( device->pos == device->l )
@@ -767,16 +760,19 @@ End_setattr:        in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                             N file_size_clusters;
                             if( E_mem_Q_file_R_N( device_file_id, &file_size_clusters, device_n_size ))
                                 goto Error;
-                            N file_pos_in_first_cluster;
-                            if( E_mem_Q_file_R_16( device_file_id, &file_pos_in_first_cluster ))
+                            N file_pos_in_the_only_cluster;
+                            if( E_mem_Q_file_R_16( device_file_id, &file_pos_in_the_only_cluster ))
                                 goto Error;
                             N file_size_in_last_cluster;
                             if( E_mem_Q_file_R_16( device_file_id, &file_size_in_last_cluster ))
                                 goto Error;
+                            flags_2 = file_size_in_last_cluster & 0xf000;
                             if( inode == in_buf->nodeid )
                                 break;
                         }
-                        if( inode != in_buf->nodeid )
+                        if( inode != in_buf->nodeid
+                        || flags_2 & Z_inode_flags_2_S_empty
+                        )
                         {   out_buf.error = -ENOENT;
                             struct iovec bufs[1] =
                             { { &out_buf, sizeof( out_buf ) }
@@ -831,9 +827,9 @@ End_open:           in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                     N parent_dir_inode;
                     N file_pos_cluster;
                     N file_size_clusters;
-                    N file_pos_in_first_cluster;
+                    N file_pos_in_the_only_cluster;
                     N file_size_in_last_cluster;
-                    N16 flags_2 = 0;
+                    N16 flags_2;
                     if( file_handle->inode != FUSE_ROOT_ID )
                     {   N inode = FUSE_ROOT_ID;
                         E_mem_Q_file_P_pos( device_file_id, table_of_files_offset );
@@ -855,7 +851,7 @@ End_open:           in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                                 break;
                             if( E_mem_Q_file_R_N( device_file_id, &file_size_clusters, device_n_size ))
                                 goto Error;
-                            if( E_mem_Q_file_R_16( device_file_id, &file_pos_in_first_cluster ))
+                            if( E_mem_Q_file_R_16( device_file_id, &file_pos_in_the_only_cluster ))
                                 goto Error;
                             if( E_mem_Q_file_R_16( device_file_id, &file_size_in_last_cluster ))
                                 goto Error;
@@ -864,7 +860,9 @@ End_open:           in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                             if( inode == file_handle->inode )
                                 break;
                         }
-                        if( inode != file_handle->inode )
+                        if( inode != file_handle->inode
+                        || flags_2 & Z_inode_flags_2_S_empty
+                        )
                         {   out_buf.error = -ENOENT;
                             struct iovec bufs[1] =
                             { { &out_buf, sizeof( out_buf ) }
@@ -880,7 +878,7 @@ End_open:           in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                     }
                     N len;
                     P out_buf_2;
-                    if( flags_2 &= Z_inode_flags_2_S_directory )
+                    if( flags_2 & Z_inode_flags_2_S_directory )
                     {   out_buf_2 = M( len = 0 );
                         if( !out_buf_2 )
                         {   out_buf.error = -ENOMEM;
@@ -915,13 +913,15 @@ End_open:           in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                             N file_size_clusters;
                             if( E_mem_Q_file_R_N( device_file_id, &file_size_clusters, device_n_size ))
                                 goto Error;
-                            N file_pos_in_first_cluster;
-                            if( E_mem_Q_file_R_16( device_file_id, &file_pos_in_first_cluster ))
+                            N file_pos_in_the_only_cluster;
+                            if( E_mem_Q_file_R_16( device_file_id, &file_pos_in_the_only_cluster ))
                                 goto Error;
                             N file_size_in_last_cluster;
                             if( E_mem_Q_file_R_16( device_file_id, &file_size_in_last_cluster ))
                                 goto Error;
                             N16 flags_2 = file_size_in_last_cluster & 0xf000;
+                            if( flags_2 & Z_inode_flags_2_S_empty )
+                                continue;
                             if( parent_dir_inode == file_handle->inode )
                             {   Pc s = M(0);
                                 if( !s )
@@ -1109,10 +1109,11 @@ End_open:           in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                             E_mem_Q_blk_P_fill_c( d->name + i, size - ( offsetof( struct fuse_dirent, name ) + i ), 0 );
                         }
                     }else
-                    {   if( in_buf_2->offset >= file_size_clusters * S_size_of_cluster + file_size_in_last_cluster )
+                    {   N file_size = file_size_clusters * S_size_of_cluster + file_size_in_last_cluster;
+                        if( in_buf_2->offset >= file_size )
                             len = 0;
-                        else if( in_buf_2->offset + in_buf_2->size >= file_size_clusters * S_size_of_cluster + file_size_in_last_cluster )
-                            len = file_size_clusters * S_size_of_cluster + file_size_in_last_cluster - in_buf_2->offset;
+                        else if( in_buf_2->offset + in_buf_2->size >= file_size )
+                            len = file_size - in_buf_2->offset;
                         else
                             len = in_buf_2->size;
                         out_buf_2 = M(len);
@@ -1126,7 +1127,7 @@ End_open:           in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                             goto End_read;
                         }
                         if(len)
-                        {   if( E_mem_Q_file_P_pos( device_file_id, file_pos_cluster * S_size_of_cluster + file_pos_in_first_cluster + in_buf_2->offset ))
+                        {   if( E_mem_Q_file_P_pos( device_file_id, file_pos_cluster * S_size_of_cluster + file_pos_in_the_only_cluster + in_buf_2->offset ))
                                 goto Error;
                             if( E_mem_Q_file_R_s( device_file_id, out_buf_2, len ))
                                 goto Error;
@@ -1174,6 +1175,7 @@ End_read:           in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                     in_buf_2 = (P)( (Pc)in_buf + sizeof( *in_buf ));
                     G_(); Gh( in_buf_2->flags ); Gh( in_buf_2->mode );
                     N nodeid = FUSE_ROOT_ID;
+                    N nodeid_empty = ~0;
                     E_mem_Q_file_P_pos( device_file_id, table_of_files_offset );
                     struct E_mem_Q_file_Z *device = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, device_file_id );
                     O{  if( device->pos == device->l )
@@ -1195,12 +1197,17 @@ End_read:           in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                         N file_size_clusters;
                         if( E_mem_Q_file_R_N( device_file_id, &file_size_clusters, device_n_size ))
                             goto Error;
-                        N file_pos_in_first_cluster;
-                        if( E_mem_Q_file_R_16( device_file_id, &file_pos_in_first_cluster ))
+                        N file_pos_in_the_only_cluster;
+                        if( E_mem_Q_file_R_16( device_file_id, &file_pos_in_the_only_cluster ))
                             goto Error;
                         N file_size_in_last_cluster;
                         if( E_mem_Q_file_R_16( device_file_id, &file_size_in_last_cluster ))
                             goto Error;
+                        N16 flags_2 = file_size_in_last_cluster & 0xf000;
+                        if( flags_2 & Z_inode_flags_2_S_empty )
+                        {   nodeid_empty = nodeid;
+                            continue;
+                        }
                         if( parent_dir_inode == in_buf->nodeid )
                         {   Pc s = M(0);
                             if( !s )
@@ -1243,6 +1250,7 @@ End_read:           in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                                 goto End_create;
                             }
                             W(s);
+                            E_mem_Q_file_P_pos( device_file_id, inode_pos + i + 3 * device_n_size + 2 * 2 );
                         }
                     }
                     N i = in_buf->len - sizeof( *in_buf ) - sizeof( *in_buf_2 );
@@ -1278,17 +1286,20 @@ End_read:           in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                         N file_size_clusters;
                         if( E_mem_Q_file_R_N( device_file_id, &file_size_clusters, device_n_size ))
                             goto Error;
-                        N file_pos_in_first_cluster;
-                        if( E_mem_Q_file_R_16( device_file_id, &file_pos_in_first_cluster ))
+                        N file_pos_in_the_only_cluster;
+                        if( E_mem_Q_file_R_16( device_file_id, &file_pos_in_the_only_cluster ))
                             goto Error;
                         N file_size_in_last_cluster;
                         if( E_mem_Q_file_R_16( device_file_id, &file_size_in_last_cluster ))
                             goto Error;
                         N16 flags_2 = file_size_in_last_cluster & 0xf000;
+                        if( flags_2 & Z_inode_flags_2_S_empty )
+                            continue;
                         file_size_in_last_cluster &= 0xfff;
                         if( !( flags_2 & Z_inode_flags_2_S_directory )
                         && file_size_clusters * S_size_of_cluster + file_size_in_last_cluster
-                        ){  if( !E_mem_Q_blk_I_append( &free_blocks, 1 ))
+                        )
+                        {   if( !E_mem_Q_blk_I_append( &free_blocks, 1 ))
                             {   W( free_blocks );
                                 out_buf.error = -ENOMEM;
                                 struct iovec bufs[1] =
@@ -1299,154 +1310,147 @@ End_read:           in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                                 goto End_create;
                             }
                             free_blocks[ free_blocks_n ].nodeid = nodeid;
-                            free_blocks[ free_blocks_n ].begin = file_pos_cluster * S_size_of_cluster + file_pos_in_first_cluster;
-                            free_blocks[ free_blocks_n ].end = file_pos_cluster * S_size_of_cluster + file_size_clusters * S_size_of_cluster + file_pos_in_first_cluster + file_size_in_last_cluster;
+                            free_blocks[ free_blocks_n ].begin = file_pos_cluster * S_size_of_cluster + file_pos_in_the_only_cluster;
+                            free_blocks[ free_blocks_n ].end = file_pos_cluster * S_size_of_cluster + file_size_clusters * S_size_of_cluster + file_pos_in_the_only_cluster + file_size_in_last_cluster; /// “file_size_clusters” albo “file_pos_in_the_only_cluster” jest 0.
                             free_blocks_n++;
                         }
                     }
-                    /// Tutaj kontynuacja edycji.
-                    if( free_blocks_n )
-                    {   qsort( &free_blocks[0], free_blocks_n, sizeof( free_blocks[0] ), &E_main_I_sort_free_blocks_cmp );
-                        N req_free_space = i + 3 * device_n_size + 2 * 2;
-                        N free_blocks_i = 0;
-                        if( req_free_space > free_blocks[ free_blocks_i ].begin - rec_pos )
-                        {   req_free_space -= free_blocks[0].begin - rec_pos;
-                            for( free_blocks_i++; free_blocks_i != free_blocks_n; free_blocks_i++ )
-                            {   if( req_free_space < free_blocks[ free_blocks_i ].begin - free_blocks[ free_blocks_i - 1 ].end )
-                                    break;
-                                req_free_space -= free_blocks[ free_blocks_i ].begin - free_blocks[ free_blocks_i - 1 ].end;
-                            }
-                        }
-                        if( free_blocks_i == free_blocks_n )
-                        {   struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, device_file_id );
-                            if( req_free_space > file->l - free_blocks[ free_blocks_n - 1 ].end )
-                            {   W( free_blocks );
-                                out_buf.error = -ENOSPC;
-                                struct iovec bufs[1] =
-                                { { &out_buf, sizeof( out_buf ) }
-                                };
-                                VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
-                                    goto Error;
-                                goto End_create;
-                            }
-                            Pc buf = M( free_blocks[ free_blocks_n - 1 ].end - free_blocks[ free_blocks_n - 1 ].begin );
-                            if( !buf )
-                            {   W( free_blocks );
-                                out_buf.error = -ENOMEM;
-                                struct iovec bufs[1] =
-                                { { &out_buf, sizeof( out_buf ) }
-                                };
-                                VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
-                                    goto Error;
-                                goto End_create;
-                            }
-                            E_mem_Q_file_P_pos( device_file_id, free_blocks[ free_blocks_n - 1 ].begin );
-                            if( E_mem_Q_file_R_s( device_file_id, buf, free_blocks[ free_blocks_n - 1 ].end - free_blocks[ free_blocks_n - 1 ].begin ))
-                            {   W(buf);
-                                W( free_blocks );
-                                out_buf.error = -ENOMEM;
-                                struct iovec bufs[1] =
-                                { { &out_buf, sizeof( out_buf ) }
-                                };
-                                VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
-                                    goto Error;
-                                goto End_create;
-                            }
-                            free_blocks[ free_blocks_n - 1 ].begin += file->l - free_blocks[ free_blocks_n - 1 ].end;
-                            free_blocks[ free_blocks_n - 1 ].end = file->l;
-                            E_mem_Q_file_P_pos( device_file_id, free_blocks[ free_blocks_n - 1 ].begin );
-                            if( E_mem_Q_file_P_s( device_file_id, buf, free_blocks[ free_blocks_n - 1 ].end - free_blocks[ free_blocks_n - 1 ].begin ))
+                    qsort( &free_blocks[0], free_blocks_n, sizeof( free_blocks[0] ), &E_main_I_sort_free_blocks_cmp );
+                    /// Przydzielenie miejsca na wpis w tablicy plików.
+                    N inode_pos;
+                    if( !~nodeid_empty )
+                    {   N req_free_space = i + 3 * device_n_size + 2 * 2;
+                        if( table_of_files_offset < req_free_space )
+                        {   out_buf.error = -ENOSPC;
+                            struct iovec bufs[1] =
+                            { { &out_buf, sizeof( out_buf ) }
+                            };
+                            VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
                                 goto Error;
-                            W(buf);
-                            N nodeid = FUSE_ROOT_ID;
+                            goto End_create;
+                        }
+                        if( free_blocks_n
+                        && table_of_files_offset - req_free_space < free_blocks[ free_blocks_n - 1 ].end
+                        ) // TODO Scalenie plików od ostatniego zamiast błędu.
+                        {   out_buf.error = -ENOSPC;
+                            struct iovec bufs[1] =
+                            { { &out_buf, sizeof( out_buf ) }
+                            };
+                            VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                goto Error;
+                            goto End_create;
+                        }
+                        table_of_files_offset -= req_free_space;
+                        inode_pos = table_of_files_offset;
+                    }else
+                    {   N i_old;
+                        E_mem_Q_file_P_pos( device_file_id, table_of_files_offset );
+                        O{  inode_pos = device->pos;
+                            nodeid++;
+                            i_old = 0;
+                            O{  C c;
+                                if( E_mem_Q_file_R_c( device_file_id, &c ))
+                                    goto Error;
+                                i_old++;
+                                if( !c )
+                                    break;
+                            }
+                            N parent_dir_inode;
+                            if( E_mem_Q_file_R_N( device_file_id, &parent_dir_inode, device_n_size ))
+                                goto Error;
+                            N file_pos_cluster;
+                            if( E_mem_Q_file_R_N( device_file_id, &file_pos_cluster, device_n_size ))
+                                goto Error;
+                            N file_size_clusters;
+                            if( E_mem_Q_file_R_N( device_file_id, &file_size_clusters, device_n_size ))
+                                goto Error;
+                            N file_pos_in_the_only_cluster;
+                            if( E_mem_Q_file_R_16( device_file_id, &file_pos_in_the_only_cluster ))
+                                goto Error;
+                            N file_size_in_last_cluster;
+                            if( E_mem_Q_file_R_16( device_file_id, &file_size_in_last_cluster ))
+                                goto Error;
+                            if( nodeid == nodeid_empty )
+                                break;
+                        }
+                        if( i > i_old )
+                        {   N req_free_space = i - i_old;
+                            if( table_of_files_offset < req_free_space )
+                            {   out_buf.error = -ENOSPC;
+                                struct iovec bufs[1] =
+                                { { &out_buf, sizeof( out_buf ) }
+                                };
+                                VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                    goto Error;
+                                goto End_create;
+                            }
+                            if( free_blocks_n
+                            && table_of_files_offset - req_free_space < free_blocks[ free_blocks_n - 1 ].end
+                            ) // TODO Scalenie plików od ostatniego zamiast błędu.
+                            {   out_buf.error = -ENOSPC;
+                                struct iovec bufs[1] =
+                                { { &out_buf, sizeof( out_buf ) }
+                                };
+                                VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                    goto Error;
+                                goto End_create;
+                            }
+                            Pc data = M( inode_pos - table_of_files_offset );
+                            if( !data )
+                            {   out_buf.error = -ENOMEM;
+                                struct iovec bufs[1] =
+                                { { &out_buf, sizeof( out_buf ) }
+                                };
+                                VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                    goto Error;
+                                goto End_create;
+                            }
                             E_mem_Q_file_P_pos( device_file_id, table_of_files_offset );
-                            struct E_mem_Q_file_Z *device = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, device_file_id );
-                            O{  if( device->pos == device->l )
-                                    break;
-                                O{  C c;
-                                    if( E_mem_Q_file_R_c( device_file_id, &c ))
-                                        goto Error;
-                                    if( !c )
-                                        break;
-                                }
-                                N rec_pos = device->pos;
-                                nodeid++;
-                                if( nodeid == free_blocks[ free_blocks_n - 1 ].nodeid )
-                                {   if( E_mem_Q_file_P_N( device_file_id, free_blocks[ free_blocks_n - 1 ].begin, device_n_size ))
-                                        goto Error;
-                                    break;
-                                }
-                                E_mem_Q_file_P_pos( device_file_id, rec_pos + 3 * device_n_size + 2 * 2 );
-                            }
-                            free_blocks_i--;
-                        }
-                        for( ; free_blocks_i; free_blocks_i-- )
-                        {   Pc buf = M( free_blocks[ free_blocks_i ].end - free_blocks[ free_blocks_i ].begin );
-                            if( !buf )
-                            {   W( free_blocks );
-                                out_buf.error = -ENOMEM;
-                                struct iovec bufs[1] =
-                                { { &out_buf, sizeof( out_buf ) }
-                                };
-                                VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
-                                    goto Error;
-                                goto End_create;
-                            }
-                            E_mem_Q_file_P_pos( device_file_id, free_blocks[ free_blocks_i ].begin );
-                            if( E_mem_Q_file_R_s( device_file_id, buf, free_blocks[ free_blocks_i ].end - free_blocks[ free_blocks_i ].begin ))
-                            {   W(buf);
-                                W( free_blocks );
-                                out_buf.error = -ENOMEM;
-                                struct iovec bufs[1] =
-                                { { &out_buf, sizeof( out_buf ) }
-                                };
-                                VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
-                                    goto Error;
-                                goto End_create;
-                            }
-                            free_blocks[ free_blocks_i ].begin += free_blocks[ free_blocks_i + 1 ].begin - free_blocks[ free_blocks_i ].end;
-                            free_blocks[ free_blocks_i ].end = free_blocks[ free_blocks_i + 1 ].begin;
-                            E_mem_Q_file_P_pos( device_file_id, free_blocks[ free_blocks_i ].begin );
-                            if( E_mem_Q_file_P_s( device_file_id, buf, free_blocks[ free_blocks_i ].end - free_blocks[ free_blocks_i ].begin ))
+                            if( E_mem_Q_file_R_s( device_file_id, data, inode_pos - table_of_files_offset ))
                                 goto Error;
-                            W(buf);
-                            N nodeid = FUSE_ROOT_ID + 1;
-                            E_mem_Q_file_P_pos( device_file_id, S_inode_table_offset );
-                            O{  N rec_pos = device->pos;
-                                if( nodeid == free_blocks[ free_blocks_i ].nodeid )
-                                {   if( E_mem_Q_file_P_N( device_file_id, free_blocks[ free_blocks_i ].begin, device_n_size ))
-                                        goto Error;
-                                    break;
-                                }
-                                E_mem_Q_file_P_pos( device_file_id, rec_pos + 3 * device_n_size );
-                                O{  C c;
-                                    if( E_mem_Q_file_R_c( device_file_id, &c ))
-                                        goto Error;
-                                    if( !c )
-                                        break;
-                                }
-                                nodeid++;
+                            table_of_files_offset -= req_free_space;
+                            inode_pos -= req_free_space;
+                            E_mem_Q_file_P_pos( device_file_id, table_of_files_offset );
+                            if( E_mem_Q_file_P_s( device_file_id, data, inode_pos - table_of_files_offset ))
+                                goto Error;
+                            W(data);
+                        }else if( i < i_old )
+                        {   N avail_free_space = i_old - i;
+                            Pc data = M( inode_pos - table_of_files_offset );
+                            if( !data )
+                            {   out_buf.error = -ENOMEM;
+                                struct iovec bufs[1] =
+                                { { &out_buf, sizeof( out_buf ) }
+                                };
+                                VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                    goto Error;
+                                goto End_create;
                             }
+                            E_mem_Q_file_P_pos( device_file_id, table_of_files_offset );
+                            if( E_mem_Q_file_R_s( device_file_id, data, inode_pos - table_of_files_offset ))
+                                goto Error;
+                            table_of_files_offset += avail_free_space;
+                            inode_pos += avail_free_space;
+                            E_mem_Q_file_P_pos( device_file_id, table_of_files_offset );
+                            if( E_mem_Q_file_P_s( device_file_id, data, inode_pos - table_of_files_offset ))
+                                goto Error;
+                            W(data);
                         }
                     }
                     W( free_blocks );
-                    rec_pos -= device_n_size;
+                    /// Wpisanie do tablicy plików.
                     E_mem_Q_file_P_pos( device_file_id, rec_pos );
-                    if( E_mem_Q_file_P_N( device_file_id, ~0, device_n_size )
-                    || E_mem_Q_file_P_N( device_file_id, 0, device_n_size )
+                    if( E_mem_Q_file_P_s( device_file_id, (Pc)in_buf_2 + sizeof( *in_buf_2 ), i )
                     || E_mem_Q_file_P_N( device_file_id, in_buf->nodeid, device_n_size )
-                    || E_mem_Q_file_P_s( device_file_id, (Pc)in_buf_2 + sizeof( *in_buf_2 ), i )
+                    || E_mem_Q_file_P_N( device_file_id, ~0, device_n_size )
                     || E_mem_Q_file_P_N( device_file_id, 0, device_n_size )
-                    ){  E_mem_Q_file_P_pos( device_file_id, rec_pos );
-                        if( E_mem_Q_file_P_N( device_file_id, 0, device_n_size ))
-                            goto Error;
-                        out_buf.error = -ENOSPC;
-                        struct iovec bufs[1] =
-                        { { &out_buf, sizeof( out_buf ) }
-                        };
-                        VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
-                            goto Error;
-                        goto End_create;
+                    || E_mem_Q_file_P_16( device_file_id, 0 )
+                    || E_mem_Q_file_P_16( device_file_id, Z_inode_flags_2_S_directory )
+                    ){  if( rec_pos != table_of_files_offset )
+                        {   E_mem_Q_file_P_pos( device_file_id, rec_pos + i + 3 * device_n_size + 2 );
+                            E_mem_Q_file_P_16( device_file_id, Z_inode_flags_2_S_empty );
+                        }
+                        goto Error;
                     }
                     struct fuse_entry_out out_buf_2;
                     E_mem_Q_blk_P_fill_c( &out_buf_2, sizeof( out_buf_2 ), 0 );
@@ -1481,6 +1485,7 @@ End_read:           in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
 End_create:         in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                     break;
                 }
+/// Tutaj kontynuacja edycji.
               case FUSE_MKDIR:
                 {   struct fuse_mkdir_in *in_buf_2;
                     if( buffer_read < sizeof( *in_buf_2 ))
@@ -1488,9 +1493,12 @@ End_create:         in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                     buffer_read -= in_buf->len - sizeof( *in_buf );
                     in_buf_2 = (P)( (Pc)in_buf + sizeof( *in_buf ));
                     G_(); Gh( in_buf_2->mode );
-                    N nodeid = FUSE_ROOT_ID + 1;
+                    N nodeid = FUSE_ROOT_ID;
                     E_mem_Q_file_P_pos( device_file_id, S_inode_table_offset );
-                    O{  N file_pos;
+                    O{  if( device->pos == device->l )
+                            break;
+                        nodeid++;
+                        N file_pos;
                         if( E_mem_Q_file_R_N( device_file_id, &file_pos, device_n_size ))
                             goto Error;
                         if( !file_pos )
@@ -1549,7 +1557,6 @@ End_create:         in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                                 if( !c )
                                     break;
                             }
-                        nodeid++;
                     }
                     N i = in_buf->len - sizeof( *in_buf ) - sizeof( *in_buf_2 );
                     N rec_pos = device->pos;
