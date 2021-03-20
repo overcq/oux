@@ -75,7 +75,7 @@ E_mem_Q_file_Q_cache_I_put( struct E_mem_Q_file_Z *file
         return 0;
     }
     /// Scalenie bloków danych wczytanych zawartych w bloku odczytanym z pliku.
-    struct E_mem_Q_rel_map_blk_Z *blk, *blk_begin, *blk_end;
+    struct E_mem_Q_rel_map_blk_Z *blk;
     for( blk = file->blk; blk != file->blk + file->blk_n; blk++ )
         if( data_pos < blk->pos )
             break;
@@ -96,13 +96,16 @@ E_mem_Q_file_Q_cache_I_put( struct E_mem_Q_file_Z *file
         file->current_blk_pos = file->pos - data_pos;
         return 0;
     }
+    struct E_mem_Q_rel_map_blk_Z *blk_begin, *blk_end;
     if( blk != file->blk )
         blk--;
     blk_begin = blk;
     for( ; blk != file->blk + file->blk_n; blk++ )
         if( data_pos + l >= blk->pos + blk->l )
             break;
-    blk_end = blk - 1;
+    blk_end = blk;
+    if( blk != file->blk )
+        blk--;
     struct E_mem_Q_rel_map_blk_Z new_blk;
     N pos_begin = blk_begin->pos;
     if( data_pos < pos_begin )

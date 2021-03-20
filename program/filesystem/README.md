@@ -23,6 +23,7 @@ Słowo nr 436, o rozmiarze 2 B, zawiera numer bajtu *początku tablicy opisów p
 Słowo nr 436 minus rozmiar adresu klastra, o rozmiarze adresu klastra, zawiera numer klastra *początku tablicy opisów plików*.
 
 <table>
+<caption>Dane systemu plików w VBR</caption>
 <thead>
     <tr><th>436 − rozmiar_adresu_klastra</th><th>436</th><th>438</th><th>439</th></tr>
 </thead>
