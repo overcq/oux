@@ -13,18 +13,18 @@ Słowa w VBR i na liście opisów plików są zapisane w kolejności od najmniej
 ### Volume Boot Record
 
 VBR ma rozmiar 512 B i może zawierać program startowy lub nie.
-Bajt nr 505 zawiera numer *wersji systemu plików*.
+Bajt nr 439 zawiera numer *wersji systemu plików*.
 Zależnie od wersji systemu plików poniżej znajdują się następujące pola opisu.
 
-Bajt nr 504 zawiera *rozmiar adresu klastra* w tym systemie plików wyrażony jako numer kolejny ustawionego bitu (potęga dwójki).
+Bajt nr 438 zawiera *rozmiar adresu klastra* w tym systemie plików wyrażony jako numer kolejny ustawionego bitu (potęga dwójki).
 
-Słowo nr 504 minus 16, o rozmiarze 2 B, zawiera numer bajtu *początku tablicy opisów plików* w klastrze.
+Słowo nr 436, o rozmiarze 2 B, zawiera numer bajtu *początku tablicy opisów plików* w klastrze.
 
-Słowo nr 504 minus 16 minus rozmiar adresu klastra, o rozmiarze adresu klastra, zawiera numer klastra *początku tablicy opisów plików*.
+Słowo nr 436 minus rozmiar adresu klastra, o rozmiarze adresu klastra, zawiera numer klastra *początku tablicy opisów plików*.
 
 <table>
 <thead>
-    <tr><th>504 − 16 − rozmiar_adresu_klastra</th><th>504 − 16</th><th>504</th><th>505</th></tr>
+    <tr><th>436 − rozmiar_adresu_klastra</th><th>436</th><th>438</th><th>439</th></tr>
 </thead>
 <tbody>
     <tr><td>początek tablicy opisów plików – numer klastra</td><td>początek tablicy opisów plików – numer bajtu w klastrze</td><td>rozmiar adresu klastra</td><td>wersja systemu plików</td></tr>
@@ -54,7 +54,7 @@ Jeśli brak nadrzędnego katalogu (plik lub katalog znajduje się w katalogu gł
 2. Rozmiar pliku w ostatnim klastrze zawartości i flagi ma rozmiar 16 bitów, a flagi zawierają się w `0xf000` słowa.
 Są następujące flagi:
 * `0x1000` oznaczająca, że wpis jest katalogiem
-* `0x4000` oznaczająca wpis nieusuwalny
+* `0x4000` oznaczająca wpis niezmienialny
 * `0x8000` oznaczająca wpis pusty
 3. Nazwa pliku lub katalogu jest tekstem UTF-8 zakończonym znakiem `\0`.
 
