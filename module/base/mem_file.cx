@@ -82,7 +82,7 @@ E_mem_Q_file_Q_cache_I_put( struct E_mem_Q_file_Z *file
     if(( blk == file->blk
       && data_pos + l < blk->pos
     ) || ( blk == file->blk + file->blk_n
-      && data_pos >= ( blk - 1 )->pos + ( blk - 1 )->l )
+      && data_pos > ( blk - 1 )->pos + ( blk - 1 )->l )
     )
     {   N i = blk - file->blk;
         struct E_mem_Q_rel_map_blk_Z *new_blk = E_mem_Q_blk_I_insert( &file->blk, i, 1 );
@@ -97,22 +97,18 @@ E_mem_Q_file_Q_cache_I_put( struct E_mem_Q_file_Z *file
         return 0;
     }
     struct E_mem_Q_rel_map_blk_Z *blk_begin, *blk_end;
-    if( blk != file->blk )
-        blk--;
     blk_begin = blk;
+    if( blk != file->blk
+    && data_pos <= ( blk - 1 )->pos + ( blk - 1 )->l
+    )
+        blk_begin--;
     for( ; blk != file->blk + file->blk_n; blk++ )
-        if( data_pos + l > blk->pos + blk->l )
+        if( data_pos + l < blk->pos )
             break;
-    blk_end = blk;
-    if( blk != file->blk )
-        blk--;
+    blk_end = blk - 1;
     struct E_mem_Q_rel_map_blk_Z new_blk;
-    N pos_begin = blk_begin->pos;
-    if( data_pos < pos_begin )
-        pos_begin = data_pos;
-    N pos_end = blk_end->pos + blk_end->l;
-    if( data_pos + l > pos_end )
-        pos_end = data_pos + l;
+    N pos_begin = J_min( blk_begin->pos, data_pos );
+    N pos_end = J_max( blk_end->pos + blk_end->l, data_pos + l );
     new_blk.pos = pos_begin;
     new_blk.data = M( new_blk.l = pos_end - pos_begin );
     E_mem_Q_blk_I_copy( new_blk.data + ( data_pos - blk_begin->pos ), E_base_S->E_mem_Q_file_S_buffer, l );
@@ -125,8 +121,10 @@ E_mem_Q_file_Q_cache_I_put( struct E_mem_Q_file_Z *file
     N i = blk_begin - file->blk;
     N n = blk_end - blk_begin;
     if(n)
-        if( !E_mem_Q_blk_I_remove( &file->blk, i + 1, n ))
+    {   if( !E_mem_Q_blk_I_remove( &file->blk, i + 1, n ))
             return ~0;
+        file->blk_n -= n;
+    }
     file->blk[i] = new_blk;
     file->current_blk = i;
     file->current_blk_pos = file->pos - pos_begin;

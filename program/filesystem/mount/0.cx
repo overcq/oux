@@ -914,7 +914,16 @@ End_lookup:         in_buf = (P)( (Pc)in_buf + sizeof( *in_buf ));
                         if( in_buf_2->valid & FATTR_SIZE
                         && in_buf_2->size != file_size
                         )
-                        {   if( in_buf_2->size < file_size )
+                        {   if( flags_1 & Z_inode_flags_1_S_persistent )
+                            {   out_buf.error = -EPERM;
+                                struct iovec bufs[1] =
+                                { { &out_buf, sizeof( out_buf ) }
+                                };
+                                VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                    goto Error;
+                                goto End_setattr;
+                            }
+                            if( in_buf_2->size < file_size )
                             {   E_mem_Q_file_P_pos( device_file_id, rec_pos + device_n_size );
                                 if( E_mem_Q_file_P_16( device_file_id, flags_1 | ( in_buf_2->size % Q_filesystem_S_size_of_cluster )))
                                     goto Error;
@@ -922,7 +931,7 @@ End_lookup:         in_buf = (P)( (Pc)in_buf + sizeof( *in_buf ));
                                 if( E_mem_Q_file_P_N( device_file_id, in_buf_2->size / Q_filesystem_S_size_of_cluster, device_n_size ))
                                     goto Error;
                             }else // TODO Przydzielić miejsce i wypełnić dodaną zawartość zerami zamiast błędu.
-                            {  out_buf.error = -ENOSYS;
+                            {   out_buf.error = -ENOSYS;
                                 struct iovec bufs[1] =
                                 { { &out_buf, sizeof( out_buf ) }
                                 };
@@ -1431,9 +1440,7 @@ End_read:           in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                     N free_blocks_n;
                     S32 error = E_main_Q_filesystem_R_allocated_blocks( device_file_id, &free_blocks, &free_blocks_n );
                     if( error == 1 )
-                    {   W( free_blocks );
                         goto Error;
-                    }
                     if(error)
                     {   W( free_blocks );
                         out_buf.error = error;
@@ -1718,9 +1725,7 @@ End_create:         in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                     N free_blocks_n;
                     S32 error = E_main_Q_filesystem_R_allocated_blocks( device_file_id, &free_blocks, &free_blocks_n );
                     if( error == 1 )
-                    {   W( free_blocks );
                         goto Error;
-                    }
                     if(error)
                     {   W( free_blocks );
                         out_buf.error = error;
@@ -1973,6 +1978,10 @@ End_mkdir:          in_buf = (P)( (Pc)in_buf_2 + sizeof( *in_buf_2 ));
                                         goto Error;
                                     if( E_mem_Q_file_P_16( device_file_id, Q_filesystem_S_table_of_files_offset % Q_filesystem_S_size_of_cluster ))
                                         goto Error;
+                                    for_each( file_handle_id, file_handles, E_mem_Q_tab )
+                                    {   struct E_main_Z_file_handle *file_handle = E_mem_Q_tab_R( file_handles, file_handle_id );
+                                        file_handle->inode--;
+                                    }
                                 }
                                 for_each( id, file_handles, E_mem_Q_tab )
                                 {   struct E_main_Z_file_handle *fh = E_mem_Q_tab_R( file_handles, id );
@@ -2001,7 +2010,7 @@ Write_unlink:       ;struct iovec bufs[1] =
                         goto Error;
                     buffer_read -= in_buf->len - sizeof( *in_buf );
                     in_buf_2 = (P)( (Pc)in_buf + sizeof( *in_buf ));
-                    G_(); Gd( in_buf_2->offset ); Gd( in_buf_2->size ); Gh( in_buf_2->flags ); Gh( in_buf_2->write_flags );
+                    G_(); Gh( in_buf_2->offset ); Gh( in_buf_2->size ); Gh( in_buf_2->flags ); Gh( in_buf_2->write_flags );
                     struct fuse_write_out out_buf_2;
                     E_mem_Q_blk_P_fill_c( &out_buf_2, sizeof( out_buf_2 ), 0 );
                     if( !E_mem_Q_tab_T( file_handles, in_buf_2->fh ))
@@ -2071,9 +2080,7 @@ Write_unlink:       ;struct iovec bufs[1] =
                         N free_blocks_n;
                         S32 error = E_main_Q_filesystem_R_allocated_blocks( device_file_id, &free_blocks, &free_blocks_n );
                         if( error == 1 )
-                        {   W( free_blocks );
                             goto Error;
-                        }
                         if(error)
                         {   W( free_blocks );
                             out_buf.error = error;
@@ -2089,8 +2096,8 @@ Write_unlink:       ;struct iovec bufs[1] =
                             if( free_blocks[ free_blocks_i ].nodeid == inode )
                                 break;
                         req_free_space = in_buf_2->offset + l - file_size;
-                        if(( free_blocks_i + 1 != free_blocks_n && file_size + req_free_space <= free_blocks[ free_blocks_i + 1 ].begin ) /// Mieści się przed zawartością następnego pliku.
-                        || ( free_blocks_i + 1 == free_blocks_n && file_size + req_free_space <= Q_filesystem_S_table_of_files_offset ) /// Mieści się przed listą opisów plików.
+                        if(( free_blocks_i + 1 != free_blocks_n && file_pos + file_size + req_free_space <= free_blocks[ free_blocks_i + 1 ].begin ) /// Mieści się przed zawartością następnego pliku.
+                        || ( free_blocks_i + 1 == free_blocks_n && file_pos + file_size + req_free_space <= Q_filesystem_S_table_of_files_offset ) /// Mieści się przed listą opisów plików.
                         )
                         {   W( free_blocks );
                             if( in_buf_2->offset > file_size )
@@ -2100,15 +2107,13 @@ Write_unlink:       ;struct iovec bufs[1] =
                                 E_mem_Q_file_P_pos( device_file_id, file_pos + in_buf_2->offset );
                             if( E_mem_Q_file_P_s( device_file_id, (Pc)in_buf_2 + sizeof( *in_buf_2 ), l ))
                                 goto Error;
-                            if( req_free_space )
-                            {   E_mem_Q_file_P_pos( device_file_id, rec_pos + device_n_size );
-                                file_size += req_free_space;
-                                if( E_mem_Q_file_P_16( device_file_id, flags_1 | ( file_size % Q_filesystem_S_size_of_cluster )))
-                                    goto Error;
-                                E_mem_Q_file_P_pos( device_file_id, rec_pos + device_n_size + 2 * 2 + device_n_size );
-                                if( E_mem_Q_file_P_N( device_file_id, file_size / Q_filesystem_S_size_of_cluster, device_n_size ))
-                                    goto Error;
-                            }
+                            E_mem_Q_file_P_pos( device_file_id, rec_pos + device_n_size );
+                            file_size += req_free_space;
+                            if( E_mem_Q_file_P_16( device_file_id, flags_1 | ( file_size % Q_filesystem_S_size_of_cluster )))
+                                goto Error;
+                            E_mem_Q_file_P_pos( device_file_id, rec_pos + device_n_size + 2 * 2 + device_n_size );
+                            if( E_mem_Q_file_P_N( device_file_id, file_size / Q_filesystem_S_size_of_cluster, device_n_size ))
+                                goto Error;
                             goto Send_write;
                         }
                         /// Przeliczenie na ‘free blocks’.
@@ -2206,20 +2211,22 @@ Write_unlink:       ;struct iovec bufs[1] =
                         {   E_mem_Q_file_P_pos( device_file_id, file_pos_new + file_size );
                             E_mem_Q_file_P_c_n( device_file_id, 0, in_buf_2->offset - file_size );
                         }
-                        error = E_main_Q_filesystem_I_move_data( device_file_id, file_pos_new, file_pos, file_size );
-                        if( error == 1 )
-                        {   W( free_blocks );
-                            goto Error;
-                        }
-                        if(error)
-                        {   W( free_blocks );
-                            out_buf.error = error;
-                            struct iovec bufs[1] =
-                            { { &out_buf, sizeof( out_buf ) }
-                            };
-                            VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                        if( file_pos_new != file_pos )
+                        {   error = E_main_Q_filesystem_I_move_data( device_file_id, file_pos_new, file_pos, file_size );
+                            if( error == 1 )
+                            {   W( free_blocks );
                                 goto Error;
-                            goto End_write;
+                            }
+                            if(error)
+                            {   W( free_blocks );
+                                out_buf.error = error;
+                                struct iovec bufs[1] =
+                                { { &out_buf, sizeof( out_buf ) }
+                                };
+                                VO1( writev( fuse_fd, &bufs[0], sizeof(bufs) / sizeof( bufs[0] )))
+                                    goto Error;
+                                goto End_write;
+                            }
                         }
                         E_mem_Q_file_P_pos( device_file_id, file_pos_new + in_buf_2->offset );
                         if( E_mem_Q_file_P_s( device_file_id, (Pc)in_buf_2 + sizeof( *in_buf_2 ), l ))
@@ -2248,9 +2255,7 @@ Write_unlink:       ;struct iovec bufs[1] =
                         N free_blocks_n;
                         S32 error = E_main_Q_filesystem_R_allocated_blocks( device_file_id, &free_blocks, &free_blocks_n );
                         if( error == 1 )
-                        {   W( free_blocks );
                             goto Error;
-                        }
                         if(error)
                         {   W( free_blocks );
                             out_buf.error = error;
