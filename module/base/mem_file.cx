@@ -284,12 +284,12 @@ E_mem_Q_file_W( I id
                     if( !~l )
                         return l;
                 }
-                N buffer_l = range->pos_end - pos;
-                E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_file_S_buffer, file->blk[ blk_i ].data + pos - file->blk[ blk_i ].pos, E_base_S->E_mem_Q_file_S_buffer_l );
-                N l = E_mem_Q_file_I_write_pos( file->fd
+                N buffer_l = J_min( E_simple_Z_n_I_align_up_to_v2( range->pos_end, 4096 ), file->l ) - pos;
+                E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_file_S_buffer, file->blk[ blk_i ].data + pos - file->blk[ blk_i ].pos, buffer_l );
+                N l = E_mem_Q_file_I_write_pos_blk_end( file->fd
                 , pos
                 , E_base_S->E_mem_Q_file_S_buffer
-                , buffer_l
+                , E_base_S->E_mem_Q_file_S_buffer_l
                 );
                 if( !~l )
                     return l;
@@ -384,12 +384,12 @@ E_mem_Q_file_I_save( I id
                 if( !~l )
                     return l;
             }
-            N buffer_l = range->pos_end - pos;
-            E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_file_S_buffer, file->blk[ blk_i ].data + pos - file->blk[ blk_i ].pos, E_base_S->E_mem_Q_file_S_buffer_l );
-            N l = E_mem_Q_file_I_write_pos( file->fd
+            N buffer_l = J_min( E_simple_Z_n_I_align_up_to_v2( range->pos_end, 4096 ), file->l ) - pos;
+            E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_file_S_buffer, file->blk[ blk_i ].data + pos - file->blk[ blk_i ].pos, buffer_l );
+            N l = E_mem_Q_file_I_write_pos_blk_end( file->fd
             , pos
             , E_base_S->E_mem_Q_file_S_buffer
-            , buffer_l
+            , E_base_S->E_mem_Q_file_S_buffer_l
             );
             if( !~l )
                 return l;
@@ -428,28 +428,6 @@ E_mem_Q_file_I_save( I id
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 _internal
 N
-E_mem_Q_file_I_write_pos( int fd
-, N pos
-, Pc data
-, N data_l
-){  V1( lseek( fd, pos, SEEK_SET ))
-        return ~0;
-    N l = 0;
-    N l_;
-    O{  VO1( l_ = write( fd, data + l, data_l - l ))
-            return ~0;
-        if( !l_
-        || !~l_
-        )
-            break;
-        l += l_;
-        if( l == data_l )
-            break;
-    }
-    return l;
-}
-_internal
-N
 E_mem_Q_file_I_read_pos( int fd
 , N pos
 ){  V1( lseek( fd, pos, SEEK_SET ))
@@ -474,6 +452,40 @@ E_mem_Q_file_I_read_pos( int fd
         #endif
     return l;
 }
+_internal
+N
+E_mem_Q_file_I_write_pos( int fd
+, N pos
+, Pc data
+, N data_l
+){  V1( lseek( fd, pos, SEEK_SET ))
+        return ~0;
+    N l = 0;
+    N l_;
+    O{  VO1( l_ = write( fd, data + l, data_l - l ))
+            return ~0;
+        if( !l_ )
+            break;
+        l += l_;
+        if( l == data_l )
+            break;
+    }
+    return l;
+}
+_internal
+N
+E_mem_Q_file_I_write_pos_blk_end( int fd
+, N pos
+, Pc data
+, N data_l
+){  V1( lseek( fd, pos, SEEK_SET ))
+        return ~0;
+    N l;
+    VO1( l = write( fd, data, data_l ))
+        return ~0;
+    return l;
+}
+//------------------------------------------------------------------------------
 _internal
 N
 E_mem_Q_file_R_current_blk( struct E_mem_Q_file_Z *file
