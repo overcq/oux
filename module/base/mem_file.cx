@@ -111,7 +111,9 @@ E_mem_Q_file_Q_cache_I_put( struct E_mem_Q_file_Z *file
     N pos_end = J_max( blk_end->pos + blk_end->l, data_pos + l );
     new_blk.pos = pos_begin;
     new_blk.data = M( new_blk.l = pos_end - pos_begin );
-    E_mem_Q_blk_I_copy( new_blk.data + ( data_pos - blk_begin->pos ), E_base_S->E_mem_Q_file_S_buffer, l );
+    if( !new_blk.data )
+        return ~0;
+    E_mem_Q_blk_I_copy( new_blk.data + ( data_pos - new_blk.pos ), E_base_S->E_mem_Q_file_S_buffer, l );
     blk = blk_begin;
     O{  E_mem_Q_blk_I_copy( new_blk.data + ( blk->pos - new_blk.pos ), blk->data, blk->l );
         if( blk == blk_end )
@@ -272,9 +274,7 @@ E_mem_Q_file_W( I id
                             , E_base_S->E_mem_Q_file_S_buffer
                             , E_base_S->E_mem_Q_file_S_buffer_l
                             );
-                            if( !~l
-                            || l != E_base_S->E_mem_Q_file_S_buffer_l
-                            )
+                            if( l != E_base_S->E_mem_Q_file_S_buffer_l )
                                 return ~0;
                         }
                     }else
@@ -286,9 +286,7 @@ E_mem_Q_file_W( I id
                             , E_base_S->E_mem_Q_file_S_buffer
                             , E_base_S->E_mem_Q_file_S_buffer_l
                             );
-                            if( !~l
-                            || l != E_base_S->E_mem_Q_file_S_buffer_l
-                            )
+                            if( l != E_base_S->E_mem_Q_file_S_buffer_l )
                                 return l;
                         }
                         N buffer_l = J_min( E_simple_Z_n_I_align_up_to_v2( range->pos_end, E_base_S->E_mem_Q_file_S_buffer_l ), file->l ) - pos;
@@ -298,9 +296,7 @@ E_mem_Q_file_W( I id
                         , E_base_S->E_mem_Q_file_S_buffer
                         , E_base_S->E_mem_Q_file_S_buffer_l
                         );
-                        if( !~l
-                        || l != E_base_S->E_mem_Q_file_S_buffer_l
-                        )
+                        if( l != buffer_l )
                             return ~0;
                     }
                     range++;
@@ -382,9 +378,7 @@ E_mem_Q_file_I_save( I id
                             , E_base_S->E_mem_Q_file_S_buffer
                             , E_base_S->E_mem_Q_file_S_buffer_l
                             );
-                            if( !~l
-                            || l != E_base_S->E_mem_Q_file_S_buffer_l
-                            )
+                            if( l != E_base_S->E_mem_Q_file_S_buffer_l )
                                 return ~0;
                         }
                     }else
@@ -396,10 +390,8 @@ E_mem_Q_file_I_save( I id
                             , E_base_S->E_mem_Q_file_S_buffer
                             , E_base_S->E_mem_Q_file_S_buffer_l
                             );
-                            if( !~l
-                            || l != E_base_S->E_mem_Q_file_S_buffer_l
-                            )
-                                return l;
+                            if( l != E_base_S->E_mem_Q_file_S_buffer_l )
+                                return ~0;
                         }
                         N buffer_l = J_min( E_simple_Z_n_I_align_up_to_v2( range->pos_end, E_base_S->E_mem_Q_file_S_buffer_l ), file->l ) - pos;
                         E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_file_S_buffer, file->blk[ blk_i ].data + pos - file->blk[ blk_i ].pos, buffer_l );
@@ -408,9 +400,7 @@ E_mem_Q_file_I_save( I id
                         , E_base_S->E_mem_Q_file_S_buffer
                         , E_base_S->E_mem_Q_file_S_buffer_l
                         );
-                        if( !~l
-                        || l != E_base_S->E_mem_Q_file_S_buffer_l
-                        )
+                        if( l != buffer_l )
                             return ~0;
                     }
                     range++;
@@ -537,13 +527,8 @@ N
 E_mem_Q_file_P_pos( I id
 , N pos
 ){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
-    if(( file->st_mode & S_IFMT ) == S_IFBLK )
-    {   if( pos >= file->l )
-            return ~0;
-    }else
-    {   if( pos > file->l )
-            return ~0;
-    }
+    if( pos > file->l )
+        return ~0;
     file->pos = pos;
     U_L( file->current_blk, valid );
     U_L( file->current_blk, valid_sob );

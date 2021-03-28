@@ -6,8 +6,9 @@
 *         main
 * ©overcq                on ‟Gentoo Linux 17.0” “x86_64”             2019‒3‒10 b
 *******************************************************************************/
-#define Z_inode_flags_1_S_persistent    0x4000
-#define S_size_of_cluster               4096
+#define Z_inode_flags_1_S_persistent            0x4000
+#define Q_filesystem_S_top_of_boot_record_data  439
+#define Q_filesystem_S_size_of_cluster          4096
 //==============================================================================
 Pc device;
 I file_id;
@@ -31,24 +32,24 @@ main(
         goto Error;
     struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, file_id );
     C cluster_address_size_power_bit;
-    if( file->l > ( (N64)(N32)~0 + 1 ) * S_size_of_cluster )
+    if( file->l > ( (N64)(N32)~0 + 1 ) * Q_filesystem_S_size_of_cluster )
         cluster_address_size_power_bit = 6;
-    else if( file->l > ( (N)(N16)~0 + 1 ) * S_size_of_cluster )
+    else if( file->l > ( (N)(N16)~0 + 1 ) * Q_filesystem_S_size_of_cluster )
         cluster_address_size_power_bit = 5;
-    else if( file->l > ( (N)(N8)~0 + 1 ) * S_size_of_cluster )
+    else if( file->l > ( (N)(N8)~0 + 1 ) * Q_filesystem_S_size_of_cluster )
         cluster_address_size_power_bit = 4;
     else
         cluster_address_size_power_bit = 3;
     N device_n_size = ( 1 << cluster_address_size_power_bit ) / 8;
-    N table_of_files_pos_in_cluster = file->l % S_size_of_cluster - 4; /// Nazwa pliku: “VBR”.
+    N table_of_files_pos_in_cluster = file->l % Q_filesystem_S_size_of_cluster - 4; /// Nazwa pliku: “VBR”.
     table_of_files_pos_in_cluster -= device_n_size; /// Rozmiar pliku: liczba pełnych klastrów.
     table_of_files_pos_in_cluster -= device_n_size; /// Adres pliku: numer klastra.
     table_of_files_pos_in_cluster -= 2; /// Start w klastrze i flagi.
     table_of_files_pos_in_cluster -= 2; /// Rozmiar w ostatnim klastrze i flagi.
     table_of_files_pos_in_cluster -= device_n_size; /// Numer wpisu w tablicy plików nadrzędnego katalogu.
-    if( !~( E_mem_Q_file_P_pos( file_id, 439 - 1 - 2 - device_n_size )))
+    if( !~( E_mem_Q_file_P_pos( file_id, Q_filesystem_S_top_of_boot_record_data - 1 - 2 - device_n_size )))
         goto Error;
-    if( E_mem_Q_file_P_N( file_id, E_simple_Z_n_I_align_up_to_v2( file->l, S_size_of_cluster ) / S_size_of_cluster - 1, device_n_size ))
+    if( E_mem_Q_file_P_N( file_id, E_simple_Z_n_I_align_up_to_v2( file->l, Q_filesystem_S_size_of_cluster ) / Q_filesystem_S_size_of_cluster - 1, device_n_size ))
         goto Error;
     if( E_mem_Q_file_P_16( file_id, table_of_files_pos_in_cluster ))
         goto Error;
@@ -56,7 +57,7 @@ main(
         goto Error;
     if( E_mem_Q_file_P_c( file_id, 1 )) /// Wersja systemu plików.
         goto Error;
-    if( !~( E_mem_Q_file_P_pos( file_id, E_simple_Z_n_I_align_down_to_v2( file->l - 1, S_size_of_cluster ) + table_of_files_pos_in_cluster )))
+    if( !~( E_mem_Q_file_P_pos( file_id, E_simple_Z_n_I_align_down_to_v2( file->l - 1, Q_filesystem_S_size_of_cluster ) + table_of_files_pos_in_cluster )))
         goto Error;
     if( E_mem_Q_file_P_N( file_id, FUSE_ROOT_ID, device_n_size ))
         goto Error;
