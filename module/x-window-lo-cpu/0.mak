@@ -2,7 +2,7 @@
 #   ___   publicplace
 #  ¦OUX¦  ‟GNU” “make”
 #  ¦/C+¦  component
-#   ---   ‟Xorg” —high ‘cpu’
+#   ---   ‟Xorg” —low ‘cpu’
 #         module makefile
 # ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2015‒4‒28 #
 ################################################################################
@@ -20,13 +20,13 @@ S_headers += xkbcommon/xkbcommon-x11.h
 S_packages += xcb-shape
 S_headers += xcb/shape.h
 CFLAGS += -DC_xcb_shape
-    endif
+endif
     ifeq (0,)
 S_packages += xcb-glx
 S_headers += xcb/glx.h
 CFLAGS += -DC_xcb_glx
     endif
-.SECONDARY: $(H_make_S_module_path)/x_window_lo_cpu/M.cx
-$(H_make_S_module_path)/x_window_lo_cpu/M.cx: $(H_make_S_module_path)/x_window_lo_cpu/_keysym_data.h \
-$(wildcard $(H_make_S_module_path)/x_window_lo_cpu/_wm_icon_data_*.h )
+.SECONDARY: $(H_make_S_module_path)/x-window-lo-cpu/M.cx
+$(H_make_S_module_path)/x-window-lo-cpu/M.cx: $(H_make_S_module_path)/x-window-lo-cpu/keysym-data.h \
+$(wildcard $(H_make_S_module_path)/x-window-lo-cpu/wm-icon-data-*.h )
 ################################################################################

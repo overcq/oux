@@ -8,5 +8,5 @@
 ################################################################################
 install:
 	ln -f $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_root_path)/direct_oux) "$(HOME)/bin/ocq"
-	$(INSTALL) -C -m 700 a.out "$(HOME)/bin/indirect_ocq"
+	$(INSTALL) -C -m 700 a.out "$(HOME)/bin/indirect-ocq"
 ################################################################################

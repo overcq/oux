@@ -241,7 +241,7 @@ recompile: mostlyclean build
 rebuild: distclean build
 rebuild-run: rebuild run
 #-------------------------------------------------------------------------------
-.SECONDARY: $(H_make_S_compile_path)/headers_db \
+.SECONDARY: $(H_make_S_compile_path)/headers-db \
 0.mak 0.h $(foreach module,$(H_make_S_modules),$(addprefix $(H_make_S_module_path)/$(module)/,0.mak 0.h)) \
 E_cplus_S_0_main_not_to_libs.h $(H_make_S_module_path)/E_cplus_S_0_to_libs.h \
 E_cplus_S_cx_sources $(H_make_S_module_path)/E_cplus_S_cx_sources \
@@ -276,7 +276,7 @@ for header in $(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(1)/),$(call H_
 done
     endef
 #-------------------------------------------------------------------------------
-$(H_make_S_compile_path)/headers_db: $(H_make_Z_shell_cmd_N_gen_headers_db)
+$(H_make_S_compile_path)/headers-db: $(H_make_Z_shell_cmd_N_gen_headers_db)
 	echo 'Wait patiently for the header database needed for the operating system procedures to build...'
 	$(H_make_Z_shell_cmd_N_gen_headers_db) > $(call H_make_Z_shell_cmd_arg_I_quote,$@)
 #-------------------------------------------------------------------------------
@@ -360,9 +360,9 @@ $(foreach module,$(H_make_S_modules),$(wildcard $(H_make_S_module_path)/$(module
     fi
 
 E_cplus_S_0_%.h: %.c \
-$(H_make_S_compile_path)/headers_db \
+$(H_make_S_compile_path)/headers-db \
 $(H_make_Z_shell_cmd_N_c_to_h)
-	$(H_make_Z_shell_cmd_N_c_to_h) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_compile_path)/headers_db) \
+	$(H_make_Z_shell_cmd_N_c_to_h) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_compile_path)/headers-db) \
 	$(call H_make_Z_shell_cmd_arg_I_quote,$<) \
 	> $(call H_make_Z_shell_cmd_arg_I_quote,$@)
 
@@ -447,7 +447,7 @@ distclean: clean
       $(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/),$(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,E_cplus_S_0_%.h,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))) $(patsubst %.cx,E_cplus_S_1_%.h,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))) $(patsubst %.cx,E_cplus_S_2_%.h,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))) $(patsubst %.cx,%.c,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx)))))) \
       $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/E_cplus_S_0_to_libs.h) \
       $(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,E_cplus_S_0_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,E_cplus_S_1_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,E_cplus_S_2_%.h,$(H_make_S_cx_sources)) $(patsubst %.cx,%.c,$(H_make_S_cx_sources))) \
-      $(H_make_S_compile_path)/headers_db
+      $(H_make_S_compile_path)/headers-db
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Uruchamianie rezultatu nie zainstalowanego.
 run: build
@@ -491,8 +491,8 @@ install-0:
 	{ $(CMP) "$$tmp_file" /usr/bin/oux \
 	|| $(INSTALL) -m 755 "$$tmp_file" /usr/bin/oux; \
 	} \
-	&& { $(CMP) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_root_path)/direct_oux) /usr/bin/direct_oux \
-	|| $(INSTALL) -m 755 $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_root_path)/direct_oux) /usr/bin/direct_oux; \
+	&& { $(CMP) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_root_path)/direct-oux) /usr/bin/direct-oux \
+	|| $(INSTALL) -m 755 $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_root_path)/direct-oux) /usr/bin/direct-oux; \
 	} \
 	$(if $(H_make_C_to_libs),$(foreach module,$(H_make_S_modules), && { $(CMP) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_usr_lib)/lib$(H_make_S_lib_prefix)$(module).so) \
         || $(INSTALL) -m 755 $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_usr_lib)/lib$(H_make_S_lib_prefix)$(module).so); \
