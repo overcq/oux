@@ -22,7 +22,7 @@ H_make_Z_list_M_n = $(shell i=0; while [ $$i -ne $(1) ]; do i=$$(( $$i + 1 )); p
 H_make_Z_list_I_index = $(strip $(foreach i,$(call H_make_Z_list_M_n,$(words $(2))),$(if $(filter $(word $(i),$(2)),$(1)),$(i))))
 #===============================================================================
 # Wczytanie plików (“0.mak”) definicji programu i ‹modułów›.
-#NDFN Są wymieniane, a mogłyby być automatycznie generowane, gdyby nie było modułów alternatywnych, np. “x_window_lo_cpu” i “x_window_hi_cpu”.
+#NDFN Są wymieniane, a mogłyby być automatycznie generowane, gdyby nie było modułów alternatywnych, np. “x-window-lo-cpu” i “x-window-hi-cpu”.
 H_make_S_modules := $(H_make_S_base_module) $(sort $(filter-out $(H_make_S_base_module),$(S_modules)))
 undefine S_modules
 #-------------------------------------------------------------------------------
@@ -351,12 +351,16 @@ $(H_make_S_cx_sources)
     endif
 	if [ ! -e $(call H_make_Z_shell_cmd_arg_I_quote,$@) -o "$$( cat $(call H_make_Z_shell_cmd_arg_I_quote,$@))" != $(call H_make_Z_shell_cmd_arg_I_quote,$^) ]; then \
         echo -n $(call H_make_Z_shell_cmd_arg_I_quote,$^) > $(call H_make_Z_shell_cmd_arg_I_quote,$@); \
+    else \
+		touch $(call H_make_Z_shell_cmd_arg_I_quote,$@); \
     fi
 
 $(H_make_S_module_path)/E_cplus_S_cx_sources: \
 $(foreach module,$(H_make_S_modules),$(wildcard $(H_make_S_module_path)/$(module)/*.cx))
 	if [ ! -e $(call H_make_Z_shell_cmd_arg_I_quote,$@) -o "$$( cat $(call H_make_Z_shell_cmd_arg_I_quote,$@))" != $(call H_make_Z_shell_cmd_arg_I_quote,$^) ]; then \
         echo -n $(call H_make_Z_shell_cmd_arg_I_quote,$^) > $(call H_make_Z_shell_cmd_arg_I_quote,$@); \
+    else \
+		touch $(call H_make_Z_shell_cmd_arg_I_quote,$@); \
     fi
 
 E_cplus_S_0_%.h: %.c \
