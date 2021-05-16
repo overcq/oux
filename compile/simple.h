@@ -199,12 +199,12 @@ E_simple_Z_p_T_cross( P p_1
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #define E_simple_Z_p_T_aligned_to_v2(p,v2)      E_simple_Z_n_T_aligned_to_v2( (N)p, v2 )
 //------------------------------------------------------------------------------
-#define E_simple_Z_p_I_align_down_to_i2(p,i)    (P)E_simple_Z_n_I_align_down_to_i2( (N)p, i )
-#define E_simple_Z_p_I_align_up_to_i2(p,i)      (P)E_simple_Z_n_I_align_up_to_i2( (N)p, i )
-#define E_simple_Z_p_I_align_down_to_v2(p,v2)   (P)E_simple_Z_n_I_align_down_to_v2( (N)p, v2 )
-#define E_simple_Z_p_I_align_up_to_v2(p,v2)     (P)E_simple_Z_n_I_align_up_to_v2( (N)p, v2 )
-#define E_simple_Z_p_I_align_down(p)            (P)E_simple_Z_n_I_align_down( (N)p )
-#define E_simple_Z_p_I_align_up(p)              (P)E_simple_Z_n_I_align_up( (N)p )
+#define E_simple_Z_p_I_align_down_to_i2(p,i)    (Pc)E_simple_Z_n_I_align_down_to_i2( (N)p, i )
+#define E_simple_Z_p_I_align_up_to_i2(p,i)      (Pc)E_simple_Z_n_I_align_up_to_i2( (N)p, i )
+#define E_simple_Z_p_I_align_down_to_v2(p,v2)   (Pc)E_simple_Z_n_I_align_down_to_v2( (N)p, v2 )
+#define E_simple_Z_p_I_align_up_to_v2(p,v2)     (Pc)E_simple_Z_n_I_align_up_to_v2( (N)p, v2 )
+#define E_simple_Z_p_I_align_down(p)            (Pc)E_simple_Z_n_I_align_down( (N)p )
+#define E_simple_Z_p_I_align_up(p)              (Pc)E_simple_Z_n_I_align_up( (N)p )
 //==============================================================================
 #undef _inline
 /******************************************************************************/

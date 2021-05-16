@@ -192,8 +192,8 @@ E_mem_Q_blk_I_copy( P dst
 , P src
 , N l
 ){  J_assert( (Pc)dst < (Pc)src || (Pc)dst >= (Pc)src + l );
-    Pn dst_n = E_simple_Z_p_I_align_up_to_v2( dst, sizeof(N) );
-    Pn src_n = E_simple_Z_p_I_align_up_to_v2( src, sizeof(N) );
+    Pn dst_n = (P)E_simple_Z_p_I_align_up_to_v2( dst, sizeof(N) );
+    Pn src_n = (P)E_simple_Z_p_I_align_up_to_v2( src, sizeof(N) );
     if( (Pc)src + l >= (Pc)src_n
     && (Pc)dst_n - (Pc)dst == (Pc)src_n - (Pc)src
     )
@@ -233,8 +233,8 @@ E_mem_Q_blk_I_copy_rev( P dst
 , P src
 , N l
 ){  J_assert( (Pc)dst > (Pc)src || (Pc)dst <= (Pc)src - l );
-    Pn dst_n = E_simple_Z_p_I_align_down_to_v2( (Pc)dst + l, sizeof(N) );
-    Pn src_n = E_simple_Z_p_I_align_down_to_v2( (Pc)src + l, sizeof(N) );
+    Pn dst_n = (P)E_simple_Z_p_I_align_down_to_v2( (Pc)dst + l, sizeof(N) );
+    Pn src_n = (P)E_simple_Z_p_I_align_down_to_v2( (Pc)src + l, sizeof(N) );
     if( (Pc)src <= (Pc)src_n
     && (Pc)dst + l - (Pc)dst_n == (Pc)src + l - (Pc)src_n
     )
@@ -372,10 +372,9 @@ E_mem_Q_blk_Q_sys_table_R_new_id( N table_i
     if( table_i == E_mem_Q_blk_S_allocated_S_mapped_id
     || table_i == E_mem_Q_blk_S_allocated_S_free_id
     )
-    {   for_n( i, E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n ) /// Szukanie wolnych wpisów w tablicy.
+    {   for_n( i, E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n ) /// Szukanie wolnego wpisu w tablicy.
             if( !*( P * )( p_0 + i * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u + rel_addr_p ))
-            {   if( table_i != E_base_S->E_mem_Q_blk_S_table_allocated_id )
-                    *( N * )( p_0 + i * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u + rel_addr_l ) = l;
+            {   *( N * )( p_0 + i * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u + rel_addr_l ) = l;
                 *( P * )( p_0 + i * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u + rel_addr_p ) = p;
                 return i;
             }
@@ -1107,7 +1106,7 @@ E_mem_Q_blk_I_add_( P p
             , no
             );
             if( !p_1 )
-                return p_1;
+                return 0;
             *( P * )p = p_1;
                 #ifdef E_mem_Q_blk_C_debug
             E_mem_Q_blk_P_fill_c( (Pc)p_1 + l_0, l, 0xa5 ); ///TODO Procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
@@ -1195,7 +1194,7 @@ E_mem_Q_blk_I_prepend_append_( P p
             , no
             );
             if( !p_1 )
-                return p_1;
+                return 0;
             *( P * )p = p_1;
             return E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p;
         }
@@ -1318,7 +1317,7 @@ E_mem_Q_blk_I_append_( P p
             , align_to_all
             );
             if( !p_1 )
-                return p_1;
+                return 0;
             *( P * )p = p_1;
                 #ifdef E_mem_Q_blk_C_debug
             E_mem_Q_blk_P_fill_c( (Pc)p_1 + l_0, l, 0xa5 ); ///TODO Procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
@@ -1407,7 +1406,7 @@ E_mem_Q_blk_I_prepend_( P p
             , no
             );
             if( !p_1 )
-                return p_1;
+                return 0;
                 #ifdef E_mem_Q_blk_C_debug
             E_mem_Q_blk_P_fill_c( p_1, n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u, 0xa5 ); ///TODO Procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
                 #endif
@@ -1510,7 +1509,7 @@ E_mem_Q_blk_I_insert_( P p
             , no
             );
             if( !p_1 )
-                return p_1;
+                return 0;
             //TODO Zrobić w “E_mem_Q_blk_Q_table_M_from_free_or_map” parametr przesuniecia dla ‘split’ i kopiowania tam odrazu?
             if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n )
                 E_mem_Q_blk_I_copy_rev( (Pc)p_1 + ( i + n ) * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
