@@ -36,7 +36,7 @@ H_make_S_cc := clang gcc
 #-------------------------------------------------------------------------------
 H_make_S_cc := $(firstword $(foreach cc,$(H_make_S_cc),$(wildcard $(addsuffix /$(cc),/usr/bin /usr/local/bin \
   $(shell clang -print-search-dirs | awk '/^programs:/ { match( $$2, /[=:]\/usr\/lib\/llvm\/[^:]*/ ); print substr( $$2, RSTART + 1, RLENGTH - 1 ); }' ) \
-  $(shell gcc-config -c | sed -e 's`\(.*\)-\([^-][^-]*\)`\1/gcc-bin/\2`' )))))
+  $(shell gcc-config -B )))))
     ifneq (,$(H_make_S_cc))
 CC := $(H_make_S_cc)
 H_make_S_cc_version := $(shell $(H_make_S_cc) -dumpversion | sed -e 's`^\([0-9][0-9]*\.[0-9][0-9]*\).*`\1`' )
