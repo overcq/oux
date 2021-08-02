@@ -6,9 +6,9 @@
 *         simple common procedures
 * ©overcq                on ‟Gentoo Linux 17.1” “x86_64”             2020‒5‒27 T
 *******************************************************************************/
-#define __inline static __attribute__ ((__always_inline__,__unused__))
+#define _inline static __attribute__ ((__always_inline__,__unused__))
 //==============================================================================
-__inline
+_inline
 N
 E_asm_I_bsf( N n
 ){  N i;
@@ -34,7 +34,7 @@ E_asm_I_bsf( N n
         #endif
     return i;
 }
-__inline
+_inline
 N
 E_asm_I_bsr( N n
 ){  N i;
@@ -61,14 +61,14 @@ E_asm_I_bsr( N n
     return i;
 }
 //==============================================================================
-__inline
+_inline
 B
 E_simple_T_add_overflow(
   N a
 , N b
 ){  return a + b < a;
 }
-__inline
+_inline
 B
 E_simple_T_multiply_overflow(
   N a
@@ -79,12 +79,12 @@ E_simple_T_multiply_overflow(
       >= sizeof(N) * 8;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-__inline
+_inline
 B
 E_simple_Z_n_T_power_2( N n
 ){  return n ? ( _v( n, 1 ) << E_asm_I_bsf(n) ) == n : no;
 }
-__inline
+_inline
 B
 E_simple_Z_n_T_aligned_to_v2( N n
 , N v2
@@ -92,26 +92,26 @@ E_simple_Z_n_T_aligned_to_v2( N n
     return !( n & ( v2 - 1 ));
 }
 //------------------------------------------------------------------------------
-__inline
+_inline
 N
 E_simple_Z_n_I_mod_i2( N n
 , N i
 ){  return n & ( _v( n, ~0 ) >> ( sizeof(n) * 8 - i ));
 }
-__inline
+_inline
 N
 E_simple_Z_n_I_align_down_to_i2( N n
 , N i
 ){  return n & ( _v( n, ~0 ) << i );
 }
-__inline
+_inline
 N
 E_simple_Z_n_I_align_up_to_i2( N n
 , N i
 ){  N a = _v( n, ~0 ) << i;
     return ( n + ~a ) & a;
 }
-__inline
+_inline
 N
 E_simple_Z_n_I_align_down_to_v2( N n
 , N v2
@@ -120,7 +120,7 @@ E_simple_Z_n_I_align_down_to_v2( N n
         return n;
     return n & ~( v2 - 1 );
 }
-__inline
+_inline
 N
 E_simple_Z_n_I_align_up_to_v2( N n
 , N v2
@@ -130,31 +130,31 @@ E_simple_Z_n_I_align_up_to_v2( N n
     N a = v2 - 1;
     return ( n + a ) & ~a;
 }
-__inline
+_inline
 N
 E_simple_Z_n_I_align_down_to_v( N n
 , N v
 ){  return n - ( n % v );
 }
-__inline
+_inline
 N
 E_simple_Z_n_I_align_up_to_v( N n
 , N v
 ){  N a = n % v;
     return a ? n + v - a : n;
 }
-__inline
+_inline
 N
 E_simple_Z_n_I_align_up_to_first_i2( N n
 ){  return n ? ( _v( n, 1 ) << E_simple_Z_n_I_align_down_to_i2( n, E_asm_I_bsf(n) )) : n;
 }
-__inline
+_inline
 N
 E_simple_Z_n_I_align_down_to_u_R_count( N n
 , N u
 ){  return n / u;
 }
-__inline
+_inline
 N
 E_simple_Z_n_I_align_up_to_u_R_count( N n
 , N u
@@ -163,14 +163,14 @@ E_simple_Z_n_I_align_up_to_u_R_count( N n
         a += u;
     return a;
 }
-__inline
+_inline
 N
 E_simple_Z_n_I_align_down( N n
 ){  if( !n )
         return n;
     return _v( n, 1 ) << ( sizeof(N) * 8 - 1 - __builtin_clzl(n) );
 }
-__inline
+_inline
 N
 E_simple_Z_n_I_align_up( N n
 ){  if( !n )
@@ -179,7 +179,7 @@ E_simple_Z_n_I_align_up( N n
     return ( n + ~a ) & a;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-__inline
+_inline
 B
 E_simple_Z_p_T_inside( P p_1
 , P p_2
@@ -187,7 +187,7 @@ E_simple_Z_p_T_inside( P p_1
 ){  return (Pc)p_1 >= (Pc)p_2
     && (Pc)p_1 < (Pc)p_2 + l_2;
 }
-__inline
+_inline
 B
 E_simple_Z_p_T_cross( P p_1
 , N l_1
