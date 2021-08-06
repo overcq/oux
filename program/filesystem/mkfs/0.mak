@@ -12,10 +12,11 @@ S_headers := linux/fuse.h
 S_headers := fuse.h
 	endif
 #===============================================================================
-install:
-	{ $(CMP) a.out /usr/sbin/mkfs.oux \
-	|| $(INSTALL) -m 755 a.out /usr/sbin/mkfs.oux; \
+H_make_S_install_file = $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_install_prefix)/usr/sbin/mkfs.oux)
+install-1:
+	{ $(CMP) a.out $(H_make_S_install_file) \
+	|| $(INSTALL) -m 755 a.out $(H_make_S_install_file); \
 	}
-uninstall:
-	$(RM) /usr/sbin/mkfs.oux
+uninstall-1:
+	$(RM) $(H_make_S_install_file)
 ################################################################################

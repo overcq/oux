@@ -13,13 +13,16 @@ S_packages := ncursesw
 	endif
 S_cmd_arg := test
 #===============================================================================
+H_make_S_installed_file = $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_install_prefix)/usr/bin/direct-oux)
+H_make_S_install_file_1 = $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_install_prefix)/usr/bin/tept)
+H_make_S_install_file_2 = $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_install_prefix)/usr/bin/indirect_tept)
 install:
-	{ $(CMP) /usr/bin/direct_oux /usr/bin/tept \
-	|| ln -f /usr/bin/direct_oux /usr/bin/tept; \
+	{ $(CMP) $(H_make_S_installed_file) $(H_make_S_install_file_1) \
+	|| ln -f $(H_make_S_installed_file) $(H_make_S_install_file_1); \
 	} \
-	&& { $(CMP) a.out /usr/bin/indirect_tept \
-	|| $(INSTALL) -m 755 a.out /usr/bin/indirect_tept; \
+	&& { $(CMP) a.out $(H_make_S_install_file_2) \
+	|| $(INSTALL) -m 755 a.out $(H_make_S_install_file_2); \
 	}
 uninstall:
-	$(RM) /usr/bin/indirect_tept /usr/bin/tept
+	$(RM) $(H_make_S_install_file_1) $(H_make_S_install_file_2)
 ################################################################################

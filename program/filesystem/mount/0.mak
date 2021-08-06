@@ -14,11 +14,13 @@ S_libraries := cap
 S_headers := fuse.h
 	endif
 #===============================================================================
-install:
-	ln -fs /usr/sbin/mount.oux-fuse /usr/sbin/mount.oux \
-	&& { $(CMP) a.out /usr/sbin/mount.oux-fuse \
-	|| $(INSTALL) -m 755 a.out /usr/sbin/mount.oux-fuse; \
+H_make_S_install_file_1 = $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_install_prefix)/usr/sbin/mount.oux-fuse)
+H_make_S_install_file_2 = $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_install_prefix)/usr/sbin/mount.oux)
+install-1:
+	ln -fs $(H_make_S_install_file_1) $(H_make_S_install_file_2) \
+	&& { $(CMP) a.out $(H_make_S_install_file_1) \
+	|| $(INSTALL) -m 755 a.out $(H_make_S_install_file_1); \
 	}
-uninstall:
-	$(RM) /usr/sbin/mount.oux /usr/sbin/mount.oux-fuse
+uninstall-1:
+	$(RM) $(H_make_S_install_file_1) $(H_make_S_install_file_2)
 ################################################################################

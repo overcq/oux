@@ -6,7 +6,7 @@
 #         program makefile
 # ©overcq                on ‟Gentoo Linux 13.0” “x86_64”              2015‒1‒6 #
 ################################################################################
-S_modules := x-window-hi-cpu
+S_modules := xwindow-hicpu
 S_packages := xcb
 S_libraries := m
 ################################################################################

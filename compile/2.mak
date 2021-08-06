@@ -20,6 +20,7 @@ H_make_S_base_module := base
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 H_make_Z_list_M_n = $(shell i=0; while [ $$i -ne $(1) ]; do i=$$(( $$i + 1 )); printf '%s ' $$i; done )
 H_make_Z_list_I_index = $(strip $(foreach i,$(call H_make_Z_list_M_n,$(words $(2))),$(if $(filter $(word $(i),$(2)),$(1)),$(i))))
+H_make_I_block_root = $(if $(filter 0,$(shell id -u)),$(error root user not allowed. Run make as user first.))
 #===============================================================================
 # Wczytanie plików (“0.mak”) definicji programu i ‹modułów›.
 #NDFN Są wymieniane, a mogłyby być automatycznie generowane, gdyby nie było modułów alternatywnych, np. “x-window-lo-cpu” i “x-window-hi-cpu”.
@@ -228,15 +229,15 @@ TARGET_ARCH += -march=native
 #===============================================================================
 # Definicje wytworzenia.
 .PHONY: all \
-  build install-0 install uninstall-0 uninstall \
+  build install install-0 install-1 uninstall uninstall-0 uninstall-1 \
   recompile rebuild \
   mostlyclean clean distclean \
   run rebuild-run
 .DEFAULT: all
 #-------------------------------------------------------------------------------
 build: a.out
-install: install-0
-uninstall: uninstall-0
+install: install-0 install-1
+uninstall: uninstall-1
 recompile: mostlyclean build
 rebuild: distclean build
 rebuild-run: rebuild run
@@ -277,6 +278,7 @@ done
     endef
 #-------------------------------------------------------------------------------
 $(H_make_S_compile_path)/headers-db: $(H_make_Z_shell_cmd_N_gen_headers_db)
+	$(H_make_I_block_root)
 	echo 'Wait patiently for the header database needed for the operating system procedures to build...'
 	$(H_make_Z_shell_cmd_N_gen_headers_db) > $(call H_make_Z_shell_cmd_arg_I_quote,$@)
 #-------------------------------------------------------------------------------
@@ -285,6 +287,7 @@ $(H_make_Z_shell_cmd_N_cx_to_c) \
 $(addprefix $(H_make_S_compile_path)/,1.mak 2.mak) \
 0.mak $(foreach module,$(H_make_S_modules),$(H_make_S_module_path)/$(module)/0.mak) \
 E_cplus_S_cx_sources $(H_make_S_module_path)/E_cplus_S_cx_sources
+	$(H_make_I_block_root)
 	{   $(if $(H_make_S_headers) $(E_main_S_headers) $(E_module_S_headers), \
         for include in $(call H_make_Z_shell_cmd_arg_I_quote_for,$(sort $(H_make_S_headers) $(E_main_S_headers) $(E_module_S_headers))); do \
             echo "#include <$${include}>" ;\
@@ -321,6 +324,7 @@ $(H_make_Z_shell_cmd_N_cx_to_c) \
 $(addprefix $(H_make_S_compile_path)/,1.mak 2.mak) \
 0.mak $(foreach module,$(H_make_S_modules),$(addprefix $(H_make_S_module_path)/$(module)/,0.mak)) \
 $(H_make_S_module_path)/E_cplus_S_cx_sources
+	$(H_make_I_block_root)
 	{   $(if $(H_make_C_to_libs_C_replace_c_alloc), \
         echo "#define C_to_libs_C_replace_c_alloc_S_libc_filename J_s($(shell ldd $$( which $(MAKE) ) | grep -Fw libc.so | head -n 1 | sed -e 's`^.*\(libc\.so[0-9A-Za-z.-]*\).*`\1`' ))" ;\
         ) \
@@ -349,6 +353,7 @@ E_cplus_S_cx_sources: \
 $(foreach module,$(H_make_S_modules),$(wildcard $(H_make_S_module_path)/$(module)/*.cx)) \
 $(H_make_S_cx_sources)
     endif
+	$(H_make_I_block_root)
 	if [ ! -e $(call H_make_Z_shell_cmd_arg_I_quote,$@) -o "$$( cat $(call H_make_Z_shell_cmd_arg_I_quote,$@))" != $(call H_make_Z_shell_cmd_arg_I_quote,$^) ]; then \
         echo -n $(call H_make_Z_shell_cmd_arg_I_quote,$^) > $(call H_make_Z_shell_cmd_arg_I_quote,$@); \
     else \
@@ -357,6 +362,7 @@ $(H_make_S_cx_sources)
 
 $(H_make_S_module_path)/E_cplus_S_cx_sources: \
 $(foreach module,$(H_make_S_modules),$(wildcard $(H_make_S_module_path)/$(module)/*.cx))
+	$(H_make_I_block_root)
 	if [ ! -e $(call H_make_Z_shell_cmd_arg_I_quote,$@) -o "$$( cat $(call H_make_Z_shell_cmd_arg_I_quote,$@))" != $(call H_make_Z_shell_cmd_arg_I_quote,$^) ]; then \
         echo -n $(call H_make_Z_shell_cmd_arg_I_quote,$^) > $(call H_make_Z_shell_cmd_arg_I_quote,$@); \
     else \
@@ -366,6 +372,7 @@ $(foreach module,$(H_make_S_modules),$(wildcard $(H_make_S_module_path)/$(module
 E_cplus_S_0_%.h: %.c \
 $(H_make_S_compile_path)/headers-db \
 $(H_make_Z_shell_cmd_N_c_to_h)
+	$(H_make_I_block_root)
 	$(H_make_Z_shell_cmd_N_c_to_h) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_compile_path)/headers-db) \
 	$(call H_make_Z_shell_cmd_arg_I_quote,$<) \
 	> $(call H_make_Z_shell_cmd_arg_I_quote,$@)
@@ -374,6 +381,7 @@ E_cplus_S_1_%.h: %.cx \
 $(H_make_Z_shell_cmd_N_cx_to_c) \
 $(addprefix $(H_make_S_compile_path)/,1.mak 2.mak) \
 $(if $(H_make_C_to_libs),$(H_make_S_module_path)/E_cplus_S_0_to_libs.h)
+	$(H_make_I_block_root)
 	{   $(H_make_Z_shell_cmd_N_cx_to_c) -h1 $(call H_make_Z_shell_cmd_arg_I_quote,$<)$(if $(H_make_C_to_libs), $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/E_cplus_S_0_to_libs.h)) \
         && $(H_make_Z_shell_cmd_N_cx_to_c) -h2 $(call H_make_Z_shell_cmd_arg_I_quote,$<) ;\
     } > $(call H_make_Z_shell_cmd_arg_I_quote,$@)
@@ -381,11 +389,13 @@ $(if $(H_make_C_to_libs),$(H_make_S_module_path)/E_cplus_S_0_to_libs.h)
 E_cplus_S_2_%.h: %.cx \
 $(H_make_Z_shell_cmd_N_cx_to_c) \
 $(addprefix $(H_make_S_compile_path)/,1.mak 2.mak)
+	$(H_make_I_block_root)
 	$(H_make_Z_shell_cmd_N_cx_to_c) -h3 $(call H_make_Z_shell_cmd_arg_I_quote,$<) > $(call H_make_Z_shell_cmd_arg_I_quote,$@)
 
 %.c: %.cx \
 $(H_make_Z_shell_cmd_N_cx_to_c) \
 $(addprefix $(H_make_S_compile_path)/,1.mak 2.mak)
+	$(H_make_I_block_root)
 	$(H_make_Z_shell_cmd_N_cx_to_c) -c $(call H_make_Z_shell_cmd_arg_I_quote,$<) > $(call H_make_Z_shell_cmd_arg_I_quote,$@)
 #-------------------------------------------------------------------------------
     ifeq (,$(H_make_C_to_libs))
@@ -398,6 +408,7 @@ $(patsubst %.cx,E_cplus_S_1_%.h,$(H_make_S_cx_sources)) \
 $(patsubst %.cx,E_cplus_S_2_%.h,$(H_make_S_cx_sources)) \
 $(foreach module,$(H_make_S_modules),$(addprefix $(H_make_S_module_path)/$(module)/,0.mak 0.h $(patsubst %.cx,E_cplus_S_0_%.h,$(notdir $(wildcard $(H_make_S_root_path)/module/$(module)/*.cx))) $(patsubst %.cx,E_cplus_S_1_%.h,$(notdir $(wildcard $(H_make_S_root_path)/module/$(module)/*.cx))) $(patsubst %.cx,E_cplus_S_2_%.h,$(notdir $(wildcard $(H_make_S_root_path)/module/$(module)/*.cx))))) \
 $(patsubst %.cx,%.c,$(H_make_S_cx_sources) $(foreach module,$(H_make_S_modules),$(wildcard $(H_make_S_module_path)/$(module)/*.cx)))
+	$(H_make_I_block_root)
 	$(CC) $(call H_make_Q_packages_R_cflags,$(E_main_S_packages)) $(CFLAGS) $(call H_make_Q_packages_R_ldflags,$(E_main_S_packages)) $(LDFLAGS) $(TARGET_ARCH) -fPIE -pie -s -iquote$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_compile_path)) -iquote$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)) -include E_cplus_S_0_main_not_to_libs.h $(addprefix -include ,$(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_compiler_cx_sources))) $(call H_make_Z_shell_cmd_arg_I_quote_for,$(filter %.c,$^)) -o $(call H_make_Z_shell_cmd_arg_I_quote,$@) $(addprefix -l,$(call H_make_Z_shell_cmd_arg_I_quote_for,$(E_main_S_libraries))) $(call H_make_Q_packages_R_ldlibs,$(E_main_S_packages))
 
     else
@@ -407,6 +418,7 @@ $$(H_make_S_module_path)/$(1)/%.lo: $$(H_make_S_module_path)/$(1)/%.c \
 $$(addprefix $$(H_make_S_compile_path)/,E_cplus_S_machine.h E_cplus_S_language.h $$(H_make_S_compiler_cx_sources)) \
 $$(H_make_S_module_path)/E_cplus_S_0_to_libs.h \
 $$(foreach module,$$(H_make_S_modules),$$(addprefix $$(H_make_S_module_path)/$$(module)/,0.mak 0.h $$(patsubst %.cx,E_cplus_S_0_%.h,$$(notdir $$(wildcard $$(H_make_S_module_path)/$$(module)/*.cx))) $$(patsubst %.cx,E_cplus_S_1_%.h,$$(notdir $$(wildcard $$(H_make_S_module_path)/$$(module)/*.cx))) $$(patsubst %.cx,E_cplus_S_2_%.h,$$(notdir $$(wildcard $$(H_make_S_module_path)/$$(module)/*.cx)))))
+	$$(H_make_I_block_root)
 	$$(LIBTOOL) --quiet --mode=compile --tag=CC $$(CC) $$(call H_make_Q_packages_R_cflags,$$(E_module_S_packages)) $$(CFLAGS) $$(TARGET_ARCH) -shared -prefer-pic -c -iquote$$(call H_make_Z_shell_cmd_arg_I_quote,$$(H_make_S_compile_path)) -iquote$$(call H_make_Z_shell_cmd_arg_I_quote,$$(H_make_S_module_path)) -include E_cplus_S_0_to_libs.h $$(addprefix -include ,$$(call H_make_Z_shell_cmd_arg_I_quote_for,$$(H_make_S_compiler_cx_sources))) $$(call H_make_Z_shell_cmd_arg_I_quote,$$<) -o $$(call H_make_Z_shell_cmd_arg_I_quote,$$@)
 $$(H_make_S_module_path)/$(1)/lib$$(H_make_S_lib_prefix)$(1).so: $$(patsubst %.cx,%.lo,$$(wildcard $$(H_make_S_module_path)/$(1)/*.cx))
 	$$(LIBTOOL) --quiet --mode=link --tag=CC $$(CC) $$(call H_make_Q_packages_R_cflags,$$(E_module_S_packages)) $$(CFLAGS) $$(call H_make_Q_packages_R_ldflags,$$(E_$(2)_S_packages)) $$(LDFLAGS) $$(TARGET_ARCH) -s -shared -fPIC -Wc,-shared -Wc,-fPIC $$(call H_make_Z_shell_cmd_arg_I_quote_for,$$^) -o $$(call H_make_Z_shell_cmd_arg_I_quote,$$@) $$(addprefix -l,$$(call H_make_Z_shell_cmd_arg_I_quote_for,$$(E_$(2)_S_libraries))) $$(call H_make_Q_packages_R_ldlibs,$$(E_$(2)_S_packages))
@@ -422,6 +434,7 @@ $(patsubst %.cx,E_cplus_S_1_%.h,$(H_make_S_cx_sources)) \
 $(patsubst %.cx,E_cplus_S_2_%.h,$(H_make_S_cx_sources)) \
 $(patsubst %.cx,%.c,$(H_make_S_cx_sources)) \
 $(foreach module,$(H_make_S_modules),$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so)
+	$(H_make_I_block_root)
 	$(CC) $(call H_make_Q_packages_R_cflags,$(sort $(E_module_S_packages) $(E_main_S_packages))) $(CFLAGS) $(call H_make_Q_packages_R_ldflags,$(E_main_S_packages)) $(LDFLAGS) $(TARGET_ARCH) -fPIE -pie -s -iquote$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_compile_path)) -iquote$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)) -include E_cplus_S_0_main_not_to_libs.h $(addprefix -include ,$(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_compiler_cx_sources))) $(call H_make_Z_shell_cmd_arg_I_quote_for,$(filter %.c,$^)) -o $(call H_make_Z_shell_cmd_arg_I_quote,$@) $(foreach module,$(H_make_S_modules),-L$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module))) $(foreach module,$(H_make_S_modules),-l$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_lib_prefix)$(module))) $(addprefix -l,$(call H_make_Z_shell_cmd_arg_I_quote_for,$(E_main_S_libraries))) $(call H_make_Q_packages_R_ldlibs,$(E_main_S_packages))
 
     endif
@@ -455,6 +468,7 @@ distclean: clean
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Uruchamianie rezultatu nie zainstalowanego.
 run: build
+	$(H_make_I_block_root)
 	libs=$(if $(H_make_C_to_libs),"$$( "$$SHELL" -c ' \
 	    if [ -n "$$1" ]; then \
 	        s="$$1" ;\
@@ -491,18 +505,18 @@ install-0:
 	tmp_file=$$( mktemp ) ;\
 	trap '$(RM) "$$tmp_file"' EXIT ;\
 	{ echo '#!/bin/sh' ;\
-	$(if $(H_make_C_to_libs_C_replace_c_alloc),echo 'exec env LD_PRELOAD=liboux-base.so "$$@"',echo 'exec "$$@"'); } > "$$tmp_file" ;\
-	{ $(CMP) "$$tmp_file" /usr/bin/oux \
-	|| $(INSTALL) -m 755 "$$tmp_file" /usr/bin/oux; \
+	$(if $(H_make_C_to_libs_C_replace_c_alloc),echo 'exec env LD_PRELOAD=lib$(H_make_S_lib_prefix)base.so "$$@"',echo 'exec "$$@"'); } > "$$tmp_file" ;\
+	{ $(CMP) "$$tmp_file" $(H_make_S_install_prefix)/usr/bin/oux \
+	|| $(INSTALL) -m 755 "$$tmp_file" $(H_make_S_install_prefix)/usr/bin/oux; \
 	} \
-	&& { $(CMP) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_root_path)/direct-oux) /usr/bin/direct-oux \
-	|| $(INSTALL) -m 755 $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_root_path)/direct-oux) /usr/bin/direct-oux; \
+	&& { $(CMP) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_root_path)/direct-oux) $(H_make_S_install_prefix)/usr/bin/direct-oux \
+	|| $(INSTALL) -m 755 $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_root_path)/direct-oux) $(H_make_S_install_prefix)/usr/bin/direct-oux; \
 	} \
-	$(if $(H_make_C_to_libs),$(foreach module,$(H_make_S_modules), && { $(CMP) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_usr_lib)/lib$(H_make_S_lib_prefix)$(module).so) \
-        || $(INSTALL) -m 755 $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_usr_lib)/lib$(H_make_S_lib_prefix)$(module).so); \
+	$(if $(H_make_C_to_libs),$(foreach module,$(H_make_S_modules), && { $(CMP) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_install_usr_lib)/lib$(H_make_S_lib_prefix)$(module).so) \
+        || $(INSTALL) -m 755 $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_install_prefix)$(H_make_S_install_usr_lib)/lib$(H_make_S_lib_prefix)$(module).so); \
         } \
     ))
 #-------------------------------------------------------------------------------
 uninstall-0:
-	$(RM) $(H_make_S_usr_lib)/lib$(H_make_S_lib_prefix)*.so
+	$(RM) $(foreach module,$(H_make_S_modules),$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_install_prefix)$(H_make_S_install_usr_lib)/lib$(H_make_S_lib_prefix)$(module).so))
 ################################################################################
