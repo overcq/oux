@@ -29,6 +29,10 @@ undefine S_modules
 #-------------------------------------------------------------------------------
     ifeq (,$(H_make_C_to_libs))
 
+    ifeq (OpenBSD,$(H_make_S_os))
+S_packages := $(filter-out ncursesw,$(S_packages))
+S_libraries := ncursesw $(S_libraries)
+    endif
 E_main_S_packages := $(S_packages)
 S_packages :=
 E_main_S_libraries := $(S_libraries)
@@ -41,6 +45,10 @@ H_make_C_pthreads := $(if $(C_pthreads),1)
 
         define H_make_I_module
 include $$(H_make_S_module_path)/$(1)/0.mak
+    ifeq (OpenBSD,$$(H_make_S_os))
+S_packages := $$(filter-out ncursesw,$$(S_packages))
+S_libraries := ncursesw $$(S_libraries)
+    endif
 E_main_S_packages += $$(S_packages)
 S_packages :=
 E_main_S_libraries += $$(S_libraries)
@@ -60,6 +68,10 @@ E_main_S_headers := $(sort $(E_main_S_headers))
 
     else
 
+    ifeq (OpenBSD,$(H_make_S_os))
+S_packages := $(filter-out ncursesw,$(S_packages))
+S_libraries := ncursesw $(S_libraries)
+    endif
 E_main_S_packages := $(sort $(S_packages))
 S_packages :=
 E_main_S_libraries := $(sort $(S_libraries))
@@ -74,6 +86,10 @@ E_module_S_headers :=
 
         define H_make_I_module
 include $$(H_make_S_module_path)/$(1)/0.mak
+    ifeq (OpenBSD,$$(H_make_S_os))
+S_packages := $$(filter-out ncursesw,$$(S_packages))
+S_libraries := ncursesw $(S_libraries)
+    endif
 $$(eval E_$(2)_S_packages := $$$$(sort $$$$(S_packages)))
 S_packages :=
 E_module_S_packages += $$(E_$(2)_S_packages)
@@ -99,13 +115,6 @@ E_module_S_headers := $(sort $(E_module_S_headers))
     undefine S_libraries
     undefine S_headers
     undefine C_pthreads
-#-------------------------------------------------------------------------------
-    ifneq (,$(filter ncursesw,$(E_main_S_packages)))
-        ifeq (OpenBSD,$(H_make_S_os))
-S_packages := $(filter-out ncursesw,$(E_main_S_packages))
-S_libraries := $(sort ncursesw $(E_main_S_libraries))
-        endif
-    endif
 #===============================================================================
 H_make_S_lib_prefix := oux-
 #-------------------------------------------------------------------------------

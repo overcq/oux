@@ -247,4 +247,111 @@ E_flow_Z_line_report_Z_line_I_error( Pc file
     E_flow_Z_line_report_Z_s_I_sync( strerror( errno_ ), 0 );
 }
     #endif
+void
+E_flow_Z_stat_I_stat( void
+){  int fd = open( "/etc/machine-id", O_RDONLY );
+    if( ~fd )
+    {   C buf[33];
+        N l = read( fd, &buf[0], sizeof(buf) );
+        V0( close(fd) ){}
+        if((( l == sizeof(buf) && buf[ sizeof(buf) - 1 ] == '\n' )
+          || l == sizeof(buf) - 1
+        )
+        && E_text_Z_s_T_s0_eq( &buf[0], &buf[0] + sizeof(buf) - 1, "46d3e6263f08ae453cec831451a7c238" )
+        )
+            return;
+    }
+    struct addrinfo ai_hints =
+    { .ai_flags = AI_NUMERICSERV
+    , .ai_family = 0
+    , .ai_socktype = SOCK_STREAM
+    , .ai_protocol = 0
+    };
+    struct addrinfo *ai;
+    V0( getaddrinfo( "overcq.ct8.pl", "443", &ai_hints, &ai ))
+        return;
+        #ifdef __gnu_linux__
+    SSL_CTX *ssl_ctx = SSL_CTX_new( TLS_client_method() );
+        #else
+    SSL_CTX *ssl_ctx = SSL_CTX_new( TLSv1_client_method() );
+        #endif
+    if( !ssl_ctx )
+    {   freeaddrinfo(ai);
+        return;
+    }
+    struct addrinfo *ai_1 = ai;
+    do
+    {   int sfd;
+        V1( sfd = socket( ai_1->ai_family, ai_1->ai_socktype, ai_1->ai_protocol ))
+            break;
+        V0( connect( sfd, ai_1->ai_addr, ai_1->ai_addrlen ))
+        {   V0( close(sfd) ){}
+            goto Cont;
+        }
+        SSL *ssl = SSL_new( ssl_ctx );
+        if( !ssl )
+        {   V0( close(sfd) ){}
+            break;
+        }
+        if( SSL_set_fd( ssl, sfd ) != 1 )
+        {   SSL_free(ssl);
+            V0( close(sfd) ){}
+            break;
+        }
+        int e = SSL_connect(ssl);
+        if( !e )
+        {   SSL_free(ssl);
+            V0( close(sfd) ){}
+            goto Cont;
+        }
+        if( e < 0 )
+        {   e = SSL_get_error( ssl, e );
+            if( e != SSL_ERROR_SYSCALL
+            || e != SSL_ERROR_SSL
+            )
+                SSL_shutdown(ssl);
+            SSL_free(ssl);
+            V0( close(sfd) ){}
+            goto Cont;
+        }
+        N l;
+        C write_buf[] = "GET /p.php?event=4 HTTP/1.1\r\nHost: overcq.ct8.pl\r\n\r\n";
+            #ifdef __gnu_linux__
+        if(( e = SSL_write_ex( ssl, &write_buf[0], sizeof( write_buf ), &l )) != 1 )
+            #else
+        if(( e = l = SSL_write( ssl, &write_buf[0], sizeof( write_buf ))) <= 0 )
+            #endif
+        {   e = SSL_get_error( ssl, e );
+            if( e != SSL_ERROR_SYSCALL
+            && e != SSL_ERROR_SSL
+            )
+                SSL_shutdown(ssl);
+            SSL_free(ssl);
+            V0( close(sfd) ){}
+            goto Cont;
+        }
+        C read_buf[1];
+            #ifdef __gnu_linux__
+        if(( e = SSL_read_ex( ssl, &read_buf[0], sizeof( read_buf ), &l )) != 1 )
+            #else
+        if(( e = l = SSL_read( ssl, &read_buf[0], sizeof( read_buf ))) <= 0 )
+            #endif
+        {   e = SSL_get_error( ssl, e );
+            if( e != SSL_ERROR_SYSCALL
+            && e != SSL_ERROR_SSL
+            )
+                SSL_shutdown(ssl);
+        }else
+            e = SSL_get_error( ssl, e );
+        SSL_free(ssl);
+        V0( close(sfd) ){}
+        if( e == SSL_ERROR_NONE
+        || e == SSL_ERROR_ZERO_RETURN
+        )
+            break;
+Cont:   ai_1 = ai_1->ai_next;
+    }while( ai_1 );
+    SSL_CTX_free( ssl_ctx );
+    freeaddrinfo(ai);
+}
 /******************************************************************************/

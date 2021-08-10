@@ -20,3 +20,7 @@ Blog in Polish: https://oux.refy.pl/
 From my desktop: https://youtu.be/ff9olrjh3HI
 
 Chat on Discord: https://discord.gg/raBeaBeKXp (overcq#8855)
+
+# Obce licencje
+
+This product includes software developed by the OpenSSL Project for use in the OpenSSL Toolkit (http://www.openssl.org/)
