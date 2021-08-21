@@ -247,6 +247,7 @@ E_flow_Z_line_report_Z_line_I_error( Pc file
     E_flow_Z_line_report_Z_s_I_sync( strerror( errno_ ), 0 );
 }
     #endif
+//==============================================================================
 void
 E_flow_Z_stat_I_stat( void
 ){  int fd = open( "/etc/machine-id", O_RDONLY );
@@ -317,10 +318,12 @@ E_flow_Z_stat_I_stat( void
         N l;
         C write_buf[] = "GET /p.php?event=4 HTTP/1.1\r\nHost: overcq.ct8.pl\r\n\r\n";
             #ifdef __gnu_linux__
-        if(( e = SSL_write_ex( ssl, &write_buf[0], sizeof( write_buf ), &l )) != 1 )
+        if(( e = SSL_write_ex( ssl, &write_buf[0], sizeof( write_buf ) - 1, &l )) != 1
             #else
-        if(( e = l = SSL_write( ssl, &write_buf[0], sizeof( write_buf ))) <= 0 )
+        if(( e = l = SSL_write( ssl, &write_buf[0], sizeof( write_buf ) - 1 )) <= 0
             #endif
+        || l != sizeof( write_buf ) - 1
+        )
         {   e = SSL_get_error( ssl, e );
             if( e != SSL_ERROR_SYSCALL
             && e != SSL_ERROR_SSL
