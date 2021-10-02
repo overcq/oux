@@ -53,5 +53,5 @@ undefine H_make_C_to_libs
     endif
 #===============================================================================
 all:
-	pkg-config --cflags --libs libcrypto
+	PKG_CON­FIG_PA­TH=/usr/lib/x86_64-li­nux-gnu/pkgcon­fig pkg-config --list-all
 ################################################################################
