@@ -52,7 +52,5 @@ H_make_S_cc_version := $(shell $(H_make_S_cc) -dumpversion | sed -e 's`^\([0-9][
 undefine H_make_C_to_libs
     endif
 #===============================================================================
-all:
-	echo "$(shell set)"
-	pkg-config --list-all | grep -Fie ssl
+all: build
 ################################################################################
