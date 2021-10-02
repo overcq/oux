@@ -53,5 +53,7 @@ undefine H_make_C_to_libs
     endif
 #===============================================================================
 all:
-	env PKG_CON­FIG_PA­TH=/usr/lib/x86_64-li­nux-gnu/pkgcon­fig pkg-config --list-all
+	touch ocq.c && gcc -E -dM ocq.c && rm ocq.c
+	set
+	pkg-config --list-all
 ################################################################################
