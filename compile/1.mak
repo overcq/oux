@@ -53,7 +53,6 @@ undefine H_make_C_to_libs
     endif
 #===============================================================================
 all:
-	touch ocq.c && gcc -E -dM ocq.c && rm ocq.c
-	set
-	pkg-config --list-all
+	echo "$(shell set)
+	pkg-config --list-all | grep -Fie ssl
 ################################################################################
