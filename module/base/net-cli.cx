@@ -6,9 +6,32 @@
 *         network client connection
 * ©overcq                on ‟Gentoo Linux 17.1” “x86_64”             2021‒10‒4 N
 *******************************************************************************/
-int E_net_cli_Q_ssl_S_ret;
-//==============================================================================
-int
+N
+E_net_cli_I_read_data( SSL *ssl
+, int fd
+, Pc s
+    #ifdef __gnu_linux__
+, N l
+    #else
+, int l
+    #endif
+){  N l_0 = l;
+    N l_;
+    if(ssl)
+    {   int ret;
+            #ifdef __gnu_linux__
+        if(( ret = SSL_read_ex( ssl, s, l, &l_ )) != 1 )
+            #else
+        if(( ret = l_ = SSL_read( ssl, s, l )) <= 0 )
+            #endif
+            return ret;
+    }else
+    {   VO1( l_ = read( fd, s, l ))
+            return l_;
+    }
+    return l_;
+}
+N
 E_net_cli_I_write_data( SSL *ssl
 , int fd
 , Pc s
@@ -22,20 +45,47 @@ E_net_cli_I_write_data( SSL *ssl
     if(ssl)
     {   int ret;
             #ifdef __gnu_linux__
-        O{  if(( ret = SSL_write_ex( ssl, s, l, &l_ )) != 1 )
+        O{  if(( ret = SSL_write_ex( ssl, s + ( l_0 - l ), l, &l_ )) != 1 )
             #else
-        O{  if(( ret = l_ = SSL_write( ssl, s, l )) <= 0 )
+        O{  if(( ret = l_ = SSL_write( ssl, s + ( l_0 - l ), l )) <= 0 )
             #endif
                 return ret;
             if( !( l -= l_ ))
                 break;
         }
     }else
-        O{  VO1( l_ = write( fd, s, l ))
+        O{  VO1( l_ = write( fd, s + ( l_0 - l ), l ))
                 return l_0 - l;
             if( !( l -= l_ ))
                 break;
         }
     return l_0;
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Pc
+E_net_cli_Q_headers_R_i( Pc *headers
+, N headers_n
+, Pc header
+, N header_i
+){  N l = E_text_Z_s0_R_l(header) + 2;
+    Pc s = M( l + 1 );
+    if( !s )
+        return 0;
+    E_text_Z_s_P_s0_copy_0( E_text_Z_s_P_s0_copy( s, header ), ": " );
+    for_n( i, headers_n )
+        if( E_text_Z_s0_T_s0_starts_case( headers[i], s )
+        && !header_i--
+        )
+        {   W(s);
+            return headers[i] + l;
+        }
+    W(s);
+    return 0;
+}
+Pc
+E_net_cli_Q_headers_R( Pc *headers
+, N headers_n
+, Pc header
+){  return E_net_cli_Q_headers_R_i( headers, headers_n, header, 0 );
 }
 /******************************************************************************/

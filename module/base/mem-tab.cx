@@ -372,7 +372,7 @@ E_mem_Q_tab_Q_iter_M( struct E_mem_Q_tab_Z *tab
     }
     return iterator_id;
 }
-///OLET Do zwalniania ‘iteratora’ tylko wtedy, gdy nie zakończy się wartością “empty” (czyli gdy pętla zostanie przerwana).
+/// Do zwalniania ‘iteratora’ tylko wtedy, gdy nie zakończy się wartością “empty” (czyli gdy pętla zostanie przerwana).
 void
 E_mem_Q_tab_Q_iter_W( struct E_mem_Q_tab_Z *tab
 , I iterator_id
@@ -405,6 +405,14 @@ E_mem_Q_tab_Q_iter_R_next( struct E_mem_Q_tab_Z *tab
 , I iterator_id
 , I id
 ){  struct E_mem_Q_tab_S_iterator_Z *iterator = (P)tab->iterator->index[ iterator_id ];
-    return (In)id < (In)iterator->n ? iterator->index[id] : ~0;
+    I ret = (In)id < (In)iterator->n ? iterator->index[id] : ~0;
+    if( !~ret )
+    {   W( iterator->index );
+        if( tab->iterator->data_n != 1 )
+            E_mem_Q_tab_I_remove( tab->iterator, iterator_id );
+        else
+            W_tab_( tab->iterator );
+    }
+    return ret;
 }
 /******************************************************************************/
