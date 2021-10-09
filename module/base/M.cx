@@ -475,6 +475,34 @@ E_base_M(
     D_M( flow, call_srv );
     D_M( io, stream_write );
     D_M( mem, file_save );
+    V0( pipe( &E_net_cli_S_poll_pipe[0] ))
+    {   GV_(NA); V();
+    }
+        #ifdef __gnu_linux__
+    V1( E_net_cli_S_epoll_fd = epoll_create1(0) )
+    {   GV_(NA); V();
+    }
+    struct epoll_event ee;
+    ee.events = EPOLLIN;
+    ee.data.fd = E_net_cli_S_poll_pipe[0];
+    V0( epoll_ctl( E_net_cli_S_epoll_fd, EPOLL_CTL_ADD, E_net_cli_S_poll_pipe[0], &ee ))
+    {   GV_(NA); V();
+    }
+    E_net_cli_S_ee_ready_n = 1;
+    Mt_( E_net_cli_S_ee_ready, E_net_cli_S_ee_ready_n );
+    if( !E_net_cli_S_ee_ready )
+    {   GV_(NA); V();
+    }
+        #else
+    E_net_cli_S_poll_fd_n = 1;
+    Mt_( E_net_cli_S_poll_fd, E_net_cli_S_poll_fd_n );
+    if( !E_net_cli_S_poll_fd )
+    {   GV_(NA); V();
+    }
+    E_net_cli_S_poll_fd[ E_net_cli_S_poll_fd_n - 1 ].fd = E_net_cli_S_poll_pipe[0];
+    E_net_cli_S_poll_fd[ E_net_cli_S_poll_fd_n - 1 ].events = POLLIN;
+        #endif
+    Dh_M( net, cli, 0, 0 );
     Pc *e = environ;
     while( *e )
     {   if( E_text_Z_s0_T_s0_starts( *e, "LD_PRELOAD=" ))

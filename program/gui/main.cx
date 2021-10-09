@@ -31,6 +31,24 @@ main(
 #endif
     I_V()
         goto End;
+
+    SSL_CTX *ssl_ctx = E_net_cli_Q_ssl_M();
+    if( !ssl_ctx )
+        goto End;
+    B http2;
+    N connection = E_net_cli_Q_ssl_I_connect( ssl_ctx, "gentoo", &http2 );
+    if( !~connection )
+        goto End;
+    if( !http2 )
+        goto Skip;
+    N ret = E_net_http2_I_request( connection, "/" );
+    if( ret > 0 )
+        goto Skip;
+    ret = E_net_http2_I_request( connection, "/" );
+Skip:
+    E_net_cli_Q_ssl_W( ssl_ctx );
+    goto End;
+
     X_M( x_window, close_window );
     for_n( i, 1 )
     {   D_M( main, timer_draw );
