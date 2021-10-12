@@ -427,7 +427,11 @@ D( io, stream_write )
     {   X_B( io, stream_write, 0 )
             exit = yes;
             #if defined( E_io_C_aio ) || defined( E_io_C_sig_has_fd )
-        for_each_q( id, E_base_S->E_io_Q_stream_out_S, 0, E_mem_Q_tab )
+        I iter = E_mem_Q_tab_Q_iter_M( E_base_S->E_io_Q_stream_out_S, ~0 );
+        if( !~iter )
+        {   GV_(NA); V();
+        }
+        for_each_q( id, E_base_S->E_io_Q_stream_out_S, iter, E_mem_Q_tab )
             #else
         for_each( id, E_base_S->E_io_Q_stream_out_S, E_mem_Q_tab )
             #endif
@@ -444,9 +448,13 @@ D( io, stream_write )
                 {   int fd = stream->aiocb->aio_fildes;
                     Yi_F( io, aiocb_before_rem, E_io_Q_stream_out_S_delay );
                     Yi_B( io, aiocb_before_rem )
+                    {   E_mem_Q_tab_Q_iter_W( E_base_S->E_io_Q_stream_out_S, iter );
                         goto End;
+                    }
                     if( id >= E_mem_Q_tab_R_n( E_base_S->E_io_Q_stream_out_S ))
+                    {   E_mem_Q_tab_Q_iter_W( E_base_S->E_io_Q_stream_out_S, iter );
                         break;
+                    }
                     stream = E_mem_Q_tab_R( E_base_S->E_io_Q_stream_out_S, id );
                     if( stream->aiocb->aio_fildes != fd
                     || U_R( stream->state, closing )
@@ -473,8 +481,7 @@ D( io, stream_write )
                         }
                     }
                 }
-                int errno_;
-                V0e( aio_write( stream->aiocb ), errno_ )
+                V0( aio_write( stream->aiocb ))
                 {   GV_(NDFN); V(); //NDFN Ma być ‹zdarzenie›.
                 }
             }
@@ -518,9 +525,19 @@ D( io, stream_write )
                     int fd = stream->aiocb->aio_fildes;
                     Yi_F( io, aiocb_before_rem, E_io_Q_stream_out_S_delay );
                     Yi_B( io, aiocb_before_rem )
+                    {
+                            #ifdef E_io_C_sig_has_fd
+                        E_mem_Q_tab_Q_iter_W( E_base_S->E_io_Q_stream_out_S, iter );
+                            #endif
                         goto End;
+                    }
                     if( id >= E_mem_Q_tab_R_n( E_base_S->E_io_Q_stream_out_S ))
+                    {
+                            #ifdef E_io_C_sig_has_fd
+                        E_mem_Q_tab_Q_iter_W( E_base_S->E_io_Q_stream_out_S, iter );
+                            #endif
                         break;
+                    }
                     stream = E_mem_Q_tab_R( E_base_S->E_io_Q_stream_out_S, id );
                     if( stream->aiocb->aio_fildes != fd
                     || U_R( stream->state, closing )

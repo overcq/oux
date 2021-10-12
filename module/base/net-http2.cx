@@ -1405,10 +1405,6 @@ E_net_http2_Q_ssl_I_disconnect( N i
     W( E_net_http2_S_connect[i].buf_2 );
     if( E_net_http2_S_connect[i].buf )
         W( E_net_http2_S_connect[i].buf );
-    V0( close( E_net_http2_S_connect[i].connect_sock )){}
-    if( !E_mem_Q_blk_I_remove( &E_net_http2_S_connect, i, 1 ))
-        V();
-    E_net_http2_S_connect_n--;
     E_net_D_cli_I_unblock(0);
     V0_( sched_yield() );
         #ifdef __gnu_linux__
@@ -1420,6 +1416,10 @@ E_net_http2_Q_ssl_I_disconnect( N i
         #else
     E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, --E_net_cli_S_poll_fd_n, 1 );
         #endif
+    V0( close( E_net_http2_S_connect[i].connect_sock )){}
+        if( !E_mem_Q_blk_I_remove( &E_net_http2_S_connect, i, 1 ))
+        V();
+    E_net_http2_S_connect_n--;
 }
 //------------------------------------------------------------------------------
 N
@@ -1436,7 +1436,7 @@ E_net_http2_I_request( N i
     stream->send_window_size = E_net_http2_S_connect[i].send_window_size;
     stream->data_start = yes;
     stream->z_stream = 0;
-    Pc *Mt_( headers, 2 );
+    Pc *Mt_( headers, 6 );
     if( !headers )
     {   E_mem_Q_tab_I_remove( E_net_http2_S_connect[i].stream, stream_id );
         return ~0;

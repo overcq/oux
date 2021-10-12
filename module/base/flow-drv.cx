@@ -246,7 +246,7 @@ E_flow_Q_task_M( I *uid
         #ifdef E_flow_C_thread_system_unblock_reports
     else
     {   task->thread_proc_arg = thread_proc_arg;
-        pthread_mutex_t *M_( thread_flow_mutex );
+        pthread_mutex_t *thread_flow_mutex = E_mem_Q_blk_M_align( sizeof( *thread_flow_mutex ), 16 );
         if( !thread_flow_mutex )
         {   _tasks_table_begin;
             E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
@@ -550,7 +550,7 @@ E_flow_Q_task_I_begin( void
         Vr_( pthread_sigmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ));
         Vr_( pthread_mutex_unlock( thread_flow_mutex ));
         O{  V0_( sched_yield() );
-            Vr_( pthread_mutex_lock( thread_flow_mutex ));
+            pthread_mutex_lock( thread_flow_mutex );
             if( !*thread_switch_back )
                 break;
             Vr_( pthread_mutex_unlock( thread_flow_mutex ));
