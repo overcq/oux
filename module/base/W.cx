@@ -107,7 +107,12 @@ E_mem_W_blk( void
 //DED Jeśli program zapisany w technologii OUX miałby być dopisany na początku “main” innego programu w języku ‟C” lub ‘skompilowanego’— to wtedy usuwa swoje zasoby i próbuje przywrócić stan procesu do domyślnego. Dopisanie programu nie na początku też byłoby możliwe po uzupełnieniu o zapisywanie stanu do przywrócenia (zamiast domyślnego), ale mogłoby być ryzykowne, jeśli program zmieniany używałby jakichkolwiek stanów ulotnych względem czasu wykonania; tak jak ten używa. Pozostało do zrobienia w całości przywracanie stanu zastanego, a nie domyślnego.
 void
 E_base_W( void
-){  Dh_W( net, cli, 0 );
+){
+        #ifndef E_flow_C_thread_system_unblock_reports
+    D_W( net, cli );
+        #else
+    Dh_W( net, cli, 0 );
+        #endif
     V0( close( E_net_cli_S_poll_pipe[0] )){}
     V0( close( E_net_cli_S_poll_pipe[1] )){}
         #ifdef __gnu_linux__
@@ -117,8 +122,8 @@ E_base_W( void
     W( E_net_cli_S_poll_fd );
         #endif
     D_W( mem, file_save );
-    D_W( flow, call_srv ); ///przedostatnie ‹zadanie›.
-    ///dopóki wypisywanie “G”[…] jest do tego samego “strumienia” jak “G”[…]“_”, to jeśli ‹raporty linii› są włączone, to znak nowej linii jest dorzucany synchronicznie, na końcu tej procedury usuwania ‹modułu›.
+    D_W( flow, call_srv ); // Przedostatnie ‹zadanie›.
+    // Dopóki wypisywanie “G”[…] jest do tego samego “strumienia” jak “G”[…]“_”, to jeśli ‹raporty linii› są włączone, to znak nowej linii jest dorzucany synchronicznie, na końcu tej procedury usuwania ‹modułu›.
         //#ifdef C_line_report
     //E_io_Q_stream_out_P_c( 0, '\n' );
         //#endif

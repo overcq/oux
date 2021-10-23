@@ -8,6 +8,7 @@
 *******************************************************************************/
 #define S_keepalive_timeout     5
 #define S_system_idle_time      0
+#define S_inflate_buffer_size   ( 64 * 1024 )
 Pc E_net_cli_S_client_name = "OUX/C+ web-cli";
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #ifdef __gnu_linux__
@@ -132,8 +133,8 @@ void
 E_net_cli_Q_ssl_W( SSL_CTX *ssl_ctx
 ){  for_n_rev( i, E_net_http2_S_connect_n )
         E_net_http2_Q_ssl_I_disconnect(i);
-    SSL_CTX_free( ssl_ctx );
     W( E_net_http2_S_connect );
+    SSL_CTX_free( ssl_ctx );
 }
 N
 E_net_cli_Q_ssl_I_connect( SSL_CTX *ssl_ctx
@@ -572,7 +573,7 @@ Next2:      FD_ZERO( &readfds );
                                     goaway_error = E_net_http2_Z_error_S_internal_error;
                                     goto End2_2;
                                 }
-                                stream->z_stream->avail_out = 64 * 1024; //CONF
+                                stream->z_stream->avail_out = S_inflate_buffer_size;
                                 stream->z_stream->next_out = M( stream->z_stream->avail_out );
                                 if( !stream->z_stream->next_out )
                                 {   inflateEnd( stream->z_stream );
@@ -601,8 +602,9 @@ Next2:      FD_ZERO( &readfds );
                                     goaway_error = E_net_http2_Z_error_S_internal_error;
                                     goto End2_2;
                                 }
-                                E_mem_Q_file_P_pos( stream->file_id, E_mem_Q_file_R_pos( stream->file_id ));
-                                if( !~E_mem_Q_file_P_insert_s( stream->file_id, stream->zlib_data, 64 * 1024 - stream->z_stream->avail_out )) //CONF
+                                struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, stream->file_id );
+                                E_mem_Q_file_P_pos( stream->file_id, file->l );
+                                if( !~E_mem_Q_file_P_insert_s( stream->file_id, stream->zlib_data, S_inflate_buffer_size - stream->z_stream->avail_out ))
                                 {   inflateEnd( stream->z_stream );
                                     W_( stream->z_stream );
                                     E_mem_Q_file_W_nosave( stream->file_id );
@@ -615,7 +617,7 @@ Next2:      FD_ZERO( &readfds );
                                 || stream->z_stream->avail_out
                                 )
                                     break;
-                                stream->z_stream->avail_out = 64 * 1024; //CONF
+                                stream->z_stream->avail_out = S_inflate_buffer_size;
                                 stream->z_stream->next_out = ( Bytef * )stream->zlib_data;
                             }
                             if( zlib_error == Z_STREAM_END )
@@ -630,13 +632,15 @@ Next2:      FD_ZERO( &readfds );
                                 }
                                 E_mem_Q_file_W( stream->file_id );
                                 //TODO Zachować nazwę pliku w połączeniu z ‘requestem’.
+                                
                                 E_net_http2_Q_buffer_I_write_frame_header( &E_net_http2_S_connect[i].buf_2_, 4, E_net_http2_Z_frame_type_S_rst_stream, 0, frame_stream );
                                 E_net_http2_Q_buffer_I_write_n( &E_net_http2_S_connect[i].buf_2_, E_net_http2_Z_error_S_no_error, 4 );
                                 goto Reset_stream;
                             }
                         }else
-                        {   E_mem_Q_file_P_pos( stream->file_id, E_mem_Q_file_R_pos( stream->file_id ));
-                            if( !~E_mem_Q_file_P_insert_s( stream->file_id, stream->zlib_data, 64 * 1024 - stream->z_stream->avail_out )) //CONF
+                        {   struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, stream->file_id );
+                            E_mem_Q_file_P_pos( stream->file_id, file->l );
+                            if( !~E_mem_Q_file_P_insert_s( stream->file_id, E_net_http2_S_connect[i].buf_, data_length ))
                             {   inflateEnd( stream->z_stream );
                                 W_( stream->z_stream );
                                 E_mem_Q_file_W_nosave( stream->file_id );
@@ -648,6 +652,7 @@ Next2:      FD_ZERO( &readfds );
                             if( frame_flags & E_net_http2_Z_frame_type_data_Z_flag_S_end_stream )
                             {   E_mem_Q_file_W( stream->file_id );
                                 //TODO Zachować nazwę pliku w połączeniu z ‘requestem’.
+                                
                                 E_net_http2_Q_buffer_I_write_frame_header( &E_net_http2_S_connect[i].buf_2_, 4, E_net_http2_Z_frame_type_S_rst_stream, 0, frame_stream );
                                 E_net_http2_Q_buffer_I_write_n( &E_net_http2_S_connect[i].buf_2_, E_net_http2_Z_error_S_no_error, 4 );
                                 goto Reset_stream;
@@ -665,12 +670,6 @@ Next2:      FD_ZERO( &readfds );
                             goto End2_2;
                         }
                         struct E_net_http2_Z_stream *stream = E_mem_Q_tab_R( E_net_http2_S_connect[i].stream, frame_stream - 1 );
-                        Mt_( stream->headers, 0 );
-                        if( !stream->headers )
-                        {   goaway_error = E_net_http2_Z_error_S_internal_error;
-                            goto End2_2;
-                        }
-                        stream->headers_n = 0;
                         S headers_length = frame_length;
                         N8 pad_length;
                         if( frame_flags & E_net_http2_Z_frame_type_headers_Z_flag_S_padded )

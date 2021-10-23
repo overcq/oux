@@ -1431,6 +1431,12 @@ E_net_http2_I_request( N i
     if( !~stream_id )
         return ~0;
     struct E_net_http2_Z_stream *stream = E_mem_Q_tab_R( E_net_http2_S_connect[i].stream, stream_id );
+    Mt_( stream->headers, 0 );
+    if( !stream->headers )
+    {   E_mem_Q_tab_I_remove( E_net_http2_S_connect[i].stream, stream_id );
+        return ~0;
+    }
+    stream->headers_n = 0;
     stream->buf_headers = 0;
     stream->recv_window_size = E_net_http2_S_connect[i].recv_window_size;
     stream->send_window_size = E_net_http2_S_connect[i].send_window_size;
@@ -1438,13 +1444,15 @@ E_net_http2_I_request( N i
     stream->z_stream = 0;
     Pc *Mt_( headers, 6 );
     if( !headers )
-    {   E_mem_Q_tab_I_remove( E_net_http2_S_connect[i].stream, stream_id );
+    {   W( stream->headers );
+        E_mem_Q_tab_I_remove( E_net_http2_S_connect[i].stream, stream_id );
         return ~0;
     }
     N headers_n = 0;
     headers[ headers_n ] = M( 12 + E_text_Z_s0_R_l( E_net_http2_S_connect[i].hostname ) + 1 );
     if( !headers[ headers_n ] )
-    {   E_mem_Q_tab_I_remove( E_net_http2_S_connect[i].stream, stream_id );
+    {   W( stream->headers );
+        E_mem_Q_tab_I_remove( E_net_http2_S_connect[i].stream, stream_id );
         W(headers);
         return ~0;
     }
@@ -1452,7 +1460,8 @@ E_net_http2_I_request( N i
     headers_n++;
     headers[ headers_n ] = M( 12 + 1 );
     if( !headers[ headers_n ] )
-    {   E_mem_Q_tab_I_remove( E_net_http2_S_connect[i].stream, stream_id );
+    {   W( stream->headers );
+        E_mem_Q_tab_I_remove( E_net_http2_S_connect[i].stream, stream_id );
         for_n( j, headers_n )
             W( headers[j] );
         W(headers);
@@ -1462,7 +1471,8 @@ E_net_http2_I_request( N i
     headers_n++;
     headers[ headers_n ] = M( 14 + 1 );
     if( !headers[ headers_n ] )
-    {   E_mem_Q_tab_I_remove( E_net_http2_S_connect[i].stream, stream_id );
+    {   W( stream->headers );
+        E_mem_Q_tab_I_remove( E_net_http2_S_connect[i].stream, stream_id );
         for_n( j, headers_n )
             W( headers[j] );
         W(headers);
@@ -1472,7 +1482,8 @@ E_net_http2_I_request( N i
     headers_n++;
     headers[ headers_n ] = M( 7 + E_text_Z_s0_R_l(path) + 1 );
     if( !headers[ headers_n ] )
-    {   E_mem_Q_tab_I_remove( E_net_http2_S_connect[i].stream, stream_id );
+    {   W( stream->headers );
+        E_mem_Q_tab_I_remove( E_net_http2_S_connect[i].stream, stream_id );
         for_n( j, headers_n )
             W( headers[j] );
         W(headers);
@@ -1482,7 +1493,8 @@ E_net_http2_I_request( N i
     headers_n++;
     headers[ headers_n ] = M( 12 + E_text_Z_s0_R_l( E_net_cli_S_client_name ) + 1 );
     if( !headers[ headers_n ] )
-    {   E_mem_Q_tab_I_remove( E_net_http2_S_connect[i].stream, stream_id );
+    {   W( stream->headers );
+        E_mem_Q_tab_I_remove( E_net_http2_S_connect[i].stream, stream_id );
         for_n( j, headers_n )
             W( headers[j] );
         W(headers);
@@ -1494,7 +1506,8 @@ E_net_http2_I_request( N i
     Pc p = E_net_http2_S_connect[i].buf_2_;
     E_net_http2_S_connect[i].buf_2_ += 9;
     if( !~E_net_http2_Q_buffer_I_write_headers( &E_net_http2_S_connect[i].buf_2_, headers, headers_n, &E_net_http2_S_connect[i].dynamic_table_enc, &E_net_http2_S_connect[i].dynamic_table_enc_n, E_net_http2_S_connect[i].send_dynamic_table_size_max, &E_net_http2_S_connect[i].send_dynamic_table_size_max_hit ))
-    {   E_mem_Q_tab_I_remove( E_net_http2_S_connect[i].stream, stream_id );
+    {   W( stream->headers );
+        E_mem_Q_tab_I_remove( E_net_http2_S_connect[i].stream, stream_id );
         for_n( j, headers_n )
             W( headers[j] );
         W(headers);
