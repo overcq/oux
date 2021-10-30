@@ -386,7 +386,6 @@ struct E_net_http2_Z_connect
   Z_clock_time keepalive_tv;
   N send_dynamic_table_size_max;
   B send_dynamic_table_size_max_hit;
-  B push;
   N concurrent_streams_max;
   S recv_window_size;
   S send_window_size;
@@ -398,6 +397,7 @@ struct E_net_http2_Z_connect
   Pc *dynamic_table_enc;
   N dynamic_table_enc_n;
   struct E_mem_Q_tab_Z *stream;
+  I last_stream;
 } *E_net_http2_S_connect;
 N E_net_http2_S_connect_n;
 struct E_net_http2_Z_stream
@@ -413,6 +413,7 @@ struct E_net_http2_Z_stream
   Pc zlib_data;
   I file_id;
   Pc file_name;
+  void (*ret_func)(N,I);
 };
 //==============================================================================
 N
@@ -1371,16 +1372,23 @@ void
 E_net_http2_Q_ssl_I_disconnect( N i
 ){  J_assert( i < E_net_http2_S_connect_n );
     E_net_http2_S_connect[i].buf_2_ = E_net_http2_S_connect[i].buf_2;
-    E_net_http2_Q_buffer_I_write_frame_header( &E_net_http2_S_connect[i].buf_2_, 8, E_net_http2_Z_frame_type_S_goaway, 0, 0 );
-    E_net_http2_Q_buffer_I_write_n( &E_net_http2_S_connect[i].buf_2_, E_mem_Q_tab_R_n( E_net_http2_S_connect[i].stream ) + 1, 4 );
-    E_net_http2_Q_buffer_I_write_n( &E_net_http2_S_connect[i].buf_2_, E_net_http2_Z_error_S_cancel, 4 );
         #ifdef __gnu_linux__
     S ssl_ret;
         #else
     int ssl_ret;
         #endif
-    ssl_ret = E_net_cli_I_write_data( E_net_http2_S_connect[i].ssl, E_net_http2_S_connect[i].connect_sock, E_net_http2_S_connect[i].buf_2, E_net_http2_S_connect[i].buf_2_ - E_net_http2_S_connect[i].buf_2 );
-    int e = SSL_get_error( E_net_http2_S_connect[i].ssl, ssl_ret );
+    int e;
+    if( !~E_net_http2_S_connect[i].last_stream )
+    {   E_net_http2_Q_buffer_I_write_frame_header( &E_net_http2_S_connect[i].buf_2_, 8, E_net_http2_Z_frame_type_S_goaway, 0, 0 );
+        E_net_http2_Q_buffer_I_write_n( &E_net_http2_S_connect[i].buf_2_, E_mem_Q_tab_R_n( E_net_http2_S_connect[i].stream ) + 1, 4 );
+        E_net_http2_Q_buffer_I_write_n( &E_net_http2_S_connect[i].buf_2_, E_net_http2_Z_error_S_cancel, 4 );
+        ssl_ret = E_net_cli_I_write_data( E_net_http2_S_connect[i].ssl, E_net_http2_S_connect[i].connect_sock, E_net_http2_S_connect[i].buf_2, E_net_http2_S_connect[i].buf_2_ - E_net_http2_S_connect[i].buf_2 );
+        E_net_http2_S_connect[i].last_stream = E_mem_Q_tab_R_n( E_net_http2_S_connect[i].stream );
+        e = SSL_get_error( E_net_http2_S_connect[i].ssl, ssl_ret );
+        if( e == SSL_ERROR_NONE )
+            return;
+    }else
+        e = SSL_ERROR_NONE;
     if( e != SSL_ERROR_SYSCALL
     && e != SSL_ERROR_SSL
     )
@@ -1425,6 +1433,7 @@ E_net_http2_Q_ssl_I_disconnect( N i
 N
 E_net_http2_I_request( N i
 , Pc path
+, void (*ret_func)(N,I)
 ){  J_assert( i < E_net_http2_S_connect_n );
     X_A( net, cli );
     I stream_id = E_mem_Q_tab_I_add( E_net_http2_S_connect[i].stream );
@@ -1502,6 +1511,17 @@ E_net_http2_I_request( N i
     }
     E_text_Z_s_P_s0_copy_0( E_text_Z_s_P_s0_copy( headers[ headers_n ], "user-agent: " ), E_net_cli_S_client_name );
     headers_n++;
+    headers[ headers_n ] = M( 21 + 1 );
+    if( !headers[ headers_n ] )
+    {   W( stream->headers );
+        E_mem_Q_tab_I_remove( E_net_http2_S_connect[i].stream, stream_id );
+        for_n( j, headers_n )
+            W( headers[j] );
+        W(headers);
+        return ~0;
+    }
+    E_text_Z_s_P_s0_copy_0( headers[ headers_n ], "accept-encoding: gzip" );
+    headers_n++;
     E_net_http2_S_connect[i].buf_2_ = E_net_http2_S_connect[i].buf_2;
     Pc p = E_net_http2_S_connect[i].buf_2_;
     E_net_http2_S_connect[i].buf_2_ += 9;
@@ -1531,7 +1551,7 @@ E_net_http2_I_request( N i
         E_mem_Q_tab_I_remove( E_net_http2_S_connect[i].stream, stream_id );
         return e;
     }
-    
+    stream->ret_func = ret_func;
     X_F( net, cli );
     return 0;
 }

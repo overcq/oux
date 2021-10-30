@@ -9,7 +9,16 @@
 N E_main_Q_timer_S_hour;
 N E_main_Q_timer_S_minute;
 N E_main_Q_timer_S_second;
+N E_main_Q_http_req_ret_count;
 //=============================================================================
+void
+http_req_ret_func( N connection_i
+, I stream_id
+){  E_main_Q_http_req_ret_count++;
+    struct E_net_http2_Z_stream *stream = E_mem_Q_tab_R( E_net_http2_S_connect[ connection_i ].stream, stream_id );
+    G_(); Gs0( stream->file_name );
+    V0( unlink( stream->file_name ) ){}
+}
 int
 main(
   int argc
@@ -41,10 +50,22 @@ main(
         goto End;
     if( !http2 )
         goto Skip;
-    N ret = E_net_http2_I_request( connection, "/" );
+    N ret = E_net_http2_I_request( connection, "/", http_req_ret_func );
     if(ret)
         goto Skip;
-    ret = E_net_http2_I_request( connection, "/" );
+    ret = E_net_http2_I_request( connection, "/", http_req_ret_func );
+    if(ret)
+        goto Skip;
+    X_M( net, ret );
+    E_main_Q_http_req_ret_count = 0;
+    O{  X_B( net, ret, 0 )
+            break;
+        if( !E_net_http2_S_connect_n
+        || E_main_Q_http_req_ret_count == 2
+        )
+            break;
+    }
+    X_W( net, ret );
 Skip:
     E_net_cli_Q_ssl_W( ssl_ctx );
     goto End;
@@ -129,6 +150,7 @@ Skip:
         if( U_R( E_base_S->E_flow_S_signal, exit_all ))
             break;
     }
+    X_W( x_window, close_window );
 End:E_x_W();
     E_base_W();
     return 0;
