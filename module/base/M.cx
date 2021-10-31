@@ -8,6 +8,9 @@
 *******************************************************************************/
 ///DFN Globalnie: utworzenie ‹modułu› ([…]“_M”) może być wykonane w programie tylko raz.
 //==============================================================================
+    #ifdef E_flow_C_errno_p
+int *E_flow_S_errno;
+    #endif
 struct E_base_Z
 { Z_clock_time E_flow_Q_timer_S_last_real_time;
   Z_clock_time E_flow_Q_timer_S_next_real_time;
@@ -87,9 +90,6 @@ struct E_base_Z
     #ifdef E_flow_Q_process_call_C_alt
   key_t E_flow_Q_process_call_S_shm_key;
     #endif
-    #ifdef E_flow_C_errno_p
-  int *E_flow_S_errno;
-    #endif
   I E_flow_Q_task_S_current;
     #ifdef E_flow_C_itimer_system_unblock_report
   I E_flow_Z_itimer_system_unblock_report_S_task_id;
@@ -165,9 +165,6 @@ E_mem_M_blk( void
     U_L( E_base_S->E_flow_S_signal, call_req );
     U_L( E_base_S->E_flow_S_signal, io_ready );
     U_L( E_base_S->E_flow_S_signal, exit_all );
-        #ifdef E_flow_C_errno_p
-    E_base_S->E_flow_S_errno = __errno_location();
-        #endif
     E_base_S->E_flow_S_exe_pid = getpid();
     E_base_S->E_mem_Q_blk_S_table_allocated_id = 2;
     E_base_S->E_mem_Q_blk_S_allocated = (P)( (Pc)E_base_S + sizeof( *E_base_S ) + sizeof( struct E_mem_Q_blk_Z_mapped ) + sizeof( struct E_mem_Q_blk_Z_free ));
@@ -198,7 +195,7 @@ E_mem_M_blk( void
     Vr_( pthread_mutex_init( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex, &mutexattr ));
     Vr_( pthread_mutexattr_destroy( &mutexattr ));
             #endif
-    ///jeśli któraś użyta do tego miejsca procedura systemu operacyjnego używałaby menedżera pamięci z “libc”, to trzeba by zrobić specjalny sposób alokowania pamięci początkowej.
+    // Jeśli któraś użyta do tego miejsca procedura systemu operacyjnego używałaby menedżera pamięci z “libc”, to trzeba by zrobić specjalny sposób alokowania pamięci początkowej.
     P libc;
     if( !( libc = dlopen( C_to_libs_C_replace_c_alloc_S_libc_filename, RTLD_LAZY | RTLD_GLOBAL )))
     {   Pc s = dlerror();
@@ -264,7 +261,11 @@ void
 E_base_M(
   int argc
 , Pc *argv
-){  feclearexcept( FE_ALL_EXCEPT );
+){
+        #ifdef E_flow_C_errno_p
+    E_flow_S_errno = __errno_location();
+        #endif
+    feclearexcept( FE_ALL_EXCEPT );
     E_mem_M_blk();
         #ifdef E_flow_Q_process_call_C_alt
     N l_1 = E_text_Z_n_N_s_G( E_base_S->E_flow_S_exe_pid, sizeof( E_base_S->E_flow_S_exe_pid ), 10 );

@@ -110,7 +110,7 @@ E_flow_Q_task_M( I *uid
         if( task_in_thread_kind
         && E_base_S->E_flow_Z_task_stacks_S_granulation_u < PTHREAD_STACK_MIN
         )
-        {   GV_(NA); /// Late instrumentation error: granulation unit too small because too many tasks in available memory.
+        {   GV_(NA); // Late instrumentation error: granulation unit too small because too many tasks in available memory.
             if( thread_proc_arg )
                 W( thread_proc_arg );
             return ~0;
@@ -126,7 +126,7 @@ E_flow_Q_task_M( I *uid
             && E_base_S->E_flow_Z_task_stacks_S_granulation_u < PTHREAD_STACK_MIN
             )
             {   E_base_S->E_flow_Z_task_stacks_S_granulation_n_back++;
-                GV_(NA); /// Late instrumentation error: granulation unit too small because too many tasks in available memory.
+                GV_(NA); // Late instrumentation error: granulation unit too small because too many tasks in available memory.
                 if( thread_proc_arg )
                     W( thread_proc_arg );
                 return ~0;
@@ -134,7 +134,7 @@ E_flow_Q_task_M( I *uid
                 #endif
             if( E_base_S->E_flow_Z_task_stacks_S_granulation_u < 2 * E_base_S->E_mem_S_page_size )
             {   E_base_S->E_flow_Z_task_stacks_S_granulation_u = v;
-                GV_(NA); /// Late instrumentation error: granulation unit too small because too many tasks in available memory.
+                GV_(NA); // Late instrumentation error: granulation unit too small because too many tasks in available memory.
                     #ifdef E_flow_C_thread_system_unblock_reports
                 if( thread_proc_arg )
                     W( thread_proc_arg );
@@ -152,7 +152,7 @@ E_flow_Q_task_M( I *uid
                     task->stack += unaligned_size + E_base_S->E_flow_Z_task_stacks_S_granulation_u;
                     task->stack_size -= unaligned_size + E_base_S->E_flow_Z_task_stacks_S_granulation_u;
                 }else
-                {   GV_(NDFN); /// Late instrumentation error: task stack larger than granulation unit.
+                {   GV_(NDFN); // Late instrumentation error: task stack larger than granulation unit.
                     if( unaligned_size
                     && task->stack + unaligned_size <= task->touched_stack
                     ){  V0_( munmap( task->stack - E_base_S->E_mem_S_page_size, unaligned_size ));
@@ -166,7 +166,7 @@ E_flow_Q_task_M( I *uid
         else if( task_in_thread_kind
         && E_base_S->E_flow_Z_task_stacks_S_granulation_u < PTHREAD_STACK_MIN
         )
-        {   GV_(NA); /// Late instrumentation error: granulation unit too small because too many tasks in available memory.
+        {   GV_(NA); // Late instrumentation error: granulation unit too small because too many tasks in available memory.
             if( thread_proc_arg )
                 W( thread_proc_arg );
             return ~0;
@@ -513,7 +513,8 @@ E_flow_Q_task_M_thread( I *uid
 _internal
 P
 E_flow_Q_task_in_thread_I_thread_proc( P args_
-){  struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+){  Dh_();
+    struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
     Vr( pthread_sigmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ))
     {   *task->thread_switch_back = yes;
         return 0;
@@ -558,7 +559,7 @@ E_flow_Q_task_I_begin( void
         Vr_( pthread_sigmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ));
     }else
         #endif
-        E_flow_Q_task_I_switch( task->run_state_object ); ///powrót do ‹zadania› uruchamiającego bieżące.
+        E_flow_Q_task_I_switch( task->run_state_object ); // Powrót do ‹zadania› uruchamiającego bieżące.
     task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
     return task->run_state == E_flow_Z_run_state_S_stopping_by_task;
 }
@@ -593,7 +594,7 @@ E_flow_Q_task_W( I *uid
             W( task->thread_proc_arg );
     }else
         #endif
-    {   E_flow_Q_task_I_switch(id); /// Przełącz tylko po to, by ‹zadanie› zwalniane zwolniło zasoby; również stosowo, hierarchicznie z powrotem przełączając przy zwalnianiu ‹zadań› przez siebie uruchomionych.
+    {   E_flow_Q_task_I_switch(id); // Przełącz tylko po to, by ‹zadanie› zwalniane zwolniło zasoby; również stosowo, hierarchicznie z powrotem przełączając przy zwalnianiu ‹zadań› przez siebie uruchomionych.
         task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, id );
     }
     E_base_S->E_flow_Z_task_stacks_S_granulation_n_back += task->stack_size / E_base_S->E_flow_Z_task_stacks_S_granulation_u;
@@ -623,7 +624,7 @@ _internal
 void
 E_flow_Q_task_I_stop( void
 ){  struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
-    E_flow_Q_task_I_switch( task->run_state_object ); ///powrót do ‹zadania› zwalniającego bieżące.
+    E_flow_Q_task_I_switch( task->run_state_object ); // Powrót do ‹zadania› zwalniającego bieżące.
     _unreachable;
 }
 //------------------------------------------------------------------------------
@@ -631,13 +632,13 @@ E_flow_Q_task_I_stop( void
 _internal
 void
 E_flow_Q_task_I_touch_stack( void
-){  if( !E_base_S->E_flow_Q_task_S_current ) /// ‹Zadanie› inne niż “main”, ponieważ to ma stos zarządzany przez system operacyjny.
+){  if( !E_base_S->E_flow_Q_task_S_current ) // ‹Zadanie› inne niż “main”, ponieważ to ma stos zarządzany przez system operacyjny.
         return;
     N pages = 4; //CONF
     if( !pages || pages % 4 )
     {   GV_(NDFN); V();
     }
-    /// Poniżej– dlatego kolejno “strony” pamięci, ponieważ jest tylko jedna zabezpieczająca na dole “stosu” ‹zadania›.
+    // Poniżej– dlatego kolejno “strony” pamięci, ponieważ jest tylko jedna zabezpieczająca na dole “stosu” ‹zadania›.
     Pc sp;
     __asm__ volatile (
     #if defined( __i386__ ) || defined( __x86_64__ )
@@ -748,7 +749,7 @@ E_flow_Q_report_I_wait( I id
             //)
                 //task->run_state = E_flow_Z_run_state_S_ready;
         //}
-        ret = no; /// Nie wywołuje “schedule”, ponieważ w przełączanym tylko w oznaczonych punktach przepływie wykonania— bieżące ‹zadanie› mogło umożliwić zaistnienie ‹raportu›, na który czeka, tylko wtedy, jeśli przełącza do innych ‹zadań› ·w innych punktach niż to oczekiwanie na ‹raport›·, więc po co czekać, skoro nie zaburza cyklu przełączania ‹zadań›, a tylko w implementacji własnego ‹zadania› zmienia na złożoną (przesuniętą) sekwencję przełączania.
+        ret = no; // Nie wywołuje “schedule”, ponieważ w przełączanym tylko w oznaczonych punktach przepływie wykonania— bieżące ‹zadanie› mogło umożliwić zaistnienie ‹raportu›, na który czeka, tylko wtedy, jeśli przełącza do innych ‹zadań› ·w innych punktach niż to oczekiwanie na ‹raport›·, więc po co czekać, skoro nie zaburza cyklu przełączania ‹zadań›, a tylko w implementacji własnego ‹zadania› zmienia na złożoną (przesuniętą) sekwencję przełączania.
     }else
     {   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
         task->run_state = E_flow_Z_run_state_S_waiting_for_report;
@@ -779,8 +780,8 @@ E_flow_Q_timer_M( N period
     if( E_mem_Q_tab_R_n( E_base_S->E_flow_Q_timer_S ) != 1 )
     {   for_each_out( timer_id, timer_id_, E_base_S->E_flow_Q_timer_S, E_mem_Q_tab )
         {   struct E_flow_Q_timer_Z *timer_ = E_mem_Q_tab_R( E_base_S->E_flow_Q_timer_S, timer_id_ );
-            if( _timerisset( &timer_->period ) ///jest co najmniej jeden ‹cykler›.
-            || _timerisset( &timer_->left ) ///jest co najmniej jeden wzbudzony ‹impulsator›.
+            if( _timerisset( &timer_->period ) // Jest co najmniej jeden ‹cykler›.
+            || _timerisset( &timer_->left ) // Jest co najmniej jeden wzbudzony ‹impulsator›.
             )
             {   _timeradd( &tv, &timer->period, &tv );
                 if( _timercmp( &tv, <, &E_base_S->E_flow_Q_timer_S_next_real_time ))
@@ -1037,9 +1038,9 @@ Loop:
             }
         }
         _sigprocmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply_pong, 0 );
-        if( U_E( E_base_S->E_flow_S_signal, time ) /// Na pewno poniższa linia, bo przychodzi z obudzenia po upływie tego czasu.
-        || !_timercmp( &tv, <, &E_base_S->E_flow_Q_timer_S_next_real_time ) /// Jeśli nie przychodzi z obudzenia, a z wywołania w którymś ‹zadaniu›, to trzeba sprawdzić najbliższy czas ‹cyklerów>.
-        ) /// Czy trzeba uaktualnić kolejne czasy ‹cyklerów›.
+        if( U_E( E_base_S->E_flow_S_signal, time ) // Na pewno poniższa linia, bo przychodzi z obudzenia po upływie tego czasu.
+        || !_timercmp( &tv, <, &E_base_S->E_flow_Q_timer_S_next_real_time ) // Jeśli nie przychodzi z obudzenia, a z wywołania w którymś ‹zadaniu›, to trzeba sprawdzić najbliższy czas ‹cyklerów>.
+        ) // Czy trzeba uaktualnić kolejne czasy ‹cyklerów›.
         {   Z_clock_time elapsed_time;
             _timersub( &tv, &E_base_S->E_flow_Q_timer_S_last_real_time, &elapsed_time );
             //NDFN Uzupełnić o jakieś przewidywanie ‘overhead’ na podstawie poprzedniego, by wyeliminować możliwość powtarzania pętli w pesymistycznym przypadku dla każdego ‹cyklera›? Ale obliczać ten czas tylko wtedy, jeżeli ten fragment nie będzie mógł być wywłaszczony z wykonywania w czasie rzeczywistym (wszystkie przerwania wyłączone).
@@ -1049,16 +1050,16 @@ Loop:
                 _timerover( &suspend_time );
                 for_each( timer_id, E_base_S->E_flow_Q_timer_S, E_mem_Q_tab )
                 {   struct E_flow_Q_timer_Z *timer = E_mem_Q_tab_R( E_base_S->E_flow_Q_timer_S, timer_id );
-                    if( _timerisset( &timer->period )) ///‹cykler›.
-                    {   if( !_timercmp( &elapsed_time, <, &timer->left )) ///‹cykler› wykonał obieg— ‹zadanie› do wznowienia.
+                    if( _timerisset( &timer->period )) // ‹cykler›.
+                    {   if( !_timercmp( &elapsed_time, <, &timer->left )) // ‹cykler› wykonał obieg— ‹zadanie› do wznowienia.
                         {   Z_clock_time overlate_time;
                             _timersub( &elapsed_time, &timer->left, &overlate_time );
-                            if( !_timercmp( &overlate_time, <, &timer->period )) ///‹cykler› wykonał więcej niż jeden obieg.
+                            if( !_timercmp( &overlate_time, <, &timer->period )) // ‹cykler› wykonał więcej niż jeden obieg.
                             {   do
                                 {   timer->lost_count++;
                                     _timersub( &overlate_time, &timer->period, &overlate_time );
                                 }while( !_timercmp( &overlate_time, <, &timer->period ));
-                                GV_(NA); Gd( timer->lost_count ); Gd( timer->period.tv_sec ); Gd( timer->period.Z_clock_time_minor_field ); Gd( overlate_time.tv_sec ); Gd( overlate_time.Z_clock_time_minor_field ); ///lost time.
+                                GV_(NA); Gd( timer->lost_count ); Gd( timer->period.tv_sec ); Gd( timer->period.Z_clock_time_minor_field ); Gd( overlate_time.tv_sec ); Gd( overlate_time.Z_clock_time_minor_field ); // lost time.
                             }
                             _timersub( &timer->period, &overlate_time, &timer->left );
                             struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, timer->task_to );
@@ -1075,7 +1076,7 @@ Loop:
                         {   suspend_time = timer->left;
                             some_timer_is_active = yes;
                         }
-                    }else if( _timerisset( &timer->left )) ///aktywowany ‹impulsator›.
+                    }else if( _timerisset( &timer->left )) // Aktywowany ‹impulsator›.
                     {   if( !_timercmp( &elapsed_time, <, &timer->left ))
                         {   _timerclear( &timer->left );
                             struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, timer->task_to );
@@ -1084,7 +1085,7 @@ Loop:
                             )
                             {   task->run_state = E_flow_Z_run_state_S_ready;
                                 some_task_got_ready = yes;
-                            } /// Narazie– jeśli nie może wznowić ‹zadania›, to gubi impuls.
+                            } // Narazie– jeśli nie może wznowić ‹zadania›, to gubi impuls.
                             some_timer_has_deactivated = yes;
                         }else
                         {   _timersub( &timer->left, &elapsed_time, &timer->left );
@@ -1103,14 +1104,14 @@ Loop:
                 Z_clock_time tv_2;
                 _gettime( &tv_2 );
                 _timersub( &tv_2, &tv, &elapsed_time );
-                if( _timercmp( &elapsed_time, <, &suspend_time ) /// Czy przeliczanie czasów ‹cyklerów› trwało krócej niż obliczony czas oczekiwania do pierwszego budzącego ‹zadanie›?
+                if( _timercmp( &elapsed_time, <, &suspend_time ) // Czy przeliczanie czasów ‹cyklerów› trwało krócej niż obliczony czas oczekiwania do pierwszego budzącego ‹zadanie›?
                 || !some_task_got_ready
                 ){  E_base_S->E_flow_Q_timer_S_last_real_time = tv;
                     _timeradd( &tv, &suspend_time, &E_base_S->E_flow_Q_timer_S_next_real_time ); //NDFN Rozważyć przepełnienie licznika czasu rzeczywistego.
                     break;
                 }
                 tv = tv_2;
-                GV_(NA); Gd( suspend_time.tv_sec ); Gd( suspend_time.Z_clock_time_minor_field ); Gd( elapsed_time.tv_sec ); Gd( elapsed_time.Z_clock_time_minor_field ); /// Timer schedule loop overhead.
+                GV_(NA); Gd( suspend_time.tv_sec ); Gd( suspend_time.Z_clock_time_minor_field ); Gd( elapsed_time.tv_sec ); Gd( elapsed_time.Z_clock_time_minor_field ); // Timer schedule loop overhead.
             }
         }
         for_each_out( E_base_S->E_flow_Q_task_S_current, task_id, E_base_S->E_flow_Q_task_S, E_mem_Q_tab )
@@ -1222,10 +1223,10 @@ Loop:
                     {   if( U_has_suspend_time
                         && E_base_S->E_flow_Z_itimer_system_unblock_report_I_setitimer
                         ){  _gettime( &tv );
-                            if( _timercmp( &tv, <, &next_real_time )) /// Ustaw pozostały czas.
+                            if( _timercmp( &tv, <, &next_real_time )) // Ustaw pozostały czas.
                             {   _timersub( &next_real_time, &tv, &tv );
                                 E_base_S->E_flow_Z_itimer_system_unblock_report_I_setitimer( &tv );
-                            }else /// Lub był upłynął.
+                            }else // Lub był upłynął.
                                 U_F( E_base_S->E_flow_S_signal, wake );
                         }
                     }
@@ -1265,14 +1266,15 @@ Loop:
 __attribute__ ((__noinline__,__returns_twice__,__hot__))
 _internal
 void
-E_flow_Q_task_I_switch( I task_to
+E_flow_Q_task_I_switch( I task_to_id
 ){
 //CONF Jest ‘fpu’?
         #if 1
     feclearexcept( FE_ALL_EXCEPT );
         #endif
     struct E_flow_Q_task_Z *task_from = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
-    E_base_S->E_flow_Q_task_S_current = task_to;
+    struct E_flow_Q_task_Z *task_to = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_to_id );
+    E_base_S->E_flow_Q_task_S_current = task_to_id;
     __asm__ volatile (
     #if defined( __i386__ ) || defined( __x86_64__ )
         #if defined( __i386__ )
@@ -1292,7 +1294,7 @@ E_flow_Q_task_I_switch( I task_to
     "\n" "cmovne    %1,%%rsp"
         #endif
     : "=m" ( task_from->exe_stack )
-    : "r" ((( struct E_flow_Q_task_Z * )E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_to ))->exe_stack )
+    : "r" ( task_to->exe_stack )
     : "cc", "memory"
 //CONF Jest ‘fpu’?
         #if 1
@@ -1320,20 +1322,13 @@ E_flow_Q_task_I_switch( I task_to
 #error not implemented
     #endif
     );
-        #ifdef E_flow_C_errno_p
-    E_base_S->E_flow_S_errno = __errno_location();
-        #endif
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    #ifdef E_flow_C_errno_p
-#undef _errno
-#define _errno errno
-    #endif
-//------------------------------------------------------------------------------
 _internal
 void
 E_flow_Z_signal_V_chld( int uid
-){  int errno_ = _errno;
+){  Dh_();
+    int errno_ = _errno;
     int status;
     VOp_(( ~waitpid( -1, &status, WNOHANG ) || _errno == ECHILD ));
     _errno = errno_;
@@ -1341,7 +1336,8 @@ E_flow_Z_signal_V_chld( int uid
 _internal
 void
 E_flow_Z_signal_V_term( int uid
-){  int errno_ = _errno;
+){  Dh_();
+    int errno_ = _errno;
     struct sigaction sa =
     { .sa_handler = SIG_IGN
     , .sa_flags = 0
@@ -1359,7 +1355,8 @@ void
 E_flow_Z_signal_V_segv( int uid
 , siginfo_t *siginfo
 , P context
-){  int errno_ = _errno;
+){  Dh_();
+    int errno_ = _errno;
     if( E_base_S->E_flow_Q_task_S_current
         #ifdef C_pthreads
     && U_R( E_base_S->E_flow_S_mode, Z_task_table_S_can_read )
@@ -1377,7 +1374,7 @@ E_flow_Z_signal_V_segv( int uid
             return;
         }
     }
-    GV_(NDFN); Gd( siginfo->si_code ); Gh( siginfo->si_addr ); ///other fault.
+    GV_(NDFN); Gd( siginfo->si_code ); Gh( siginfo->si_addr ); // Other fault.
     struct sigaction sa =
     { .sa_handler = SIG_DFL
     , .sa_flags = 0
@@ -1390,8 +1387,9 @@ void
 E_flow_Z_signal_V_alrm( int uid
 , siginfo_t *siginfo
 , P data
-){  int errno_ = _errno;
-    if( !siginfo->si_pid ) ///NDFN Brak w dokumentacji, ale tylko to jest stałe pomiędzy systemami dla “sygnału” z “setitimer” lub “timer_settime”.
+){  Dh_();
+    int errno_ = _errno;
+    if( !siginfo->si_pid ) //NDFN Brak w dokumentacji, ale tylko to jest stałe pomiędzy systemami dla “sygnału” z “setitimer” lub “timer_settime”.
         U_F( E_base_S->E_flow_S_signal, time );
     U_F( E_base_S->E_flow_S_signal, wake );
     _errno = errno_;
@@ -1402,7 +1400,8 @@ void
 E_flow_Z_signal_V_process_call_ping( int uid
 , siginfo_t *siginfo
 , P data
-){  if( siginfo->si_code != SI_USER )
+){  Dh_();
+    if( siginfo->si_code != SI_USER )
         return;
     int errno_ = _errno;
     V0( kill( siginfo->si_pid, SIGPROF )){}
@@ -1413,7 +1412,8 @@ void
 E_flow_Z_signal_V_process_call_pong( int uid
 , siginfo_t *siginfo
 , P data
-){  if( siginfo->si_code != SI_USER )
+){  Dh_();
+    if( siginfo->si_code != SI_USER )
         return;
     int errno_ = _errno;
     for_each( call_id, E_base_S->E_flow_Q_process_call_cli_S, E_mem_Q_tab )
@@ -1431,7 +1431,7 @@ void
 E_flow_Z_signal_V_process_call_req( int uid
 , siginfo_t *siginfo
 , P data
-){
+){  Dh_();
         #ifndef E_flow_Q_process_call_C_alt
     if( siginfo->si_code != SI_QUEUE )
         #else
@@ -1442,7 +1442,7 @@ E_flow_Z_signal_V_process_call_req( int uid
     for_each( call_id, E_base_S->E_flow_Q_process_call_srv_S, E_mem_Q_tab )
     {   struct E_flow_Q_process_call_srv_Z *call = E_mem_Q_tab_R( E_base_S->E_flow_Q_process_call_srv_S, call_id );
         if( call->process_id == siginfo->si_pid )
-        {   GV_(NXP); Gd( siginfo->si_pid ); /// Duplicate process call request.
+        {   GV_(NXP); Gd( siginfo->si_pid ); // Duplicate process call request.
             _errno = errno_;
             return;
         }
@@ -1482,7 +1482,7 @@ void
 E_flow_Z_signal_V_process_call_reply( int uid
 , siginfo_t *siginfo
 , P data
-){
+){  Dh_();
         #ifndef E_flow_Q_process_call_C_alt
     if( siginfo->si_code != SI_QUEUE )
         #else
@@ -1502,7 +1502,7 @@ E_flow_Z_signal_V_process_call_reply( int uid
             return;
         }
     }
-    GV_(NXP); Gd( siginfo->si_pid ); /// Call reply from a unrequested process.
+    GV_(NXP); Gd( siginfo->si_pid ); // Call reply from a unrequested process.
     _errno = errno_;
 }
 //------------------------------------------------------------------------------
@@ -1512,7 +1512,8 @@ void
 E_flow_Z_signal_V_io_ready( int uid
 , siginfo_t *siginfo
 , P data
-){  int errno_ = _errno;
+){  Dh_();
+    int errno_ = _errno;
     //if( siginfo->si_code != POLL_OUT )
     //{   G_(); Gh( siginfo->si_code ); Gd( siginfo->si_fd );
     //}
@@ -1583,11 +1584,6 @@ E_flow_Z_signal_V_io_ready( int uid
     _errno = errno_;
 }
 #endif
-//------------------------------------------------------------------------------
-    #ifdef E_flow_C_errno_p
-#undef _errno
-#define _errno ( *E_base_S->E_flow_S_errno )
-    #endif
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 I
 E_flow_Q_process_call_M( N l

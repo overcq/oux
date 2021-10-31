@@ -106,12 +106,14 @@ typedef P           *Pp; /// Wskaźnik do tablic adresów.
 //------------------------------------------------------------------------------
 /// Utworzenie i wyrzucenie ‹zadania› lub ‹zadania› “wątkowanego” czekającego na ‹systemowy raport odblokowujący›.
     #ifndef E_flow_C_thread_system_unblock_reports
+#define Dh_()
         #ifdef C_line_report
 #define D_M(module,task)                    E_flow_Q_task_M( &(D_id(module,task)), _D_proc(module,task), J_s( _D_proc(module,task) ))
         #else
 #define D_M(module,task)                    E_flow_Q_task_M( &(D_id(module,task)), _D_proc(module,task) )
         #endif
     #else
+#define Dh_()                               int *E_flow_S_errno = __errno_location()
 //TODO Rozdzielić dla “Dh”— na ‹zadania› takie jak “D” (bez “subid”) oraz takie jak obecnie “Dh” (“Dhi”).
         #ifdef C_line_report
 #define D_M(module,task)                    E_flow_Q_task_M( &(D_id(module,task)), _D_proc(module,task), 0, no, J_s( _D_proc(module,task) ))
@@ -394,7 +396,7 @@ typedef P           *Pp; /// Wskaźnik do tablic adresów.
 #define J_assert(expr)                      assert(expr)
 //==============================================================================
     #ifdef E_flow_C_errno_p
-#define _errno                              ( *E_base_S->E_flow_S_errno )
+#define _errno                              ( *E_flow_S_errno )
     #else
 #define _errno                              errno
     #endif
