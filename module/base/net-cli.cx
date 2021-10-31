@@ -131,11 +131,10 @@ E_net_cli_Q_ssl_M( void
 }
 void
 E_net_cli_Q_ssl_W( SSL_CTX *ssl_ctx
-){  X_M( net, disconnect );
+){  X_A( net, disconnect );
     for_n_rev( i, E_net_http2_S_connect_n )
         E_net_http2_Q_ssl_I_disconnect(i);
     X_B( net, disconnect, 0 );
-    X_W( net, disconnect );
     W( E_net_http2_S_connect );
     SSL_CTX_free( ssl_ctx );
 }
@@ -424,7 +423,7 @@ E_net_D_cli_I_unblock( P p
 }
 D( net, cli ) //TODO Obsługa “http/1.1”.
 {   Xh_A( E_net_D_cli_I_unblock );
-    X_A( net, disconnect );
+    X_M( net, disconnect );
     X_A( net, ret );
     I_D
     {   if( !E_net_http2_S_connect_n )
@@ -473,14 +472,14 @@ D( net, cli ) //TODO Obsługa “http/1.1”.
             break;
         }
             #endif
-        N32 goaway_error;
-            #ifdef __gnu_linux__
-        S ssl_ret;
-            #else
-        int ssl_ret;
-            #endif
         for_n( i, E_net_http2_S_connect_n )
-        {   fd_set readfds;
+        {   N32 goaway_error;
+                #ifdef __gnu_linux__
+            S ssl_ret;
+                #else
+            int ssl_ret;
+                #endif
+            fd_set readfds;
 Next2:      FD_ZERO( &readfds );
             FD_SET( E_net_http2_S_connect[i].connect_sock, &readfds );
             struct timeval tv_ = { 0, 0 };
@@ -517,7 +516,6 @@ Next2:      FD_ZERO( &readfds );
                 G_(); Gd( E_net_http2_S_connect[i].buf_l );
             }
             E_net_http2_S_connect[i].buf_ = E_net_http2_S_connect[i].buf;
-            N32 goaway_error;
             N32 last_stream = ~0;
             O{  if( E_net_http2_S_connect[i].buf_ + 9 > E_net_http2_S_connect[i].buf + E_net_http2_S_connect[i].buf_l )
                     break;
@@ -987,5 +985,6 @@ End2_1:     e = SSL_get_error( E_net_http2_S_connect[i].ssl, ssl_ret );
             i--;
         }
     }
+    X_W( net, disconnect );
 }
 /******************************************************************************/
