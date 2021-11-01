@@ -445,11 +445,14 @@ E_flow_Q_task_M( I *uid
         return task_id;
     }
         #endif
+    P *p;
+    if( !task->exe_stack )
+    {   p = ( P * )exe_stack - 1;
+        *p = (P)&E_flow_Q_task_I_stop;
+    }
     E_flow_Q_task_I_switch( task_id );
     if( !task->exe_stack ) // W bloku– nowe ‹zadanie›: nic nie zmieniać na stosie należącym do przełączanego.
-    {   P *p = ( P * )exe_stack - 1;
-        *p = (P)&E_flow_Q_task_I_stop;
-        __asm__ volatile (
+    {   __asm__ volatile (
         #if defined( __i386__ ) || defined( __x86_64__ )
             #if defined( __i386__ )
         "\n" "mov   %0,%%esp"

@@ -15,10 +15,12 @@ do
     apropos ${a}
 done \
 | awk '
-    /^(([A-Za-z_][0-9A-Za-z_]*)( *, *[A-Za-z_][0-9A-Za-z_]*)*).*\([23][/a-z]*\)/ {
-        match( $0, "\\([23][/a-z]*\\)" )
+    /^[A-Za-z_][0-9A-Za-z_]*( *, *[A-Za-z_][0-9A-Za-z_]*)*.*\([23](\/[0-9A-Za-z]*|[A-Za-z][0-9A-Za-z]*)?( *, *[23](\/[0-9A-Za-z]*|[A-Za-z][0-9A-Za-z]*)?)*\)/ {
+        if( match( $0, "^[A-Za-z_][0-9A-Za-z_]*( *, *[A-Za-z_][0-9A-Za-z_]*)* *, *PCRE2?\\([23](/[0-9A-Za-z]*|[A-Za-z][0-9A-Za-z]*)?( *, *[23](/[0-9A-Za-z]*|[A-Za-z][0-9A-Za-z]*)?)*\\)" ) != 0 )
+            next
+        match( $0, "\\([23](/[0-9A-Za-z]*|[A-Za-z][0-9A-Za-z]*)?( *, *[23](/[0-9A-Za-z]*|[A-Za-z][0-9A-Za-z]*)?)*\\)" )
         sect = substr( $0, RSTART + 1, 1 )
-        match( $0, "[A-Za-z_][0-9A-Za-z_]*( *, *[A-Za-z_][0-9A-Za-z_]*)*" )
+        match( $0, "^[A-Za-z_][0-9A-Za-z_]*( *, *[A-Za-z_][0-9A-Za-z_]*)*" )
         split( substr( $0, RSTART, RLENGTH ), a, " *, *" )
         for ( i in a )
             print sect, a[i]
@@ -38,9 +40,12 @@ done \
 | awk '
     /^SYNOPSIS$/,/^DESCRIPTION$/ {
         if( match( $0, "^SYNOPSIS$" ) != 0 )
+        {   skip = 0
             headers = ""
+        }else if( skip != 0 || match( $0, "^[A-Z]+$" ) != 0 )
+            skip = 1
         else if( match( $0, "#include +<[^>]+>" ) != 0 || match( $0, "#include +\"[^\"]+\"" ) != 0 )
-        {   match( $0, "<[^>]+>" ) || match( substr( $0, RSTART, RLENGTH ), "\"[^\"]+\"" )
+        {   match( $0, "<[^>]+>" ) || match( $0, "\"[^\"]+\"" )
             headers = headers " " substr( $0, RSTART + 1, RLENGTH - 2 )
         }else if( headers != "" && match( $0, "[A-Za-z_][0-9A-Za-z_]*\\(" ) != 0 )
         {   s = substr( $0, RSTART, RLENGTH - 1 )

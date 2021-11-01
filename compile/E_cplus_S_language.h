@@ -17,7 +17,7 @@ typedef P           *Pp; /// Wskaźnik do tablic adresów.
 //==============================================================================
 #define no                                  false
 #define yes                                 true
-/// Wyrażenie przypisania automatycznie nadające podanej wartości rozmiar zmiennej.
+/// Wyrażenie przypisania automatycznie nadające podanej wartości rozmiar zmiennej. Naprawia konieczność jawnego deklarowania przyrostków dla typów stałych; bo domyślnie “int”.
 #define _v(a,v)                             (( (a) ^ (a) ) | (v) )
 //------------------------------------------------------------------------------
 #define _J_s(a)                             #a
@@ -113,7 +113,11 @@ typedef P           *Pp; /// Wskaźnik do tablic adresów.
 #define D_M(module,task)                    E_flow_Q_task_M( &(D_id(module,task)), _D_proc(module,task) )
         #endif
     #else
+        #if defined( __gnu_linux__ )
 #define Dh_()                               int *E_flow_S_errno = __errno_location()
+        #elif defined( __OpenBSD__ )
+#define Dh_()                               int *E_flow_S_errno = __errno()
+        #endif
 //TODO Rozdzielić dla “Dh”— na ‹zadania› takie jak “D” (bez “subid”) oraz takie jak obecnie “Dh” (“Dhi”).
         #ifdef C_line_report
 #define D_M(module,task)                    E_flow_Q_task_M( &(D_id(module,task)), _D_proc(module,task), 0, no, J_s( _D_proc(module,task) ))
@@ -154,14 +158,6 @@ typedef P           *Pp; /// Wskaźnik do tablic adresów.
 /// Czekanie na ‹raport› kolekcji.
 #define X_B(module,report,lost_count)       if( !E_flow_Q_report_I_wait( _X_var(module,report), (lost_count) )){} else
 //------------------------------------------------------------------------------
-    #ifdef E_flow_C_itimer_system_unblock_report
-/// Utworzenie i wyrzucenie ‹systemowego raportu odblokowującego› typu “itimer”, występującego najwyżej jeden raz.
-#define Xh1_M(sigsuspend,setitimer)         E_flow_Q_itimer_system_unblock_report_M( sigsuspend, setitimer )
-#define Xh1_W()                             E_flow_Q_itimer_system_unblock_report_W()
-/// Czekanie na ‹systemowy raport odblokowujący› typu “itimer”.
-#define Xh1_B()                             if( !E_flow_Q_itimer_system_unblock_report_I_wait() ){} else
-    #endif
-//------------------------------------------------------------------------------
     #ifdef E_flow_C_thread_system_unblock_reports
 /// Deklaracja ‹procedury› generującej ‹systemowy raport odblokowujący› dla ‹zadania›; odblokowującej to ‹zadanie›.
 #define Xh_A( thread_unblock_proc_ ) \
@@ -178,6 +174,14 @@ typedef P           *Pp; /// Wskaźnik do tablic adresów.
   if( !E_flow_Q_thread_system_unblock_report_I_after_block( J_autogen( thread_flow_mutex ))){} else
     #else
 #define Xh_A( thread_unblock_proc_ )
+    #endif
+//------------------------------------------------------------------------------
+    #ifdef E_flow_C_itimer_system_unblock_report
+/// Utworzenie i wyrzucenie ‹systemowego raportu odblokowującego› typu “itimer”, występującego najwyżej jeden raz.
+#define Xh1_M(sigsuspend,setitimer)         E_flow_Q_itimer_system_unblock_report_M( sigsuspend, setitimer )
+#define Xh1_W()                             E_flow_Q_itimer_system_unblock_report_W()
+/// Czekanie na ‹systemowy raport odblokowujący› typu “itimer”.
+#define Xh1_B()                             if( !E_flow_Q_itimer_system_unblock_report_I_wait() ){} else
     #endif
 //------------------------------------------------------------------------------
 /// Utworzenie i wyrzucenie ‹cyklera›.

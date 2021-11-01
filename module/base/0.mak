@@ -10,7 +10,6 @@ S_packages := libssl zlib
 S_libraries := m
 S_headers := errno.h limits.h signal.h sys/time.h time.h unistd.h zlib.h
     ifeq ($(H_make_S_os),Linux)
-S_packages += libpcreposix
 S_headers += error.h
 CFLAGS += -D_GNU_SOURCE
     else ifeq ($(H_make_S_os),OpenBSD)
