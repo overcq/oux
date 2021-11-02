@@ -11,7 +11,6 @@ S_libraries := m
 S_headers := errno.h limits.h signal.h sys/time.h time.h unistd.h zlib.h
     ifeq ($(H_make_S_os),Linux)
         ifeq (Ubuntu,$(H_make_S_distribution))
-$(error $(shell pkg-config --list-all ))
 S_packages += libpcreposix
         endif
 S_headers += error.h
