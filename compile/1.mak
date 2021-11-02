@@ -32,9 +32,9 @@ INSTALL := install
 LIBTOOL := libtool
 #===============================================================================
 H_make_S_os := $(shell uname -s)
-	ifeq(Linux,$(H_make_S_os))
+    ifeq(Linux,$(H_make_S_os))
 H_make_S_distribution := $(shell lsb_release -i | sed -s 's`^[^:]*:\s*``' )
-	endif
+    endif
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Wybór ‘kompilatora’.
 H_make_S_cc := clang gcc
