@@ -188,7 +188,7 @@ E_flow_Q_task_M( I *uid
     V1p( stack = mmap( 0
     , E_base_S->E_flow_Z_task_stacks_S_granulation_u
     , PROT_NONE
-    , MAP_PRIVATE
+    , MAP_PRIVATE | MAP_STACK
     | MAP_ANON
     , -1
     , 0
@@ -287,7 +287,11 @@ E_flow_Q_task_M( I *uid
         struct E_flow_Q_task_in_thread_I_thread_proc_Z_args task_proc_args =
         { .alt_stack = ( stack_t )
           { .ss_flags = 0
-          , .ss_size = 2 * E_base_S->E_mem_S_page_size //CONF #1
+              #if defined( __gnu_linux__ )
+          , .ss_size = 2 * E_base_S->E_mem_S_page_size //CONF
+              #elif defined( __OpenBSD__ )
+          , .ss_size = MINSIGSTKSZ //CONF
+              #endif
           }
         , .proc = task_proc
         };
@@ -305,7 +309,7 @@ E_flow_Q_task_M( I *uid
         , task_proc_args.alt_stack.ss_size
         , PROT_READ | PROT_WRITE
         , MAP_PRIVATE
-        | MAP_ANON
+        | MAP_ANON | MAP_STACK
         , -1
         , 0
         ))

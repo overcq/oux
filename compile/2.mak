@@ -240,7 +240,7 @@ TARGET_ARCH += -march=native
 .PHONY: all \
   build install install-0 install-1 uninstall uninstall-0 uninstall-1 \
   recompile rebuild \
-  mostlyclean clean distclean \
+  mostlyclean clean distclean maintainer-clean \
   run rebuild-run
 .DEFAULT: all
 #-------------------------------------------------------------------------------
@@ -474,6 +474,13 @@ clean: mostlyclean
 
 distclean: clean
 	$(RM) $(H_make_S_compile_path)/headers-db
+
+maintainer-clean: distclean
+	$(RM) -r $(foreach module,$(H_make_S_modules),$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/.libs))
+	$(RM) $(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/),*.so *.o E_cplus_S_0_*.h E_cplus_S_1_*.h E_cplus_S_2_*.h *.c)) \
+    *.o E_cplus_S_0_*.h E_cplus_S_1_*.h E_cplus_S_2_*.h *.c \
+    $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/E_cplus_S_0_to_libs.h) E_cplus_S_0_main_not_to_libs.h \
+    $(H_make_S_module_path)/E_cplus_S_cx_sources E_cplus_S_cx_sources
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Uruchamianie rezultatu nie zainstalowanego.
 run:
