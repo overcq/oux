@@ -6,7 +6,7 @@
 *         tworzenie ‹modułu› przy rozpoczęciu programu
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2016‒2‒28 N
 *******************************************************************************/
-///DFN Globalnie: utworzenie ‹modułu› ([…]“_M”) może być wykonane w programie tylko raz.
+//DFN Globalnie: utworzenie ‹modułu› ([…]“_M”) może być wykonane w programie tylko raz.
 //==============================================================================
     #ifdef E_flow_C_errno_p
 int *E_flow_S_errno;
@@ -30,16 +30,15 @@ struct E_base_Z
   struct E_mem_Q_blk_Z_allocated *E_mem_Q_blk_S_allocated;
   N E_mem_Q_blk_S_table_allocated_id;
   N E_flow_Z_task_stacks_S_n_pages;
-  N E_flow_Z_task_stacks_S_granulation_u, E_flow_Z_task_stacks_S_granulation_n, E_flow_Z_task_stacks_S_granulation_n_back;
-  struct E_mem_Q_tab_Z *E_flow_Q_task_S; /// Ta tablica nie może mieć tworzonego “E_mem_Q_tab_Q_iter”.
+  struct E_mem_Q_tab_Z *E_flow_Q_task_S; // Ta tablica nie może mieć tworzonego “E_mem_Q_tab_Q_iter”.
     #ifdef E_flow_C_thread_system_unblock_reports
   struct E_mem_Q_tab_Z *E_flow_Q_task_S_uid_subid;
     #endif
   struct E_mem_Q_tab_Z *E_flow_Q_report_S;
     #ifdef E_flow_C_itimer_system_unblock_report
-  /// W danym czasie może być zarejestrowany najwyżej jeden ‹systemowy raport odblokowujący› typu “itimer”; przez ustawienie procedur zastępujących funkcjonalność systemowych “setitimer” i “sigsuspend”, np. “getch” opakowanej dla uzgodnienia ‘intefejsu’. Zmienne nie mogą być ustawiane w procedurze obsługi “sygnału” ‘uniksowego’.
-  B (* E_flow_Z_itimer_system_unblock_report_I_sigsuspend )( sigset_t * ); /// W wyniku jest to, czy wraca z ‹systemowym raportem odblokowującym›.
-  void (* E_flow_Z_itimer_system_unblock_report_I_setitimer )( Z_clock_time * ); /// Jeśli nie jest ustawiona albo —bezwarunkowo— jeśli użyte są ‹zadania› “wątkowane”, to “SIGALRM” musi odblokowywać (zakańczać) procedurę opakowaną.
+  // W danym czasie może być zarejestrowany najwyżej jeden ‹systemowy raport odblokowujący› typu “itimer”; przez ustawienie procedur zastępujących funkcjonalność systemowych “setitimer” i “sigsuspend”, np. “getch” opakowanej dla uzgodnienia ‘intefejsu’. Zmienne nie mogą być ustawiane w procedurze obsługi “sygnału” ‘uniksowego’.
+  B (* E_flow_Z_itimer_system_unblock_report_I_sigsuspend )( sigset_t * ); // W wyniku jest to, czy wraca z ‹systemowym raportem odblokowującym›.
+  void (* E_flow_Z_itimer_system_unblock_report_I_setitimer )( Z_clock_time * ); // Jeśli nie jest ustawiona albo —bezwarunkowo— jeśli użyte są ‹zadania› “wątkowane”, to “SIGALRM” musi odblokowywać (zakańczać) procedurę opakowaną.
     #endif
   Z_clock_time E_flow_Q_process_call_S_ping_period;
   struct E_mem_Q_tab_Z *E_flow_Q_timer_S;
@@ -210,8 +209,6 @@ E_mem_M_blk( void
         GV_(NA); Gs0(s); V();
     }
         #endif
-    E_base_S->E_flow_Z_task_stacks_S_granulation_n = 0;
-    E_base_S->E_flow_Z_task_stacks_S_granulation_n_back = 0;
 }
 _internal
 void
@@ -282,17 +279,17 @@ E_base_M(
     *( s + 6 + l_1 ) = '\0';
     E_base_S->E_flow_Q_process_call_S_service_path_guid = s;
         #endif
-    /// Włączenie “V”[…]“_”.
+    // Włączenie “V”[…]“_”.
     int fd_flags;
     V1_( fd_flags = fcntl( STDERR_FILENO, F_GETFL ));
     fd_flags |= O_NONBLOCK;
     V0_( fcntl( STDERR_FILENO, F_SETFL, fd_flags ));
-    /// Procedury wymagane lub zalecane w środowisku uruchamiania programu.
+    // Procedury wymagane lub zalecane w środowisku uruchamiania programu.
     Vp_( setlocale( LC_ALL, "" ));
         #ifdef C_pthreads
     Vr_( pthread_setconcurrency(1) );
         #endif
-    /// Odblokowanie dostępu do tablicy ‹zadań›.
+    // Odblokowanie dostępu do tablicy ‹zadań›.
     E_base_S->E_flow_Q_task_S = E_mem_Q_tab_M( sizeof( struct E_flow_Q_task_Z ), 1 );
     if( !E_base_S->E_flow_Q_task_S )
     {   GV_(NA); V();
@@ -310,7 +307,7 @@ E_base_M(
     E_base_S->switch_back_try = yes;
     E_base_S->switch_back_suspend = no;
         #endif
-    /// Wyłączenie niedozwolonych “sygnałów” ‘uniksowych’, przyblokowanie, ustawienie “masek”.
+    // Wyłączenie niedozwolonych “sygnałów” ‘uniksowych’, przyblokowanie, ustawienie “masek”.
     struct sigaction sa =
     { .sa_handler = SIG_IGN
     , .sa_flags = 0
@@ -357,7 +354,7 @@ E_base_M(
         #else
     _sigprocmask( SIG_SETMASK, &sigset, &E_base_S->E_flow_Z_saved_initial_S_blocked_signals );
         #endif
-    /// Ustawienie podstawowych zmiennych ‹modułu›.
+    // Ustawienie podstawowych zmiennych ‹modułu›.
     if(argc) //NDFN Dlaczego to sprawdzenie? Czy standard nie gwarantuje “>= 1”?
     {   Pc s = E_text_Z_s0_R_c_search_last( argv[0], E_mem_Q_file_S_filename_separator );
         E_base_S->E_flow_S_exe_name = *s == E_mem_Q_file_S_filename_separator ? s + 1 : argv[0];
@@ -378,7 +375,7 @@ E_base_M(
     {   W( E_base_S->E_flow_S_cwd );
         E_base_S->E_flow_S_cwd = E_mem_Q_file_S_filename_separator_s;
     }
-    /// Ustawienie obsługi “sygnałów” ‘uniksowych’.
+    // Ustawienie obsługi “sygnałów” ‘uniksowych’.
     sa.sa_handler = E_flow_Z_signal_V_term;
     _sigaction_M( SIGHUP, &sa );
     _sigaction_M( SIGINT, &sa );
@@ -407,7 +404,7 @@ E_base_M(
     sa.sa_sigaction = E_flow_Z_signal_V_io_ready;
     _sigaction_M( SIGIO, &sa );
         #endif
-    /// Ustawienie procedury “sygnału” “SEGV”— do obsługi pamięci stosów ‹zadań›.
+    // Ustawienie procedury “sygnału” “SEGV”— do obsługi pamięci stosów ‹zadań›.
     stack_t alt_stack =
     { .ss_flags = 0
         #if defined( __gnu_linux__ )
@@ -437,16 +434,15 @@ E_base_M(
         #else
 #error not implemented
         #endif
+    E_base_S->E_flow_Z_task_stacks_S_n_pages -= alt_stack.ss_size / E_base_S->E_mem_S_page_size;
     V0_( sigaltstack( &alt_stack, 0 ));
     sa.sa_sigaction = E_flow_Z_signal_V_segv;
     sa.sa_flags = SA_ONSTACK | SA_SIGINFO;
     _sigaction_M( SIGSEGV, &sa );
-    /// Odblokowanie “sygnałów” ‘uniksowych’.
+    // Odblokowanie “sygnałów” ‘uniksowych’.
     _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_Z_sigset_S_empty, 0 );
-    /// Uruchomienie funkcjonalności ‹modułu›.
+    // Uruchomienie funkcjonalności ‹modułu›.
     V1_( E_base_S->E_flow_Z_task_stacks_S_n_pages = sysconf( _SC_AVPHYS_PAGES ));
-    E_base_S->E_flow_Z_task_stacks_S_n_pages /= 2; //NDFN Ma być ilość pamięci teoretycznie dostępnej do alokacji. I brakuje uwzględniania pamięci na dynamiczne alokacje.
-    E_base_S->E_flow_Z_task_stacks_S_granulation_u = E_base_S->E_flow_Z_task_stacks_S_n_pages * E_base_S->E_mem_S_page_size;
         #ifdef E_flow_C_thread_system_unblock_reports
     E_base_S->E_flow_Q_task_S_uid_subid = E_mem_Q_tab_M( sizeof( struct E_mem_Q_tab_Z * ), 0 );
     if( !E_base_S->E_flow_Q_task_S_uid_subid )
@@ -477,9 +473,15 @@ E_base_M(
         #endif
     E_mem_M_file();
     E_io_M_stream();
-    D_M( flow, call_srv );
-    D_M( io, stream_write );
-    D_M( mem, file_save );
+    D_M( flow, call_srv )
+    {   GV_(NA); V();
+    }
+    D_M( io, stream_write )
+    {   GV_(NA); V();
+    }
+    D_M( mem, file_save )
+    {   GV_(NA); V();
+    }
     V0( pipe( &E_net_cli_S_poll_pipe[0] ))
     {   GV_(NA); V();
     }
@@ -508,10 +510,12 @@ E_base_M(
     E_net_cli_S_poll_fd[ E_net_cli_S_poll_fd_n - 1 ].events = POLLIN;
         #endif
         #ifndef E_flow_C_thread_system_unblock_reports
-    D_M( net, cli );
+    D_M( net, cli )
         #else
-    Dh_M( net, cli, 0, 0 );
+    Dh_M( net, cli, 0, 0 )
         #endif
+    {   GV_(NA); V();
+    }
     Pc *e = environ;
     while( *e )
     {   if( E_text_Z_s0_T_s0_starts( *e, "LD_PRELOAD=" ))

@@ -13,6 +13,13 @@ N E_main_Q_http_req_ret_count;
 //=============================================================================
 void
 http_req_ret_func( N connection_i
+){  E_main_Q_http_req_ret_count++;
+    G_(); Gs0( E_net_http_S_connect[ connection_i ].file_name );
+    V0( unlink( E_net_http_S_connect[ connection_i ].file_name ) ){}
+    E_net_http_S_connect[ connection_i ].ret_func = 0;
+}
+void
+http2_req_ret_func( N connection_i
 , I stream_id
 ){  E_main_Q_http_req_ret_count++;
     struct E_net_http2_Z_stream *stream = E_mem_Q_tab_R( E_net_http2_S_connect[ connection_i ].stream, stream_id );
@@ -43,37 +50,50 @@ main(
 
     SSL_CTX *ssl_ctx = E_net_cli_Q_ssl_M();
     if( !ssl_ctx )
-        goto End;
+        goto End_3;
     B http2;
     N connection = E_net_cli_Q_ssl_I_connect( ssl_ctx, "gentoo", &http2 );
     if( !~connection )
-        goto End;
-    if( !http2 )
         goto Skip;
-    N ret = E_net_http2_I_request( connection, "/", http_req_ret_func );
-    if(ret)
-        goto Skip;
-    ret = E_net_http2_I_request( connection, "/", http_req_ret_func );
-    if(ret)
-        goto Skip;
+    if(http2)
+    {   N ret = E_net_http2_I_request( connection, "/", http2_req_ret_func );
+        if(ret)
+            goto Skip;
+        ret = E_net_http2_I_request( connection, "/", http2_req_ret_func );
+        if(ret)
+            goto Skip;
+    }else
+    {   N ret = E_net_http_I_request( connection, "/", http_req_ret_func );
+        if(ret)
+            goto Skip;
+    }
     X_M( net, ret );
     E_main_Q_http_req_ret_count = 0;
     O{  X_B( net, ret, 0 )
             break;
-        if( !E_net_http2_S_connect_n
-        || E_main_Q_http_req_ret_count == 2
-        )
+        if(( http2
+          && ( !E_net_http2_S_connect_n
+            || E_main_Q_http_req_ret_count == 2
+          ))
+        || ( !http2
+          && ( !E_net_http_S_connect_n
+            || E_main_Q_http_req_ret_count == 1
+        )))
             break;
     }
     X_W( net, ret );
 Skip:
     E_net_cli_Q_ssl_W( ssl_ctx );
+End_3:;
     goto End;
 
     X_M( x_window, close_window );
     for_n( i, 1 )
-    {   D_M( main, timer_draw );
+    {   D_M( main, timer_draw )
+            goto End_1;
         N display_id = E_x_Q_display_M();
+        if( !~display_id )
+            goto End_2;
         struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
         for_each( screen_id, display->screen, E_mem_Q_tab )
         {   struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, screen_id );
@@ -146,10 +166,11 @@ Skip:
             U_F( E_base_S->E_flow_S_signal, exit_all );
         //D_W( main, cursor );
         E_x_Q_display_W( display_id );
-        D_W( main, timer_draw );
+End_2:  D_W( main, timer_draw );
         if( U_R( E_base_S->E_flow_S_signal, exit_all ))
             break;
     }
+End_1:
     X_W( x_window, close_window );
 End:E_x_W();
     E_base_W();

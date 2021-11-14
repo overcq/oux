@@ -6,22 +6,22 @@
 *         flow driver
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2015‒1‒26 
 *******************************************************************************/
-/// programista ‟oux” rozumie następujące zagadnienia podstawowe:
-/// ‣ przełączanie ‹zadań› wykonywane w pętli dla kolejnych obudzonych jako ograniczoną liniowym czasem aktywację kolejnych warstw wykonawczej sieci informacyjnej (jak biologicznej sieci neuronowo‐biochemicznej, inaczej elektryczno‐molekularnej, inaczej synaptyczno‐organicznej)
-/// ‣ informacyjno‐wykonawczą nienazywającą stwórczość bytową (molekularną) w postaci bezwarunkowej pętli programowej odpowiednio użytej
-/// ‣ pełną dynamiczność systemu ‘uidów’ ‹raportów›/‹impulsatorów›, która jest odrębna od używanego systemu zapewniania unikalności ‘idów’ zarejestrowanych ‹raportów›/‹impulsatorów› używanych pomiędzy ‹zadaniami›— jak rzeczywistość wykonawcza nie jest zależna od nazw, ale została oparta na statycznych nazwach, bo tutaj program jest kompilowany całościowo, więc nie potrzeba uzgadniać ‘uidu’ ‹raportu›/‹impulsatora›
+// Programista ‟oux” rozumie następujące zagadnienia podstawowe:
+// ‣ przełączanie ‹zadań› wykonywane w pętli dla kolejnych obudzonych jako ograniczoną liniowym czasem aktywację kolejnych warstw wykonawczej sieci informacyjnej (jak biologicznej sieci neuronowo‐biochemicznej, inaczej elektryczno‐molekularnej, inaczej synaptyczno‐organicznej)
+// ‣ informacyjno‐wykonawczą nienazywającą stwórczość bytową (molekularną) w postaci bezwarunkowej pętli programowej odpowiednio użytej
+// ‣ pełną dynamiczność systemu ‘uidów’ ‹raportów›/‹impulsatorów›, która jest odrębna od używanego systemu zapewniania unikalności ‘idów’ zarejestrowanych ‹raportów›/‹impulsatorów› używanych pomiędzy ‹zadaniami›— jak rzeczywistość wykonawcza nie jest zależna od nazw, ale została oparta na statycznych nazwach, bo tutaj program jest kompilowany całościowo, więc nie potrzeba uzgadniać ‘uidu’ ‹raportu›/‹impulsatora›
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/// Przeprojektowywane pod rzeczywiste potrzeby.
+// Przeprojektowywane pod rzeczywiste potrzeby.
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/// [ta linia– do aktualizacji.] Instrukcje mogące przełączyć ‹zadanie›: “X_B”, [“X_E”], “Y_B”, “I_B”. “D_M” i “D_W” zawsze przełączają jakby proceduralnie do ‹zadania› uruchamianego/zwalnianego, wykonują blok startowy/końcowy i wracają, więc nie zaliczają się do tego zbioru.
-/// Bloki startowe i końcowe ‹zadań› służą obowiązkowo do rejestracji (np. ‹raportów›) i zwalniania zasobów ‘interfejsu’ bytu ‹zadania› ·bezwarunkowo· widzianych przez inne. W blokach tych nie wolno przełączać (tzn. jawnie, nie przez normalne wykonywanie się “D_W”) ani wykonywać celu ‹zadania›. (Jeśli w bloku startowym zostanie użyta jedna z instrukcji przełączenia, to ‹zadanie› pozostanie zablokowane dla ‘schedulera’ w nie wznawialnym (nie obsługiwanym) stanie oczekiwania (“E_flow_Z_run_state_S_starting_by_task”). Jeśli zostanie użyta w bloku końcowym, to ‹zadanie› zostanie zablokowane (“E_flow_Z_run_state_S_stopping_by_task”) i usunięte przez ‹zadanie› usuwające, po przełączeniu do niego przez ‘schedulera’— bez wykonania reszty programu ‹zadania› usuwanego.)
-/// Adresy danych dostępnych przez identyfikatory (adresy ‹okien wglądu›) muszą być ponownie odczytane przed użyciem po możliwym przełączeniu ‹zadania›.
+// [ta linia– do aktualizacji.] Instrukcje mogące przełączyć ‹zadanie›: “X_B”, [“X_E”], “Y_B”, “I_B”. “D_M” i “D_W” zawsze przełączają jakby proceduralnie do ‹zadania› uruchamianego/zwalnianego, wykonują blok startowy/końcowy i wracają, więc nie zaliczają się do tego zbioru.
+// Bloki startowe i końcowe ‹zadań› służą obowiązkowo do rejestracji (np. ‹raportów›) i zwalniania zasobów ‘interfejsu’ bytu ‹zadania› ·bezwarunkowo· widzianych przez inne. W blokach tych nie wolno przełączać (tzn. jawnie, nie przez normalne wykonywanie się “D_W”) ani wykonywać celu ‹zadania›. (Jeśli w bloku startowym zostanie użyta jedna z instrukcji przełączenia, to ‹zadanie› pozostanie zablokowane dla ‘schedulera’ w nie wznawialnym (nie obsługiwanym) stanie oczekiwania (“E_flow_Z_run_state_S_starting_by_task”). Jeśli zostanie użyta w bloku końcowym, to ‹zadanie› zostanie zablokowane (“E_flow_Z_run_state_S_stopping_by_task”) i usunięte przez ‹zadanie› usuwające, po przełączeniu do niego przez ‘schedulera’— bez wykonania reszty programu ‹zadania› usuwanego.)
+// Adresy danych dostępnych przez identyfikatory (adresy ‹okien wglądu›) muszą być ponownie odczytane przed użyciem po możliwym przełączeniu ‹zadania›.
 //------------------------------------------------------------------------------
-/// Zasadą jest, że instrukcje oczekiwania na coś przez ‹zadanie› odblokowują je dokładnie po zaistnieniu tego czegoś, bez zależności raportowania zaistnienia czegokolwiek, co ‹zadanie› ma zarejestrowane, ale czeka na to inną instrukcją przełączającą ‹zadanie›. Więc oczekiwanie sekwencyjne na różne rzeczy przez ‹zadanie› jest sytuacją obsługiwaną (tak jak powyżej napisane), aczkolwiek nie polecaną.
-/// Właścicielem ‹raportu›/‹impulsatora› jest ‹zadanie›, które na niego czeka (rejestracja oczekiwania– “X_M”/“Yi_M”), i tylko to ‹zadanie› może czekać na ten ‹raport›/‹impulsator› (w dowolnej liczbie miejsc wewnątrz własnej procedury); ale w ‘kompilacji’ ‹modułów› do “bibliotek” ‹zadanie› w ‹module› “main” —czyli w głównym pliku wykonywalnym programu— nie jest generatorem ‘uidu’ ‹raportu›/‹impulsatora›, który emituje któryś ‹moduł› “biblioteczny”. Właścicielem ‚raportów znacznikowych’ —statycznych, nierejestrowanych, pochodzących z “sygnałów” ‘uniksowych’— jest ‹zadanie› “main” (a procedura), ponieważ tylko to ‹zadanie› może obsługiwać stany programu uruchomionego przez nie w składnikach, a niektórych ‚raportów znacznikowych’– ‚scheduler’, ponieważ tylko on może zarządzać systemowym przepływem wykonania i go przełączać.
+// Zasadą jest, że instrukcje oczekiwania na coś przez ‹zadanie› odblokowują je dokładnie po zaistnieniu tego czegoś, bez zależności raportowania zaistnienia czegokolwiek, co ‹zadanie› ma zarejestrowane, ale czeka na to inną instrukcją przełączającą ‹zadanie›. Więc oczekiwanie sekwencyjne na różne rzeczy przez ‹zadanie› jest sytuacją obsługiwaną (tak jak powyżej napisane), aczkolwiek nie polecaną.
+// Właścicielem ‹raportu›/‹impulsatora› jest ‹zadanie›, które na niego czeka (rejestracja oczekiwania– “X_M”/“Yi_M”), i tylko to ‹zadanie› może czekać na ten ‹raport›/‹impulsator› (w dowolnej liczbie miejsc wewnątrz własnej procedury); ale w ‘kompilacji’ ‹modułów› do “bibliotek” ‹zadanie› w ‹module› “main” —czyli w głównym pliku wykonywalnym programu— nie jest generatorem ‘uidu’ ‹raportu›/‹impulsatora›, który emituje któryś ‹moduł› “biblioteczny”. Właścicielem ‚raportów znacznikowych’ —statycznych, nierejestrowanych, pochodzących z “sygnałów” ‘uniksowych’— jest ‹zadanie› “main” (a procedura), ponieważ tylko to ‹zadanie› może obsługiwać stany programu uruchomionego przez nie w składnikach, a niektórych ‚raportów znacznikowych’– ‚scheduler’, ponieważ tylko on może zarządzać systemowym przepływem wykonania i go przełączać.
 //------------------------------------------------------------------------------
-/// “process_call”– synchroniczne w przepływie pojedynczego ‹zadania›— funkcje żądane przy użyciu ‘uniksowego’ “sygnału”:
-/// Tylko jedno ‹zadanie› w programie (‹sterownik› funkcji programu zewnętrznego) może implementować żądania funkcji konkretnego (jednego) programu ‟oux” uruchomionego w systemie operacyjnym. Obecnie w programie ‟bis” rozróżnianie programów jest realizowane przez rozróżnianie nazw procesów, tzn. nie jest uwzględniony przypadek, gdy program ‟oux” posiada procesy podrzędne. [To zdanie sprawdzić, bo coś już było zrobione.] Ponadto nie zostało (dla optymalizacji) zaimplementowane rozpoznawanie programu typu ‟oux” (uzupełnić o autoryzację potwierdzaną chwilowo?) oraz własnego (wykluczać u źródła), a wykonanie żądania funkcji do takiego programu nie jest dozwolone.
+// “process_call”– synchroniczne w przepływie pojedynczego ‹zadania›— funkcje żądane przy użyciu ‘uniksowego’ “sygnału”:
+// Tylko jedno ‹zadanie› w programie (‹sterownik› funkcji programu zewnętrznego) może implementować żądania funkcji konkretnego (jednego) programu ‟oux” uruchomionego w systemie operacyjnym. Obecnie w programie ‟bis” rozróżnianie programów jest realizowane przez rozróżnianie nazw procesów, tzn. nie jest uwzględniony przypadek, gdy program ‟oux” posiada procesy podrzędne. [To zdanie sprawdzić, bo coś już było zrobione.] Ponadto nie zostało (dla optymalizacji) zaimplementowane rozpoznawanie programu typu ‟oux” (uzupełnić o autoryzację potwierdzaną chwilowo?) oraz własnego (wykluczać u źródła), a wykonanie żądania funkcji do takiego programu nie jest dozwolone.
 //TODO Rozwiązać inaczej “subid” ‹zadań› w wątku systemowym?
 _internal
 I _X_var( flow, call_req );
@@ -94,6 +94,61 @@ struct E_flow_Q_process_call_cli_Z
   unsigned U_R( state, reply )          :1;
 };
 //==============================================================================
+N
+E_flow_Q_task_I_granulation( void
+){  N granulation_u = E_simple_T_multiply_overflow( E_base_S->E_flow_Z_task_stacks_S_n_pages, E_base_S->E_mem_S_page_size )
+    || E_base_S->E_flow_Z_task_stacks_S_n_pages * E_base_S->E_mem_S_page_size > E_simple_Z_n_I_mod_i2( ~0, sizeof(N) * 8 - 3 ) + 1
+    ? E_simple_Z_n_I_mod_i2( ~0, sizeof(N) * 8 - 3 ) + 1 //CONF
+    : E_base_S->E_flow_Z_task_stacks_S_n_pages * E_base_S->E_mem_S_page_size;
+    granulation_u /= E_mem_Q_tab_R_n( E_base_S->E_flow_Q_task_S );
+    granulation_u = E_simple_Z_n_I_align_down_to_v2( granulation_u, E_base_S->E_mem_S_page_size );
+    N ret = 0;
+    for_each_out( 0, task_id_, E_base_S->E_flow_Q_task_S, E_mem_Q_tab )
+    {   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id_ );
+            #ifdef E_flow_C_thread_system_unblock_reports
+        if( U_R( task->type, system_unblock_report ))
+        {
+                #if defined( __gnu_linux__ )
+            N ss_size = 2 * E_base_S->E_mem_S_page_size; //CONF
+                #elif defined( __OpenBSD__ )
+            N ss_size = E_simple_Z_n_I_align_up_to_v2( MINSIGSTKSZ, E_base_S->E_mem_S_page_size ); //CONF
+                #endif
+            if( granulation_u < ss_size )
+            {   ret--;
+                continue;
+            }
+            granulation_u -= ss_size;
+            N pthread_stack_min = E_simple_Z_n_I_align_up_to_v2( PTHREAD_STACK_MIN, E_base_S->E_mem_S_page_size );
+            if( granulation_u < pthread_stack_min )
+            {   ret--;
+                continue;
+            }
+        }
+            #endif
+        if( granulation_u < 2 * E_base_S->E_mem_S_page_size )
+        {   ret--;
+            continue;
+        }
+        if( task->stack_size > granulation_u )
+            if( task->stack + task->stack_size - granulation_u <= task->touched_stack )
+            {   N subtract = task->stack_size - granulation_u - E_base_S->E_mem_S_page_size;
+                if(subtract)
+                {   V0_( munmap( task->stack, subtract ));
+                    task->stack += subtract;
+                    task->stack_size -= subtract;
+                }
+            }else
+            {   N subtract = task->touched_stack - E_base_S->E_mem_S_page_size - task->stack;
+                if(subtract)
+                {   V0_( munmap( task->stack, subtract ));
+                    task->stack += subtract;
+                    task->stack_size -= subtract;
+                }
+                ret--;
+            }
+    }
+    return ret;
+}
 I
 E_flow_Q_task_M( I *uid
 , void (*task_proc)(P)
@@ -104,80 +159,78 @@ E_flow_Q_task_M( I *uid
     #ifdef C_line_report
 , Pc task_proc_name
     #endif
-){  if( E_base_S->E_flow_Z_task_stacks_S_granulation_n_back )
+){  N granulation_u = E_simple_T_multiply_overflow( E_base_S->E_flow_Z_task_stacks_S_n_pages, E_base_S->E_mem_S_page_size )
+    || E_base_S->E_flow_Z_task_stacks_S_n_pages * E_base_S->E_mem_S_page_size > E_simple_Z_n_I_mod_i2( ~0, sizeof(N) * 8 - 3 ) + 1
+    ? E_simple_Z_n_I_mod_i2( ~0, sizeof(N) * 8 - 3 ) + 1 //CONF
+    : E_base_S->E_flow_Z_task_stacks_S_n_pages * E_base_S->E_mem_S_page_size;
+    granulation_u /= E_mem_Q_tab_R_n( E_base_S->E_flow_Q_task_S );
+    granulation_u = E_simple_Z_n_I_align_down_to_v2( granulation_u, E_base_S->E_mem_S_page_size );
+        #ifdef E_flow_C_thread_system_unblock_reports
+    struct E_flow_Q_task_in_thread_I_thread_proc_Z_args task_proc_args;
+    if( task_in_thread_kind )
+    {   task_proc_args = ( struct E_flow_Q_task_in_thread_I_thread_proc_Z_args )
+        { .alt_stack = ( stack_t )
+          { .ss_flags = 0
+              #if defined( __gnu_linux__ )
+          , .ss_size = 2 * E_base_S->E_mem_S_page_size //CONF
+              #elif defined( __OpenBSD__ )
+          , .ss_size = E_simple_Z_n_I_align_up_to_v2( MINSIGSTKSZ, E_base_S->E_mem_S_page_size ) //CONF
+              #endif
+          }
+        , .proc = task_proc
+        };
+        if( granulation_u < task_proc_args.alt_stack.ss_size )
+        {   if( thread_proc_arg )
+                W( thread_proc_arg );
+            GV_(NA); // Late instrumentation error: granulation unit too small because too many tasks in available memory.
+            return ~0;
+        }
+        granulation_u -= task_proc_args.alt_stack.ss_size;
+    }
+    N pthread_stack_min = E_simple_Z_n_I_align_up_to_v2( PTHREAD_STACK_MIN, E_base_S->E_mem_S_page_size );
+    if( task_in_thread_kind
+    && granulation_u < pthread_stack_min
+    )
+    {   if( thread_proc_arg )
+            W( thread_proc_arg );
+        GV_(NA); // Late instrumentation error: granulation unit too small because too many tasks in available memory.
+        return ~0;
+    }
+        #endif
+    if( granulation_u < 2 * E_base_S->E_mem_S_page_size )
     {
             #ifdef E_flow_C_thread_system_unblock_reports
-        if( task_in_thread_kind
-        && E_base_S->E_flow_Z_task_stacks_S_granulation_u < PTHREAD_STACK_MIN
-        )
-        {   GV_(NA); // Late instrumentation error: granulation unit too small because too many tasks in available memory.
-            if( thread_proc_arg )
-                W( thread_proc_arg );
-            return ~0;
-        }
+        if( thread_proc_arg )
+            W( thread_proc_arg );
             #endif
-        E_base_S->E_flow_Z_task_stacks_S_granulation_n_back--;
-    }else
-    {   if( E_simple_Z_n_T_power_2( E_base_S->E_flow_Z_task_stacks_S_granulation_n ))
-        {   N v = E_base_S->E_flow_Z_task_stacks_S_granulation_u;
-            E_base_S->E_flow_Z_task_stacks_S_granulation_u /= 2;
-                #ifdef E_flow_C_thread_system_unblock_reports
-            if( task_in_thread_kind
-            && E_base_S->E_flow_Z_task_stacks_S_granulation_u < PTHREAD_STACK_MIN
-            )
-            {   E_base_S->E_flow_Z_task_stacks_S_granulation_n_back++;
-                GV_(NA); // Late instrumentation error: granulation unit too small because too many tasks in available memory.
-                if( thread_proc_arg )
-                    W( thread_proc_arg );
-                return ~0;
-            }
-                #endif
-            if( E_base_S->E_flow_Z_task_stacks_S_granulation_u < 2 * E_base_S->E_mem_S_page_size )
-            {   E_base_S->E_flow_Z_task_stacks_S_granulation_u = v;
-                GV_(NA); // Late instrumentation error: granulation unit too small because too many tasks in available memory.
-                    #ifdef E_flow_C_thread_system_unblock_reports
-                if( thread_proc_arg )
-                    W( thread_proc_arg );
-                    #endif
-                return ~0;
-            }
-            E_base_S->E_flow_Z_task_stacks_S_granulation_u = E_simple_Z_n_I_align_down_to_v2( E_base_S->E_flow_Z_task_stacks_S_granulation_u, E_base_S->E_mem_S_page_size );
-            E_base_S->E_flow_Z_task_stacks_S_granulation_n *= 2;
-            for_each_out( 0, task_id, E_base_S->E_flow_Q_task_S, E_mem_Q_tab )
-            {   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id );
-                N unaligned_size = task->stack_size - E_simple_Z_n_I_align_down_to_v( task->stack_size, E_base_S->E_flow_Z_task_stacks_S_granulation_u );
-                if( task->stack + unaligned_size + E_base_S->E_flow_Z_task_stacks_S_granulation_u <= task->touched_stack )
-                {   E_base_S->E_flow_Z_task_stacks_S_granulation_n--;
-                    V0_( munmap( task->stack - E_base_S->E_mem_S_page_size, unaligned_size + E_base_S->E_flow_Z_task_stacks_S_granulation_u ));
-                    task->stack += unaligned_size + E_base_S->E_flow_Z_task_stacks_S_granulation_u;
-                    task->stack_size -= unaligned_size + E_base_S->E_flow_Z_task_stacks_S_granulation_u;
-                }else
-                {   GV_(NDFN); // Late instrumentation error: task stack larger than granulation unit.
-                    if( unaligned_size
-                    && task->stack + unaligned_size <= task->touched_stack
-                    ){  V0_( munmap( task->stack - E_base_S->E_mem_S_page_size, unaligned_size ));
-                        task->stack += unaligned_size;
-                        task->stack_size -= unaligned_size;
-                    }
+        GV_(NA); // Late instrumentation error: granulation unit too small because too many tasks in available memory.
+        return ~0;
+    }
+    for_each_out( 0, task_id_, E_base_S->E_flow_Q_task_S, E_mem_Q_tab )
+    {   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id_ );
+        if( task->stack_size > granulation_u )
+            if( task->stack + task->stack_size - granulation_u <= task->touched_stack )
+            {   N subtract = task->stack_size - granulation_u - E_base_S->E_mem_S_page_size;
+                if(subtract)
+                {   V0_( munmap( task->stack, subtract ));
+                    task->stack += subtract;
+                    task->stack_size -= subtract;
+                }
+            }else
+            {   GV_(NDFN); // Late instrumentation error: task stack larger than granulation unit.
+                N subtract = task->touched_stack - E_base_S->E_mem_S_page_size - task->stack;
+                if(subtract)
+                {   V0_( munmap( task->stack, subtract ));
+                    task->stack += subtract;
+                    task->stack_size -= subtract;
                 }
             }
-        }
-            #ifdef E_flow_C_thread_system_unblock_reports
-        else if( task_in_thread_kind
-        && E_base_S->E_flow_Z_task_stacks_S_granulation_u < PTHREAD_STACK_MIN
-        )
-        {   GV_(NA); // Late instrumentation error: granulation unit too small because too many tasks in available memory.
-            if( thread_proc_arg )
-                W( thread_proc_arg );
-            return ~0;
-        }
-            #endif
-        E_base_S->E_flow_Z_task_stacks_S_granulation_n++;
     }
+    N stack_size = E_base_S->E_mem_S_page_size + granulation_u; // Jedna strona pamięci “PROT_NONE” na początku stosu.
     Pc stack;
         #if defined( __gnu_linux__ )
     V1p( stack = mmap( 0
-    , E_base_S->E_flow_Z_task_stacks_S_granulation_u
+    , stack_size
     , PROT_NONE
     , MAP_PRIVATE
     | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_UNINITIALIZED
@@ -186,7 +239,7 @@ E_flow_Q_task_M( I *uid
     ))
         #elif defined( __OpenBSD__ )
     V1p( stack = mmap( 0
-    , E_base_S->E_flow_Z_task_stacks_S_granulation_u
+    , stack_size
     , PROT_READ | PROT_WRITE
     , MAP_PRIVATE
     | MAP_ANON | MAP_STACK
@@ -196,21 +249,20 @@ E_flow_Q_task_M( I *uid
         #else
 #error not implemented
         #endif
-    {   E_base_S->E_flow_Z_task_stacks_S_granulation_n_back++;
+    {
             #ifdef E_flow_C_thread_system_unblock_reports
         if( thread_proc_arg )
             W( thread_proc_arg );
             #endif
         return ~0;
     }
-    Pc exe_stack = stack + E_base_S->E_flow_Z_task_stacks_S_granulation_u;
+    Pc exe_stack = stack + stack_size;
         #ifndef E_flow_C_thread_system_unblock_reports
     N touched_size = E_base_S->E_mem_S_page_size;
-    Pc touched_stack = exe_stack - E_base_S->E_mem_S_page_size;
         #else
-    N touched_size = task_in_thread_kind ? E_simple_Z_n_I_align_up_to_v2( PTHREAD_STACK_MIN, E_base_S->E_mem_S_page_size ) : E_base_S->E_mem_S_page_size;
-    Pc touched_stack = exe_stack - touched_size;
+    N touched_size = task_in_thread_kind ? pthread_stack_min : E_base_S->E_mem_S_page_size;
         #endif
+    Pc touched_stack = exe_stack - touched_size;
         #if defined( __gnu_linux__ )
     V0( mprotect( touched_stack
     , touched_size
@@ -218,14 +270,13 @@ E_flow_Q_task_M( I *uid
     ))
         #elif defined( __OpenBSD__ )
     V0( mprotect( stack
-    , E_base_S->E_flow_Z_task_stacks_S_granulation_u - touched_size
+    , stack_size - touched_size
     , PROT_NONE
     ))
         #else
 #error not implemented
         #endif
-    {   V0_( munmap( stack, E_base_S->E_flow_Z_task_stacks_S_granulation_u ));
-        E_base_S->E_flow_Z_task_stacks_S_granulation_n_back++;
+    {   V0_( munmap( stack, stack_size ));
             #ifdef E_flow_C_thread_system_unblock_reports
         if( thread_proc_arg )
             W( thread_proc_arg );
@@ -234,34 +285,24 @@ E_flow_Q_task_M( I *uid
     }
     struct E_flow_Q_task_Z *task;
     I task_id = E_mem_Q_tab_I_segv_add_begin( E_base_S->E_flow_Q_task_S, &task );
-    task->stack = stack + E_base_S->E_mem_S_page_size;
+    task->stack = stack;
     task->touched_stack = touched_stack;
         #ifdef C_line_report
     task->proc_name = task_proc_name;
         #endif
     E_mem_Q_tab_I_segv_add_end( E_base_S->E_flow_Q_task_S, task_id, task );
     task->run_state = E_flow_Z_run_state_S_starting_by_task;
-    task->stack_size = E_base_S->E_flow_Z_task_stacks_S_granulation_u;
+    task->stack_size = stack_size;
         #ifdef E_flow_C_thread_system_unblock_reports
     U_R( task->type, system_unblock_report ) = task_in_thread_kind;
-    if( !task_in_thread_kind )
-        #endif
-    {   task->exe_stack = 0;
-        task->run_state_object = E_base_S->E_flow_Q_task_S_current;
-            #ifdef E_flow_C_thread_system_unblock_reports
-        task->thread = pthread_self();
-            #endif
-    }
-        #ifdef E_flow_C_thread_system_unblock_reports
-    else
+    if( task_in_thread_kind )
     {   task->thread_proc_arg = thread_proc_arg;
         pthread_mutex_t *thread_flow_mutex = E_mem_Q_blk_M_align( sizeof( *thread_flow_mutex ), 16 );
         if( !thread_flow_mutex )
         {   _tasks_table_begin;
             E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
             _tasks_table_end;
-            V0_( munmap( stack, E_base_S->E_flow_Z_task_stacks_S_granulation_u ));
-            E_base_S->E_flow_Z_task_stacks_S_granulation_n_back++;
+            V0_( munmap( stack, stack_size ));
             if( thread_proc_arg )
                 W( thread_proc_arg );
             return ~0;
@@ -271,8 +312,7 @@ E_flow_Q_task_M( I *uid
             _tasks_table_begin;
             E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
             _tasks_table_end;
-            V0_( munmap( stack, E_base_S->E_flow_Z_task_stacks_S_granulation_u ));
-            E_base_S->E_flow_Z_task_stacks_S_granulation_n_back++;
+            V0_( munmap( stack, stack_size ));
             if( thread_proc_arg )
                 W( thread_proc_arg );
             return ~0;
@@ -284,8 +324,7 @@ E_flow_Q_task_M( I *uid
             _tasks_table_begin;
             E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
             _tasks_table_end;
-            V0_( munmap( stack, E_base_S->E_flow_Z_task_stacks_S_granulation_u ));
-            E_base_S->E_flow_Z_task_stacks_S_granulation_n_back++;
+            V0_( munmap( stack, stack_size ));
             if( thread_proc_arg )
                 W( thread_proc_arg );
             return ~0;
@@ -293,17 +332,6 @@ E_flow_Q_task_M( I *uid
         task->thread_flow_mutex = thread_flow_mutex;
         task->thread_switch_back = thread_switch_back;
         *thread_switch_back = no;
-        struct E_flow_Q_task_in_thread_I_thread_proc_Z_args task_proc_args =
-        { .alt_stack = ( stack_t )
-          { .ss_flags = 0
-              #if defined( __gnu_linux__ )
-          , .ss_size = 2 * E_base_S->E_mem_S_page_size //CONF
-              #elif defined( __OpenBSD__ )
-          , .ss_size = MINSIGSTKSZ //CONF
-              #endif
-          }
-        , .proc = task_proc
-        };
             #if defined( __gnu_linux__ )
         V1p( task_proc_args.alt_stack.ss_sp = mmap( 0
         , task_proc_args.alt_stack.ss_size
@@ -331,8 +359,7 @@ E_flow_Q_task_M( I *uid
             _tasks_table_begin;
             E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
             _tasks_table_end;
-            V0_( munmap( stack, E_base_S->E_flow_Z_task_stacks_S_granulation_u ));
-            E_base_S->E_flow_Z_task_stacks_S_granulation_n_back++;
+            V0_( munmap( stack, stack_size ));
             if( thread_proc_arg )
                 W( thread_proc_arg );
             return ~0;
@@ -346,8 +373,7 @@ E_flow_Q_task_M( I *uid
             _tasks_table_begin;
             E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
             _tasks_table_end;
-            V0_( munmap( stack, E_base_S->E_flow_Z_task_stacks_S_granulation_u ));
-            E_base_S->E_flow_Z_task_stacks_S_granulation_n_back++;
+            V0_( munmap( stack, stack_size ));
             if( thread_proc_arg )
                 W( thread_proc_arg );
             return ~0;
@@ -361,8 +387,7 @@ E_flow_Q_task_M( I *uid
             _tasks_table_begin;
             E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
             _tasks_table_end;
-            V0_( munmap( stack, E_base_S->E_flow_Z_task_stacks_S_granulation_u ));
-            E_base_S->E_flow_Z_task_stacks_S_granulation_n_back++;
+            V0_( munmap( stack, stack_size ));
             if( thread_proc_arg )
                 W( thread_proc_arg );
             return ~0;
@@ -376,8 +401,7 @@ E_flow_Q_task_M( I *uid
             _tasks_table_begin;
             E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
             _tasks_table_end;
-            V0_( munmap( stack, E_base_S->E_flow_Z_task_stacks_S_granulation_u ));
-            E_base_S->E_flow_Z_task_stacks_S_granulation_n_back++;
+            V0_( munmap( stack, stack_size ));
             if( thread_proc_arg )
                 W( thread_proc_arg );
             return ~0;
@@ -395,8 +419,7 @@ E_flow_Q_task_M( I *uid
             _tasks_table_begin;
             E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
             _tasks_table_end;
-            V0_( munmap( stack, E_base_S->E_flow_Z_task_stacks_S_granulation_u ));
-            E_base_S->E_flow_Z_task_stacks_S_granulation_n_back++;
+            V0_( munmap( stack, stack_size ));
             if( thread_proc_arg )
                 W( thread_proc_arg );
             return ~0;
@@ -447,8 +470,7 @@ E_flow_Q_task_M( I *uid
             _tasks_table_begin;
             E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
             _tasks_table_end;
-            V0_( munmap( stack, E_base_S->E_flow_Z_task_stacks_S_granulation_u ));
-            E_base_S->E_flow_Z_task_stacks_S_granulation_n_back++;
+            V0_( munmap( stack, stack_size ));
             if( thread_proc_arg )
                 W( thread_proc_arg );
             return ~0;
@@ -458,11 +480,13 @@ E_flow_Q_task_M( I *uid
         return task_id;
     }
         #endif
-    P *p;
-    if( !task->exe_stack )
-    {   p = ( P * )exe_stack - 1;
-        *p = (P)&E_flow_Q_task_I_stop;
-    }
+    task->exe_stack = 0;
+    task->run_state_object = E_base_S->E_flow_Q_task_S_current;
+        #ifdef E_flow_C_thread_system_unblock_reports
+    task->thread = pthread_self();
+        #endif
+    P *p = ( P * )exe_stack - 1;
+    *p = (P)&E_flow_Q_task_I_stop;
     E_flow_Q_task_I_switch( task_id );
     if( !task->exe_stack ) // W bloku– nowe ‹zadanie›: nic nie zmieniać na stosie należącym do przełączanego.
     {   __asm__ volatile (
@@ -488,10 +512,10 @@ E_flow_Q_task_M( I *uid
         _unreachable;
     }
     *uid = task_id;
-    return task_id; //NDFN Zmienione tak, że może być “~0”.
+    return task_id;
 }
     #ifdef E_flow_C_thread_system_unblock_reports
-/// Nie wolno tworzyć “wątku”/‘instancji’ tego samego ‹zadania› w bloku startowym (innej ‘instancji’) tego samego ‹zadania›. Czyli nie wolno tworzyć wogóle w takim ‹zadaniu›, ponieważ ‹zadania› tworzy się w bloku startowym.
+// Nie wolno tworzyć “wątku”/‘instancji’ tego samego ‹zadania› w bloku startowym (innej ‘instancji’) tego samego ‹zadania›. Czyli nie wolno tworzyć wogóle w takim ‹zadaniu›, ponieważ ‹zadania› tworzy się w bloku startowym.
 I
 E_flow_Q_task_M_thread( I *uid
 , I subid
@@ -525,7 +549,7 @@ E_flow_Q_task_M_thread( I *uid
     *( I * )E_mem_Q_tab_R( *tab_subid, subid ) = id;
     return *uid;
 }
-/// Procedura ‹zadań› w wątku systemowym.
+// Procedura ‹zadań› w wątku systemowym.
 _internal
 P
 E_flow_Q_task_in_thread_I_thread_proc( P args_
@@ -554,7 +578,7 @@ E_flow_Q_task_in_thread_I_thread_proc( P args_
     return alt_stack.ss_sp;
 }
     #endif
-/// ‹Zadanie› wykonuje to przed rozpoczęcięm swojej pętli; w instrukcji “I_D”.
+// ‹Zadanie› wykonuje to przed rozpoczęcięm swojej pętli; w instrukcji “I_D”.
 B
 E_flow_Q_task_I_begin( void
 ){  struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
@@ -613,9 +637,8 @@ E_flow_Q_task_W( I *uid
     {   E_flow_Q_task_I_switch(id); // Przełącz tylko po to, by ‹zadanie› zwalniane zwolniło zasoby; również stosowo, hierarchicznie z powrotem przełączając przy zwalnianiu ‹zadań› przez siebie uruchomionych.
         task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, id );
     }
-    E_base_S->E_flow_Z_task_stacks_S_granulation_n_back += task->stack_size / E_base_S->E_flow_Z_task_stacks_S_granulation_u;
     E_flow_Q_task_I_touch_stack();
-    V0_( munmap( task->stack - E_base_S->E_mem_S_page_size, task->stack_size ));
+    V0_( munmap( task->stack, task->stack_size ));
     _tasks_table_begin;
     E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, id );
     _tasks_table_end;
@@ -635,7 +658,7 @@ E_flow_Q_task_W_thread( I *uid
     E_flow_Q_task_W(&id);
 }
     #endif
-/// ‹Zadanie› wykonuje to po wyjściu z procedury; ma adres powrotu na stosie.
+// ‹Zadanie› wykonuje to po wyjściu z procedury; ma adres powrotu na stosie.
 _internal
 void
 E_flow_Q_task_I_stop( void
@@ -644,7 +667,7 @@ E_flow_Q_task_I_stop( void
     _unreachable;
 }
 //------------------------------------------------------------------------------
-/// Wymuszenie ‘prealokacji’ “stosu” ‹zadania›, by nie została wywołana procedura obsługi “sygnału” ‘uniksowego’ “SEGV” w trakcie zmieniania pamięci ‘alokowanej’ dynamicznie, z której korzysta.
+// Wymuszenie ‘prealokacji’ “stosu” ‹zadania›, by nie została wywołana procedura obsługi “sygnału” ‘uniksowego’ “SEGV” w trakcie zmieniania pamięci ‘alokowanej’ dynamicznie, z której korzysta.
 _internal
 void
 E_flow_Q_task_I_touch_stack( void
@@ -992,7 +1015,7 @@ E_flow_Q_itimer_system_unblock_report_I_wait( void
 }
     #endif
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/// Każde ‹zadanie› po wywołaniu “E_flow_Q_task_I_schedule” i po przełączeniu w tej procedurze do innego ‹zadania› (“E_flow_Q_task_I_switch”) czeka przed instrukcją powrotu z tej procedury, by kontynuować w miejscu wywołania i ewentualnie zakończyć własne ‹zadanie› po powrocie.
+// Każde ‹zadanie› po wywołaniu “E_flow_Q_task_I_schedule” i po przełączeniu w tej procedurze do innego ‹zadania› (“E_flow_Q_task_I_switch”) czeka przed instrukcją powrotu z tej procedury, by kontynuować w miejscu wywołania i ewentualnie zakończyć własne ‹zadanie› po powrocie.
 __attribute__ ((__noinline__,__returns_twice__,__hot__))
 B
 E_flow_Q_task_I_schedule( void
@@ -1278,7 +1301,7 @@ Loop:
         }
     }
 }
-/// Przełączenie do ‹zadania› przez przełączenie wskaźnika “stosu” wykonania.
+// Przełączenie do ‹zadania› przez przełączenie wskaźnika “stosu” wykonania.
 __attribute__ ((__noinline__,__returns_twice__,__hot__))
 _internal
 void
@@ -1378,17 +1401,19 @@ E_flow_Z_signal_V_segv( int uid
     && U_R( E_base_S->E_flow_S_mode, Z_task_table_S_can_read )
         #endif
     ){  struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
-        if( (Pc)siginfo->si_addr >= task->stack
-        && (Pc)siginfo->si_addr < task->touched_stack
-        ){  Pc new_base = E_simple_Z_p_I_align_down_to_v2( siginfo->si_addr, E_base_S->E_mem_S_page_size );
-            V0_( mprotect( new_base
-            , task->touched_stack - new_base
-            , PROT_READ | PROT_WRITE
-            ));
-            task->touched_stack = new_base;
-            _errno = errno_;
-            return;
-        }
+        if( (Pc)siginfo->si_addr < task->touched_stack )
+            if( (Pc)siginfo->si_addr >= task->stack + E_base_S->E_mem_S_page_size )
+            {   Pc new_base = E_simple_Z_p_I_align_down_to_v2( siginfo->si_addr, E_base_S->E_mem_S_page_size );
+                V0_( mprotect( new_base
+                , task->touched_stack - new_base
+                , PROT_READ | PROT_WRITE
+                ));
+                task->touched_stack = new_base;
+                _errno = errno_;
+                return;
+            }else if( (Pc)siginfo->si_addr >= task->stack )
+            {   GV_(NA); // Late instrumentation error: task stack too small.
+            }
     }
     GV_(NDFN); Gd( siginfo->si_code ); Gh( siginfo->si_addr ); // Other fault.
     struct sigaction sa =

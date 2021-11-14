@@ -6,18 +6,18 @@
 *         base definitions
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”              2015‒1‒6 *
 *******************************************************************************/
-/// “Statement” i wyrażenia rozszerzonej składni, które muszą znajdować się w nawiasach klamrowych bloku nadrzędnego: “for_”[…], “V”[…], linie “G”[…].
-/// Ogólne standardy ‘interfejsów’ ‹procedur›:
-/// ‣ dodatkowe wyniki ‹procedur› są przypisywane zmiennym wskaźnikowym, jeśli podany adres zmiennej nie jest zerowy.
-/// ‣ ‹menedżer› mogący zmienić adres przechowywany w zmiennej uchwytu obiektu otrzymuje jako pierwszy ‘argument’ wskaźnik do zmiennej uchwytu, którą uaktualnia, jeśli potrzeba. Takimi ‹menedżerami› są tylko wydający adres struktury danych: ⁃“mem_blk” musi tak robić, ale ma zarejestrowane wszystkie wydane adresy, ⁃“mem_tab” nie musi tak robić, lecz dla oszczędności nie rejestruje wydanych tablic, a zawsze można to zmienić w przyszłości. Poza ‹menedżerami› pamięci raczej nic więcej nie potrzebuje wydawać jako uchwyt obiektu— adresu struktury danych opisu, lecz ‹identyfikator› obiektu.
+// “Statement” i wyrażenia rozszerzonej składni, które muszą znajdować się w nawiasach klamrowych bloku nadrzędnego: “for_”[…], “V”[…], linie “G”[…].
+// Ogólne standardy ‘interfejsów’ ‹procedur›:
+// ‣ dodatkowe wyniki ‹procedur› są przypisywane zmiennym wskaźnikowym, jeśli podany adres zmiennej nie jest zerowy.
+// ‣ ‹menedżer› mogący zmienić adres przechowywany w zmiennej uchwytu obiektu otrzymuje jako pierwszy ‘argument’ wskaźnik do zmiennej uchwytu, którą uaktualnia, jeśli potrzeba. Takimi ‹menedżerami› są tylko wydający adres struktury danych: ⁃“mem_blk” musi tak robić, ale ma zarejestrowane wszystkie wydane adresy, ⁃“mem_tab” nie musi tak robić, lecz dla oszczędności nie rejestruje wydanych tablic, a zawsze można to zmienić w przyszłości. Poza ‹menedżerami› pamięci raczej nic więcej nie potrzebuje wydawać jako uchwyt obiektu— adresu struktury danych opisu, lecz ‹identyfikator› obiektu.
 //==============================================================================
-typedef C           *Pc; /// Wskaźnik do obliczeń bajtowych i tekst techniczny języka ‟C” lub ‘UTF-8’. zawsze będzie równoważny “char *” (przy uzgadnianiu ‘interfejsów’ procedur systemu operacyjnego).
-typedef N           *Pn; /// Wskaźnik do tablic liczb naturalnych.
-typedef P           *Pp; /// Wskaźnik do tablic adresów.
+typedef C           *Pc; // Wskaźnik do obliczeń bajtowych i tekst techniczny języka ‟C” lub ‘UTF-8’. zawsze będzie równoważny “char *” (przy uzgadnianiu ‘interfejsów’ procedur systemu operacyjnego).
+typedef N           *Pn; // Wskaźnik do tablic liczb naturalnych.
+typedef P           *Pp; // Wskaźnik do tablic adresów.
 //==============================================================================
 #define no                                  false
 #define yes                                 true
-/// Wyrażenie przypisania automatycznie nadające podanej wartości rozmiar zmiennej. Naprawia konieczność jawnego deklarowania przyrostków dla typów stałych; bo domyślnie “int”.
+// Wyrażenie przypisania automatycznie nadające podanej wartości rozmiar zmiennej. Naprawia konieczność jawnego deklarowania przyrostków dla typów stałych; bo domyślnie “int”.
 #define _v(a,v)                             (( (a) ^ (a) ) | (v) )
 //------------------------------------------------------------------------------
 #define _J_s(a)                             #a
@@ -90,7 +90,7 @@ typedef P           *Pp; /// Wskaźnik do tablic adresów.
 #define _0(pointer_variable,l)              E_mem_Q_blk_P_fill_c( (pointer_variable), l, 0 )
 #define _0_(pointer_variable)               _0( (pointer_variable), sizeof( *(pointer_variable) ))
 //------------------------------------------------------------------------------
-/// Utworzenie i wyrzucenie zmiennej w pamięci ‘alokowanej’ w “menedżerze pamięci”.
+// Utworzenie i wyrzucenie zmiennej w pamięci ‘alokowanej’ w “menedżerze pamięci”.
 #define M(l)                                E_mem_Q_blk_M(l)
 #define Mt(u,n)                             E_mem_Q_blk_M_tab((u),(n))
 #define W(pointer_variable)                 E_mem_Q_blk_W( pointer_variable )
@@ -99,76 +99,76 @@ typedef P           *Pp; /// Wskaźnik do tablic adresów.
 #define W_(pointer_variable)                ( W( pointer_variable ), pointer_variable = 0 )
 #define W_tab_(pointer_variable)            ( E_mem_Q_tab_W( pointer_variable ), pointer_variable = 0 )
 //------------------------------------------------------------------------------
-/// Instrukcja blokowa definicji ‹zadania›.
+// Instrukcja blokowa definicji ‹zadania›.
 #define D(module,task)                      _internal void _D_proc(module,task)( P thread_proc_arg )
-/// Instrukcja blokowa pętli głównej ‹zadania›.
+// Instrukcja blokowa pętli głównej ‹zadania›.
 #define I_D                                 if( E_flow_Q_task_I_begin() ){} else O
 //------------------------------------------------------------------------------
-/// Utworzenie i wyrzucenie ‹zadania› lub ‹zadania› “wątkowanego” czekającego na ‹systemowy raport odblokowujący›.
+// Utworzenie i wyrzucenie ‹zadania› lub ‹zadania› “wątkowanego” czekającego na ‹systemowy raport odblokowujący›.
     #ifndef E_flow_C_thread_system_unblock_reports
 #define Dh_()
         #ifdef C_line_report
-#define D_M(module,task)                    E_flow_Q_task_M( &(D_id(module,task)), _D_proc(module,task), J_s( _D_proc(module,task) ))
+#define D_M(module,task)                    if( ~E_flow_Q_task_M( &(D_id(module,task)), _D_proc(module,task), J_s( _D_proc(module,task) ))){} else
         #else
-#define D_M(module,task)                    E_flow_Q_task_M( &(D_id(module,task)), _D_proc(module,task) )
+#define D_M(module,task)                    if( ~E_flow_Q_task_M( &(D_id(module,task)), _D_proc(module,task) )){} else
         #endif
     #else
         #if defined( __gnu_linux__ )
-#define Dh_()                               int *E_flow_S_errno = __errno_location()
+#define Dh_()                               _unused int *E_flow_S_errno = __errno_location()
         #elif defined( __OpenBSD__ )
-#define Dh_()                               int *E_flow_S_errno = __errno()
+#define Dh_()                               _unused int *E_flow_S_errno = __errno()
         #endif
 //TODO Rozdzielić dla “Dh”— na ‹zadania› takie jak “D” (bez “subid”) oraz takie jak obecnie “Dh” (“Dhi”).
         #ifdef C_line_report
-#define D_M(module,task)                    E_flow_Q_task_M( &(D_id(module,task)), _D_proc(module,task), 0, no, J_s( _D_proc(module,task) ))
-#define Dh_M(module,task,subid,arg)         E_flow_Q_task_M_thread( &(D_id(module,task)), (subid), _D_proc(module,task), (arg), J_s( _D_proc(module,task) ))
+#define D_M(module,task)                    if( ~E_flow_Q_task_M( &(D_id(module,task)), _D_proc(module,task), 0, no, J_s( _D_proc(module,task) ))){} else
+#define Dh_M(module,task,subid,arg)         if( ~E_flow_Q_task_M_thread( &(D_id(module,task)), (subid), _D_proc(module,task), (arg), J_s( _D_proc(module,task) ))){} else
         #else
-#define D_M(module,task)                    E_flow_Q_task_M( &(D_id(module,task)), _D_proc(module,task), 0, no )
-#define Dh_M(module,task,subid,arg)         E_flow_Q_task_M_thread( &(D_id(module,task)), (subid), _D_proc(module,task), (arg) )
+#define D_M(module,task)                    if( ~E_flow_Q_task_M( &(D_id(module,task)), _D_proc(module,task), 0, no )){} else
+#define Dh_M(module,task,subid,arg)         if( ~E_flow_Q_task_M_thread( &(D_id(module,task)), (subid), _D_proc(module,task), (arg) )){} else
         #endif
 #define Dh_W(module,task,subid)             E_flow_Q_task_W_thread( &(D_id(module,task)), (subid) )
     #endif
 #define D_W(module,task)                    E_flow_Q_task_W( &(D_id(module,task)) )
 //------------------------------------------------------------------------------
-/// Znacznik stanu —zwykle stanu pojedynczego obiektu sygnalizującego później kolekcję— umieszczony w strukturze tego ‹obiektu› dostępnej przez wyrażenie.
+// Znacznik stanu —zwykle stanu pojedynczego obiektu sygnalizującego później kolekcję— umieszczony w strukturze tego ‹obiektu› dostępnej przez wyrażenie.
 #define U_R(start_expr,state_name)          J_a_b(start_expr,J_autogen(J_a_b(U,state_name)))
-/// Wzbudzenie stanu.
+// Wzbudzenie stanu.
 #define U_F(start_expr,state_name)          U_R(start_expr,state_name) = yes
-/// I liniowe obsłużenie tego stanu.
+// I liniowe obsłużenie tego stanu.
 #define U_L(start_expr,state_name)          U_R(start_expr,state_name) = no
-/// Albo blokowe.
+// Albo blokowe.
 #define U_E(start_expr,state_name)          ( U_R(start_expr,state_name) && ( U_L(start_expr,state_name), yes ))
 //------------------------------------------------------------------------------
-/// Instrukcja blokowa definicji ‹zdarzenia›.
+// Instrukcja blokowa definicji ‹zdarzenia›.
 #define K(module,event)                     B _K_proc(module,event)( I object )
-/// Deklaracja emisji ‹zdarzenia›.
+// Deklaracja emisji ‹zdarzenia›.
 #define K_E(module,event,object)            if( !_K_proc(module,event)(object) ){} else
 //------------------------------------------------------------------------------
-/// Instrukcje “X_M”/“X_A”, “Yi_M”/“Yi_A” muszą występować w jednym z najwyższych bloków struktury programu ‹zadania›, w miejscu zapewniającym taką widoczność (do użycia ‹raportu› w tym ‹zadaniu›) jak deklaracja zmiennej lokalnej.
-/// Utworzenie i wyrzucenie ‹raportu›.
+// Instrukcje “X_M”/“X_A”, “Yi_M”/“Yi_A” muszą występować w jednym z najwyższych bloków struktury programu ‹zadania›, w miejscu zapewniającym taką widoczność (do użycia ‹raportu› w tym ‹zadaniu›) jak deklaracja zmiennej lokalnej.
+// Utworzenie i wyrzucenie ‹raportu›.
 #define X_M_(module,report)                 _X_var(module,report) = E_flow_Q_report_M( _X_uid(module,report) )
 #define X_M(module,report)                  I X_M_(module,report)
 #define X_W(module,report)                  E_flow_Q_report_W( _X_var(module,report) )
-/// Deklaracja emisji ‹raportu› przez ‹zadanie›.
+// Deklaracja emisji ‹raportu› przez ‹zadanie›.
 #define X_A(module,report)                  X_M(module,report); _unused B U_L(module,report)
-/// Sygnalizacja ‹zadania› obsługującego ‹raport› kolekcji.
+// Sygnalizacja ‹zadania› obsługującego ‹raport› kolekcji.
 #define X_F(module,report)                  E_flow_Q_report_I_signal( _X_var(module,report) )
-/// I warunkowa– gdy jest stan pojedynczego obiektu.
+// I warunkowa– gdy jest stan pojedynczego obiektu.
 #define X_U(module,report)                  if( !U_E(module,report) ){} else X_F(module,report)
-/// Czekanie na ‹raport› kolekcji.
+// Czekanie na ‹raport› kolekcji.
 #define X_B(module,report,lost_count)       if( !E_flow_Q_report_I_wait( _X_var(module,report), (lost_count) )){} else
 //------------------------------------------------------------------------------
     #ifdef E_flow_C_thread_system_unblock_reports
-/// Deklaracja ‹procedury› generującej ‹systemowy raport odblokowujący› dla ‹zadania›; odblokowującej to ‹zadanie›.
+// Deklaracja ‹procedury› generującej ‹systemowy raport odblokowujący› dla ‹zadania›; odblokowującej to ‹zadanie›.
 #define Xh_A( thread_unblock_proc_ ) \
   pthread_mutex_t *J_autogen( thread_flow_mutex ); \
   B *J_autogen( thread_switch_back ); \
   E_flow_Q_thread_system_unblock_report_M(( thread_unblock_proc_ ), &J_autogen( thread_flow_mutex ), &J_autogen( thread_switch_back ))
-/// Tuż przed wywołaniem procedury blokującej w oczekiwaniu na ‹systemowy raport odblokowujący›.
+// Tuż przed wywołaniem procedury blokującej w oczekiwaniu na ‹systemowy raport odblokowujący›.
 #define Xh_B_() \
   *J_autogen( thread_switch_back ) = yes; \
   E_flow_Q_thread_system_unblock_report_I_before_block( J_autogen( thread_flow_mutex ))
-/// Czekanie na ‹systemowy raport odblokowujący›; tuż po wywołaniu procedury blokującej.
+// Czekanie na ‹systemowy raport odblokowujący›; tuż po wywołaniu procedury blokującej.
 #define Xh_B() \
   *J_autogen( thread_switch_back ) = no; \
   if( !E_flow_Q_thread_system_unblock_report_I_after_block( J_autogen( thread_flow_mutex ))){} else
@@ -177,51 +177,51 @@ typedef P           *Pp; /// Wskaźnik do tablic adresów.
     #endif
 //------------------------------------------------------------------------------
     #ifdef E_flow_C_itimer_system_unblock_report
-/// Utworzenie i wyrzucenie ‹systemowego raportu odblokowującego› typu “itimer”, występującego najwyżej jeden raz.
+// Utworzenie i wyrzucenie ‹systemowego raportu odblokowującego› typu “itimer”, występującego najwyżej jeden raz.
 #define Xh1_M(sigsuspend,setitimer)         E_flow_Q_itimer_system_unblock_report_M( sigsuspend, setitimer )
 #define Xh1_W()                             E_flow_Q_itimer_system_unblock_report_W()
-/// Czekanie na ‹systemowy raport odblokowujący› typu “itimer”.
+// Czekanie na ‹systemowy raport odblokowujący› typu “itimer”.
 #define Xh1_B()                             if( !E_flow_Q_itimer_system_unblock_report_I_wait() ){} else
     #endif
 //------------------------------------------------------------------------------
-/// Utworzenie i wyrzucenie ‹cyklera›.
+// Utworzenie i wyrzucenie ‹cyklera›.
 #define Y_M(period)                         E_flow_Q_timer_M(period)
 #define Y_W(timer)                          E_flow_Q_timer_W(timer)
-/// Czekanie na pełny okres ‹cyklera›.
+// Czekanie na pełny okres ‹cyklera›.
 #define Y_B(timer,lost_count)               if( !E_flow_Q_timer_I_wait( (timer), (lost_count) )){} else
 //------------------------------------------------------------------------------
-/// Utworzenie i wyrzucenie ‹impulsatora›.
+// Utworzenie i wyrzucenie ‹impulsatora›.
 #define Yi_M(module,impulser)               I _Yi_var(module,impulser) = E_flow_Q_impulser_M( _Yi_uid(module,impulser) )
 #define Yi_W(module,impulser)               E_flow_Q_timer_W( _Yi_var(module,impulser) )
-/// Deklaracja aktywacji ‹impulsatora› przez ‹zadanie›.
+// Deklaracja aktywacji ‹impulsatora› przez ‹zadanie›.
 #define Yi_A(module,impulser)               I _Yi_var(module,impulser) = E_flow_Q_impulser_M_srv( _Yi_uid(module,impulser) )
-/// Aktywacja ‹impulsatora›.
+// Aktywacja ‹impulsatora›.
 #define Yi_F(module,impulser,time)          E_flow_Q_impulser_I_activate( _Yi_var(module,impulser), (time) )
-/// Dezaktywacja ‹impulsatora›.
+// Dezaktywacja ‹impulsatora›.
 #define Yi_L(module,impulser)               E_flow_Q_impulser_I_deactivate( _Yi_var(module,impulser) )
-/// Czekanie na wzbudzenie przez ‹impulsator›.
+// Czekanie na wzbudzenie przez ‹impulsator›.
 #define Yi_B(module,impulser)               if( !E_flow_Q_impulser_I_wait( _Yi_var(module,impulser) )){} else
 //------------------------------------------------------------------------------
-/// Czekanie na wznowienie w następnym obiegu czasu.
+// Czekanie na wznowienie w następnym obiegu czasu.
 #define I_B()                               if( !E_flow_Q_task_I_schedule() ){} else
 //------------------------------------------------------------------------------
-/// Wyjście z ‹zadania› po procedurze zawierającej instrukcję przełączenia.
+// Wyjście z ‹zadania› po procedurze zawierającej instrukcję przełączenia.
 #define I_V()                               if( !E_flow_Q_task_R_exit() ){} else
 //==============================================================================
 #define _G_var      J_autogen_line(G)
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #ifdef C_line_report
 //TODO W przyszłości zastąpić niegwarantowane wypisywanie synchroniczne na wypisywanie do specjalnego wyjścia danych, zawsze dostępnego, a niekoniecznie o dużej pojemności.
-/// ‹Raport linii› nie wymagający integralności programu. w miejscach, gdzie nie można wykonywać funkcji wypisywania integralnej tego programu. ponieważ nie można wywoływać żadnej funkcji obiektowości zarządzanej albo takiej funkcji może użyć funkcja żądania wypisania integralna tego programu.
+// ‹Raport linii› nie wymagający integralności programu. w miejscach, gdzie nie można wykonywać funkcji wypisywania integralnej tego programu. ponieważ nie można wywoływać żadnej funkcji obiektowości zarządzanej albo takiej funkcji może użyć funkcja żądania wypisania integralna tego programu.
 #define G_()        _unused B _G_var = yes; E_flow_Z_line_report_Z_line_I_sync( &__FILE__[0], __LINE__, 0 )
-/// ‹Raport linii›.
+// ‹Raport linii›.
 #define G()         _unused B _G_var = no; E_flow_Z_line_report_Z_line_I( &__FILE__[0], __LINE__, 0 )
-/// ‹Niepowodzenie zakańczające› (ewentualną instrukcją “V” umieszczoną na końcu linii). zaistniałe przez wejście na tę linię tekstu programu.
+// ‹Niepowodzenie zakańczające› (ewentualną instrukcją “V” umieszczoną na końcu linii). zaistniałe przez wejście na tę linię tekstu programu.
 #define GV_(s)      _unused B _G_var = yes; E_flow_Z_line_report_Z_line_I_sync( &__FILE__[0], __LINE__, J_s(s) )
-/// ‹Niepowodzenie ostrzegające› (bez instrukcji “V”). 〃
+// ‹Niepowodzenie ostrzegające› (bez instrukcji “V”). 〃
 #define GV(s)       _unused B _G_var = no; E_flow_Z_line_report_Z_line_I( &__FILE__[0], __LINE__, J_s(s) )
 //------------------------------------------------------------------------------
-/// Wypisywanie zmiennych programu; po “G”/“GV”/“G_”/“GV_” w linii.
+// Wypisywanie zmiennych programu; po “G”/“GV”/“G_”/“GV_” w linii.
 #define Gc(c)       if( _G_var ) E_flow_Z_line_report_Z_text_c_I_sync( J_s(c), c ); else E_flow_Z_line_report_Z_text_c_I( J_s(c), c )
 #define Gs(s,s_end) if( (s_end) - (s) ) Gs_l( s, s, (s_end) - (s) ); else Gs_l( s, "", 0 )
 #define Gs_(s,s_end) if( (s_end) - (s) ) Gs_l_( s, (s_end) - (s) ); else Gs_l_( "", 0 )
@@ -255,8 +255,8 @@ typedef P           *Pp; /// Wskaźnik do tablic adresów.
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //NDFN Zintegrować koncepcje “V” razem z “K”. i wtedy zostanie dołączona koncepcja procesów ‘restartowalnych’ ze stanu zachowanego w momencie wystąpienia takiego błędu (a nie zachowywanego ciągle).
 //NKN “V” są drogami wyjścia po nieudanym “K” wewnętrznym funkcji wołanej.
-/// W instrukcjach “V”[…]“e” w przypadku braku błędu podanego “statement” podana zmienna “e” ma nie zmienioną wartość.
-/// ‹Nierealizacje zakańczające› (“V”[…]“_”) powinny być stosowane dla procedur systemu operacyjnego, które muszą się udać dla kontynuacji jakiegokolwiek przepływu wykonania, oraz dla zwalniania oczywistych zasobów.
+// W instrukcjach “V”[…]“e” w przypadku braku błędu podanego “statement” podana zmienna “e” ma nie zmienioną wartość.
+// ‹Nierealizacje zakańczające› (“V”[…]“_”) powinny być stosowane dla procedur systemu operacyjnego, które muszą się udać dla kontynuacji jakiegokolwiek przepływu wykonania, oraz dla zwalniania oczywistych zasobów.
 #define _V_(statement)                      _V(statement) V()
 #define _VO_(statement)                     _VO(statement) V()
 //------------------------------------------------------------------------------
@@ -357,7 +357,7 @@ typedef P           *Pp; /// Wskaźnik do tablic adresów.
 #define VO1pe(statement,e)                  _VOe(~(N)(statement),e)
 #define VO1p(statement)                     _VO(~(N)(statement))
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/// Utworzenie zmiennej w “menedżerze pamięci”— z ‘uniksowej’ procedury wracającej z wynikiem w “buforze” o podanym rozmiarze.
+// Utworzenie zmiennej w “menedżerze pamięci”— z ‘uniksowej’ procedury wracającej z wynikiem w “buforze” o podanym rozmiarze.
 #define MV_(pointer_variable,v,proc,too_small_errno,max_l) \
   {   N J_autogen_line(l) = ( max_l ) ? ( max_l ) : 1; \
       ( pointer_variable ) = M( J_autogen_line(l) ); \

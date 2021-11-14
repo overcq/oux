@@ -103,7 +103,7 @@ typedef struct timespec Z_clock_time;
   : ( !strcmp( J_s(CMP), ">" ) || !strcmp( J_s(CMP), ">=" ) ? (a)->tv_sec > (b)->tv_sec || ( (a)->tv_sec == (b)->tv_sec && (a)->Z_clock_time_minor_field CMP (b)->Z_clock_time_minor_field ) \
   : ( _unreachable, no ) \
   )))))
-///czy przepełnienie z dodawania dwóch “Z_clock_time_minor_field” zmieści się w rzeczywistym typie danych tej zmiennej w “struct timeval” lub “struct timespec”.
+// Czy przepełnienie z dodawania dwóch “Z_clock_time_minor_field” zmieści się w rzeczywistym typie danych tej zmiennej w “struct timeval” lub “struct timespec”.
     #if LONG_MAX >= 2 * Z_clock_time_minor_field_S_max
 #define _timeradd(a,b,res) \
   {   *(res) = ( Z_clock_time ) \

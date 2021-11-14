@@ -6,10 +6,10 @@
 *         flow fork
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2016‒1‒22 o
 *******************************************************************************/
-/// Rozłączenie procesu skopiowanego przez “fork” (w nowym procesie). Nie wolno przełączać ‹zadań› w części od “begin” do “end”.
+// Rozłączenie procesu skopiowanego przez “fork” (w nowym procesie). Nie wolno przełączać ‹zadań› w części od “begin” do “end”.
 pid_t
 E_flow_I_fork_I_begin( void
-){  E_flow_Q_task_I_touch_stack(); /// Ponieważ podczas “fork” nie może być realizowana procedura obsługi “SIGSEGV”.
+){  E_flow_Q_task_I_touch_stack(); // Ponieważ podczas “fork” nie może być realizowana procedura obsługi “SIGSEGV”.
     _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_Z_sigset_S_process_exec, &E_base_S->E_flow_I_fork_S_sigset );
     pid_t pid;
     V1( pid = fork() ){}
@@ -22,16 +22,16 @@ E_flow_I_fork_I_end( N pid
         V0_( sigaddset( &sigset_child, SIGCHLD ));
         _sigprocmask( SIG_SETMASK, &sigset_child, 0 );
         int status;
-        VO1( waitpid( pid, &status, 0 )){} /// Czekanie do wykonania “daemon” w “E_flow_I_fork_I_exec”, jeśli “proces” potomny jeszcze istnieje.
+        VO1( waitpid( pid, &status, 0 )){} // Czekanie do wykonania “daemon” w “E_flow_I_fork_I_exec”, jeśli “proces” potomny jeszcze istnieje.
         _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_I_fork_S_sigset, 0 );
     }else
         _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_I_fork_S_sigset, 0 );
 }
 //------------------------------------------------------------------------------
-/// Poniższe procedury, wykonywane w “procesie” potomnym, mogą używać tylko pasywnych funkcjonalności technologii, nie zintegrowanych w przepływie wykonania. czyli na przykład tylko synchronicznych raportów linii. Nigdy nie wiadomo bez sprawdzenia tekstu procedur, czy nie używa ona wewnątrz funkcjonalności zintegrowanych.
+// Poniższe procedury, wykonywane w “procesie” potomnym, mogą używać tylko pasywnych funkcjonalności technologii, nie zintegrowanych w przepływie wykonania. czyli na przykład tylko synchronicznych raportów linii. Nigdy nie wiadomo bez sprawdzenia tekstu procedur, czy nie używa ona wewnątrz funkcjonalności zintegrowanych.
 void
 E_flow_I_fork_I_start( void
-){  /// Jeszcze przed wykonaniem się “exec”– usunięcie identyfikacji siebie jako wykonawcy “procesu”, który utworzył ten— z wykonywania funkcji “process call”.
+){  // Jeszcze przed wykonaniem się “exec”– usunięcie identyfikacji siebie jako wykonawcy “procesu”, który utworzył ten— z wykonywania funkcji “process call”.
         #if defined( __gnu_linux__ )
     V0_( prctl( PR_SET_NAME, "_", 0, 0, 0 ));
         #elif defined( __OpenBSD__ )
@@ -62,7 +62,7 @@ E_flow_I_fork_I_exec( Pc cwd
 End_1:;
     Pc *argv;
     if( cmd_mode < 0 )
-    {   Mt_( argv, n + 1 + 1 ); /// Scalony argument linii uruchomienia oraz “null”.
+    {   Mt_( argv, n + 1 + 1 ); // Scalony argument linii uruchomienia oraz “null”.
         if( !argv )
         {   GV_(NA); V();
         }
@@ -83,7 +83,7 @@ End_1:;
                     for_n_( i, args_n - args_i - 1 )
                         args_[ 1 + i ] = args[ args_i + 1 + i ];
                     N l = E_text_Z_s_Z_cmdline_N_quote_G( 0, args_, args_n - args_i );
-                    argv[n] = M( l + 1 ); /// Znak '\0'.
+                    argv[n] = M( l + 1 ); // Znak '\0'.
                     if( !argv[n] )
                     {   GV_(NA); V();
                     }
@@ -107,7 +107,7 @@ End_2:  ;
                 i = args_i;
             }
         if( ~i )
-        {   Mt_( argv, n + 1 ); /// “null”.
+        {   Mt_( argv, n + 1 ); // “null”.
             if( !argv )
             {   GV_(NA); V();
             }

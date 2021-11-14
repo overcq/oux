@@ -121,9 +121,15 @@ E_net_cli_Q_ssl_M( void
     {   SSL_CTX_free( ssl_ctx );
         return 0;
     }
+    Mt_( E_net_http_S_connect, 0 );
+    if( !E_net_http_S_connect )
+    {   SSL_CTX_free( ssl_ctx );
+        return 0;
+    }
     Mt_( E_net_http2_S_connect, 0 );
     if( !E_net_http2_S_connect )
-    {   SSL_CTX_free( ssl_ctx );
+    {   W( E_net_http_S_connect );
+        SSL_CTX_free( ssl_ctx );
         return 0;
     }
     E_net_http2_S_connect_n = 0;
@@ -132,9 +138,12 @@ E_net_cli_Q_ssl_M( void
 void
 E_net_cli_Q_ssl_W( SSL_CTX *ssl_ctx
 ){  X_A( net, disconnect );
-    for_n_rev( i, E_net_http2_S_connect_n )
+    for_n_rev( i, E_net_http_S_connect_n )
+        E_net_http_Q_ssl_I_disconnect(i);
+    for_n_rev_( i, E_net_http2_S_connect_n )
         E_net_http2_Q_ssl_I_disconnect(i);
     X_B( net, disconnect, 0 );
+    W( E_net_http_S_connect );
     W( E_net_http2_S_connect );
     SSL_CTX_free( ssl_ctx );
 }
@@ -243,13 +252,13 @@ Cont:   ai_1 = ai_1->ai_next;
         E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].connect_sock = fd;
         E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].hostname = hostname; //NDFN Nie wiadomo, skąd pochodzi, ale na razie tak.
         E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].buf_l = 0;
-        E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].send_dynamic_table_size_max = 4096;
+        E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].send_dynamic_table_size_max = 4096; //CONF
         E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].send_dynamic_table_size_max_hit = no;
         E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].concurrent_streams_max = ~0;
-        E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].recv_window_size = 1024 * 1024;
-        E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].send_window_size = 65535;
-        E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].recv_frame_size_max = 64 * 1024;
-        E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].send_frame_size_max = 16384;
+        E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].recv_window_size = 1024 * 1024; //CONF
+        E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].send_window_size = 65535; //CONF
+        E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].recv_frame_size_max = 64 * 1024; //CONF
+        E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].send_frame_size_max = 16384; //CONF
         E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].header_list_size_max = ~0;
         E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].last_stream = ~0;
         C buf[ 24 + 9 + 5 * 6 ] = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
@@ -273,6 +282,7 @@ Cont:   ai_1 = ai_1->ai_next;
             )
                 SSL_shutdown(ssl);
             SSL_free(ssl);
+            E_mem_Q_blk_I_remove( &E_net_http2_S_connect, --E_net_http2_S_connect_n, 1 );
             V0( close(fd) ){}
                 #ifdef __gnu_linux__
             struct epoll_event ee;
@@ -412,8 +422,75 @@ Cont:   ai_1 = ai_1->ai_next;
         tv.tv_sec = S_keepalive_timeout;
         tv.Z_clock_time_minor_field = 0;
         _timeradd( &E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].keepalive_tv, &tv, &E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].keepalive_tv );
+        return E_net_http2_S_connect_n - 1;
     }
-    return E_net_http2_S_connect_n - 1;
+    if( !E_mem_Q_blk_I_append( &E_net_http_S_connect, 1 ))
+    {   SSL_shutdown(ssl);
+        SSL_free(ssl);
+        V0( close(fd) ){}
+            #ifdef __gnu_linux__
+        struct epoll_event ee;
+        ee.events = EPOLLIN;
+        ee.data.fd = fd;
+        V0( epoll_ctl( E_net_cli_S_epoll_fd, EPOLL_CTL_DEL, fd, &ee )){}
+        E_mem_Q_blk_I_remove( &E_net_cli_S_ee_ready, --E_net_cli_S_ee_ready_n, 1 );
+            #else
+        E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, --E_net_cli_S_poll_fd_n, 1 );
+            #endif
+        return ~0;
+    }
+    E_net_http_S_connect_n++;
+    E_net_http_S_connect[ E_net_http_S_connect_n - 1 ].ssl = ssl;
+    E_net_http_S_connect[ E_net_http_S_connect_n - 1 ].connect_sock = fd;
+    E_net_http_S_connect[ E_net_http_S_connect_n - 1 ].hostname = hostname; //NDFN Nie wiadomo, skąd pochodzi, ale na razie tak.
+    E_net_http_S_connect[ E_net_http_S_connect_n - 1 ].buf_l = 0;
+    E_net_http_S_connect[ E_net_http_S_connect_n - 1 ].recv_frame_size_max = 64 * 1024; //CONF
+    E_net_http_S_connect[ E_net_http_S_connect_n - 1 ].send_frame_size_max = 16384; //CONF
+    E_net_http_S_connect[ E_net_http_S_connect_n - 1 ].z_stream = 0;
+    E_net_http_S_connect[ E_net_http_S_connect_n - 1 ].next = no;
+    E_net_http_S_connect[ E_net_http_S_connect_n - 1 ].buf = M( E_net_http_S_connect[ E_net_http_S_connect_n - 1 ].recv_frame_size_max );
+    if( !E_net_http_S_connect[ E_net_http_S_connect_n - 1 ].buf )
+    {   SSL_shutdown(ssl);
+        SSL_free(ssl);
+        E_mem_Q_blk_I_remove( &E_net_http_S_connect, --E_net_http_S_connect_n, 1 );
+        V0( close(fd) ){}
+            #ifdef __gnu_linux__
+        struct epoll_event ee;
+        ee.events = EPOLLIN;
+        ee.data.fd = fd;
+        V0( epoll_ctl( E_net_cli_S_epoll_fd, EPOLL_CTL_DEL, fd, &ee )){}
+        E_mem_Q_blk_I_remove( &E_net_cli_S_ee_ready, --E_net_cli_S_ee_ready_n, 1 );
+            #else
+        E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, --E_net_cli_S_poll_fd_n, 1 );
+            #endif
+        return ~0;
+    }
+    E_net_http_S_connect[ E_net_http_S_connect_n - 1 ].buf_ = E_net_http_S_connect[ E_net_http_S_connect_n - 1 ].buf;
+    E_net_http_S_connect[ E_net_http_S_connect_n - 1 ].buf_2 = M( 9 + E_net_http_S_connect[ E_net_http_S_connect_n - 1 ].send_frame_size_max );
+    if( !E_net_http_S_connect[ E_net_http_S_connect_n - 1 ].buf_2 )
+    {   W( E_net_http_S_connect[ E_net_http_S_connect_n - 1 ].buf );
+        SSL_shutdown(ssl);
+        SSL_free(ssl);
+        E_mem_Q_blk_I_remove( &E_net_http_S_connect, --E_net_http_S_connect_n, 1 );
+        V0( close(fd) ){}
+            #ifdef __gnu_linux__
+        struct epoll_event ee;
+        ee.events = EPOLLIN;
+        ee.data.fd = fd;
+        V0( epoll_ctl( E_net_cli_S_epoll_fd, EPOLL_CTL_DEL, fd, &ee )){}
+        E_mem_Q_blk_I_remove( &E_net_cli_S_ee_ready, --E_net_cli_S_ee_ready_n, 1 );
+            #else
+        E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, --E_net_cli_S_poll_fd_n, 1 );
+            #endif
+        return ~0;
+    }
+    E_net_http_S_connect[ E_net_http_S_connect_n - 1 ].ret_func = 0;
+    _gettime( &E_net_http_S_connect[ E_net_http_S_connect_n - 1 ].keepalive_tv );
+    Z_clock_time tv;
+    tv.tv_sec = S_keepalive_timeout;
+    tv.Z_clock_time_minor_field = 0;
+    _timeradd( &E_net_http_S_connect[ E_net_http_S_connect_n - 1 ].keepalive_tv, &tv, &E_net_http_S_connect[ E_net_http_S_connect_n - 1 ].keepalive_tv );
+    return E_net_http_S_connect_n - 1;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 void
@@ -421,13 +498,15 @@ E_net_D_cli_I_unblock( P p
 ){  C c;
     VO1_( write( E_net_cli_S_poll_pipe[1], &c, sizeof(C) ));
 }
-D( net, cli ) //TODO Obsługa “http/1.1”.
+D( net, cli )
 {   Dh_();
     Xh_A( E_net_D_cli_I_unblock );
     X_M( net, disconnect );
     X_A( net, ret );
     I_D
-    {   if( !E_net_http2_S_connect_n )
+    {   if( !E_net_http_S_connect_n
+        && !E_net_http2_S_connect_n
+        )
         {   X_F( net, disconnect );
             U_F( net, ret );
         }
@@ -438,14 +517,23 @@ D( net, cli ) //TODO Obsługa “http/1.1”.
             #else
         Xh_B_();
                 #ifdef __gnu_linux__
-        VO1_( n = epoll_wait( E_net_cli_S_epoll_fd, E_net_cli_S_ee_ready, E_net_cli_S_ee_ready_n, E_net_http2_S_connect_n ? S_system_idle_time : -1 ));
+        VO1_( n = epoll_wait( E_net_cli_S_epoll_fd, E_net_cli_S_ee_ready, E_net_cli_S_ee_ready_n, E_net_http_S_connect_n || E_net_http2_S_connect_n ? S_system_idle_time : -1 ));
                 #else
-        VO1_( n = poll( E_net_cli_S_poll_fd, E_net_cli_S_poll_fd_n, E_net_http2_S_connect_n ? S_system_idle_time : -1 ));
+        VO1_( n = poll( E_net_cli_S_poll_fd, E_net_cli_S_poll_fd_n, E_net_http_S_connect_n || E_net_http2_S_connect_n ? S_system_idle_time : -1 ));
                 #endif
         Xh_B()
-        {   for_n( i, E_net_http2_S_connect_n )
-            {
-                if( E_net_http2_S_connect[i].ssl )
+        {   for_n( i, E_net_http_S_connect_n )
+            {   if( E_net_http_S_connect[i].ssl )
+                {   SSL_shutdown( E_net_http_S_connect[i].ssl );
+                    SSL_free( E_net_http_S_connect[i].ssl );
+                }
+                W( E_net_http_S_connect[i].buf_2 );
+                if( E_net_http_S_connect[i].buf )
+                    W( E_net_http_S_connect[i].buf );
+                V0( close( E_net_http_S_connect[i].connect_sock )){}
+            }
+            for_n_( i, E_net_http2_S_connect_n )
+            {   if( E_net_http2_S_connect[i].ssl )
                 {   SSL_shutdown( E_net_http2_S_connect[i].ssl );
                     SSL_free( E_net_http2_S_connect[i].ssl );
                 }
@@ -473,7 +561,235 @@ D( net, cli ) //TODO Obsługa “http/1.1”.
             break;
         }
             #endif
-        for_n( i, E_net_http2_S_connect_n )
+        for_n( i, E_net_http_S_connect_n )
+        {
+                #ifdef __gnu_linux__
+            S ssl_ret = 0;
+                #else
+            int ssl_ret = 0;
+                #endif
+            fd_set readfds;
+Next:       FD_ZERO( &readfds );
+            FD_SET( E_net_http_S_connect[i].connect_sock, &readfds );
+            struct timeval tv_ = { 0, 0 };
+            int e;
+            V1e( select( E_net_http_S_connect[i].connect_sock + 1, &readfds, 0, 0, &tv_ ), e )
+            {   if( e == EINTR || e == EAGAIN )
+                    goto Next;
+                goto End_1;
+            }
+            if( !FD_ISSET( E_net_http_S_connect[i].connect_sock, &readfds ))
+            {   Z_clock_time tv;
+                _gettime( &tv );
+                if( _timercmp( &tv, <, &E_net_http_S_connect[i].keepalive_tv ))
+                    continue;
+                goto End_1;
+            }
+            if( E_net_http_S_connect[i].buf_ == E_net_http_S_connect[i].buf + E_net_http_S_connect[i].buf_l )
+            {   if(( ssl_ret = E_net_cli_I_read_data( E_net_http_S_connect[i].ssl, E_net_http_S_connect[i].connect_sock, E_net_http_S_connect[i].buf, E_net_http_S_connect[i].recv_frame_size_max )) <= 0 )
+                    goto End_1;
+                E_net_http_S_connect[i].buf_l = ssl_ret;
+                G_(); Gd(i); Gs0_( "odczytano dane" ); Gd( E_net_http_S_connect[i].buf_l );
+            }else
+            {   if( E_net_http_S_connect[i].buf != E_net_http_S_connect[i].buf_ )
+                {   E_mem_Q_blk_I_copy( E_net_http_S_connect[i].buf, E_net_http_S_connect[i].buf_, E_net_http_S_connect[i].buf + E_net_http_S_connect[i].buf_l - E_net_http_S_connect[i].buf_ );
+                    E_net_http_S_connect[i].buf_l -= E_net_http_S_connect[i].buf_ - E_net_http_S_connect[i].buf;
+                }
+                N l;
+                if(( ssl_ret = E_net_cli_I_read_data( E_net_http_S_connect[i].ssl, E_net_http_S_connect[i].connect_sock, E_net_http_S_connect[i].buf + E_net_http_S_connect[i].buf_l, E_net_http_S_connect[i].recv_frame_size_max - E_net_http_S_connect[i].buf_l )) <= 0 )
+                    goto End_1;
+                l = ssl_ret;
+                E_net_http_S_connect[i].buf_l += l;
+                G_(); Gd(i); Gs0_( "doczytano dane" ); Gd(l); Gd( E_net_http_S_connect[i].buf_l );
+            }
+            if( !E_net_http_S_connect[i].next )
+            {   Pc headers_end = E_text_Z_s_R_s0_search( E_net_http_S_connect[i].buf, E_net_http_S_connect[i].buf + E_net_http_S_connect[i].buf_l, "\r\n\r\n" );
+                if( headers_end == E_net_http_S_connect[i].buf + E_net_http_S_connect[i].buf_l )
+                    goto End_2;
+                Pc s = E_text_Z_s_R_s0_search( E_net_http_S_connect[i].buf, E_net_http_S_connect[i].buf + E_net_http_S_connect[i].buf_l, "\r\n" );
+                Pc s_1 = E_text_Z_s_R_c_search( E_net_http_S_connect[i].buf, s, ' ' );
+                if( s_1 == s
+                || !E_text_Z_s_T_s0_eq( E_net_http_S_connect[i].buf, s_1, "HTTP/1.1" )
+                )
+                    goto End_1;
+                Pc s_2 = E_text_Z_s_R_c_search( s_1 + 1, s, ' ' );
+                if( s_2 == s
+                || !E_text_Z_s_T_s0_eq( s_1 + 1, s_2, "200" )
+                )
+                    goto End_1;
+                s_1 = E_text_Z_s_R_s0_search( s, headers_end, "\r\nContent-Length: " );
+                if( s_1 == headers_end )
+                    goto End_1;
+                s_2 = E_text_Z_s_R_s0_search( s_1 + 18, headers_end + 2, "\r\n" );
+                E_net_http_S_connect[i].l = E_text_Z_s_N_n10( s_1 + 18, s_2, &s_1 );
+                if( s_1 != s_2 )
+                    goto End_1;
+                s_1 = E_text_Z_s_R_s0_search( s, headers_end, "\r\nContent-Encoding: " );
+                if( s_1 != headers_end )
+                {   s_2 = E_text_Z_s_R_s0_search( s_1 + 20, headers_end + 2, "\r\n" );
+                    if( E_text_Z_s_T_s0_eq( s_1 + 20, s_2, "gzip" ))
+                    {   M_( E_net_http_S_connect[i].z_stream );
+                        if( !E_net_http_S_connect[i].z_stream )
+                            goto End_1;
+                        E_net_http_S_connect[i].z_stream->next_in = ( Bytef * )( headers_end + 4 );
+                        E_net_http_S_connect[i].z_stream->avail_in = E_net_http_S_connect[i].buf + E_net_http_S_connect[i].buf_l - ( headers_end + 4 );
+                        E_net_http_S_connect[i].z_stream->zalloc = Z_NULL;
+                        E_net_http_S_connect[i].z_stream->zfree = Z_NULL;
+                        int zlib_error = inflateInit2( E_net_http_S_connect[i].z_stream, 15 + 16 );
+                        if( zlib_error != Z_OK )
+                        {   W( E_net_http_S_connect[i].z_stream );
+                            goto End_1;
+                        }
+                        E_net_http_S_connect[i].zlib_data = M( S_inflate_buffer_size );
+                        if( !E_net_http_S_connect[i].zlib_data )
+                        {   inflateEnd( E_net_http_S_connect[i].z_stream );
+                            W( E_net_http_S_connect[i].z_stream );
+                            goto End_1;
+                        }
+                    }
+                }
+                E_net_http_S_connect[i].file_name = M( 23 + 1 );
+                if( !E_net_http_S_connect[i].file_name )
+                {   if( E_net_http_S_connect[i].z_stream )
+                    {   W( E_net_http_S_connect[i].zlib_data );
+                        inflateEnd( E_net_http_S_connect[i].z_stream );
+                        W( E_net_http_S_connect[i].z_stream );
+                    }
+                    goto End_1;
+                }
+                E_text_Z_s_P_s0_copy_0( E_net_http_S_connect[i].file_name, "/tmp/oux-net-cli-XXXXXX" );
+                int fd;
+                V1( fd = mkstemp( E_net_http_S_connect[i].file_name ))
+                {   W( E_net_http_S_connect[i].file_name );
+                    if( E_net_http_S_connect[i].z_stream )
+                    {   W( E_net_http_S_connect[i].zlib_data );
+                        inflateEnd( E_net_http_S_connect[i].z_stream );
+                        W( E_net_http_S_connect[i].z_stream );
+                    }
+                    goto End_1;
+                }
+                E_net_http_S_connect[i].file_id = E_mem_Q_file_M_fd(fd);
+                if( !~E_net_http_S_connect[i].file_id )
+                {   V0( unlink( E_net_http_S_connect[i].file_name ) ){}
+                    W( E_net_http_S_connect[i].file_name );
+                    if( E_net_http_S_connect[i].z_stream )
+                    {   W( E_net_http_S_connect[i].zlib_data );
+                        inflateEnd( E_net_http_S_connect[i].z_stream );
+                        W( E_net_http_S_connect[i].z_stream );
+                    }
+                    goto End_1;
+                }
+                E_net_http_S_connect[i].next = yes;
+                E_net_http_S_connect[i].buf_ = headers_end + 4;
+                if( E_net_http_S_connect[i].buf_ == E_net_http_S_connect[i].buf + E_net_http_S_connect[i].buf_l )
+                    goto End_2;
+            }else
+            {   E_net_http_S_connect[i].buf_ = E_net_http_S_connect[i].buf;
+                E_net_http_S_connect[i].z_stream->next_in = ( Bytef * )E_net_http_S_connect[i].buf_;
+                E_net_http_S_connect[i].z_stream->avail_in = E_net_http_S_connect[i].buf + E_net_http_S_connect[i].buf_l - E_net_http_S_connect[i].buf_;
+            }
+            int zlib_error;
+            struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, E_net_http_S_connect[i].file_id );
+            if( E_net_http_S_connect[i].z_stream )
+            {   if( E_net_http_S_connect[i].l < E_net_http_S_connect[i].z_stream->avail_in )
+                {   E_mem_Q_file_W_nosave( E_net_http_S_connect[i].file_id );
+                    V0( unlink( E_net_http_S_connect[i].file_name ) ){}
+                    W( E_net_http_S_connect[i].file_name );
+                    W( E_net_http_S_connect[i].zlib_data );
+                    inflateEnd( E_net_http_S_connect[i].z_stream );
+                    W( E_net_http_S_connect[i].z_stream );
+                    goto End_1;
+                }
+                E_net_http_S_connect[i].l -= E_net_http_S_connect[i].z_stream->avail_in;
+                O{  E_net_http_S_connect[i].z_stream->avail_out = S_inflate_buffer_size;
+                    E_net_http_S_connect[i].z_stream->next_out = ( Bytef * )E_net_http_S_connect[i].zlib_data;
+                    zlib_error = inflate( E_net_http_S_connect[i].z_stream, Z_SYNC_FLUSH );
+                    if( zlib_error != Z_OK
+                    && zlib_error != Z_STREAM_END
+                    )
+                    {   E_mem_Q_file_W_nosave( E_net_http_S_connect[i].file_id );
+                        V0( unlink( E_net_http_S_connect[i].file_name ) ){}
+                        W( E_net_http_S_connect[i].file_name );
+                        W( E_net_http_S_connect[i].zlib_data );
+                        inflateEnd( E_net_http_S_connect[i].z_stream );
+                        W( E_net_http_S_connect[i].z_stream );
+                        goto End_1;
+                    }
+                    E_mem_Q_file_P_pos( E_net_http_S_connect[i].file_id, file->l );
+                    if( !~E_mem_Q_file_P_insert_s( E_net_http_S_connect[i].file_id, E_net_http_S_connect[i].zlib_data, S_inflate_buffer_size - E_net_http_S_connect[i].z_stream->avail_out ))
+                    {   E_mem_Q_file_W_nosave( E_net_http_S_connect[i].file_id );
+                        V0( unlink( E_net_http_S_connect[i].file_name ) ){}
+                        W( E_net_http_S_connect[i].file_name );
+                        W( E_net_http_S_connect[i].zlib_data );
+                        inflateEnd( E_net_http_S_connect[i].z_stream );
+                        W( E_net_http_S_connect[i].z_stream );
+                        goto End_1;
+                    }
+                    if( zlib_error == Z_STREAM_END
+                    || !E_net_http_S_connect[i].z_stream->avail_in
+                    )
+                        break;
+                }
+            }else
+            {   if( E_net_http_S_connect[i].l < E_net_http_S_connect[i].buf + E_net_http_S_connect[i].buf_l - E_net_http_S_connect[i].buf_ )
+                {   E_mem_Q_file_W_nosave( E_net_http_S_connect[i].file_id );
+                    V0( unlink( E_net_http_S_connect[i].file_name ) ){}
+                    W( E_net_http_S_connect[i].file_name );
+                    goto End_1;
+                }
+                E_mem_Q_file_P_pos( E_net_http_S_connect[i].file_id, file->l );
+                if( !~E_mem_Q_file_P_insert_s( E_net_http_S_connect[i].file_id, E_net_http_S_connect[i].buf_, E_net_http_S_connect[i].buf + E_net_http_S_connect[i].buf_l - E_net_http_S_connect[i].buf_ ))
+                {   E_mem_Q_file_W_nosave( E_net_http_S_connect[i].file_id );
+                    V0( unlink( E_net_http_S_connect[i].file_name ) ){}
+                    W( E_net_http_S_connect[i].file_name );
+                    goto End_1;
+                }
+                E_net_http_S_connect[i].l -= E_net_http_S_connect[i].buf + E_net_http_S_connect[i].buf_l - E_net_http_S_connect[i].buf_;
+            }
+            E_net_http_S_connect[i].buf_ = E_net_http_S_connect[i].buf + E_net_http_S_connect[i].buf_l;
+            if(( E_net_http_S_connect[i].z_stream
+              && zlib_error == Z_STREAM_END
+              )
+            || ( !E_net_http_S_connect[i].z_stream
+              && !E_net_http_S_connect[i].l
+            ))
+                E_net_http_S_connect[i].ret_func(i);
+End_2:;     Z_clock_time tv, tv_add;
+            _gettime( &tv );
+            tv_add.tv_sec = S_keepalive_timeout;
+            tv_add.Z_clock_time_minor_field = 0;
+            _timeradd( &tv, &tv_add, &E_net_http_S_connect[i].keepalive_tv );
+            continue;
+End_1:      if( E_net_http_S_connect[i].ssl )
+            {   e = SSL_get_error( E_net_http_S_connect[i].ssl, ssl_ret );
+                if( e != SSL_ERROR_SYSCALL
+                && e != SSL_ERROR_SSL
+                )
+                    SSL_shutdown( E_net_http_S_connect[i].ssl );
+                SSL_free( E_net_http_S_connect[i].ssl );
+            }
+            W( E_net_http_S_connect[i].buf_2 );
+            if( E_net_http_S_connect[i].buf )
+                W( E_net_http_S_connect[i].buf );
+                #ifdef __gnu_linux__
+            struct epoll_event ee;
+            ee.events = EPOLLIN;
+            ee.data.fd = E_net_http_S_connect[i].connect_sock;
+            V0( epoll_ctl( E_net_cli_S_epoll_fd, EPOLL_CTL_DEL, E_net_http_S_connect[i].connect_sock, &ee )){}
+            E_mem_Q_blk_I_remove( &E_net_cli_S_ee_ready, 1 + i, 1 );
+            E_net_cli_S_ee_ready_n--;
+                #else
+            E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, 1 + i, 1 );
+            E_net_cli_S_poll_fd_n--;
+                #endif
+            V0( close( E_net_http_S_connect[i].connect_sock )){}
+            if( !E_mem_Q_blk_I_remove( &E_net_http_S_connect, i, 1 ))
+                V();
+            E_net_http_S_connect_n--;
+            G_(); Gd(i); Gs0_( "koniec połączenia" );
+            i--;
+        }
+        for_n_( i, E_net_http2_S_connect_n )
         {   N32 goaway_error;
                 #ifdef __gnu_linux__
             S ssl_ret;
@@ -506,8 +822,9 @@ Next2:      FD_ZERO( &readfds );
                 G_(); Gd(i); Gs0_( "odczytano dane HTTP/2" ); Gd( E_net_http2_S_connect[i].buf_l );
             }else
             {   if( E_net_http2_S_connect[i].buf != E_net_http2_S_connect[i].buf_ )
-                    E_mem_Q_blk_I_copy( E_net_http2_S_connect[i].buf, E_net_http2_S_connect[i].buf_, E_net_http2_S_connect[i].buf + E_net_http2_S_connect[i].buf_l - E_net_http2_S_connect[i].buf_ );
-                E_net_http2_S_connect[i].buf_l -= E_net_http2_S_connect[i].buf_ - E_net_http2_S_connect[i].buf;
+                {   E_mem_Q_blk_I_copy( E_net_http2_S_connect[i].buf, E_net_http2_S_connect[i].buf_, E_net_http2_S_connect[i].buf + E_net_http2_S_connect[i].buf_l - E_net_http2_S_connect[i].buf_ );
+                    E_net_http2_S_connect[i].buf_l -= E_net_http2_S_connect[i].buf_ - E_net_http2_S_connect[i].buf;
+                }
                 N l;
                 if(( ssl_ret = E_net_cli_I_read_data( E_net_http2_S_connect[i].ssl, ~0, E_net_http2_S_connect[i].buf + E_net_http2_S_connect[i].buf_l, 9 + E_net_http2_S_connect[i].recv_frame_size_max - E_net_http2_S_connect[i].buf_l )) <= 0 )
                     goto End2_1;
@@ -561,7 +878,7 @@ Next2:      FD_ZERO( &readfds );
                             }
                             E_text_Z_s_P_s0_copy_0( stream->file_name, "/tmp/oux-net-cli-XXXXXX" );
                             int fd;
-                            V1( fd = mkstemp( stream->file_name ) )
+                            V1( fd = mkstemp( stream->file_name ))
                             {   W( stream->file_name );
                                 goaway_error = E_net_http2_Z_error_S_internal_error;
                                 goto End2_2;
@@ -641,7 +958,7 @@ Next2:      FD_ZERO( &readfds );
                                     goto End2_2;
                                 }
                                 if( zlib_error == Z_STREAM_END
-                                || stream->z_stream->avail_out
+                                || !stream->z_stream->avail_in
                                 )
                                     break;
                                 stream->z_stream->avail_out = S_inflate_buffer_size;
@@ -978,6 +1295,17 @@ End2_1:     e = SSL_get_error( E_net_http2_S_connect[i].ssl, ssl_ret );
             W( E_net_http2_S_connect[i].buf_2 );
             if( E_net_http2_S_connect[i].buf )
                 W( E_net_http2_S_connect[i].buf );
+                #ifdef __gnu_linux__
+            struct epoll_event ee;
+            ee.events = EPOLLIN;
+            ee.data.fd = E_net_http2_S_connect[i].connect_sock;
+            V0( epoll_ctl( E_net_cli_S_epoll_fd, EPOLL_CTL_DEL, E_net_http2_S_connect[i].connect_sock, &ee )){}
+            E_mem_Q_blk_I_remove( &E_net_cli_S_ee_ready, 1 + i, 1 );
+            E_net_cli_S_ee_ready_n--;
+                #else
+            E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, 1 + i, 1 );
+            E_net_cli_S_poll_fd_n--;
+                #endif
             V0( close( E_net_http2_S_connect[i].connect_sock )){}
             if( !E_mem_Q_blk_I_remove( &E_net_http2_S_connect, i, 1 ))
                 V();

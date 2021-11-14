@@ -1,0 +1,94 @@
+/*******************************************************************************
+*   ___   publicplace
+*  ¦OUX¦  C+
+*  ¦/C+¦  component
+*   ---   base
+*         network HTTP/1.1
+* ©overcq                on ‟Gentoo Linux 17.1” “x86_64”            2021‒11‒13 a
+*******************************************************************************/
+struct E_net_http_Z_connect
+{ int connect_sock;
+  SSL *ssl;
+  Pc hostname;
+  int file;
+  off_t file_size;
+  Pc buf, buf_, buf_2;
+  N buf_l;
+  Z_clock_time keepalive_tv;
+  off_t l;
+  N recv_frame_size_max;
+  N send_frame_size_max;
+  z_stream *z_stream;
+  Pc zlib_data;
+  I file_id;
+  Pc file_name;
+  B next;
+  void (*ret_func)(N);
+} *E_net_http_S_connect;
+N E_net_http_S_connect_n;
+//==============================================================================
+void
+E_net_http_Q_ssl_I_disconnect( N i
+){  J_assert( i < E_net_http_S_connect_n );
+    SSL_shutdown( E_net_http_S_connect[i].ssl );
+    SSL_free( E_net_http_S_connect[i].ssl );
+    W( E_net_http_S_connect[i].buf_2 );
+    if( E_net_http_S_connect[i].buf )
+        W( E_net_http_S_connect[i].buf );
+    E_net_D_cli_I_unblock(0);
+    V0_( sched_yield() );
+        #ifdef __gnu_linux__
+    struct epoll_event ee;
+    ee.events = EPOLLIN;
+    ee.data.fd = E_net_http_S_connect[i].connect_sock;
+    V0( epoll_ctl( E_net_cli_S_epoll_fd, EPOLL_CTL_DEL, E_net_http_S_connect[i].connect_sock, &ee )){}
+    E_mem_Q_blk_I_remove( &E_net_cli_S_ee_ready, 1 + i, 1 );
+    E_net_cli_S_ee_ready_n--;
+        #else
+    E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, 1 + i, 1 );
+    E_net_cli_S_poll_fd_n--;
+        #endif
+    V0( close( E_net_http_S_connect[i].connect_sock )){}
+        if( !E_mem_Q_blk_I_remove( &E_net_http_S_connect, i, 1 ))
+        V();
+    E_net_http_S_connect_n--;
+    if( !E_net_http_S_connect_n
+    && !E_net_http2_S_connect_n
+    )
+    {   X_A( net, disconnect );
+        X_F( net, disconnect );
+    }
+}
+//------------------------------------------------------------------------------
+N
+E_net_http_I_request( N i
+, Pc path
+, void (*ret_func)(N)
+){  J_assert( i < E_net_http_S_connect_n );
+    J_assert( ret_func );
+    if( E_net_http_S_connect[i].ret_func )
+        return ~0;
+    E_text_Z_s_P_s0_copy( E_text_Z_s_P_s0_copy( E_text_Z_s_P_s0_copy( E_text_Z_s_P_s0_copy( E_text_Z_s_P_s0_copy( E_text_Z_s_P_s0_copy( E_text_Z_s_P_s0_copy( E_net_http_S_connect[i].buf_2, "GET " ), path ), " HTTP/1.1\r\nHost: " ), E_net_http_S_connect[i].hostname ), "\r\nUser-Agent: " ), E_net_cli_S_client_name ), "\r\nAccept-Encoding: gzip\r\n\r\n" );
+    N l = 4 + E_text_Z_s0_R_l(path) + 17 + E_text_Z_s0_R_l( E_net_http_S_connect[i].hostname ) + 14 + E_text_Z_s0_R_l( E_net_cli_S_client_name ) + 27;
+        #ifdef __gnu_linux__
+    S ssl_ret;
+        #else
+    int ssl_ret;
+        #endif
+    if(( ssl_ret = E_net_cli_I_write_data( E_net_http_S_connect[i].ssl, E_net_http_S_connect[i].connect_sock, E_net_http_S_connect[i].buf_2, l )) != l )
+    {   int e;
+        if( E_net_http_S_connect[i].ssl )
+        {   e = SSL_get_error( E_net_http_S_connect[i].ssl, ssl_ret );
+            if( e != SSL_ERROR_SYSCALL
+            && e != SSL_ERROR_SSL
+            )
+                SSL_shutdown( E_net_http_S_connect[i].ssl );
+            SSL_free( E_net_http_S_connect[i].ssl );
+        }else
+            e = ~0;
+        return e;
+    }
+    E_net_http_S_connect[i].ret_func = ret_func;
+    return 0;
+}
+/******************************************************************************/

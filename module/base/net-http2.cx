@@ -323,8 +323,8 @@ E_net_http2_S_huffman_table[] =
 };
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 N8 E_net_http2_S_alpn[] =
-{ 2, 'h', '2'
-, 8, 'h', 't', 't', 'p', '/', '1', '.', '1'
+{ /*2, 'h', '2'
+, */8, 'h', 't', 't', 'p', '/', '1', '.', '1'
 };
 N8 E_net_http2_S_alpn_l = sizeof( E_net_http2_S_alpn );
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1420,15 +1420,19 @@ E_net_http2_Q_ssl_I_disconnect( N i
     ee.events = EPOLLIN;
     ee.data.fd = E_net_http2_S_connect[i].connect_sock;
     V0( epoll_ctl( E_net_cli_S_epoll_fd, EPOLL_CTL_DEL, E_net_http2_S_connect[i].connect_sock, &ee )){}
-    E_mem_Q_blk_I_remove( &E_net_cli_S_ee_ready, --E_net_cli_S_ee_ready_n, 1 );
+    E_mem_Q_blk_I_remove( &E_net_cli_S_ee_ready, 1 + i, 1 );
+    E_net_cli_S_ee_ready_n--;
         #else
-    E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, --E_net_cli_S_poll_fd_n, 1 );
+    E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, 1 + i, 1 );
+    E_net_cli_S_poll_fd_n--;
         #endif
     V0( close( E_net_http2_S_connect[i].connect_sock )){}
         if( !E_mem_Q_blk_I_remove( &E_net_http2_S_connect, i, 1 ))
         V();
     E_net_http2_S_connect_n--;
-    if( !E_net_http2_S_connect_n )
+    if( !E_net_http_S_connect_n
+    && !E_net_http2_S_connect_n
+    )
     {   X_A( net, disconnect );
         X_F( net, disconnect );
     }
@@ -1439,7 +1443,7 @@ E_net_http2_I_request( N i
 , Pc path
 , void (*ret_func)(N,I)
 ){  J_assert( i < E_net_http2_S_connect_n );
-    X_A( net, cli );
+    J_assert( ret_func );
     I stream_id = E_mem_Q_tab_I_add( E_net_http2_S_connect[i].stream );
     if( !~stream_id )
         return ~0;
@@ -1556,7 +1560,6 @@ E_net_http2_I_request( N i
         return e;
     }
     stream->ret_func = ret_func;
-    X_F( net, cli );
     return 0;
 }
 /******************************************************************************/

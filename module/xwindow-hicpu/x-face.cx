@@ -70,7 +70,7 @@ struct E_x_Q_screen_Z
     #endif
   //S16 pointer_button_drag_copy_x_delta, pointer_button_drag_copy_y_delta;
   N8 depth; //NDFN w trakcie przeprojektowywania “screen”.
-  struct E_x_Q_window_Z dnd_window; ///używane dane obecne w całości tylko w trybie “drag”.
+  struct E_x_Q_window_Z dnd_window; // Używane dane obecne w całości tylko w trybie “drag”.
   unsigned U_R( state, draw_object_drag_move )          :1;
   unsigned U_R( mode, animation )                       :1;
 };
@@ -84,9 +84,9 @@ struct E_x_Z_keysym_to_unicode
   U u;
 };
 //------------------------------------------------------------------------------
-///“pointer”– rozszerzenie “zdarzeń” ‘x’ dla przesuwania wskazania.
-///“pointer_button”– rozszerzenie “zdarzeń” ‘x’ dla “button”.
-///“drag”– rozszerzenie “zdarzeń” ‘x’ dla przeciągania.
+// “pointer”– rozszerzenie “zdarzeń” ‘x’ dla przesuwania wskazania.
+// “pointer_button”– rozszerzenie “zdarzeń” ‘x’ dla “button”.
+// “drag”– rozszerzenie “zdarzeń” ‘x’ dla przeciągania.
 struct E_x_Q_display_Z
 { xcb_connection_t *x_display;
     #ifdef __gnu_linux__
@@ -100,11 +100,11 @@ struct E_x_Q_display_Z
   F blue_luminance_ratio;
   xcb_setup_t *setup;
   xcb_get_keyboard_mapping_reply_t *keyboard_mapping;
-  struct E_mem_Q_tab_Z *screen; /// Indeksy wyświetlaczy ‘servera’ ‟X” są utożsamione z indeksami tablicy; w protokole ‟X” jest “N8” dla numeru wyświetlacza, co wystarcza, by “(I)~0” było różne od “(N8)~0”.
+  struct E_mem_Q_tab_Z *screen; // Indeksy wyświetlaczy ‘servera’ ‟X” są utożsamione z indeksami tablicy; w protokole ‟X” jest “N8” dla numeru wyświetlacza, co wystarcza, by “(I)~0” było różne od “(N8)~0”.
   struct E_mem_Q_tab_Z *window;
   struct E_x_Z_drag_object_src *drag_S_object_src; //NDFN przed zaprojektowaniem ‘drop’.
   N drag_S_object_src_n; //NDFN przed zaprojektowaniem ‘drop’.
-  xcb_timestamp_t pointer_button_S_time, pointer_button_S_start_time, pointer_button_S_grab_time; /// ‘Grabnięcie’ jest rozszerzeniem “zdarzeń” “pointer_button”.
+  xcb_timestamp_t pointer_button_S_time, pointer_button_S_start_time, pointer_button_S_grab_time; // ‘Grabnięcie’ jest rozszerzeniem “zdarzeń” “pointer_button”.
     #ifdef E_flow_C_thread_system_unblock_reports
   xcb_timestamp_t pointer_button_S_impulser_time;
     #endif
@@ -118,7 +118,7 @@ struct E_x_Q_display_Z
   I drag_S_dnd_window_screen_id;
   I Z_screen_id_S_default;
   N8 pointer_button;
-  N8 pointer_button_S_seq_i; /// “== 0” to stan oczekiwania przeciwny do stanu ‛klikania przycisku do czasu oznaczenia “zdarzenia” kliknięcia’.
+  N8 pointer_button_S_seq_i; // “== 0” to stan oczekiwania przeciwny do stanu ‛klikania przycisku do czasu oznaczenia “zdarzenia” kliknięcia’.
   N8 drag_S_pointer_button;
   I cursor_window;
   I cursor_object;
@@ -359,10 +359,40 @@ E_x_Q_display_M( void
     && ( xcb_screen_next( &screen_iter ), screen_id++, yes ));
     display->window = E_mem_Q_tab_M( sizeof( struct E_x_Q_window_Z ), 0 );
     if( E_mem_Q_tab_R_n( E_x_Q_display_S ) == 1 )
-    {   D_M( x_window, flush );
-        D_M( x_window, draw );
+    {   D_M( x_window, flush )
+        {   E_mem_Q_tab_W( display->window );
+            E_mem_Q_tab_W( display->screen );
+            W( display->class_name );
+            W( display->atom );
+            xcb_disconnect( display->x_display );
+            E_mem_Q_tab_I_remove( E_x_Q_display_S, display_id );
+            return ~0;
+        }
+        D_M( x_window, draw )
+        {   if( E_mem_Q_tab_R_n( E_x_Q_display_S ) == 1 )
+                D_W( x_window, flush );
+            E_mem_Q_tab_W( display->window );
+            E_mem_Q_tab_W( display->screen );
+            W( display->class_name );
+            W( display->atom );
+            xcb_disconnect( display->x_display );
+            E_mem_Q_tab_I_remove( E_x_Q_display_S, display_id );
+            return ~0;
+        }
             #ifndef E_flow_C_thread_system_unblock_reports
-        D_M( x_window, events );
+        D_M( x_window, events )
+        {   if( E_mem_Q_tab_R_n( E_x_Q_display_S ) == 1 )
+            {   D_W( x_window, draw );
+                D_W( x_window, flush );
+            }
+            E_mem_Q_tab_W( display->window );
+            E_mem_Q_tab_W( display->screen );
+            W( display->class_name );
+            W( display->atom );
+            xcb_disconnect( display->x_display );
+            E_mem_Q_tab_I_remove( E_x_Q_display_S, display_id );
+            return ~0;
+        }
             #endif
     }
         #ifdef E_flow_C_thread_system_unblock_reports
@@ -381,7 +411,19 @@ E_x_Q_display_M( void
         return ~0;
     }
     *thread_proc_arg = display_id;
-    Dh_M( x_window, events, display_id, thread_proc_arg );
+    Dh_M( x_window, events, display_id, thread_proc_arg )
+    {   if( E_mem_Q_tab_R_n( E_x_Q_display_S ) == 1 )
+        {   D_W( x_window, draw );
+            D_W( x_window, flush );
+        }
+        E_mem_Q_tab_W( display->window );
+        E_mem_Q_tab_W( display->screen );
+        W( display->class_name );
+        W( display->atom );
+        xcb_disconnect( display->x_display );
+        E_mem_Q_tab_I_remove( E_x_Q_display_S, display_id );
+        return ~0;
+    }
         #endif
     display->cursor_window = ~0;
     U_L( display->state, pointer_S_in_window );
@@ -510,7 +552,7 @@ E_x_Q_window_M( I display_id
     , STRING
     , display->class_name, display->class_name_l //NDFN do konwersji stratnej do wymaganego typu ‘x’ “STRING”?
     );
-    ///“_NET_WM_SYNC_REQUEST” nie jest używane, ponieważ jest sprzeczne z automatycznym doregulowywaniem do dostępnych zasobów obliczeniowych— przez wymuszanie kolejkowania kolejnych zmian raz rozpoczętego zmieniania rozmiaru okna, nie pozwalając na szybkie dopasowanie do odległego od początku żądania bieżącego. sprawdzone w “menedżerze okien” ‟Enlightenment 16”.
+    // “_NET_WM_SYNC_REQUEST” nie jest używane, ponieważ jest sprzeczne z automatycznym doregulowywaniem do dostępnych zasobów obliczeniowych— przez wymuszanie kolejkowania kolejnych zmian raz rozpoczętego zmieniania rozmiaru okna, nie pozwalając na szybkie dopasowanie do odległego od początku żądania bieżącego. sprawdzone w “menedżerze okien” ‟Enlightenment 16”.
     E_x_Z_property_P( display, window, WM_PROTOCOLS
     , ATOM
     , (( xcb_atom_t[] )
