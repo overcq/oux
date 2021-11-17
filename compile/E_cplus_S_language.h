@@ -157,6 +157,8 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
 #define X_U(module,report)                  if( !U_E(module,report) ){} else X_F(module,report)
 // Czekanie na ‹raport› kolekcji.
 #define X_B(module,report,lost_count)       if( !E_flow_Q_report_I_wait( _X_var(module,report), (lost_count) )){} else
+// Czyszczenie licznika raportów.
+#define X_L(module,report)                  E_flow_Q_report_I_clear( _X_var(module,report) )
 //------------------------------------------------------------------------------
     #ifdef E_flow_C_thread_system_unblock_reports
 // Deklaracja ‹procedury› generującej ‹systemowy raport odblokowujący› dla ‹zadania›; odblokowującej to ‹zadanie›.

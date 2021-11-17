@@ -332,6 +332,7 @@ E_flow_Q_task_M( I *uid
         task->thread_flow_mutex = thread_flow_mutex;
         task->thread_switch_back = thread_switch_back;
         *thread_switch_back = no;
+        task_proc_args.alt_stack.ss_size += E_base_S->E_mem_S_page_size;
             #if defined( __gnu_linux__ )
         V1p( task_proc_args.alt_stack.ss_sp = mmap( 0
         , task_proc_args.alt_stack.ss_size
@@ -354,6 +355,22 @@ E_flow_Q_task_M( I *uid
 #error not implemented
             #endif
         {   W( thread_switch_back );
+            Vr_( pthread_mutex_destroy( thread_flow_mutex ));
+            W( thread_flow_mutex );
+            _tasks_table_begin;
+            E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
+            _tasks_table_end;
+            V0_( munmap( stack, stack_size ));
+            if( thread_proc_arg )
+                W( thread_proc_arg );
+            return ~0;
+        }
+        V0( mprotect( task_proc_args.alt_stack.ss_sp
+        , E_base_S->E_mem_S_page_size
+        , PROT_NONE
+        ))
+        {   V0_( munmap( task_proc_args.alt_stack.ss_sp, task_proc_args.alt_stack.ss_size ));
+            W( thread_switch_back );
             Vr_( pthread_mutex_destroy( thread_flow_mutex ));
             W( thread_flow_mutex );
             _tasks_table_begin;
@@ -764,7 +781,8 @@ E_flow_Q_report_W( I id
 void
 E_flow_Q_report_I_signal( I id
 ){  struct E_flow_Q_report_Z *report = E_mem_Q_tab_R( E_base_S->E_flow_Q_report_S, id );
-    report->reported_count++;
+    if( ~report->reported_count )
+        report->reported_count++;
     for_each( task_id, E_base_S->E_flow_Q_task_S, E_mem_Q_tab )
     {   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id );
         if( task->run_state == E_flow_Z_run_state_S_waiting_for_report
@@ -800,6 +818,11 @@ E_flow_Q_report_I_wait( I id
         *lost_count = report->reported_count - 1;
     report->reported_count = 0;
     return ret;
+}
+void
+E_flow_Q_report_I_clear( I id
+){  struct E_flow_Q_report_Z *report = E_mem_Q_tab_R( E_base_S->E_flow_Q_report_S, id );
+    report->reported_count = 0;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 I

@@ -126,6 +126,7 @@ E_net_cli_Q_ssl_M( void
     {   SSL_CTX_free( ssl_ctx );
         return 0;
     }
+    E_net_http_S_connect_n = 0;
     Mt_( E_net_http2_S_connect, 0 );
     if( !E_net_http2_S_connect )
     {   W( E_net_http_S_connect );
@@ -502,7 +503,8 @@ D( net, cli )
 {   Dh_();
     Xh_A( E_net_D_cli_I_unblock );
     X_M( net, disconnect );
-    X_A( net, ret );
+    B U_L( net, ret );
+    X_M( net, ret );
     I_D
     {   if( !E_net_http_S_connect_n
         && !E_net_http2_S_connect_n
@@ -511,15 +513,15 @@ D( net, cli )
             U_F( net, ret );
         }
         X_U( net, ret );
-        N n;
+        N ready_n;
             #ifndef E_flow_C_thread_system_unblock_reports
 #error TODO
             #else
         Xh_B_();
                 #ifdef __gnu_linux__
-        VO1_( n = epoll_wait( E_net_cli_S_epoll_fd, E_net_cli_S_ee_ready, E_net_cli_S_ee_ready_n, E_net_http_S_connect_n || E_net_http2_S_connect_n ? S_system_idle_time : -1 ));
+        VO1_( ready_n = epoll_wait( E_net_cli_S_epoll_fd, E_net_cli_S_ee_ready, E_net_cli_S_ee_ready_n, E_net_http_S_connect_n || E_net_http2_S_connect_n ? S_system_idle_time : -1 ));
                 #else
-        VO1_( n = poll( E_net_cli_S_poll_fd, E_net_cli_S_poll_fd_n, E_net_http_S_connect_n || E_net_http2_S_connect_n ? S_system_idle_time : -1 ));
+        VO1_( ready_n = poll( E_net_cli_S_poll_fd, E_net_cli_S_poll_fd_n, E_net_http_S_connect_n || E_net_http2_S_connect_n ? S_system_idle_time : -1 ));
                 #endif
         Xh_B()
         {   for_n( i, E_net_http_S_connect_n )
@@ -561,24 +563,26 @@ D( net, cli )
             break;
         }
             #endif
+        X_L( net, disconnect );
+        X_L( net, ret );
         for_n( i, E_net_http_S_connect_n )
         {
                 #ifdef __gnu_linux__
             S ssl_ret = 0;
+            for_n( ready_i, ready_n )
+                if( E_net_cli_S_ee_ready[ ready_i ].data.fd == E_net_http_S_connect[i].connect_sock )
+                    break;
+            if( ready_i == ready_n )
                 #else
             int ssl_ret = 0;
-                #endif
-            fd_set readfds;
-Next:       FD_ZERO( &readfds );
-            FD_SET( E_net_http_S_connect[i].connect_sock, &readfds );
-            struct timeval tv_ = { 0, 0 };
-            int e;
-            V1e( select( E_net_http_S_connect[i].connect_sock + 1, &readfds, 0, 0, &tv_ ), e )
-            {   if( e == EINTR || e == EAGAIN )
-                    goto Next;
+            struct pollfd pollfd =
+            { .fd = E_net_http_S_connect[i].connect_sock
+            , .events = POLLIN
+            };
+            VO1( ready_n = poll( &pollfd, 1, 0 ))
                 goto End_1;
-            }
-            if( !FD_ISSET( E_net_http_S_connect[i].connect_sock, &readfds ))
+            if( !ready_n )
+                #endif
             {   Z_clock_time tv;
                 _gettime( &tv );
                 if( _timercmp( &tv, <, &E_net_http_S_connect[i].keepalive_tv ))
@@ -761,7 +765,7 @@ End_2:;     Z_clock_time tv, tv_add;
             _timeradd( &tv, &tv_add, &E_net_http_S_connect[i].keepalive_tv );
             continue;
 End_1:      if( E_net_http_S_connect[i].ssl )
-            {   e = SSL_get_error( E_net_http_S_connect[i].ssl, ssl_ret );
+            {   int e = SSL_get_error( E_net_http_S_connect[i].ssl, ssl_ret );
                 if( e != SSL_ERROR_SYSCALL
                 && e != SSL_ERROR_SSL
                 )
@@ -793,21 +797,22 @@ End_1:      if( E_net_http_S_connect[i].ssl )
         {   N32 goaway_error;
                 #ifdef __gnu_linux__
             S ssl_ret;
+            for_n( ready_i, ready_n )
+                if( E_net_cli_S_ee_ready[ ready_i ].data.fd == E_net_http2_S_connect[i].connect_sock )
+                    break;
+            if( ready_i == ready_n )
                 #else
             int ssl_ret;
-                #endif
-            fd_set readfds;
-Next2:      FD_ZERO( &readfds );
-            FD_SET( E_net_http2_S_connect[i].connect_sock, &readfds );
-            struct timeval tv_ = { 0, 0 };
-            int e;
-            V1e( select( E_net_http2_S_connect[i].connect_sock + 1, &readfds, 0, 0, &tv_ ), e )
-            {   if( e == EINTR || e == EAGAIN )
-                    goto Next2;
-                goaway_error = E_net_http2_Z_error_S_internal_error;
+            struct pollfd pollfd =
+            { .fd = E_net_http2_S_connect[i].connect_sock
+            , .events = POLLIN
+            };
+            VO1( ready_n = poll( &pollfd, 1, 0 ))
+            {   goaway_error = E_net_http2_Z_error_S_internal_error;
                 goto End2_2;
             }
-            if( !FD_ISSET( E_net_http2_S_connect[i].connect_sock, &readfds ))
+            if( !ready_n )
+                #endif
             {   Z_clock_time tv;
                 _gettime( &tv );
                 if( _timercmp( &tv, <, &E_net_http2_S_connect[i].keepalive_tv ))
@@ -1174,7 +1179,12 @@ Reset_stream:           ;
                         break;
                     }
                   case E_net_http2_Z_frame_type_S_goaway:
-                    {   last_stream = E_net_http2_Q_buffer_I_read_n( &E_net_http2_S_connect[i].buf_, 4 ) & 0x7fffffff;
+                    {   G_();
+                        if( frame_length < 8 )
+                        {   goaway_error = E_net_http2_Z_error_S_protocol_error;
+                            goto End2_2;
+                        }
+                        last_stream = E_net_http2_Q_buffer_I_read_n( &E_net_http2_S_connect[i].buf_, 4 ) & 0x7fffffff;
                         N32 error = E_net_http2_Q_buffer_I_read_n( &E_net_http2_S_connect[i].buf_, 4 );
                         G_(); Gd(error);
                         E_net_http2_S_connect[i].buf_ += frame_length - 8;
@@ -1251,6 +1261,14 @@ Reset_stream:           ;
                     }
                 }
             }
+            if(( ssl_ret = E_net_cli_I_write_data( E_net_http2_S_connect[i].ssl, E_net_http2_S_connect[i].connect_sock, E_net_http2_S_connect[i].buf_2, E_net_http2_S_connect[i].buf_2_ - E_net_http2_S_connect[i].buf_2 )) != E_net_http2_S_connect[i].buf_2_ - E_net_http2_S_connect[i].buf_2 )
+                goto End2_1;
+            E_net_http2_S_connect[i].buf_2_ = E_net_http2_S_connect[i].buf_2;
+            _gettime( &E_net_http2_S_connect[i].keepalive_tv );
+            Z_clock_time tv;
+            tv.tv_sec = S_keepalive_timeout;
+            tv.Z_clock_time_minor_field = 0;
+            _timeradd( &E_net_http2_S_connect[i].keepalive_tv, &tv, &E_net_http2_S_connect[i].keepalive_tv );
             continue;
 End2_2:     if( !~E_net_http2_S_connect[i].last_stream )
             {   G_(); Gd( goaway_error );
@@ -1259,11 +1277,13 @@ End2_2:     if( !~E_net_http2_S_connect[i].last_stream )
                 E_net_http2_Q_buffer_I_write_n( &E_net_http2_S_connect[i].buf_2_, goaway_error, 4 );
             }
             ssl_ret = E_net_cli_I_write_data( E_net_http2_S_connect[i].ssl, E_net_http2_S_connect[i].connect_sock, E_net_http2_S_connect[i].buf_2, E_net_http2_S_connect[i].buf_2_ - E_net_http2_S_connect[i].buf_2 );
-End2_1:     e = SSL_get_error( E_net_http2_S_connect[i].ssl, ssl_ret );
+End2_1:     ;
+            int e = SSL_get_error( E_net_http2_S_connect[i].ssl, ssl_ret );
             if( !~E_net_http2_S_connect[i].last_stream
             && e == SSL_ERROR_NONE
             )
-            {   E_net_http2_S_connect[i].last_stream = ~last_stream ? last_stream : E_mem_Q_tab_R_n( E_net_http2_S_connect[i].stream );
+            {   G_();
+                E_net_http2_S_connect[i].last_stream = ~last_stream ? last_stream : E_mem_Q_tab_R_n( E_net_http2_S_connect[i].stream );
                 Z_clock_time tv, tv_;
                 _gettime( &tv );
                 tv_.tv_sec = S_keepalive_timeout;
@@ -1314,6 +1334,7 @@ End2_1:     e = SSL_get_error( E_net_http2_S_connect[i].ssl, ssl_ret );
             i--;
         }
     }
+    X_W( net, ret );
     X_W( net, disconnect );
 }
 /******************************************************************************/
