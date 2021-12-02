@@ -134,6 +134,13 @@ E_net_cli_Q_ssl_M( void
         return 0;
     }
     E_net_http2_S_connect_n = 0;
+        #ifndef E_flow_C_thread_system_unblock_reports
+    D_M( net, cli )
+        #else
+    Dh_M( net, cli, 0, 0 )
+        #endif
+    {   GV_(NA); V();
+    }
     return ssl_ctx;
 }
 void
@@ -144,6 +151,11 @@ E_net_cli_Q_ssl_W( SSL_CTX *ssl_ctx
     for_n_rev_( i, E_net_http2_S_connect_n )
         E_net_http2_Q_ssl_I_disconnect(i);
     X_B( net, disconnect, 0 );
+        #ifndef E_flow_C_thread_system_unblock_reports
+    D_W( net, cli );
+        #else
+    Dh_W( net, cli, 0 );
+        #endif
     W( E_net_http_S_connect );
     W( E_net_http2_S_connect );
     SSL_CTX_free( ssl_ctx );
