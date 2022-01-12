@@ -297,6 +297,60 @@ E_x_Q_window_I_draw_Z_rectangles(
     W(segments);
     return 0;
 }
+_internal
+N
+E_x_Q_window_I_draw_Z_arcs_I_8points_a( xcb_arc_t arc
+, xcb_point_t point
+, N *points_n
+, xcb_point_t **points
+){  if( !E_mem_Q_blk_I_append( points, 8 ))
+        return ~0;
+    (*points)[ *points_n ].x = arc.x + point.x;
+    (*points)[ *points_n ].y = arc.y + (N)point.y * arc.height / arc.width;
+    (*points)[ *points_n + 1 ].x = arc.x - point.x;
+    (*points)[ *points_n + 1 ].y = arc.y + (N)point.y * arc.height / arc.width;
+    (*points)[ *points_n + 2 ].x = arc.x - point.x;
+    (*points)[ *points_n + 2 ].y = arc.y - (N)point.y * arc.height / arc.width;
+    (*points)[ *points_n + 3 ].x = arc.x + point.x;
+    (*points)[ *points_n + 3 ].y = arc.y - (N)point.y * arc.height / arc.width;
+    (*points)[ *points_n + 4 ].x = arc.x + point.y;
+    (*points)[ *points_n + 4 ].y = arc.y + (N)point.x * arc.height / arc.width;
+    (*points)[ *points_n + 5 ].x = arc.x - point.y;
+    (*points)[ *points_n + 5 ].y = arc.y + (N)point.x * arc.height / arc.width;
+    (*points)[ *points_n + 6 ].x = arc.x - point.y;
+    (*points)[ *points_n + 6 ].y = arc.y - (N)point.x * arc.height / arc.width;
+    (*points)[ *points_n + 7 ].x = arc.x + point.y;
+    (*points)[ *points_n + 7 ].y = arc.y - (N)point.x * arc.height / arc.width;
+    *points_n += 8;
+    return 0;
+}
+_internal
+N
+E_x_Q_window_I_draw_Z_arcs_I_8points_b( xcb_arc_t arc
+, xcb_point_t point
+, N *points_n
+, xcb_point_t **points
+){  if( !E_mem_Q_blk_I_append( points, 8 ))
+        return ~0;
+    (*points)[ *points_n ].x = arc.x + (N)point.x * arc.width / arc.height;
+    (*points)[ *points_n ].y = arc.y + point.y;
+    (*points)[ *points_n + 1 ].x = arc.x - (N)point.x * arc.width / arc.height;
+    (*points)[ *points_n + 1 ].y = arc.y + point.y;
+    (*points)[ *points_n + 2 ].x = arc.x - (N)point.x * arc.width / arc.height;
+    (*points)[ *points_n + 2 ].y = arc.y - point.y;
+    (*points)[ *points_n + 3 ].x = arc.x + (N)point.x * arc.width / arc.height;
+    (*points)[ *points_n + 3 ].y = arc.y - point.y;
+    (*points)[ *points_n + 4 ].x = arc.x + (N)point.y * arc.width / arc.height;
+    (*points)[ *points_n + 4 ].y = arc.y + point.x;
+    (*points)[ *points_n + 5 ].x = arc.x - (N)point.y * arc.width / arc.height;
+    (*points)[ *points_n + 5 ].y = arc.y + point.x;
+    (*points)[ *points_n + 6 ].x = arc.x - (N)point.y * arc.width / arc.height;
+    (*points)[ *points_n + 6 ].y = arc.y - point.x;
+    (*points)[ *points_n + 7 ].x = arc.x + (N)point.y * arc.width / arc.height;
+    (*points)[ *points_n + 7 ].y = arc.y - point.x;
+    *points_n += 8;
+    return 0;
+}
 N
 E_x_Q_window_I_draw_Z_arcs(
   struct E_x_Q_display_Z *display
@@ -305,64 +359,35 @@ E_x_Q_window_I_draw_Z_arcs(
 , N32 n
 , xcb_arc_t *arcs
 ){  J_assert(n);
-    //TODO
-    xcb_point_t *Mt_( points, 0 );
+    N points_n = 0;
+    xcb_point_t *Mt_( points, points_n );
     if( !points )
         return ~0;
     for_n( i, n )
-    {   N16 x_start, y_start, x_stop, y_stop;
-        if( arcs[i].angle1 % ( 90 * 64 ))
-        {   F tan_alfa = tan( arcs[i].angle1 * M_PI / ( 180 * 64 ));
-            x_start = M_SQRT1_2 * arcs[i].height * tan_alfa;
-            y_start = M_SQRT1_2 * arcs[i].width / tan_alfa;
-            tan_alfa = tan( arcs[i].angle2 * M_PI / ( 180 * 64 ));
-            x_stop = M_SQRT1_2 * arcs[i].height * tan_alfa;
-            y_stop = M_SQRT1_2 * arcs[i].width / tan_alfa;
-        }else
-        {   x_start = arcs[i].x;
-            switch( abs( arcs[i].angle1 % ( 360 * 64 )))
-            { case 0:
-                    x_start += arcs[i].width;
-                    break;
-              case 180:
-                    x_start -= arcs[i].width;
-                    break;
+    {   N (*I_8points)( xcb_arc_t, xcb_point_t, N *, xcb_point_t ** ) = arcs[i].height > arcs[i].width
+        ? &E_x_Q_window_I_draw_Z_arcs_I_8points_b
+        : &E_x_Q_window_I_draw_Z_arcs_I_8points_a;
+        S x = 0;
+        S y = J_max( arcs[i].width, arcs[i].height ) / 2;
+        S c = 2 * ( 1 - J_max( arcs[i].width, arcs[i].height ) / 2 );
+        while( x <= y )
+        {   if( (*I_8points)( arcs[i]
+            , ( xcb_point_t ){ x, y }
+            , &points_n
+            , &points
+            ))
+            {   W(points);
+                return ~0;
             }
-            y_start = arcs[i].y;
-            switch( arcs[i].angle1 % ( 360 * 64 ))
-            { case 90:
-              case -270:
-                    x_start += arcs[i].height;
-                    break;
-              case 270:
-              case -90:
-                    x_start -= arcs[i].height;
-                    break;
+            if( 2 * c > 1 - 2 * y )
+            {   y--;
+                c -= 2 * y - 1;
             }
-            x_stop = arcs[i].x;
-            switch( abs( arcs[i].angle2 % ( 360 * 64 )))
-            { case 0:
-                    x_start += arcs[i].width;
-                    break;
-              case 180:
-                    x_start -= arcs[i].width;
-                    break;
-            }
-            y_stop = arcs[i].y;
-            switch( arcs[i].angle2 % ( 360 * 64 ))
-            { case 90:
-              case -270:
-                    x_start += arcs[i].height;
-                    break;
-              case 270:
-              case -90:
-                    x_start -= arcs[i].height;
-                    break;
-            }
+            x++;
+            c += 2 * x + 1;
         }
-        S16 x = 0, y = 0, e = 0;
-        
     }
+    E_x_Q_window_I_draw_Z_points( display, screen, window, points_n, points );
     W(points);
     return 0;
 }
@@ -468,7 +493,7 @@ E_x_Q_window_I_draw_aa_Z_pixel(
             if( p[i] != color )
             {   background_red += E_x_Z_color_R_red( p[i] );
                 background_green += E_x_Z_color_R_green( p[i] );
-                background_blue += E_x_Z_color_R_red( p[i] );
+                background_blue += E_x_Z_color_R_blue( p[i] );
                 n++;
             }
     }

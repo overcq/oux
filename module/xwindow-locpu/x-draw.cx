@@ -40,8 +40,7 @@ E_x_Z_color_R_blue( N32 color
     return color & 0xff;
 }
 N32
-E_x_Z_color_M_gray(
-  N8 luminance
+E_x_Z_color_M_gray( N8 luminance
 ){  return E_x_Z_color_M( luminance, luminance, luminance );
 }
 N32
@@ -372,7 +371,7 @@ E_x_Q_window_I_draw_aa_Z_pixel(
             if( p[i] != color )
             {   background_red += E_x_Z_color_R_red( p[i] );
                 background_green += E_x_Z_color_R_green( p[i] );
-                background_blue += E_x_Z_color_R_red( p[i] );
+                background_blue += E_x_Z_color_R_blue( p[i] );
                 n++;
             }
     }
@@ -1032,9 +1031,10 @@ E_x_Q_window_I_draw_aa_Z_lines(
                         }
                     }
                 }else if( j == 2 )
-                {   E_mem_Q_blk_I_remove( &dx_dy, 0, dx_dy_n );
-                    dx_dy_n = 0;
-                }
+                    if( dx_dy_n )
+                    {   E_mem_Q_blk_I_remove( &dx_dy, 0, dx_dy_n );
+                        dx_dy_n = 0;
+                    }
                 if( !U_R( first_pixel, overdrawn ))
                 {   N get_pixel;
                     if( U_R( screen->mode, animation ))
@@ -1251,7 +1251,9 @@ E_x_Q_object_I_draw_aa_Z_pixel(
 ){  E_x_Q_window_I_draw_aa_Z_pixel_(
       object->x + x
     , object->y + y
-    , !U_R( object->mode, drag_src ) ? color : E_x_Q_theme.current_brace, brightness, get_pixel
+    , !U_R( object->mode, drag_src ) ? color : E_x_Q_theme.current_brace
+    , brightness
+    , get_pixel
     );
 }
 void
@@ -1268,6 +1270,11 @@ E_x_Q_object_I_draw_aa_Z_lines(
     {   points[i].x += object->x;
         points[i].y += object->y;
     }
-    E_x_Q_window_I_draw_aa_Z_lines_( n, points, thickness, !U_R( object->mode, drag_src ) ? color : E_x_Q_theme.current_brace );
+    E_x_Q_window_I_draw_aa_Z_lines_(
+      n
+    , points
+    , thickness
+    , !U_R( object->mode, drag_src ) ? color : E_x_Q_theme.current_brace
+    );
 }
 /******************************************************************************/
