@@ -180,27 +180,27 @@ E_x_Q_window_I_draw_Z_segments(
 ){  J_assert(n);
     for_n( i, n )
         if( segments[i].x1 == segments[i].x2 )
-        {   xcb_point_t *Mt_( points, abs( segments[i].y2 - segments[i].y1 ) + 1 );
+        {   xcb_point_t *Mt_( points, J_abs( segments[i].y2 - segments[i].y1 ) + 1 );
             if( !points )
                 return ~0;
-            for_n( j, abs( segments[i].y2 - segments[i].y1 ) + 1 )
+            for_n( j, J_abs( segments[i].y2 - segments[i].y1 ) + 1 )
             {   points[j].x = segments[i].x1;
-                points[j].y = segments[i].y1 + j;
+                points[j].y = J_min( segments[i].y1, segments[i].y2 ) + j;
             }
-            E_x_Q_window_I_draw_Z_points( display, screen, window, abs( segments[i].y2 - segments[i].y1 ) + 1, points );
+            E_x_Q_window_I_draw_Z_points( display, screen, window, J_abs( segments[i].y2 - segments[i].y1 ) + 1, points );
             W(points);
         }else if( segments[i].y1 == segments[i].y2 )
-        {   xcb_point_t *Mt_( points, abs( segments[i].x2 - segments[i].x1 ) + 1 );
+        {   xcb_point_t *Mt_( points, J_abs( segments[i].x2 - segments[i].x1 ) + 1 );
             if( !points )
                 return ~0;
-            for_n( j, abs( segments[i].x2 - segments[i].x1 ) + 1 )
-            {   points[j].x = segments[i].x1 + j;
+            for_n( j, J_abs( segments[i].x2 - segments[i].x1 ) + 1 )
+            {   points[j].x = J_min( segments[i].x1, segments[i].x2 ) + j;
                 points[j].y = segments[i].y1;
             }
-            E_x_Q_window_I_draw_Z_points( display, screen, window, abs( segments[i].x2 - segments[i].x1 ) + 1, points );
+            E_x_Q_window_I_draw_Z_points( display, screen, window, J_abs( segments[i].x2 - segments[i].x1 ) + 1, points );
             W(points);
         }else
-            if( abs( segments[i].y2 - segments[i].y1 ) < abs( segments[i].x2 - segments[i].x1 ))
+            if( J_abs( segments[i].y2 - segments[i].y1 ) < J_abs( segments[i].x2 - segments[i].x1 ))
                 if( segments[i].x1 > segments[i].x2 )
                 {   if( !~E_x_Q_window_I_draw_Z_segments_Z_low( display, screen, window
                     , ( xcb_segment_t ){ segments[i].x2, segments[i].y2, segments[i].x1, segments[i].y1 }))
@@ -438,7 +438,61 @@ E_x_Q_window_I_fill_Z_rectangles(
     W(segments);
     return 0;
 }
-void
+_internal
+N
+E_x_Q_window_I_fill_Z_arcs_I_4segments_a( xcb_arc_t arc
+, xcb_point_t point
+, N *segments_n
+, xcb_segment_t **segments
+){  if( !E_mem_Q_blk_I_append( segments, 4 ))
+        return ~0;
+    (*segments)[ *segments_n ].x1 = arc.x + point.x;
+    (*segments)[ *segments_n ].y1 = arc.y + (N)point.y * arc.height / arc.width;
+    (*segments)[ *segments_n ].x2 = arc.x - point.x;
+    (*segments)[ *segments_n ].y2 = arc.y + (N)point.y * arc.height / arc.width;
+    (*segments)[ *segments_n + 1 ].x1 = arc.x - point.x;
+    (*segments)[ *segments_n + 1 ].y1 = arc.y - (N)point.y * arc.height / arc.width;
+    (*segments)[ *segments_n + 1 ].x2 = arc.x + point.x;
+    (*segments)[ *segments_n + 1 ].y2 = arc.y - (N)point.y * arc.height / arc.width;
+    (*segments)[ *segments_n + 2 ].x1 = arc.x + point.y;
+    (*segments)[ *segments_n + 2 ].y1 = arc.y + (N)point.x * arc.height / arc.width;
+    (*segments)[ *segments_n + 2 ].x2 = arc.x - point.y;
+    (*segments)[ *segments_n + 2 ].y2 = arc.y + (N)point.x * arc.height / arc.width;
+    (*segments)[ *segments_n + 3 ].x1 = arc.x - point.y;
+    (*segments)[ *segments_n + 3 ].y1 = arc.y - (N)point.x * arc.height / arc.width;
+    (*segments)[ *segments_n + 3 ].x2 = arc.x + point.y;
+    (*segments)[ *segments_n + 3 ].y2 = arc.y - (N)point.x * arc.height / arc.width;
+    *segments_n += 4;
+    return 0;
+}
+_internal
+N
+E_x_Q_window_I_fill_Z_arcs_I_4segments_b( xcb_arc_t arc
+, xcb_point_t point
+, N *segments_n
+, xcb_segment_t **segments
+){  if( !E_mem_Q_blk_I_append( segments, 4 ))
+        return ~0;
+    (*segments)[ *segments_n ].x1 = arc.x + (N)point.x * arc.width / arc.height;
+    (*segments)[ *segments_n ].y1 = arc.y + point.y;
+    (*segments)[ *segments_n ].x2 = arc.x - (N)point.x * arc.width / arc.height;
+    (*segments)[ *segments_n ].y2 = arc.y + point.y;
+    (*segments)[ *segments_n + 1 ].x1 = arc.x - (N)point.x * arc.width / arc.height;
+    (*segments)[ *segments_n + 1 ].y1 = arc.y - point.y;
+    (*segments)[ *segments_n + 1 ].x2 = arc.x + (N)point.x * arc.width / arc.height;
+    (*segments)[ *segments_n + 1 ].y2 = arc.y - point.y;
+    (*segments)[ *segments_n + 2 ].x1 = arc.x + (N)point.y * arc.width / arc.height;
+    (*segments)[ *segments_n + 2 ].y1 = arc.y + point.x;
+    (*segments)[ *segments_n + 2 ].x2 = arc.x - (N)point.y * arc.width / arc.height;
+    (*segments)[ *segments_n + 2 ].y2 = arc.y + point.x;
+    (*segments)[ *segments_n + 3 ].x1 = arc.x - (N)point.y * arc.width / arc.height;
+    (*segments)[ *segments_n + 3 ].y1 = arc.y - point.x;
+    (*segments)[ *segments_n + 3 ].x2 = arc.x + (N)point.y * arc.width / arc.height;
+    (*segments)[ *segments_n + 3 ].y2 = arc.y - point.x;
+    *segments_n += 4;
+    return 0;
+}
+N
 E_x_Q_window_I_fill_Z_arcs(
   struct E_x_Q_display_Z *display
 , struct E_x_Q_screen_Z *screen
@@ -446,8 +500,37 @@ E_x_Q_window_I_fill_Z_arcs(
 , N32 n
 , xcb_arc_t *arcs
 ){  J_assert(n);
-    //TODO
-    
+    N segments_n = 0;
+    xcb_segment_t *Mt_( segments, segments_n );
+    if( !segments )
+        return ~0;
+    for_n( i, n )
+    {   N (*I_4segments)( xcb_arc_t, xcb_point_t, N *, xcb_segment_t ** ) = arcs[i].height > arcs[i].width
+        ? &E_x_Q_window_I_fill_Z_arcs_I_4segments_b
+        : &E_x_Q_window_I_fill_Z_arcs_I_4segments_a;
+        S x = 0;
+        S y = J_max( arcs[i].width, arcs[i].height ) / 2;
+        S c = 2 * ( 1 - J_max( arcs[i].width, arcs[i].height ) / 2 );
+        while( x <= y )
+        {   if( (*I_4segments)( arcs[i]
+            , ( xcb_point_t ){ x, y }
+            , &segments_n
+            , &segments
+            ))
+            {   W(segments);
+                return ~0;
+            }
+            if( 2 * c > 1 - 2 * y )
+            {   y--;
+                c -= 2 * y - 1;
+            }
+            x++;
+            c += 2 * x + 1;
+        }
+    }
+    E_x_Q_window_I_draw_Z_segments( display, screen, window, segments_n, segments );
+    W(segments);
+    return 0;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 struct E_x_Z_points
