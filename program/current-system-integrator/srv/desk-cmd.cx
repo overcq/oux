@@ -43,37 +43,46 @@ E_desk_cmd_M( void
       , E_cmd_Z_argv_I_exec_I_0
       }
     , { "text"
-      , ( Pc [] ){ "sh", "-c", "geany -s --socket-file=/tmp/${USER}/geany-socket-$( xprop -root _NET_CURRENT_DESKTOP | cut -d \\  -f 3 )${1:+ -- }\"$1\"", "/bin/sh", 0 }
+      , ( Pc [] ){ "sh", "-c", "geany -s --socket-file=/tmp/${USER}/geany-socket-$( xprop -root _NET_CURRENT_DESKTOP | cut -d \\  -f 3 )${1:+ -- \"$@\"}", "/bin/sh", 0 }
       , (P)0
       , E_cmd_Z_argv_I_exec_I_0
       }
     , { "www"
       , ( Pc [] )
-        { "sg"
-        , E_const_P_group_name
-        , "ulimit"
-        , "-m"
-        , "16777216;"
-        , "exec"
-        , "chromium"
-        , "--disable-bundled-ppapi-flash"
-        , "--ignore-gpu-blocklist"
-        , "--enable-gpu-rasterization"
-        , "--enable-accelerated-video-decode"
-        , "--enable-zero-copy"
-        , "--enable-threaded-compositing"
-        , "--enable-hardware-overlays=single-fullscreen"
-        , "--enable-lcd-text"
-        , "--enable-harfbuzz-rendertext"
-        , "--enable-vulcan"
-        , "--overlay-scrollbars"
-        , "--disable-logging"
-        , "--proxy-server=http:/""/localhost:8118,https:/""/localhost:8118"
-        , "--proxy-bypass-list=czateria-api.interia.pl,.gov.pl,10/8,172.16/12,192.168/16,<local>"
-        //, "--proxy-pac-url=file:/" "/" E_const_P_home_dir "/lib/proxy.pac"
-        , "--new-window"
-        , "--start-maximized"
-        , "--"
+        { //"sg"
+        //, E_const_P_group_name
+        //, "ulimit"
+        //, "-m"
+        //, "16777216;"
+        //, "exec"
+          "sh"
+        , "-c"
+        , "umask "
+         "7;"
+         "exec "
+         "sudo "
+         "-g " "inc-www "
+         "-u " "inc-www "
+         "chromium "
+         "--disable-bundled-ppapi-flash "
+         "--ignore-gpu-blocklist "
+         "--enable-gpu-rasterization "
+         "--enable-accelerated-video-decode "
+         "--enable-zero-copy "
+         "--enable-threaded-compositing "
+         "--enable-hardware-overlays=single-fullscreen "
+         "--enable-lcd-text "
+         "--enable-harfbuzz-rendertext "
+         "--enable-vulcan "
+         "--overlay-scrollbars "
+         "--disable-logging "
+         "--proxy-server=http:/""/localhost:8118,https:/""/localhost:8118 "
+         "--proxy-bypass-list=czateria-api.interia.pl,gov.pl,.gov.pl,localhost,gentoo,.gentoo,10/8,172.16/12,192.168/16,127.0.0.1,[::1] "
+        //"--proxy-pac-url=file:/" "/" E_const_P_home_dir "/lib/proxy.pac"
+         "--new-window "
+         "--start-maximized"
+         "${1:+ -- \"$@\"}"
+        , "/bin/sh"
         , 0
         }
       , (P)~0
