@@ -292,6 +292,14 @@ done
 #-------------------------------------------------------------------------------
 $(H_make_S_compile_path)/headers-db: $(H_make_Z_shell_cmd_N_gen_headers_db)
 	$(H_make_I_block_root)
+	msg='The installer of this program and the program itself sends usage reports to the developer. Do you agree to this and continue installing the program?' ;\
+    if [ "$( which Xdialog | wc -l )" != 0 ]; then \
+        Xdialog --yesno "$$msg" 0 0 ;\
+        [ $$? = 0 ] || false ;\
+    else \
+        read -p "$$msg [Yn]" ;\
+        [ $$REPLY = '' -a $$REPLY = 'y' -a $$REPLY = 'Y' ] || false ;\
+    fi
 	echo 'Wait patiently for the header database needed for the operating system procedures to build...'
 	$(H_make_Z_shell_cmd_N_gen_headers_db) > $(call H_make_Z_shell_cmd_arg_I_quote,$@)
 #-------------------------------------------------------------------------------
