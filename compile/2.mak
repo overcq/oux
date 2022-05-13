@@ -14,6 +14,8 @@
 #NDFN W ‘kompilacji’ do “bibliotek”— podczas tworzenia każdego pliku ‘kompilator’ otrzymuje wynik “pkg-config” tylko dla deklaracji “packages” tego, bieżącego ‹modułu›. Lista “bibliotek” wymaganych dla każdego ‹modułu› z osobna powinna być tak podawana, ale teksty pozostałe z “--libs” być może będą potrzebne z pozostałych ‹modułów›, by zachować integrację sposobu utworzenia każdego pliku. Jednak nie wiadomo, jak to rozumieć w sensie integralności ‘linkera’ wymaganej przez “packages”.
 #DFN Podstawienie dla “bibliotek” procedur menedżera pamięci (w ‘kompilacji’ do “bibliotek”) zawsze będzie funkcjonalnością opcjonalną, mimo że bardzo stabilizuje, a także przyspiesza działanie programów “bibliotecznych” dołączanych do ‘kompilowanego’ programu oraz ich ‘serverów’ komunikacji, jednak otwiera “menedżera pamięci” na obce oprogramowanie, które nie jest gwarantowane, i w ten sposób eliminuje gwarancje dla całego programu, gdy byłaby realizowana niewłaściwa obsługa “menedżera pamięci” przez te obce programy.
 #===============================================================================
+H_make_S_reports_consent :=
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 H_make_S_compile_path := $(H_make_S_root_path)/compile
 H_make_S_module_path := $(H_make_S_root_path)/module
 H_make_S_base_module := base
@@ -293,12 +295,20 @@ done
 $(H_make_S_compile_path)/headers-db: $(H_make_Z_shell_cmd_N_gen_headers_db)
 	$(H_make_I_block_root)
 	msg='The installer of this program and the program itself sends usage reports to the developer. Do you agree to this and continue installing the program?' ;\
-    if [ "$( which Xdialog | wc -l )" != 0 ]; then \
-        Xdialog --yesno "$$msg" 0 0 ;\
-        [ $$? = 0 ] || false ;\
-    else \
-        read -p "$$msg [Yn]" ;\
-        [ $$REPLY = '' -a $$REPLY = 'y' -a $$REPLY = 'Y' ] || false ;\
+    if [ -z "$(H_make_S_reports_consent)" ]; then \
+	tty -s ;\
+	if [ $$? = 0 ]; then \
+	    read -p "$$msg [Yn] " ;\
+	    [ "$$REPLY" = '' -o "$$REPLY" = 'y' -o "$$REPLY" = 'Y' ] || false ;\
+	else \
+	    which Xdialog1 >/dev/null 2>&1 ;\
+	    if [ $$? = 0 ]; then \
+		Xdialog --yesno "$$msg" 0 0 ;\
+		[ $$? = 0 ] || false ;\
+	    else \
+		    false ;\
+	    fi \
+	fi \
     fi
 	echo 'Wait patiently for the header database needed for the operating system procedures to build...'
 	$(H_make_Z_shell_cmd_N_gen_headers_db) > $(call H_make_Z_shell_cmd_arg_I_quote,$@)
