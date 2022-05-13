@@ -299,7 +299,7 @@ $(H_make_S_compile_path)/headers-db: $(H_make_Z_shell_cmd_N_gen_headers_db)
 	    read -p "$$msg [Yn] " ;\
 	    [ "$$REPLY" = '' -o "$$REPLY" = 'y' -o "$$REPLY" = 'Y' ] || false ;\
 	else \
-	    which Xdialog1 >/dev/null 2>&1 ;\
+	    which Xdialog >/dev/null 2>&1 ;\
 	    if [ $$? = 0 ]; then \
 		Xdialog --yesno "$$msg" 0 0 ;\
 		[ $$? = 0 ] || false ;\
