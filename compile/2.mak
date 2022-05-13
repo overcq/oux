@@ -18,7 +18,6 @@
     ifeq (-azure,$(findstring -azure,$(shell uname -a)))
 H_make_S_reports_consent := 1
     endif
-$(error $(H_make_S_reports_consent))
 H_make_S_compile_path := $(H_make_S_root_path)/compile
 H_make_S_module_path := $(H_make_S_root_path)/module
 H_make_S_base_module := base
