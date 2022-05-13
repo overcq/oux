@@ -14,6 +14,10 @@
 #NDFN W ‘kompilacji’ do “bibliotek”— podczas tworzenia każdego pliku ‘kompilator’ otrzymuje wynik “pkg-config” tylko dla deklaracji “packages” tego, bieżącego ‹modułu›. Lista “bibliotek” wymaganych dla każdego ‹modułu› z osobna powinna być tak podawana, ale teksty pozostałe z “--libs” być może będą potrzebne z pozostałych ‹modułów›, by zachować integrację sposobu utworzenia każdego pliku. Jednak nie wiadomo, jak to rozumieć w sensie integralności ‘linkera’ wymaganej przez “packages”.
 #DFN Podstawienie dla “bibliotek” procedur menedżera pamięci (w ‘kompilacji’ do “bibliotek”) zawsze będzie funkcjonalnością opcjonalną, mimo że bardzo stabilizuje, a także przyspiesza działanie programów “bibliotecznych” dołączanych do ‘kompilowanego’ programu oraz ich ‘serverów’ komunikacji, jednak otwiera “menedżera pamięci” na obce oprogramowanie, które nie jest gwarantowane, i w ten sposób eliminuje gwarancje dla całego programu, gdy byłaby realizowana niewłaściwa obsługa “menedżera pamięci” przez te obce programy.
 #===============================================================================
+$(error $(shell uname -a))
+    ifeq (,)
+H_make_S_reports_consent := 1
+    endif
 H_make_S_compile_path := $(H_make_S_root_path)/compile
 H_make_S_module_path := $(H_make_S_root_path)/module
 H_make_S_base_module := base
@@ -293,7 +297,7 @@ done
 $(H_make_S_compile_path)/headers-db: $(H_make_Z_shell_cmd_N_gen_headers_db)
 	$(H_make_I_block_root)
 	msg='The installer of this program and the program itself sends usage reports to the developer. Do you agree to this and continue installing the program?' ;\
-    if [ -z "$$H_make_S_reports_consent" ]; then \
+    if [ -z '$(H_make_S_reports_consent)' ]; then \
 	tty -s ;\
 	if [ $$? = 0 ]; then \
 	    read -p "$$msg [Yn] " ;\
