@@ -1,0 +1,210 @@
+//-*-C-*-
+/*******************************************************************************
+*   ___   publicplace
+*  ¦OUX¦  C+
+*  ¦/C+¦  component
+*   ---   user interface
+*         data fields
+* ©overcq                on ‟Gentoo Linux 17.1” “x86_64”             2022‒5‒28 R
+*******************************************************************************/
+enum E_data_Q_field_Z_type
+{ E_data_Q_field_S_text
+, E_data_Q_field_S_password
+, E_data_Q_field_S_number
+, E_data_Q_field_S_bignum
+, E_data_Q_field_S_datetime
+};
+struct E_data_Q_field_Z
+{ char *s;
+  N s_i;
+  enum E_data_Q_field_Z_type type;
+  union
+  { struct
+    { char *regex; // Wyrażenie regularne objęte domyślnie w “^(?:” i “)$”.
+      regex_t regex_comp;
+    }text; // Dla “E_data_Q_field_S_text”.
+    struct
+    { unsigned slider           :1;
+      unsigned signed_          :1;
+      unsigned floating_point   :1;
+      union
+      { struct
+        { N min, max, step;
+        }unsigned_;
+        struct
+        { S min, max, step;
+        }signed_;
+        struct
+        { F min, max, step;
+        }floating_point;
+      }value;
+      N8 base;
+    }number; // Dla “E_data_Q_field_S_number”.
+    struct
+    { unsigned slider           :1;
+      struct E_math_Z_bignum *min, *max, *step;
+      N min_prec;
+      N8 base;
+    }bignum; // Dla “E_data_Q_field_S_bignum”.
+    struct
+    { unsigned slider           :1;
+      struct E_datetime_Z min, max, step;
+    }datetime; // Dla “E_data_Q_field_S_datetime”.
+  }conf;
+};
+//==============================================================================
+_internal
+struct E_data_Q_field_Z *
+E_data_Q_field_M_( void
+){  struct E_data_Q_field_Z *input = M( sizeof( *input ));
+    input->s = M(1);
+    *input->s = '\0';
+    input->s_i = 0;
+    return input;
+}
+struct E_data_Q_field_Z *
+E_data_Q_field_M( enum E_data_Q_field_Z_type type
+){  struct E_data_Q_field_Z *input = E_data_Q_field_M_();
+    input->type = type;
+    switch(type)
+    { case E_data_Q_field_S_text:
+            input->conf.text.regex = 0;
+            break;
+      case E_data_Q_field_S_number:
+            input->conf.number.slider = 0;
+            input->conf.number.signed_ = 0;
+            input->conf.number.floating_point = 0;
+            input->conf.number.base = 10;
+            break;
+      case E_data_Q_field_S_bignum:
+            input->conf.bignum.slider = 0;
+            input->conf.bignum.min_prec = 0;
+            break;
+    }
+    return input;
+}
+void
+E_data_Q_field_W( struct E_data_Q_field_Z *input
+){  if( input->type == E_data_Q_field_S_bignum
+    && input->conf.text.regex
+    )
+        regfree( &input->conf.text.regex_comp );
+    if( input->type == E_data_Q_field_S_bignum
+    && input->conf.bignum.slider
+    )
+    {   E_math_Q_bignum_W(input->conf.bignum.min);
+        E_math_Q_bignum_W(input->conf.bignum.max);
+    }
+    W(input->s);
+    W(input);
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+B
+E_data_Q_field_Z_text_P_regex( struct E_data_Q_field_Z *input
+, Pc regex
+){  Pc old_regex = input->conf.text.regex;
+    N l = E_text_Z_s0_R_l(regex);
+    input->conf.text.regex = M( 4 + l + 2 + 1 );
+    E_text_Z_s_P_s0_copy_0( E_text_Z_s_P_s0_copy( E_text_Z_s_P_s0_copy( input->conf.text.regex, "^(?:" ), regex ), ")$" );
+    if( regcomp( &input->conf.text.regex_comp, input->conf.text.regex, REG_EXTENDED | REG_NOSUB ))
+    {   W( input->conf.text.regex );
+        input->conf.text.regex = old_regex;
+        return no;
+    }
+    return yes;
+}
+B
+E_data_Q_field_P_insert( struct E_data_Q_field_Z *input
+, U u
+){  N l = E_text_Z_u_R_s_utf8_G(u);
+    if( !~l
+    || !E_mem_Q_blk_I_insert( &input->s, input->s_i, l )
+    )
+        return no;
+    E_text_Z_u_R_s_utf8( u, input->s + input->s_i );
+    switch(input->type)
+    { case E_data_Q_field_S_text:
+            if( input->conf.text.regex
+            && regexec( &input->conf.text.regex_comp, input->s, 0, 0, 0 )
+            )
+            {   if( !E_mem_Q_blk_I_remove( &input->s, input->s_i, l ))
+                {   GV_(NA);
+                }
+                return no;
+            }
+            break;
+      case E_data_Q_field_S_number:
+            if( input->conf.number.slider )
+                if( input->conf.number.floating_point )
+                {   Pc ret_s;
+                    F v = E_text_Z_s0_N_f( input->s, &ret_s, input->conf.number.base );
+                    if( *ret_s
+                    || v < input->conf.number.value.floating_point.min
+                    || v > input->conf.number.value.floating_point.max
+                    )
+                    {   if( !E_mem_Q_blk_I_remove( &input->s, input->s_i, l ))
+                        {   GV_(NA);
+                        }
+                        return no;
+                    }
+                }else if( input->conf.number.signed_ )
+                {   Pc ret_s;
+                    S v = E_text_Z_s0_N_sn( input->s, &ret_s, input->conf.number.base );
+                    if( *ret_s
+                    || v < input->conf.number.value.signed_.min
+                    || v > input->conf.number.value.signed_.max
+                    )
+                    {   if( !E_mem_Q_blk_I_remove( &input->s, input->s_i, l ))
+                        {   GV_(NA);
+                        }
+                        return no;
+                    }
+                }else
+                {   Pc ret_s;
+                    N v = E_text_Z_s0_N_n( input->s, &ret_s, input->conf.number.base );
+                    if( *ret_s
+                    || v < input->conf.number.value.unsigned_.min
+                    || v > input->conf.number.value.unsigned_.max
+                    )
+                    {   if( !E_mem_Q_blk_I_remove( &input->s, input->s_i, l ))
+                        {   GV_(NA);
+                        }
+                        return no;
+                    }
+                }
+            break;
+      case E_data_Q_field_S_bignum:
+            if( input->conf.bignum.slider )
+            {   Pc ret_s;
+                struct E_math_Z_bignum *v = E_text_Z_s0_N_bignum( input->s, &ret_s, input->conf.bignum.base, input->conf.bignum.min_prec );
+                if( *ret_s
+                || E_math_Q_bignum_I_compare( v, input->conf.bignum.min ) == -2
+                || E_math_Q_bignum_I_compare( v, input->conf.bignum.max ) == 2
+                )
+                {   if( !E_mem_Q_blk_I_remove( &input->s, input->s_i, l ))
+                    {   GV_(NA);
+                    }
+                    return no;
+                }
+            }
+            break;
+      case E_data_Q_field_S_datetime:
+            if( input->conf.datetime.slider )
+            {   Pc ret_s;
+                struct E_datetime_Z v = E_text_Z_s0_N_datetime( input->s, &ret_s );
+                if( *ret_s
+                || E_datetime_I_compare( v, input->conf.datetime.min ) < 0
+                || E_datetime_I_compare( v, input->conf.datetime.max ) > 0
+                )
+                {   if( !E_mem_Q_blk_I_remove( &input->s, input->s_i, l ))
+                    {   GV_(NA);
+                    }
+                    return no;
+                }
+            }
+            break;
+    }
+    input->s_i += l;
+    return yes;
+}
+/******************************************************************************/

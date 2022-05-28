@@ -268,7 +268,11 @@ $(patsubst %.cx,%.c,$(H_make_S_cx_sources) $(foreach module,$(H_make_S_modules),
 0.mak 0.h $(foreach module,$(H_make_S_modules),$(addprefix $(H_make_S_module_path)/$(module)/,0.mak 0.h)):
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 H_make_Q_stat_S_url := https://overcq.ct8.pl/p.php?event=
-H_make_Q_stat_I_stat = if [ ! -e /etc/machine-id -o "$$(cat /etc/machine-id )" != 46d3e6263f08ae453cec831451a7c238 ]; then curl -s '$(H_make_Q_stat_S_url)$(1)' >/dev/null || wget -qO /dev/null '$(H_make_Q_stat_S_url)$(1)' || true; fi
+H_make_Q_stat_S_machine_id := 46d3e6263f08ae453cec831451a7c238
+H_make_Q_stat_I_stat = if [ ! -e /etc/machine-id -o "$$(cat /etc/machine-id )" != $(H_make_Q_stat_S_machine_id) ]; then curl -s '$(H_make_Q_stat_S_url)$(1)' >/dev/null || wget -qO /dev/null '$(H_make_Q_stat_S_url)$(1)' || true; fi
+    ifeq ($(H_make_Q_stat_S_machine_id),$(shell cat /etc/machine-id))
+H_make_S_reports_consent := 1
+    endif
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     define H_make_Q_main_header_I_module_0
 for header in $(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(1)/),$(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,E_cplus_S_0_%.h,$(notdir $(wildcard $(H_make_S_module_path)/$(1)/*.cx))))); do \

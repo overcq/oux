@@ -426,60 +426,6 @@ E_text_Z_s0_R_s0_search( Pc s
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 N
-E_text_Z_s_N_n( Pc s
-, Pc s_end
-, Pc *ret_s
-, N base
-){  J_assert( s_end >= s );
-    J_assert( base <= 36 );
-    N n = 0, n_prev = 0;
-    while( s != s_end )
-    {   n *= base;
-        if( *s >= '0' && *s <= '9' )
-            n += *s - '0';
-        else if( *s >= 'A' && *s < 'A' + base - 10 )
-            n += 10 + *s - 'A';
-        else if( *s >= 'a' && *s < 'a' + base - 10 )
-            n += 10 + *s - 'a';
-        else
-            break;
-        if( n < n_prev )
-        {   n = n_prev;
-            break;
-        }
-        n_prev = n;
-        s++;
-    }
-    *ret_s = s;
-    return n;
-}
-N
-E_text_Z_s0_N_n( Pc s
-, Pc *ret_s
-, N base
-){  N n = 0, n_prev = 0;
-    while( *s )
-    {   n *= base;
-        if( *s >= '0' && *s <= '9' )
-            n += *s - '0';
-        else if( *s >= 'A' && *s < 'A' + base - 10 )
-            n += 10 + *s - 'A';
-        else if( *s >= 'a' && *s < 'a' + base - 10 )
-            n += 10 + *s - 'a';
-        else
-            break;
-        if( n < n_prev )
-        {   n = n_prev;
-            break;
-        }
-        n_prev = n;
-        s++;
-    }
-    *ret_s = s;
-    return n;
-}
-//------------------------------------------------------------------------------
-N
 E_text_Z_s_N_n10( Pc s
 , Pc s_end
 , Pc *ret_s
@@ -512,6 +458,516 @@ E_text_Z_s0_N_n10( Pc s
     return n;
 }
 //------------------------------------------------------------------------------
+N
+E_text_Z_s_N_n( Pc s
+, Pc s_end
+, Pc *ret_s
+, N base
+){  J_assert( s_end >= s );
+    J_assert( base >= 2 && base <= 36 );
+    N n = 0, n_prev = 0;
+    while( s != s_end )
+    {   n *= base;
+        if( *s >= '0' && *s <= '9' )
+            n += *s - '0';
+        else if( *s >= 'A' && *s < 'A' + base - 10 )
+            n += 10 + *s - 'A';
+        else if( *s >= 'a' && *s < 'a' + base - 10 )
+            n += 10 + *s - 'a';
+        else
+            break;
+        if( n < n_prev )
+        {   n = n_prev;
+            break;
+        }
+        n_prev = n;
+        s++;
+    }
+    *ret_s = s;
+    return n;
+}
+N
+E_text_Z_s0_N_n( Pc s
+, Pc *ret_s
+, N base
+){  J_assert( base >= 2 && base <= 36 );
+    N n = 0, n_prev = 0;
+    while( *s )
+    {   n *= base;
+        if( *s >= '0' && *s <= '9' )
+            n += *s - '0';
+        else if( *s >= 'A' && *s < 'A' + base - 10 )
+            n += 10 + *s - 'A';
+        else if( *s >= 'a' && *s < 'a' + base - 10 )
+            n += 10 + *s - 'a';
+        else
+            break;
+        if( n < n_prev )
+        {   n = n_prev;
+            break;
+        }
+        n_prev = n;
+        s++;
+    }
+    *ret_s = s;
+    return n;
+}
+//------------------------------------------------------------------------------
+S
+E_text_Z_s_N_sn( Pc s
+, Pc s_end
+, Pc *ret_s
+, N base
+){  J_assert( s_end >= s );
+    J_assert( base >= 2 && base <= 36 );
+    B sign = no;
+    if( *s == '-' )
+    {   sign = yes;
+        s++;
+    }
+    S n = 0, n_prev = 0;
+    while( s != s_end )
+    {   n *= base;
+        if( *s >= '0' && *s <= '9' )
+            n += *s - '0';
+        else if( *s >= 'A' && *s < 'A' + base - 10 )
+            n += 10 + *s - 'A';
+        else if( *s >= 'a' && *s < 'a' + base - 10 )
+            n += 10 + *s - 'a';
+        else
+            break;
+        if( n < n_prev
+        || !~n
+        )
+        {   n = n_prev;
+            break;
+        }
+        n_prev = n;
+        s++;
+    }
+    if(sign)
+        n = -n;
+    *ret_s = s;
+    return n;
+}
+S
+E_text_Z_s0_N_sn( Pc s
+, Pc *ret_s
+, N base
+){  J_assert( base >= 2 && base <= 36 );
+    B sign = no;
+    if( *s == '-' )
+    {   sign = yes;
+        s++;
+    }
+    S n = 0, n_prev = 0;
+    while( *s )
+    {   n *= base;
+        if( *s >= '0' && *s <= '9' )
+            n += *s - '0';
+        else if( *s >= 'A' && *s < 'A' + base - 10 )
+            n += 10 + *s - 'A';
+        else if( *s >= 'a' && *s < 'a' + base - 10 )
+            n += 10 + *s - 'a';
+        else
+            break;
+        if( n < n_prev
+        || !~n
+        )
+        {   n = n_prev;
+            break;
+        }
+        n_prev = n;
+        s++;
+    }
+    if(sign)
+        n = -n;
+    *ret_s = s;
+    return n;
+}
+//------------------------------------------------------------------------------
+F
+E_text_Z_s_N_f( Pc s
+, Pc s_end
+, Pc *ret_s
+, N base
+){  J_assert( s_end >= s );
+    J_assert( base >= 2 && base <= 36 );
+    B sign = no;
+    if( *s == '-' )
+    {   sign = yes;
+        s++;
+    }
+    F n = 0, n_prev = 0;
+    N floating_point = ~0;
+    while( s != s_end )
+    {   n *= base;
+        if( *s >= '0' && *s <= '9' )
+            n += *s - '0';
+        else if( *s >= 'A' && *s < 'A' + base - 10 )
+            n += 10 + *s - 'A';
+        else if( *s >= 'a' && *s < 'a' + base - 10 )
+            n += 10 + *s - 'a';
+        else if( *s == '.'
+        && !~floating_point
+        )
+            floating_point = 0;
+        else
+        {   if( ~floating_point )
+                floating_point--;
+            break;
+        }
+        if( isless( n, n_prev ))
+        {   n = n_prev;
+            if( ~floating_point )
+                floating_point--;
+            break;
+        }
+        n_prev = n;
+        if( ~floating_point )
+            floating_point++;
+        s++;
+    }
+    if( ~floating_point )
+        n /= pow( base, floating_point );
+    if(sign)
+        n = -n;
+    *ret_s = s;
+    return n;
+}
+F
+E_text_Z_s0_N_f( Pc s
+, Pc *ret_s
+, N base
+){  J_assert( base >= 2 && base <= 36 );
+    B sign = no;
+    if( *s == '-' )
+    {   sign = yes;
+        s++;
+    }
+    F n = 0, n_prev = 0;
+    N floating_point = ~0;
+    while( *s )
+    {   n *= base;
+        if( *s >= '0' && *s <= '9' )
+            n += *s - '0';
+        else if( *s >= 'A' && *s < 'A' + base - 10 )
+            n += 10 + *s - 'A';
+        else if( *s >= 'a' && *s < 'a' + base - 10 )
+            n += 10 + *s - 'a';
+        else if( *s == '.'
+        && !~floating_point
+        )
+            floating_point = 0;
+        else
+        {   if( ~floating_point )
+                floating_point--;
+            break;
+        }
+        if( isless( n, n_prev ))
+        {   n = n_prev;
+            if( ~floating_point )
+                floating_point--;
+            break;
+        }
+        n_prev = n;
+        if( ~floating_point )
+            floating_point++;
+        s++;
+    }
+    if( ~floating_point )
+        n /= pow( base, floating_point );
+    if(sign)
+        n = -n;
+    *ret_s = s;
+    return n;
+}
+//------------------------------------------------------------------------------
+struct E_math_Z_bignum *
+E_text_Z_s_N_bignum( Pc s
+, Pc s_end
+, Pc *ret_s
+, N base
+, N min_prec
+){  J_assert( s_end >= s );
+    J_assert( base >= 2 && base <= 36 );
+    B sign = no;
+    if( *s == '-' )
+    {   sign = yes;
+        s++;
+    }
+    struct E_math_Z_bignum *n = E_math_Q_bignum_M(), *n_prev = E_math_Q_bignum_M(), *add = E_math_Q_bignum_M();
+    N floating_point = ~0;
+    while( s != s_end )
+    {   E_math_Q_bignum_I_multiply_n( n, base );
+        if( *s >= '0' && *s <= '9' )
+        {   add->digits[0] = *s - '0';
+            E_math_Q_bignum_I_add( n, add );
+        }else if( *s >= 'A' && *s < 'A' + base - 10 )
+        {   add->digits[0] = 10 + *s - 'A';
+            E_math_Q_bignum_I_add( n, add );
+        }else if( *s >= 'a' && *s < 'a' + base - 10 )
+        {   add->digits[0] = 10 + *s - 'a';
+            E_math_Q_bignum_I_add( n, add );
+        }else if( *s == '.'
+        && !~floating_point
+        )
+            floating_point = 0;
+        else
+            break;
+        if( E_math_Q_bignum_I_compare( n, n_prev ) == -2 )
+        {   J_swap( struct E_math_Z_bignum *, n, n_prev );
+            break;
+        }
+        E_math_Q_bignum_W( n_prev );
+        n_prev = E_math_Q_bignum_M_copy(n);
+        if( ~floating_point )
+            floating_point++;
+        s++;
+    }
+    E_math_Q_bignum_W(add);
+    E_math_Q_bignum_W( n_prev );
+    if( ~floating_point )
+        while( --floating_point )
+        {   struct E_math_Z_bignum *tmp = E_math_Q_bignum_M();
+            tmp->digits[0] = base;
+            E_math_Q_bignum_I_divide_modulo_min_prec( n, tmp, min_prec + floating_point - 1 );
+            E_math_Q_bignum_W(tmp);
+        }
+    if(sign)
+        E_math_Q_bignum_I_negate(n);
+    *ret_s = s;
+    return n;
+}
+struct E_math_Z_bignum *
+E_text_Z_s0_N_bignum( Pc s
+, Pc *ret_s
+, N base
+, N min_prec
+){  J_assert( base >= 2 && base <= 36 );
+    B sign = no;
+    if( *s == '-' )
+    {   sign = yes;
+        s++;
+    }
+    struct E_math_Z_bignum *n = E_math_Q_bignum_M(), *n_prev = E_math_Q_bignum_M(), *add = E_math_Q_bignum_M();
+    N floating_point = ~0;
+    while( *s )
+    {   E_math_Q_bignum_I_multiply_n( n, base );
+        if( *s >= '0' && *s <= '9' )
+        {   add->digits[0] = *s - '0';
+            E_math_Q_bignum_I_add( n, add );
+        }else if( *s >= 'A' && *s < 'A' + base - 10 )
+        {   add->digits[0] = 10 + *s - 'A';
+            E_math_Q_bignum_I_add( n, add );
+        }else if( *s >= 'a' && *s < 'a' + base - 10 )
+        {   add->digits[0] = 10 + *s - 'a';
+            E_math_Q_bignum_I_add( n, add );
+        }else if( *s == '.'
+        && !~floating_point
+        )
+            floating_point = 0;
+        else
+            break;
+        if( E_math_Q_bignum_I_compare( n, n_prev ) == -2 )
+        {   J_swap( struct E_math_Z_bignum *, n, n_prev );
+            break;
+        }
+        E_math_Q_bignum_W( n_prev );
+        n_prev = E_math_Q_bignum_M_copy(n);
+        if( ~floating_point )
+            floating_point++;
+        s++;
+    }
+    E_math_Q_bignum_W(add);
+    E_math_Q_bignum_W( n_prev );
+    if( ~floating_point )
+        while( --floating_point )
+        {   struct E_math_Z_bignum *tmp = E_math_Q_bignum_M();
+            tmp->digits[0] = base;
+            E_math_Q_bignum_I_divide_modulo_min_prec( n, tmp, min_prec + floating_point - 1 );
+            E_math_Q_bignum_W(tmp);
+        }
+    if(sign)
+        E_math_Q_bignum_I_negate(n);
+    *ret_s = s;
+    return n;
+}
+//------------------------------------------------------------------------------
+struct E_datetime_Z
+E_text_Z_s_N_datetime( Pc s
+, Pc s_end
+, Pc *ret_s
+){  struct E_datetime_Z datetime = {0};
+    datetime.year = E_text_Z_s0_N_n10( s, ret_s );
+    if( *ret_s != s_end )
+        return datetime;
+    s = *ret_s + 1;
+    datetime.month = E_text_Z_s0_N_n10( s, ret_s );
+    if( datetime.month < 1
+    || datetime.month > 12
+    )
+    {   *ret_s = s;
+        datetime.month = 0;
+        return datetime;
+    }
+    if( *ret_s != s_end )
+        return datetime;
+    s = *ret_s + 1;
+    datetime.day = E_text_Z_s0_N_n10( s, ret_s );
+    if( datetime.day < 1
+    || datetime.day > 31
+    )
+    {   *ret_s = s;
+        datetime.month = 0;
+        return datetime;
+    }else
+        switch(datetime.month)
+        { case 2:
+          {     N days = datetime.year % 100 == 0 && datetime.year % 400 != 0 ? 29 : 28;
+                if( datetime.day > days )
+                {   *ret_s = s;
+                    datetime.day = 0;
+                    return datetime;
+                }
+                break;
+          }
+          case 4:
+          case 6:
+          case 9:
+          case 11:
+                if( datetime.day == 31 )
+                {   *ret_s = s;
+                    datetime.day = 0;
+                    return datetime;
+                }
+                break;
+        }
+    if( *ret_s != s_end )
+        return datetime;
+    s = *ret_s + 1;
+    N v = E_text_Z_s0_N_n10( s, ret_s );
+    if( v > 23 )
+    {   *ret_s = s;
+        return datetime;
+    }
+    datetime.millisecond = 1000 * 60 * 60 * v;
+    if( *ret_s != s_end )
+        return datetime;
+    s = *ret_s + 1;
+    v = E_text_Z_s0_N_n10( s, ret_s );
+    if( v > 59 )
+    {   *ret_s = s;
+        return datetime;
+    }
+    datetime.millisecond += 1000 * 60 * v;
+    if( *ret_s != s_end )
+        return datetime;
+    s = *ret_s + 1;
+    v = E_text_Z_s0_N_n10( s, ret_s );
+    if( v > 59 )
+    {   *ret_s = s;
+        return datetime;
+    }
+    datetime.millisecond += 1000 * v;
+    if( *ret_s != s_end )
+        return datetime;
+    s = *ret_s + 1;
+    v = E_text_Z_s0_N_n10( s, ret_s );
+    if( v > 999 )
+    {   *ret_s = s;
+        return datetime;
+    }
+    datetime.millisecond += v;
+    return datetime;
+}
+struct E_datetime_Z
+E_text_Z_s0_N_datetime( Pc s
+, Pc *ret_s
+){  struct E_datetime_Z datetime = {0};
+    datetime.year = E_text_Z_s0_N_n10( s, ret_s );
+    if( !**ret_s )
+        return datetime;
+    s = *ret_s + 1;
+    datetime.month = E_text_Z_s0_N_n10( s, ret_s );
+    if( datetime.month < 1
+    || datetime.month > 12
+    )
+    {   *ret_s = s;
+        datetime.month = 0;
+        return datetime;
+    }
+    if( !**ret_s )
+        return datetime;
+    s = *ret_s + 1;
+    datetime.day = E_text_Z_s0_N_n10( s, ret_s );
+    if( datetime.day < 1
+    || datetime.day > 31
+    )
+    {   *ret_s = s;
+        datetime.month = 0;
+        return datetime;
+    }else
+        switch(datetime.month)
+        { case 2:
+          {     N days = datetime.year % 100 == 0 && datetime.year % 400 != 0 ? 29 : 28;
+                if( datetime.day > days )
+                {   *ret_s = s;
+                    datetime.day = 0;
+                    return datetime;
+                }
+                break;
+          }
+          case 4:
+          case 6:
+          case 9:
+          case 11:
+                if( datetime.day == 31 )
+                {   *ret_s = s;
+                    datetime.day = 0;
+                    return datetime;
+                }
+                break;
+        }
+    if( !**ret_s )
+        return datetime;
+    s = *ret_s + 1;
+    N v = E_text_Z_s0_N_n10( s, ret_s );
+    if( v > 23 )
+    {   *ret_s = s;
+        return datetime;
+    }
+    datetime.millisecond = 1000 * 60 * 60 * v;
+    if( !**ret_s )
+        return datetime;
+    s = *ret_s + 1;
+    v = E_text_Z_s0_N_n10( s, ret_s );
+    if( v > 59 )
+    {   *ret_s = s;
+        return datetime;
+    }
+    datetime.millisecond += 1000 * 60 * v;
+    if( !**ret_s )
+        return datetime;
+    s = *ret_s + 1;
+    v = E_text_Z_s0_N_n10( s, ret_s );
+    if( v > 59 )
+    {   *ret_s = s;
+        return datetime;
+    }
+    datetime.millisecond += 1000 * v;
+    if( !**ret_s )
+        return datetime;
+    s = *ret_s + 1;
+    v = E_text_Z_s0_N_n10( s, ret_s );
+    if( v > 999 )
+    {   *ret_s = s;
+        return datetime;
+    }
+    datetime.millisecond += v;
+    return datetime;
+}
+//------------------------------------------------------------------------------
 Pc
 E_text_Z_n_N_s( Pc s_end
 , N n
@@ -541,20 +997,20 @@ E_text_Z_n_N_s_G( N n
 }
 //------------------------------------------------------------------------------
 Pc
-E_text_Z_i_N_s( Pc s_end
-, S i
+E_text_Z_sn_N_s( Pc s_end
+, S sn
 , N l
 , N base
-){  s_end = E_text_Z_n_N_s( s_end, J_abs(i), l, base );
-    if( i < 0 )
+){  s_end = E_text_Z_n_N_s( s_end, J_abs(sn), l, base );
+    if( sn < 0 )
         *--s_end = '-';
     return s_end;
 }
 N
-E_text_Z_i_N_s_G( S n
+E_text_Z_sn_N_s_G( S sn
 , N l
 , N base
-){  return E_text_Z_n_N_s_G( J_abs(n), l, base ) + ( n < 0 ? 1 : 0 );
+){  return E_text_Z_n_N_s_G( J_abs(sn), l, base ) + ( sn < 0 ? 1 : 0 );
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Pc

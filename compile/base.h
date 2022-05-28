@@ -156,15 +156,15 @@ E_mem_Q_file_P_insert_64( I id
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 _inline
 B
-E_math_bignum_R_sign( struct E_math_bignum_Z_num *num
+E_math_Q_bignum_R_sign( struct E_math_Z_bignum *num
 ){  return (S)num->digits[ num->digits_n - 1 ] < 0;
 }
 _inline
 N
-E_math_bignum_I_divide_modulo(
-  struct E_math_bignum_Z_num *num_0
-, struct E_math_bignum_Z_num *num_1
-){  return E_math_bignum_I_divide_modulo_min_prec( num_0, num_1, 0 );
+E_math_Q_bignum_I_divide_modulo(
+  struct E_math_Z_bignum *num_0
+, struct E_math_Z_bignum *num_1
+){  return E_math_Q_bignum_I_divide_modulo_min_prec( num_0, num_1, 0 );
 }
 //==============================================================================
 #undef _inline
