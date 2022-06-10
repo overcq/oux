@@ -13,21 +13,21 @@ exc_func_re='for|main|sizeof|while'
 for a in a b c d e f g h i j k l m n o p q r s t u v w x y z
 do
     apropos ${a}
-done \
-| awk '
-    /^[A-Za-z_][0-9A-Za-z_]*( *, *[A-Za-z_][0-9A-Za-z_]*)*( \[[0-9A-Za-z_-]+\])? *\([23](\/[0-9A-Za-z]*|[A-Za-z][0-9A-Za-z]*)?( *, *[23](\/[0-9A-Za-z]*|[A-Za-z][0-9A-Za-z]*)?)*\)/ {
-        if( match( $0, "^[A-Za-z_][0-9A-Za-z_]*( *, *[A-Za-z_][0-9A-Za-z_]*)* *, *PCRE2?\\([23](/[0-9A-Za-z]*|[A-Za-z][0-9A-Za-z]*)?( *, *[23](/[0-9A-Za-z]*|[A-Za-z][0-9A-Za-z]*)?)*\\)" ) != 0 )
-            next
-        match( $0, "\\([23](/[0-9A-Za-z]*|[A-Za-z][0-9A-Za-z]*)?( *, *[23](/[0-9A-Za-z]*|[A-Za-z][0-9A-Za-z]*)?)*\\)" )
-        sect = substr( $0, RSTART + 1, 1 )
-        match( $0, "^[A-Za-z_][0-9A-Za-z_]*( *, *[A-Za-z_][0-9A-Za-z_]*)*" )
-        split( substr( $0, RSTART, RLENGTH ), a, " *, *" )
-        for ( i in a )
-            print sect, a[i]
-    }
-' \
-| sort -u \
-| grep -Eve " (${exc_man_re})\$" 
+done 
+#| awk '
+    #/^[A-Za-z_][0-9A-Za-z_]*( *, *[A-Za-z_][0-9A-Za-z_]*)*( \[[0-9A-Za-z_-]+\])? *\([23](\/[0-9A-Za-z]*|[A-Za-z][0-9A-Za-z]*)?( *, *[23](\/[0-9A-Za-z]*|[A-Za-z][0-9A-Za-z]*)?)*\)/ {
+        #if( match( $0, "^[A-Za-z_][0-9A-Za-z_]*( *, *[A-Za-z_][0-9A-Za-z_]*)* *, *PCRE2?\\([23](/[0-9A-Za-z]*|[A-Za-z][0-9A-Za-z]*)?( *, *[23](/[0-9A-Za-z]*|[A-Za-z][0-9A-Za-z]*)?)*\\)" ) != 0 )
+            #next
+        #match( $0, "\\([23](/[0-9A-Za-z]*|[A-Za-z][0-9A-Za-z]*)?( *, *[23](/[0-9A-Za-z]*|[A-Za-z][0-9A-Za-z]*)?)*\\)" )
+        #sect = substr( $0, RSTART + 1, 1 )
+        #match( $0, "^[A-Za-z_][0-9A-Za-z_]*( *, *[A-Za-z_][0-9A-Za-z_]*)*" )
+        #split( substr( $0, RSTART, RLENGTH ), a, " *, *" )
+        #for ( i in a )
+            #print sect, a[i]
+    #}
+#' \
+#| sort -u \
+#| grep -Eve " (${exc_man_re})\$" 
 #| xargs -n 2 env MANPAGER='/bin/cat' PAGER='/bin/cat' man \
 #| awk '
     #{
