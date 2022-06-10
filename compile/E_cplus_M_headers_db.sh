@@ -26,41 +26,41 @@ done \
             print sect, a[i]
     }
 ' \
-| sort -u \
-| grep -Eve " (${exc_man_re})\$" \
-| xargs -n 2 env MANPAGER='/bin/cat' PAGER='/bin/cat' man \
-| awk '
-    {
-        gsub( "\033\\[[0-9]+m", "" )
-        gsub( "[^\010]\010", "" )
-        gsub( "\010", "" )
-    }
-    /[^ ]/
-' \
-| awk '
-    /^SYNOPSIS$/,/^DESCRIPTION$/ {
-        if( match( $0, "^SYNOPSIS$" ) != 0 )
-        {   skip = 0
-            headers = ""
-        }else if( skip != 0 || match( $0, "^[A-Z]+$" ) != 0 )
-            skip = 1
-        else if( match( $0, "#include +<[^>]+>" ) != 0 || match( $0, "#include +\"[^\"]+\"" ) != 0 )
-        {   match( $0, "<[^>]+>" ) || match( $0, "\"[^\"]+\"" )
-            headers = headers " " substr( $0, RSTART + 1, RLENGTH - 2 )
-        }else if( headers != "" && match( $0, "[A-Za-z_][0-9A-Za-z_]*\\(" ) != 0 )
-        {   s = substr( $0, RSTART, RLENGTH - 1 )
-            if( match( s, "^('"$exc_func_re"')$" ) == 0 )
-                print s headers
-        }
-    }
-' \
-| sort \
-| awk '
-    {
-        if( $1 != f )
-        {   print $0
-            f = $1
-        }
-    }
-'
+| sort -u 
+#| grep -Eve " (${exc_man_re})\$" \
+#| xargs -n 2 env MANPAGER='/bin/cat' PAGER='/bin/cat' man \
+#| awk '
+    #{
+        #gsub( "\033\\[[0-9]+m", "" )
+        #gsub( "[^\010]\010", "" )
+        #gsub( "\010", "" )
+    #}
+    #/[^ ]/
+#' \
+#| awk '
+    #/^SYNOPSIS$/,/^DESCRIPTION$/ {
+        #if( match( $0, "^SYNOPSIS$" ) != 0 )
+        #{   skip = 0
+            #headers = ""
+        #}else if( skip != 0 || match( $0, "^[A-Z]+$" ) != 0 )
+            #skip = 1
+        #else if( match( $0, "#include +<[^>]+>" ) != 0 || match( $0, "#include +\"[^\"]+\"" ) != 0 )
+        #{   match( $0, "<[^>]+>" ) || match( $0, "\"[^\"]+\"" )
+            #headers = headers " " substr( $0, RSTART + 1, RLENGTH - 2 )
+        #}else if( headers != "" && match( $0, "[A-Za-z_][0-9A-Za-z_]*\\(" ) != 0 )
+        #{   s = substr( $0, RSTART, RLENGTH - 1 )
+            #if( match( s, "^('"$exc_func_re"')$" ) == 0 )
+                #print s headers
+        #}
+    #}
+#' \
+#| sort \
+#| awk '
+    #{
+        #if( $1 != f )
+        #{   print $0
+            #f = $1
+        #}
+    #}
+#'
 ################################################################################
