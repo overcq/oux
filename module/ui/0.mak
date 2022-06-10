@@ -10,5 +10,6 @@
 S_libraries := ncurses
 	else
 S_packages := ncursesw
+S_libraries := util
 	endif
 #*******************************************************************************
