@@ -26,8 +26,8 @@ done \
             print sect, a[i]
     }
 ' \
-| sort -u 
-#| grep -Eve " (${exc_man_re})\$" \
+| sort -u \
+| grep -Eve " (${exc_man_re})\$" 
 #| xargs -n 2 env MANPAGER='/bin/cat' PAGER='/bin/cat' man \
 #| awk '
     #{
