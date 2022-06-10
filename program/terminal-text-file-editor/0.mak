@@ -14,8 +14,8 @@ S_packages := ncursesw
 S_cmd_arg := test
 #===============================================================================
 H_make_S_installed_file = $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_install_prefix)/usr/bin/direct-oux)
-H_make_S_install_file_1 = $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_install_prefix)/usr/bin/tept)
-H_make_S_install_file_2 = $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_install_prefix)/usr/bin/indirect_tept)
+H_make_S_install_file_1 = $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_install_prefix)/usr/bin/ttfe)
+H_make_S_install_file_2 = $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_install_prefix)/usr/bin/indirect_ttfe)
 install:
 	{ $(CMP) $(H_make_S_installed_file) $(H_make_S_install_file_1) \
 	|| ln -f $(H_make_S_installed_file) $(H_make_S_install_file_1); \

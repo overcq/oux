@@ -1,0 +1,197 @@
+//-*-C-*-
+/*******************************************************************************
+*   ___   publicplace
+*  ¦OUX¦  C+
+*  ¦/C+¦  component
+*   ---   user interface
+*         ncurses frontend
+* ©overcq                on ‟Gentoo Linux 17.1” “x86_64”             2022‒6‒10 Q
+*******************************************************************************/
+int E_ncurses_I_getch_S_ret;
+wint_t E_ncurses_I_getch_S_c;
+B E_ncurses_I_getch_S_meta_key;
+SCREEN *E_ncurses_S_screen;
+WINDOW *E_ncurses_S_window;
+Pc E_ncurses_I_term_exec = "urxvtc";
+//==============================================================================
+void
+E_ncurses_M( void
+){  E_ncurses_I_getch_S_meta_key = no;
+    int tty_master, tty_slave;
+    V1_( openpty( &tty_master, &tty_slave, 0, 0, 0 ));
+    pid_t pid = E_flow_I_fork_I_begin();
+    if( !pid )
+    {   E_flow_I_fork_I_start();
+        N l = E_text_Z_n_N_s_G( tty_master, sizeof( tty_master ), 10 );
+        Pc s = M( l + 1 );
+        s[l] = '\0';
+        E_text_Z_n_N_s( s + l, tty_master, sizeof( tty_master ), 10 );
+        struct E_flow_Z_args args[1];
+        args[0].argc = 3;
+        args[0].argv = ( Pc [] ){ E_ncurses_I_term_exec, "-pty-fd", s, 0 };
+        E_flow_I_fork_I_exec( 0, args, 1 );
+    }
+    E_flow_I_fork_I_end(pid);
+    FILE *file;
+    Vp_( file = fdopen( tty_slave, "r+" ));
+    Vp_( E_ncurses_S_screen = newterm( 0, file, file ));
+    start_color();
+    init_pair( 1, COLOR_WHITE, COLOR_BLACK );
+    attr_set( A_NORMAL, 1, 0 );
+    noecho();
+    intrflush( stdscr, FALSE );
+    keypad( stdscr, TRUE );
+    nonl();
+    nodelay( stdscr, FALSE );
+    notimeout( stdscr, TRUE );
+    raw();
+    idlok( stdscr, FALSE );
+    idcok( stdscr, TRUE );
+    immedok( stdscr, FALSE );
+    leaveok( stdscr, FALSE );
+    scrollok( stdscr, FALSE );
+    D_M( ncurses, getch );
+}
+void
+E_ncurses_W( void
+){  D_W( ncurses, getch );
+    endwin();
+    delscreen( E_ncurses_S_screen );
+}
+B
+E_ncurses_I_sigsuspend( sigset_t *sigset
+){  sigset_t old_sigset;
+    _sigprocmask( SIG_SETMASK, sigset, &old_sigset ); //NDFN dopóki jest tak zrobione, że odblokowanie “sygnałów” jest wcześniej niż zablokowanie na “read”, to mogą występować przypadki zablokowania oczekującego na “read” mimo “sygnału” (ustawiającego “wake”) obsłużonego i danych czekających na przetworzenie w ‹zadaniach›, a gdy nie jest ustawione “E_flow_Q_system_unblock_report_S_setitimer_I”, to oczywiście– nieodblokowania po ustawionym czasie —do czasu ‹systemowego raportu odblokowującego› lub nietrafienia któregoś interpretowanego (ustawiającego “wake”) “sygnału” w obszar programu pomiędzy tym “sigprocmask” a “read” w “E_flow_Q_system_unblock_report_S_sigsuspend_I”.
+    E_ncurses_I_getch_S_ret = get_wch( &E_ncurses_I_getch_S_c );
+    _sigprocmask( SIG_SETMASK, &old_sigset, 0 );
+    return E_ncurses_I_getch_S_ret != ERR; ///naciśnięto klawisz.
+}
+void
+E_ncurses_I_setitimer( Z_clock_time *tv
+){
+#ifndef E_flow_drv_C_clock_monotonic
+    timeout( tv->tv_sec * 1000 + ( tv->Z_clock_time_minor_field + 999 ) / 1000 );
+#else
+    timeout( tv->tv_sec * 1000 + ( tv->Z_clock_time_minor_field + 999999 ) / 1000000 );
+#endif
+}
+D( ncurses, getch )
+{   Xh1_M( &E_ncurses_I_sigsuspend, &E_ncurses_I_setitimer );
+    I_D
+    {   Xh1_B()
+            break;
+        switch( E_ncurses_I_getch_S_ret )
+        { case KEY_CODE_YES:
+                if( E_ncurses_I_getch_S_meta_key )
+                {   switch( E_ncurses_I_getch_S_c )
+                    {   case KEY_DC:
+                        {   break;
+                        }
+                        case KEY_RIGHT:
+                        {   break;
+                        }
+                      case KEY_LEFT:
+                        {   break;
+                        }
+                      case KEY_HOME:
+                      case KEY_A1:
+                            break;
+                      case KEY_END:
+                      case KEY_C1:
+                        {   break;
+                        }
+                      default:
+                            beep();
+                            endwin(); G_(); Gd( E_ncurses_I_getch_S_c ); refresh(); //DBG
+                            break;
+                    }
+                    E_ncurses_I_getch_S_meta_key = no;
+                    break;
+                }
+                switch( E_ncurses_I_getch_S_c )
+                { case KEY_DC:
+                    {   break;
+                    }
+                  case KEY_BACKSPACE:
+                    {   break;
+                    }
+                  case KEY_ENTER: // Na klawiaturze numerycznej.
+                        E_ncurses_I_getch_S_c = '\r';
+                        goto Enter;
+                  case KEY_RIGHT:
+                    {   break;
+                    }
+                  case KEY_LEFT:
+                    {   break;
+                    }
+                  case KEY_DOWN:
+                    {   break;
+                    }
+                  case KEY_UP:
+                    {   break;
+                    }
+                  case KEY_HOME:
+                  case KEY_A1: //na klawiaturze numerycznej.
+                    {   break;
+                    }
+                  case KEY_END:
+                  case KEY_C1: //na klawiaturze numerycznej.
+                    {   break;
+                    }
+                  case KEY_NPAGE:
+                  case KEY_C3: //na klawiaturze numerycznej.
+                    {   break;
+                    }
+                  case KEY_PPAGE:
+                  case KEY_A3: //na klawiaturze numerycznej.
+                    {   break;
+                    }
+                  case KEY_RESIZE:
+
+                        break;
+                  default:
+                        beep();
+                        endwin(); G_(); Gd( E_ncurses_I_getch_S_c ); refresh(); //DBG
+                        break;
+                }
+                break;
+          case OK:
+            {   if( E_ncurses_I_getch_S_meta_key )
+                {   switch( E_ncurses_I_getch_S_c )
+                    { case 's':
+                            break;
+                    }
+                    E_ncurses_I_getch_S_meta_key = no;
+                    break;
+                }
+                switch( E_ncurses_I_getch_S_c )
+                { case 3: // Ctrl+c
+
+                        break;
+                  case 17: // Ctrl+q
+                        U_F( E_base_S->E_flow_S_signal, exit );
+                        break;
+                  case 19: // Ctrl+s
+                        break;
+                  case 27: // “meta” key
+                        E_ncurses_I_getch_S_meta_key = yes;
+                        break;
+                  default:
+                        goto Cont;
+                }
+                break;
+Cont:           if( !( E_ncurses_I_getch_S_c == '\r'
+                || E_ncurses_I_getch_S_c == '\t'
+                || iswprint( E_ncurses_I_getch_S_c )
+                ))
+                {   beep();
+                    endwin(); G_(); Gd( E_ncurses_I_getch_S_c ); refresh();
+                    break;
+                }
+Enter:;         break;
+            }
+        }
+    }
+    Xh1_W();
+}
+/******************************************************************************/

@@ -180,7 +180,7 @@ H_make_S_c_std_alt := gnu
     ifeq (clang,$(H_make_S_cc))
 # Tylko spekulacje wersji “clang” obsługujących standardy ‟C”.
 		ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) >= 9.0) | bc ))
-CFLAGS += -std=$(H_make_S_c_std_alt)17
+CFLAGS += -std=$(H_make_S_c_std_alt)2x
 		else ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) >= 5.0) | bc ))
 CFLAGS += -std=$(H_make_S_c_std_alt)14
 		else ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) >= 4.0) | bc ))
@@ -189,7 +189,9 @@ CFLAGS += -std=$(H_make_S_c_std_alt)11
 CFLAGS += -O1 -finline -Qunused-arguments -Wno-incompatible-pointer-types-discards-qualifiers
     else #nie “clang”.
         ifeq (gcc,$(H_make_S_cc))
-            ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) >= 8.3) | bc ))
+            ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) >= 9) | bc ))
+CFLAGS += -std=$(H_make_S_c_std_alt)2x
+            else ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) >= 8.3) | bc ))
 CFLAGS += -std=$(H_make_S_c_std_alt)17
             else ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) >= 4.7) | bc ))
 CFLAGS += -std=$(H_make_S_c_std_alt)11

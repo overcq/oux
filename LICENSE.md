@@ -2,7 +2,7 @@
 
 The Licensor grants the licensee a non-exclusive, non-transferable and non-negotiable software license for use under the following conditions.
 
-The licensee has the right to test the software for the licensor and limited to the necessary use in the public teaching process, providing the address of the original software sources.
+The licensee has the right to test the software for the licensor and for use in the teaching process, providing the address of the original software sources.
 
 ## Disclaimer of Warranty
 
