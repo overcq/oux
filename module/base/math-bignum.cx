@@ -346,6 +346,7 @@ E_math_Q_bignum_I_multiply_n(
         );
     if( E_math_Q_bignum_R_sign(num) )
     {   N n_ = (N)~0 >> 1;
+        n &= n_;
         N carry = 0;
         __asm__ (
         #if defined( __i386__ )
@@ -365,6 +366,13 @@ E_math_Q_bignum_I_multiply_n(
         "\n" "add       %%ebx,%2"
         "\n" "adcl      $0,%1"
         "\n" "adcl      $0,%0"
+        : "+m" (carry)
+        , "+d" (over)
+        , "+a" ( num->digits[ num->digits_n - 1 ] )
+        : "m" (n)
+        , "m" ( n_ )
+        : "cc"
+        , "ebx", "ecx", "esi", "edi"
         #elif defined( __x86_64__ )
         "\n" "mov       %1,%%rbx"
         "\n" "mov       %2,%%rcx"
@@ -382,19 +390,15 @@ E_math_Q_bignum_I_multiply_n(
         "\n" "add       %%rbx,%2"
         "\n" "adcq      $0,%1"
         "\n" "adcq      $0,%0"
-        #else
-#error not implemented
-        #endif
         : "+r" (carry)
         , "+d" (over)
         , "+a" ( num->digits[ num->digits_n - 1 ] )
-        : "rm" ( n & ( (N)~0 >> 1 ))
+        : "rm" (n)
         , "rm" ( n_ )
         : "cc"
-        #if defined( __i386__ )
-        , "ebx", "ecx", "esi", "edi"
-        #elif defined( __x86_64__ )
         , "rbx", "rcx", "rsi", "rdi"
+        #else
+#error not implemented
         #endif
         );
         if(over)

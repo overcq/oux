@@ -25,7 +25,9 @@ E_flow_I_fork_I_end( N pid
         int status;
         VO1( waitpid( pid, &status, 0 )){} // Czekanie do wykonania “daemon” w “E_flow_I_fork_I_exec”, jeśli “proces” potomny jeszcze istnieje.
         _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_I_fork_S_sigset, 0 );
-    }else
+    }else if( !pid )
+        exit( _errno );
+    else
         _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_I_fork_S_sigset, 0 );
 }
 //------------------------------------------------------------------------------
@@ -145,6 +147,6 @@ End_2:  ;
     V0_( sigaction( SIGTTIN, &sa, 0 ));
     V0_( sigaction( SIGTSTP, &sa, 0 ));
     _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_Z_sigset_S_empty, 0 );
-    V1_(( execvp( argv[0], argv ), ~0 ));
+    V1(( execvp( argv[0], argv ), ~0 )){}
 }
 /******************************************************************************/

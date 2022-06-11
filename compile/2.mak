@@ -34,8 +34,12 @@ undefine S_modules
     ifeq (,$(H_make_C_to_libs))
 
     ifeq (OpenBSD,$(H_make_S_os))
-S_packages := $(filter-out ncursesw,$(S_packages))
+S_packages := $(filter-out ncurses ncursesw,$(S_packages))
+	ifeq (ncurses,$(filter ncurses,$(S_packages)))
+S_libraries := ncurses $(S_libraries)
+	else ifeq (ncursesw,$(filter ncursesw,$(S_packages)))
 S_libraries := ncursesw $(S_libraries)
+	endif
     endif
 E_main_S_packages := $(S_packages)
 S_packages :=
@@ -50,8 +54,12 @@ H_make_C_pthreads := $(if $(C_pthreads),1)
         define H_make_I_module
 include $$(H_make_S_module_path)/$(1)/0.mak
     ifeq (OpenBSD,$$(H_make_S_os))
-S_packages := $$(filter-out ncursesw,$$(S_packages))
+S_packages := $$(filter-out ncurses ncursesw,$$(S_packages))
+	ifeq (ncurses,$$(filter ncurses,$$(S_packages)))
+S_libraries := ncurses $$(S_libraries)
+	else ifeq (ncursesw,$$(filter ncursesw,$$(S_packages)))
 S_libraries := ncursesw $$(S_libraries)
+	endif
     endif
 E_main_S_packages += $$(S_packages)
 S_packages :=
@@ -73,8 +81,12 @@ E_main_S_headers := $(sort $(E_main_S_headers))
     else
 
     ifeq (OpenBSD,$(H_make_S_os))
-S_packages := $(filter-out ncursesw,$(S_packages))
+	ifeq (ncurses,$(filter ncurses,$(S_packages)))
+S_libraries := ncurses $(S_libraries)
+	else ifeq (ncursesw,$(filter ncursesw,$(S_packages)))
 S_libraries := ncursesw $(S_libraries)
+	endif
+S_packages := $(filter-out ncurses ncursesw,$(S_packages))
     endif
 E_main_S_packages := $(sort $(S_packages))
 S_packages :=
@@ -91,8 +103,12 @@ E_module_S_headers :=
         define H_make_I_module
 include $$(H_make_S_module_path)/$(1)/0.mak
     ifeq (OpenBSD,$$(H_make_S_os))
-S_packages := $$(filter-out ncursesw,$$(S_packages))
-S_libraries := ncursesw $(S_libraries)
+	ifeq (ncurses,$$(filter ncurses,$$(S_packages)))
+S_libraries := ncurses $$(S_libraries)
+	else ifeq (ncursesw,$$(filter ncursesw,$$(S_packages)))
+S_libraries := ncursesw $$(S_libraries)
+	endif
+S_packages := $$(filter-out ncurses ncursesw,$$(S_packages))
     endif
 $$(eval E_$(2)_S_packages := $$$$(sort $$$$(S_packages)))
 S_packages :=
@@ -306,7 +322,7 @@ $(H_make_S_compile_path)/headers-db: $(H_make_Z_shell_cmd_N_gen_headers_db)
     if [ -z '$(H_make_S_reports_consent)' ]; then \
 	tty -s ;\
 	if [ $$? = 0 ]; then \
-	    read -p "$$msg [Yn] " ;\
+	    echo -n "$$msg [Yn] "; read ;\
 	    [ "$$REPLY" = '' -o "$$REPLY" = 'y' -o "$$REPLY" = 'Y' ] || false ;\
 	else \
 	    which Xdialog >/dev/null 2>&1 ;\

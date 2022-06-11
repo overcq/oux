@@ -32,6 +32,7 @@ INSTALL := install
 LIBTOOL := libtool
 #===============================================================================
 H_make_S_os := $(shell uname -s)
+H_make_S_machine := $(shell uname -m)
     ifeq (Linux,$(H_make_S_os))
 H_make_S_distribution := $(shell lsb_release -i | sed -s 's`^[^:]*:\s*``' )
     endif
@@ -53,6 +54,9 @@ H_make_S_cc_version := $(shell $(H_make_S_cc) -dumpversion | sed -e 's`^\([0-9][
 #===============================================================================
     ifneq (,$(H_make_C_middle_code))
 undefine H_make_C_to_libs
+    endif
+    ifeq (OpenBSD,$(H_make_S_os))
+undefine H_make_C_to_libs_C_replace_c_alloc
     endif
 #===============================================================================
 all: build
