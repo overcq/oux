@@ -40,79 +40,79 @@ struct E_mem_Q_tab_Z *
 E_mem_Q_tab_M(
   N u
 , I n
-){  struct E_mem_Q_tab_Z *tab = E_mem_Q_blk_M( sizeof( struct E_mem_Q_tab_Z ));
-    if( !tab )
+){  struct E_mem_Q_tab_Z *tab_ = E_mem_Q_blk_M( sizeof( struct E_mem_Q_tab_Z ));
+    if( !tab_ )
         return 0;
-    Mt_( tab->index, n );
-    if( !tab->index )
-    {   W(tab);
-        return 0;
-    }
-    tab->data = Mt( u, n );
-    if( !tab->data )
-    {   W( tab->index );
-        W(tab);
+    Mt_( tab_->index, n );
+    if( !tab_->index )
+    {   W(tab_);
         return 0;
     }
-    tab->index_n = n;
-    tab->data_n = n;
-    tab->u = u;
+    tab_->data = Mt( u, n );
+    if( !tab_->data )
+    {   W( tab_->index );
+        W(tab_);
+        return 0;
+    }
+    tab_->index_n = n;
+    tab_->data_n = n;
+    tab_->u = u;
     for_i( i, n )
-        tab->index[i] = tab->data + i * tab->u;
-    tab->iterator = 0;
-    return tab;
+        tab_->index[i] = tab_->data + i * tab_->u;
+    tab_->iterator = 0;
+    return tab_;
 }
 void
-E_mem_Q_tab_W( struct E_mem_Q_tab_Z *tab
+E_mem_Q_tab_W( struct E_mem_Q_tab_Z *tab_
 ){  if( U_R( E_base_S->E_flow_S_signal, exit_all ))
         return;
-    if( tab->iterator )
-    {   for_each( i, tab->iterator, E_mem_Q_tab )
-        {   struct E_mem_Q_tab_S_iterator_Z *iterator = (P)tab->iterator->index[i];
+    if( tab_->iterator )
+    {   for_each( i, tab_->iterator, E_mem_Q_tab )
+        {   struct E_mem_Q_tab_S_iterator_Z *iterator = (P)tab_->iterator->index[i];
             W( iterator->index );
         }
-        W( tab->iterator->data );
-        W( tab->iterator->index );
-        W( tab->iterator );
+        W( tab_->iterator->data );
+        W( tab_->iterator->index );
+        W( tab_->iterator );
     }
-    W( tab->data );
-    W( tab->index );
-    W(tab);
+    W( tab_->data );
+    W( tab_->index );
+    W(tab_);
 }
 //------------------------------------------------------------------------------
 I
-E_mem_Q_tab_I_add( struct E_mem_Q_tab_Z *tab
-){  for_i( id, tab->index_n )
-        if( !tab->index[id] )
+E_mem_Q_tab_I_add( struct E_mem_Q_tab_Z *tab_
+){  for_i( id, tab_->index_n )
+        if( !tab_->index[id] )
             break;
     if( !~id )
         return id;
-    Pc data = tab->data;
+    Pc data = tab_->data;
     N n_prepended;
-    if( !E_mem_Q_blk_I_add( &tab->data, 1, &n_prepended, 0 ))
+    if( !E_mem_Q_blk_I_add( &tab_->data, 1, &n_prepended, 0 ))
         return ~0;
-    if( tab->data != data )
+    if( tab_->data != data )
     {   for_i( i, id )
-            tab->index[i] += tab->data + ( n_prepended ? tab->u : 0 ) - data;
-        if( i != tab->index_n )
-            while( ++i != tab->index_n )
-                if( tab->index[i] )
-                    tab->index[i] += tab->data + ( n_prepended ? tab->u : 0 ) - data;
+            tab_->index[i] += tab_->data + ( n_prepended ? tab_->u : 0 ) - data;
+        if( i != tab_->index_n )
+            while( ++i != tab_->index_n )
+                if( tab_->index[i] )
+                    tab_->index[i] += tab_->data + ( n_prepended ? tab_->u : 0 ) - data;
     }
-    if( id == tab->index_n )
-    {   if( !E_mem_Q_blk_I_append( &tab->index, 1 ))
-        {   if( !E_mem_Q_blk_I_remove( &tab->data, n_prepended ? 0 : tab->data_n, 1 ))
+    if( id == tab_->index_n )
+    {   if( !E_mem_Q_blk_I_append( &tab_->index, 1 ))
+        {   if( !E_mem_Q_blk_I_remove( &tab_->data, n_prepended ? 0 : tab_->data_n, 1 ))
             {   GV_(NA);
             }
             return ~0;
         }
-        tab->index_n++;
+        tab_->index_n++;
     }
-    tab->index[id] = tab->data + ( n_prepended ? 0 : tab->data_n * tab->u );
-    tab->data_n++;
-    if( tab->iterator )
-    {   for_i( i, tab->iterator->index_n )
-        {   struct E_mem_Q_tab_S_iterator_Z *iterator = (P)tab->iterator->index[i];
+    tab_->index[id] = tab_->data + ( n_prepended ? 0 : tab_->data_n * tab_->u );
+    tab_->data_n++;
+    if( tab_->iterator )
+    {   for_i( i, tab_->iterator->index_n )
+        {   struct E_mem_Q_tab_S_iterator_Z *iterator = (P)tab_->iterator->index[i];
             if(iterator)
             {   I *p = E_mem_Q_blk_I_append( &iterator->index, 1 );
                 if( !p )
@@ -126,44 +126,44 @@ E_mem_Q_tab_I_add( struct E_mem_Q_tab_Z *tab
     return id;
 }
 I
-E_mem_Q_tab_I_add_i( struct E_mem_Q_tab_Z *tab
+E_mem_Q_tab_I_add_i( struct E_mem_Q_tab_Z *tab_
 , I id
-){  J_assert( ~id && !E_mem_Q_tab_T( tab, id ));
-    Pc data = tab->data;
+){  J_assert( ~id && !E_mem_Q_tab_T( tab_, id ));
+    Pc data = tab_->data;
     N n_prepended;
-    if( !E_mem_Q_blk_I_add( &tab->data, 1, &n_prepended, 0 ))
+    if( !E_mem_Q_blk_I_add( &tab_->data, 1, &n_prepended, 0 ))
         return ~0;
-    if( tab->data != data )
-    {   if( id < tab->index_n )
+    if( tab_->data != data )
+    {   if( id < tab_->index_n )
         {   for_i( i, id )
-                if( tab->index[i] )
-                    tab->index[i] += tab->data + ( n_prepended ? tab->u : 0 ) - data;
-            if( i != tab->index_n )
-                while( ++i != tab->index_n )
-                    if( tab->index[i] )
-                        tab->index[i] += tab->data + ( n_prepended ? tab->u : 0 ) - data;
+                if( tab_->index[i] )
+                    tab_->index[i] += tab_->data + ( n_prepended ? tab_->u : 0 ) - data;
+            if( i != tab_->index_n )
+                while( ++i != tab_->index_n )
+                    if( tab_->index[i] )
+                        tab_->index[i] += tab_->data + ( n_prepended ? tab_->u : 0 ) - data;
         }else
-        {   for_i( i, tab->index_n )
-                if( tab->index[i] )
-                    tab->index[i] += tab->data + ( n_prepended ? tab->u : 0 ) - data;
+        {   for_i( i, tab_->index_n )
+                if( tab_->index[i] )
+                    tab_->index[i] += tab_->data + ( n_prepended ? tab_->u : 0 ) - data;
         }
     }
-    if( id >= tab->index_n )
-    {   if( !E_mem_Q_blk_I_append( &tab->index, id + 1 - tab->index_n ))
-        {   if( !E_mem_Q_blk_I_remove( &tab->data, n_prepended ? 0 : tab->data_n, id + 1 - tab->index_n ))
+    if( id >= tab_->index_n )
+    {   if( !E_mem_Q_blk_I_append( &tab_->index, id + 1 - tab_->index_n ))
+        {   if( !E_mem_Q_blk_I_remove( &tab_->data, n_prepended ? 0 : tab_->data_n, id + 1 - tab_->index_n ))
             {   GV_(NA);
             }
             return ~0;
         }
-        for( I i = tab->index_n; (In)i < (In)id; i++ )
-            tab->index[i] = 0;
-        tab->index_n = id + 1;
+        for( I i = tab_->index_n; (In)i < (In)id; i++ )
+            tab_->index[i] = 0;
+        tab_->index_n = id + 1;
     }
-    tab->index[id] = tab->data + ( n_prepended ? 0 : tab->data_n * tab->u );
-    tab->data_n++;
-    if( tab->iterator )
-    {   for_i( i, tab->iterator->index_n )
-        {   struct E_mem_Q_tab_S_iterator_Z *iterator = (P)tab->iterator->index[i];
+    tab_->index[id] = tab_->data + ( n_prepended ? 0 : tab_->data_n * tab_->u );
+    tab_->data_n++;
+    if( tab_->iterator )
+    {   for_i( i, tab_->iterator->index_n )
+        {   struct E_mem_Q_tab_S_iterator_Z *iterator = (P)tab_->iterator->index[i];
             if(iterator)
             {   I *p = E_mem_Q_blk_I_append( &iterator->index, 1 );
                 if( !p )
@@ -178,32 +178,32 @@ E_mem_Q_tab_I_add_i( struct E_mem_Q_tab_Z *tab
 }
 _internal
 I
-E_mem_Q_tab_I_segv_add_begin( struct E_mem_Q_tab_Z *tab
+E_mem_Q_tab_I_segv_add_begin( struct E_mem_Q_tab_Z *tab_
 , P id_data
-){  for_i( id, tab->index_n )
-        if( !tab->index[id] )
+){  for_i( id, tab_->index_n )
+        if( !tab_->index[id] )
             break;
-    Pc data = tab->data;
+    Pc data = tab_->data;
     N n_prepended;
-    E_flow_Q_task_I_touch_stack(); // Ponieważ brak “atomowości” zmieniania “tab->index” z “tab->data”.
+    E_flow_Q_task_I_touch_stack(); // Ponieważ brak “atomowości” zmieniania “tab_->index” z “tab_->data”.
     _tasks_table_begin;
-    if( !E_mem_Q_blk_I_add( &tab->data, 1, &n_prepended, 0 ))
+    if( !E_mem_Q_blk_I_add( &tab_->data, 1, &n_prepended, 0 ))
     {   _tasks_table_end;
         return ~0;
     }
-    tab->data_n++;
-    if( tab->data != data )
+    tab_->data_n++;
+    if( tab_->data != data )
     {   for_i( i, id )
-            tab->index[i] += tab->data + ( n_prepended ? tab->u : 0 ) - data;
-        if( i != tab->index_n )
-            while( ++i != tab->index_n )
-                if( tab->index[i] )
-                    tab->index[i] += tab->data + ( n_prepended ? tab->u : 0 ) - data;
+            tab_->index[i] += tab_->data + ( n_prepended ? tab_->u : 0 ) - data;
+        if( i != tab_->index_n )
+            while( ++i != tab_->index_n )
+                if( tab_->index[i] )
+                    tab_->index[i] += tab_->data + ( n_prepended ? tab_->u : 0 ) - data;
     }
-    *(Pp)id_data = tab->data + ( n_prepended ? 0 : id * tab->u );
-    if( id == tab->index_n )
-        if( !E_mem_Q_blk_I_append( &tab->index, 1 ))
-        {   if( !E_mem_Q_blk_I_remove( &tab->data, n_prepended ? 0 : tab->data_n - 1, 1 ))
+    *(Pp)id_data = tab_->data + ( n_prepended ? 0 : id * tab_->u );
+    if( id == tab_->index_n )
+        if( !E_mem_Q_blk_I_append( &tab_->index, 1 ))
+        {   if( !E_mem_Q_blk_I_remove( &tab_->data, n_prepended ? 0 : tab_->data_n - 1, 1 ))
             {   GV_(NA);
             }
             _tasks_table_end;
@@ -214,22 +214,22 @@ E_mem_Q_tab_I_segv_add_begin( struct E_mem_Q_tab_Z *tab
 }
 _internal
 I
-E_mem_Q_tab_I_segv_add_end( struct E_mem_Q_tab_Z *tab
+E_mem_Q_tab_I_segv_add_end( struct E_mem_Q_tab_Z *tab_
 , I id
 , P id_data
-){  tab->index[id] = id_data;
-    if( id == tab->index_n )
-        tab->index_n++;
+){  tab_->index[id] = id_data;
+    if( id == tab_->index_n )
+        tab_->index_n++;
     return id;
 }
 N
-E_mem_Q_tab_I_remove( struct E_mem_Q_tab_Z *tab
+E_mem_Q_tab_I_remove( struct E_mem_Q_tab_Z *tab_
 , I id
-){  J_assert( E_mem_Q_tab_T( tab, id ));
-    if( tab->iterator )
-    {   for_i( i, tab->iterator->index_n )
-            if( tab->iterator->index[i] )
-            {   struct E_mem_Q_tab_S_iterator_Z *iterator = (P)tab->iterator->index[i];
+){  J_assert( E_mem_Q_tab_T( tab_, id ));
+    if( tab_->iterator )
+    {   for_i( i, tab_->iterator->index_n )
+            if( tab_->iterator->index[i] )
+            {   struct E_mem_Q_tab_S_iterator_Z *iterator = (P)tab_->iterator->index[i];
                 for_i( j, iterator->n )
                     if( iterator->index[j] == id )
                     {   iterator->n--;
@@ -239,35 +239,35 @@ E_mem_Q_tab_I_remove( struct E_mem_Q_tab_Z *tab
                     }
             }
     }
-    Pc p = tab->index[id];
-    if( id == tab->index_n - 1 )
+    Pc p = tab_->index[id];
+    if( id == tab_->index_n - 1 )
     {   I i = id;
         while(i)
-            if( tab->index[ --i ])
+            if( tab_->index[ --i ])
             {   i++;
                 break;
             }
-        if( E_mem_Q_blk_I_remove( &tab->index, i, id - i + 1 ))
-            tab->index_n = i;
+        if( E_mem_Q_blk_I_remove( &tab_->index, i, id - i + 1 ))
+            tab_->index_n = i;
         else
-            tab->index[id] = 0;
+            tab_->index[id] = 0;
     }else
-        tab->index[id] = 0;
-    Pc data = tab->data;
-    tab->data_n--;
-    if( !E_mem_Q_blk_I_remove( &tab->data, ( p - tab->data ) / tab->u, 1 ))
+        tab_->index[id] = 0;
+    Pc data = tab_->data;
+    tab_->data_n--;
+    if( !E_mem_Q_blk_I_remove( &tab_->data, ( p - tab_->data ) / tab_->u, 1 ))
         return ~0;
-    if( tab->data != data )
-    {   for_i( i, tab->index_n )
-            if( tab->index[i] )
-            {   if( tab->index[i] > p )
-                    tab->index[i] -= tab->u;
-                tab->index[i] += tab->data - data;
+    if( tab_->data != data )
+    {   for_i( i, tab_->index_n )
+            if( tab_->index[i] )
+            {   if( tab_->index[i] > p )
+                    tab_->index[i] -= tab_->u;
+                tab_->index[i] += tab_->data - data;
             }
     }else
-    {   for_i( i, tab->index_n )
-            if( tab->index[i] > p )
-                tab->index[i] -= tab->u;
+    {   for_i( i, tab_->index_n )
+            if( tab_->index[i] > p )
+                tab_->index[i] -= tab_->u;
     }
     return 0;
 }
@@ -294,103 +294,103 @@ E_mem_Q_tab_I_move(
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Iteratory statyczne. Gdy wiadomo, że nie nastąpi przełączenie ‹zadania›, ponieważ wyliczenie wartości musi być wykonane w jednym ‹atomie›, i nie nastąpi zmiana kolekcji.
 I
-E_mem_Q_tab_Z_iter_R_next( struct E_mem_Q_tab_Z *tab
+E_mem_Q_tab_Z_iter_R_next( struct E_mem_Q_tab_Z *tab_
 , I id
 , I out_id // Pomijany— i od następnego do poprzedniego elementu.
-){  J_assert( !~id || E_mem_Q_tab_T( tab, id ));
+){  J_assert( !~id || E_mem_Q_tab_T( tab_, id ));
     if( (In)id + 1 > (In)out_id )
-    {   while( ++id != tab->index_n )
-            if( tab->index[id] )
+    {   while( ++id != tab_->index_n )
+            if( tab_->index[id] )
                 return id;
         id = ~0;
     }
     if( !~out_id )
-        out_id = tab->index_n;
+        out_id = tab_->index_n;
     while( ++id != out_id )
-        if( tab->index[id] )
+        if( tab_->index[id] )
             return id;
     return ~0;
 }
 I
-E_mem_Q_tab_Z_iter_R_prev( struct E_mem_Q_tab_Z *tab
+E_mem_Q_tab_Z_iter_R_prev( struct E_mem_Q_tab_Z *tab_
 , I id
 , I out_id
-){  J_assert( !~id || E_mem_Q_tab_T( tab, id ));
+){  J_assert( !~id || E_mem_Q_tab_T( tab_, id ));
     if( !~id )
-        id = tab->index_n;
+        id = tab_->index_n;
     if( (In)id - 1 < (In)out_id )
     {   while( ~--id )
-            if( tab->index[id] )
+            if( tab_->index[id] )
                 return id;
         if( !~out_id )
             return ~0;
-        id = tab->index_n;
+        id = tab_->index_n;
     }
     while( --id != out_id )
-        if( tab->index[id] )
+        if( tab_->index[id] )
             return id;
     return ~0;
 }
 //------------------------------------------------------------------------------
 I
-E_mem_Q_tab_Q_iter_M( struct E_mem_Q_tab_Z *tab
+E_mem_Q_tab_Q_iter_M( struct E_mem_Q_tab_Z *tab_
 , I out_id
-){  I n = tab->data_n;
+){  I n = tab_->data_n;
     if( ~out_id
     && n
     )
         n--;
     I iterator_id;
-    if( tab->iterator )
-    {   iterator_id = E_mem_Q_tab_I_add( tab->iterator );
+    if( tab_->iterator )
+    {   iterator_id = E_mem_Q_tab_I_add( tab_->iterator );
         if( !~iterator_id )
             return ~0;
     }else
-    {   tab->iterator = E_mem_Q_tab_M( sizeof( struct E_mem_Q_tab_S_iterator_Z ), 1 );
-        if( !tab->iterator )
+    {   tab_->iterator = E_mem_Q_tab_M( sizeof( struct E_mem_Q_tab_S_iterator_Z ), 1 );
+        if( !tab_->iterator )
             return ~0;
         iterator_id = 0;
     }
-    struct E_mem_Q_tab_S_iterator_Z *iterator = (P)tab->iterator->index[ iterator_id ];
+    struct E_mem_Q_tab_S_iterator_Z *iterator = (P)tab_->iterator->index[ iterator_id ];
     Mt_( iterator->index, n );
     if( !iterator->index )
     {   if( iterator_id )
-            E_mem_Q_tab_I_remove( tab->iterator, iterator_id );
+            E_mem_Q_tab_I_remove( tab_->iterator, iterator_id );
         else
-            W_tab_( tab->iterator );
+            W_tab_( tab_->iterator );
         return ~0;
     }
     iterator->n = n;
     I i = 0;
     I id;
-    for( id = out_id + 1; id != tab->index_n; id++ )
-        if( tab->index[id] )
+    for( id = out_id + 1; id != tab_->index_n; id++ )
+        if( tab_->index[id] )
             iterator->index[ i++ ] = id;
     if( ~out_id )
     {   for_i_( id, out_id )
-            if( tab->index[id] )
+            if( tab_->index[id] )
                 iterator->index[ i++ ] = id;
     }
     return iterator_id;
 }
 // Do zwalniania ‘iteratora’ tylko wtedy, gdy nie zakończy się wartością “empty” (czyli gdy pętla zostanie przerwana).
 void
-E_mem_Q_tab_Q_iter_W( struct E_mem_Q_tab_Z *tab
+E_mem_Q_tab_Q_iter_W( struct E_mem_Q_tab_Z *tab_
 , I iterator_id
-){  struct E_mem_Q_tab_S_iterator_Z *iterator = (P)tab->iterator->index[ iterator_id ];
+){  struct E_mem_Q_tab_S_iterator_Z *iterator = (P)tab_->iterator->index[ iterator_id ];
     W( iterator->index );
-    if( tab->iterator->data_n != 1 )
-        E_mem_Q_tab_I_remove( tab->iterator, iterator_id );
+    if( tab_->iterator->data_n != 1 )
+        E_mem_Q_tab_I_remove( tab_->iterator, iterator_id );
     else
-        W_tab_( tab->iterator );
+        W_tab_( tab_->iterator );
 }
     #if 0 //brak koncepcji pętli usuwających.
 I
-E_mem_Q_tab_Q_iter_R_shift( struct E_mem_Q_tab_Z *tab
+E_mem_Q_tab_Q_iter_R_shift( struct E_mem_Q_tab_Z *tab_
 , I iterator_id
-){  struct E_mem_Q_tab_S_iterator_Z *iterator = (P)tab->iterator->index[ iterator_id ];
+){  struct E_mem_Q_tab_S_iterator_Z *iterator = (P)tab_->iterator->index[ iterator_id ];
     if( !iterator->n )
-    {   E_mem_Q_tab_Q_iter_W( tab, iterator_id );
+    {   E_mem_Q_tab_Q_iter_W( tab_, iterator_id );
         return ~0;
     }
     I id = iterator->index[0];
@@ -402,17 +402,17 @@ E_mem_Q_tab_Q_iter_R_shift( struct E_mem_Q_tab_Z *tab
 }
     #endif
 I
-E_mem_Q_tab_Q_iter_R_next( struct E_mem_Q_tab_Z *tab
+E_mem_Q_tab_Q_iter_R_next( struct E_mem_Q_tab_Z *tab_
 , I iterator_id
 , I id
-){  struct E_mem_Q_tab_S_iterator_Z *iterator = (P)tab->iterator->index[ iterator_id ];
+){  struct E_mem_Q_tab_S_iterator_Z *iterator = (P)tab_->iterator->index[ iterator_id ];
     I ret = (In)id < (In)iterator->n ? iterator->index[id] : ~0;
     if( !~ret )
     {   W( iterator->index );
-        if( tab->iterator->data_n != 1 )
-            E_mem_Q_tab_I_remove( tab->iterator, iterator_id );
+        if( tab_->iterator->data_n != 1 )
+            E_mem_Q_tab_I_remove( tab_->iterator, iterator_id );
         else
-            W_tab_( tab->iterator );
+            W_tab_( tab_->iterator );
     }
     return ret;
 }

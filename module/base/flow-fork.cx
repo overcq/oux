@@ -18,16 +18,16 @@ E_flow_I_fork_I_begin( void
 }
 void
 E_flow_I_fork_I_end( N pid
-){  if( ~pid )
+){  if( !pid )
+    {   GV_(NA); V();
+    }else if( ~pid )
     {   sigset_t sigset_child = E_base_S->E_flow_I_fork_S_sigset;
         V0_( sigaddset( &sigset_child, SIGCHLD ));
         _sigprocmask( SIG_SETMASK, &sigset_child, 0 );
         int status;
         VO1( waitpid( pid, &status, 0 )){} // Czekanie do wykonania “daemon” w “E_flow_I_fork_I_exec”, jeśli “proces” potomny jeszcze istnieje.
         _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_I_fork_S_sigset, 0 );
-    }else if( !pid )
-        exit( _errno );
-    else
+    }else
         _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_I_fork_S_sigset, 0 );
 }
 //------------------------------------------------------------------------------

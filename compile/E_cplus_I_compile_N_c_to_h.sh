@@ -15,15 +15,15 @@ tmp_file="$( mktemp )"
 perl -we '
     use warnings;
     local $/;
-    open my $file, "'"$cx_source"'";
-    my $cnt = <$file>;
-    close $file;
+    open my $src_file, "'"$cx_source"'";
+    my $src = <$src_file>;
+    close $src_file;
     local $/ = "\n";
     while(<>)
     {   chomp;
         @line = split;
         $func = shift @line;
-        if( $cnt =~ /(?:^|[^0-9A-Za-z_])${func}\(/m )
+        if( $src =~ /(?:^|[^0-9A-Za-z_])${func}\(/m )
         {   foreach ( @line )
             {   print "#include <$_>\n";
             }

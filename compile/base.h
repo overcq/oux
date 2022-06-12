@@ -53,22 +53,22 @@ E_mem_Q_shared_M( N size
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 _inline
 B
-E_mem_Q_tab_T( struct E_mem_Q_tab_Z *tab
+E_mem_Q_tab_T( struct E_mem_Q_tab_Z *tab_
 , I id
-){  return (In)id < (In)tab->index_n
-    && tab->index[id];
+){  return (In)id < (In)tab_->index_n
+    && tab_->index[id];
 }
 _inline
 I
-E_mem_Q_tab_R_n( struct E_mem_Q_tab_Z *tab
-){  return tab->data_n;
+E_mem_Q_tab_R_n( struct E_mem_Q_tab_Z *tab_
+){  return tab_->data_n;
 }
 _inline
 P
-E_mem_Q_tab_R( struct E_mem_Q_tab_Z *tab
+E_mem_Q_tab_R( struct E_mem_Q_tab_Z *tab_
 , I id
-){  J_assert( E_mem_Q_tab_T( tab, id ));
-    return tab->index[id];
+){  J_assert( E_mem_Q_tab_T( tab_, id ));
+    return tab_->index[id];
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 _inline

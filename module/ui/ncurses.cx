@@ -11,7 +11,8 @@ int E_ncurses_I_getch_S_ret;
 wint_t E_ncurses_I_getch_S_c;
 B E_ncurses_I_getch_S_meta_key;
 SCREEN *E_ncurses_S_screen;
-WINDOW *E_ncurses_S_window;
+int E_ncurses_S_scroll_x, E_ncurses_S_scroll_y;
+int E_ncurses_S_scroll_max_x, E_ncurses_S_scroll_max_y;
 //==============================================================================
 void
 E_ncurses_M( void
@@ -41,17 +42,22 @@ E_ncurses_M( void
     }
     E_flow_I_fork_I_end(pid);
     W( tty_name );
+    setupterm( 0, STDERR_FILENO, 0 );
+    int max_x, max_y;
+    max_x = tigetnum( "cols" );
+    max_y = tigetnum( "lines" );
+    del_curterm( cur_term );
     FILE *file;
     Vp_( file = fdopen( tty_slave, "r+" ));
     Vp_( E_ncurses_S_screen = newterm( 0, file, file ));
     start_color();
-    init_pair( 1, COLOR_WHITE, COLOR_BLACK );
+    init_pair( 1, COLOR_WHITE, COLOR_BLACK ); // Label text.
+    init_pair( 2, COLOR_BLACK, COLOR_WHITE ); // Field text.
     attr_set( A_NORMAL, 1, 0 );
     noecho();
     intrflush( stdscr, FALSE );
     keypad( stdscr, TRUE );
     nonl();
-    nodelay( stdscr, FALSE );
     notimeout( stdscr, TRUE );
     raw();
     idlok( stdscr, FALSE );
@@ -59,6 +65,8 @@ E_ncurses_M( void
     immedok( stdscr, FALSE );
     leaveok( stdscr, FALSE );
     scrollok( stdscr, FALSE );
+    resize_term( max_y, max_x );
+    E_ncurses_S_scroll_y = E_ncurses_S_scroll_x = E_ncurses_S_scroll_max_x = E_ncurses_S_scroll_max_y = 0;
     D_M( ncurses, getch );
 }
 void
@@ -67,13 +75,138 @@ E_ncurses_W( void
     endwin();
     delscreen( E_ncurses_S_screen );
 }
+//==============================================================================
+void
+E_ncurses_I_lay( void
+){  erase();
+    E_ncurses_S_scroll_max_x = E_ncurses_S_scroll_max_y = 0;
+    int x = 0, y = 0;
+    int cur_x = 0;
+    int max_x, max_y;
+    getmaxyx( stdscr, max_y, max_x );
+    max_x -= 2;
+    max_y -= 2;
+    if( max_x - x > 0
+    && max_y - y > 0
+    && E_mem_Q_tab_R_n( E_data_Q_layout_S )
+    )
+    {   move( y, x );
+        B not_first = no;
+        for_each( input_id, E_data_Q_layout_S, E_mem_Q_tab )
+        {   struct E_data_Q_field_Z *input = E_mem_Q_tab_R( E_data_Q_layout_S, input_id );
+            N l = E_text_Z_su0_R_n( input->label );
+            if( not_first )
+            {   if( cur_x + 1 + l + 1 + input->width > max_x )
+                {   if( E_ncurses_S_scroll_max_x < x )
+                        E_ncurses_S_scroll_max_x = x;
+                    cur_x = x = 0;
+                }else
+                {   y--; // Wycofanie nowej linii.
+                    cur_x++;
+                    x++; // Odstęp przed następną etykietą.
+                    if( y >= E_ncurses_S_scroll_y
+                    && getcury(stdscr) <= max_y
+                    && cur_x <= max_x
+                    )
+                        move( getcury(stdscr), cur_x );
+                }
+            }
+            not_first = yes;
+            Pc s = input->label;
+            for( N i = 0; *s; i++ )
+            {   U u;
+                s = E_text_Z_s_Z_utf8_R_u( s, &u );
+                if( y >= E_ncurses_S_scroll_y
+                && getcury(stdscr) <= max_y
+                && x >= E_ncurses_S_scroll_x
+                && cur_x <= max_x
+                )
+                {   cchar_t cc;
+                    wchar_t wc[2] = { u, L'\0' };
+                    setcchar( &cc, &wc[0], A_NORMAL, 1, 0 );
+                    add_wch( &cc );
+                    cur_x++;
+                }
+                x++;
+            }
+            if( x >= E_ncurses_S_scroll_x
+            && cur_x <= max_x
+            )
+            {   cur_x++;
+                x++; // Odstęp pomiędzy etykietą a polem.
+            }
+            if( y >= E_ncurses_S_scroll_y
+            && getcury(stdscr) + 1 <= max_y
+            )
+                move( getcury(stdscr), cur_x );
+            s = input->s + input->s_i;
+            N i;
+            for( i = 0; *s && i != input->width; i++ )
+            {   U u;
+                s = E_text_Z_s_Z_utf8_R_u( s, &u );
+                if( y >= E_ncurses_S_scroll_y
+                && getcury(stdscr) <= max_y
+                && x >= E_ncurses_S_scroll_x
+                && cur_x <= max_x
+                )
+                {   cchar_t cc;
+                    wchar_t wc[2] = { u, L'\0' };
+                    setcchar( &cc, &wc[0], A_NORMAL, 2, 0 );
+                    add_wch( &cc );
+                    cur_x++;
+                }
+                x++;
+            }
+            for( ; i != input->width; i++ )
+            {   if( y >= E_ncurses_S_scroll_y
+                && getcury(stdscr) <= max_y
+                && x >= E_ncurses_S_scroll_x
+                && cur_x <= max_x
+                )
+                {   cchar_t cc;
+                    wchar_t wc[2] = L" ";
+                    setcchar( &cc, &wc[0], A_NORMAL, 2, 0 );
+                    add_wch( &cc );
+                    cur_x++;
+                }
+                x++;
+            }
+            if( y >= E_ncurses_S_scroll_y
+            && getcury(stdscr) <= max_y
+            )
+                move( getcury(stdscr) + 1, 0 );
+            y++;
+        }
+        if( E_ncurses_S_scroll_max_x < x )
+            E_ncurses_S_scroll_max_x = x;
+        E_ncurses_S_scroll_max_y = y;
+        max_x++;
+        max_y++;
+        if( E_ncurses_S_scroll_max_x < max_x )
+            E_ncurses_S_scroll_max_x = max_x;
+        if( E_ncurses_S_scroll_max_y < max_y )
+            E_ncurses_S_scroll_max_y = max_y;
+        int pos_x = E_ncurses_S_scroll_x * max_x / E_ncurses_S_scroll_max_x;
+        int pos_y = E_ncurses_S_scroll_y * max_y / E_ncurses_S_scroll_max_y;
+        int len_x = max_x * max_x / E_ncurses_S_scroll_max_x;
+        int len_y = max_y * max_y / E_ncurses_S_scroll_max_y;
+        move( max_y, 0 );
+        for( int x = 0; x != max_x; x++ )
+            add_wch( x < pos_x || x >= pos_x + len_x ? WACS_HLINE : WACS_BLOCK );
+        add_wch( WACS_LRCORNER );
+        for( int y = 0; y != max_y; y++ )
+            mvadd_wch( y, max_x, y < pos_y || y >= pos_y + len_y ? WACS_VLINE : WACS_BLOCK );
+    }
+    refresh();
+}
+//==============================================================================
 B
 E_ncurses_I_sigsuspend( sigset_t *sigset
 ){  sigset_t old_sigset;
     _sigprocmask( SIG_SETMASK, sigset, &old_sigset ); //NDFN dopóki jest tak zrobione, że odblokowanie “sygnałów” jest wcześniej niż zablokowanie na “read”, to mogą występować przypadki zablokowania oczekującego na “read” mimo “sygnału” (ustawiającego “wake”) obsłużonego i danych czekających na przetworzenie w ‹zadaniach›, a gdy nie jest ustawione “E_flow_Q_system_unblock_report_S_setitimer_I”, to oczywiście– nieodblokowania po ustawionym czasie —do czasu ‹systemowego raportu odblokowującego› lub nietrafienia któregoś interpretowanego (ustawiającego “wake”) “sygnału” w obszar programu pomiędzy tym “sigprocmask” a “read” w “E_flow_Q_system_unblock_report_S_sigsuspend_I”.
     E_ncurses_I_getch_S_ret = get_wch( &E_ncurses_I_getch_S_c );
     _sigprocmask( SIG_SETMASK, &old_sigset, 0 );
-    return E_ncurses_I_getch_S_ret != ERR; ///naciśnięto klawisz.
+    return E_ncurses_I_getch_S_ret != ERR; // Naciśnięto klawisz.
 }
 void
 E_ncurses_I_setitimer( Z_clock_time *tv
@@ -93,10 +226,10 @@ D( ncurses, getch )
         { case KEY_CODE_YES:
                 if( E_ncurses_I_getch_S_meta_key )
                 {   switch( E_ncurses_I_getch_S_c )
-                    {   case KEY_DC:
+                    { case KEY_DC:
                         {   break;
                         }
-                        case KEY_RIGHT:
+                      case KEY_RIGHT:
                         {   break;
                         }
                       case KEY_LEFT:
@@ -104,15 +237,43 @@ D( ncurses, getch )
                         }
                       case KEY_HOME:
                       case KEY_A1:
+                            if( E_ncurses_S_scroll_max_x )
+                            {   E_ncurses_S_scroll_x = 0;
+                                E_ncurses_I_lay();
+                            }
                             break;
                       case KEY_END:
                       case KEY_C1:
-                        {   break;
-                        }
-                      default:
-                            beep();
-                            endwin(); G_(); Gd( E_ncurses_I_getch_S_c ); refresh(); //DBG
+                            if( E_ncurses_S_scroll_max_x )
+                            {   E_ncurses_S_scroll_x = E_ncurses_S_scroll_max_x - ( getmaxx(stdscr) - 1 );
+                                E_ncurses_I_lay();
+                            }
                             break;
+                      case KEY_NPAGE:
+                      case KEY_C3:
+                            if( E_ncurses_S_scroll_max_x )
+                            {   if( E_ncurses_S_scroll_max_x - E_ncurses_S_scroll_x > 2 * ( getmaxx(stdscr) - 1 ))
+                                    E_ncurses_S_scroll_x += getmaxx(stdscr) - 1;
+                                else
+                                    E_ncurses_S_scroll_x = E_ncurses_S_scroll_max_x - ( getmaxx(stdscr) - 1 );
+                                E_ncurses_I_lay();
+                            }
+                            break;
+                      case KEY_PPAGE:
+                      case KEY_A3:
+                            if( E_ncurses_S_scroll_max_x )
+                            {   if( E_ncurses_S_scroll_x > getmaxx(stdscr) - 1 )
+                                    E_ncurses_S_scroll_x -= getmaxx(stdscr) - 1;
+                                else
+                                    E_ncurses_S_scroll_x = 0;
+                                E_ncurses_I_lay();
+                            }
+                            break;
+                      default:
+                        {   beep();
+                            G_(); Gd( E_ncurses_I_getch_S_c ); //DBG
+                            break;
+                        }
                     }
                     E_ncurses_I_getch_S_meta_key = no;
                     break;
@@ -140,28 +301,44 @@ D( ncurses, getch )
                     {   break;
                     }
                   case KEY_HOME:
-                  case KEY_A1: //na klawiaturze numerycznej.
-                    {   break;
-                    }
+                  case KEY_A1: // Na klawiaturze numerycznej.
+                        if( E_ncurses_S_scroll_max_y )
+                        {   E_ncurses_S_scroll_y = 0;
+                            E_ncurses_I_lay();
+                        }
+                        break;
                   case KEY_END:
-                  case KEY_C1: //na klawiaturze numerycznej.
-                    {   break;
-                    }
+                  case KEY_C1: // Na klawiaturze numerycznej.
+                        if( E_ncurses_S_scroll_max_y )
+                        {   E_ncurses_S_scroll_y = E_ncurses_S_scroll_max_y - ( getmaxy(stdscr) - 1 );
+                            E_ncurses_I_lay();
+                        }
+                        break;
                   case KEY_NPAGE:
-                  case KEY_C3: //na klawiaturze numerycznej.
-                    {   break;
-                    }
+                  case KEY_C3: // Na klawiaturze numerycznej.
+                        if( E_ncurses_S_scroll_max_y )
+                        {   if( E_ncurses_S_scroll_max_y - E_ncurses_S_scroll_y > 2 * ( getmaxy(stdscr) - 1 ))
+                                E_ncurses_S_scroll_y += getmaxy(stdscr) - 1;
+                            else
+                                E_ncurses_S_scroll_y = E_ncurses_S_scroll_max_y - ( getmaxy(stdscr) - 1 );
+                            E_ncurses_I_lay();
+                        }
+                        break;
                   case KEY_PPAGE:
-                  case KEY_A3: //na klawiaturze numerycznej.
-                    {   break;
-                    }
-                  case KEY_RESIZE:
-
+                  case KEY_A3: // Na klawiaturze numerycznej.
+                        if( E_ncurses_S_scroll_max_y )
+                        {   if( E_ncurses_S_scroll_y > getmaxy(stdscr) - 1 )
+                                E_ncurses_S_scroll_y -= getmaxy(stdscr) - 1;
+                            else
+                                E_ncurses_S_scroll_y = 0;
+                            E_ncurses_I_lay();
+                        }
                         break;
                   default:
-                        beep();
-                        endwin(); G_(); Gd( E_ncurses_I_getch_S_c ); refresh(); //DBG
+                    {   beep();
+                        G_(); Gd( E_ncurses_I_getch_S_c ); //DBG
                         break;
+                    }
                 }
                 break;
           case OK:
@@ -194,10 +371,11 @@ Cont:           if( !( E_ncurses_I_getch_S_c == '\r'
                 || iswprint( E_ncurses_I_getch_S_c )
                 ))
                 {   beep();
-                    endwin(); G_(); Gd( E_ncurses_I_getch_S_c ); refresh();
+                    G_(); Gd( E_ncurses_I_getch_S_c ); //DBG
                     break;
                 }
-Enter:;         break;
+Enter:;
+                break;
             }
         }
     }
