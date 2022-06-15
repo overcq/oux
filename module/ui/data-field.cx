@@ -19,7 +19,7 @@ struct E_data_Q_field_Z
 { Pc label;
   N width;
   Pc s;
-  N s_i;
+  N s_i; // Pozycja bajtowa bieżącego znaku.
   Pc *select;
   N select_n;
   enum E_data_Q_field_Z_type type;
@@ -63,7 +63,7 @@ void
 E_data_Q_field_M_( struct E_data_Q_field_Z *input
 , Pc label
 , N width
-){  J_assert(width);
+){  J_assert( width > 2 );
     input->label = M( E_text_Z_s0_R_0_l(label) );
     input->width = width;
     E_text_Z_s_P_s0_copy_0( input->label, label );
@@ -189,6 +189,26 @@ E_data_Q_field_Z_text_P_regex( struct E_data_Q_field_Z *input
     return yes;
 }
 B
+E_data_Q_field_P_left( struct E_data_Q_field_Z *input
+){  if( input->s_i )
+    {   U u;
+        N l = input->s + input->s_i - E_text_Z_s_Z_utf8_R_u_rev( input->s + input->s_i, &u );
+        input->s_i -= l;
+        return yes;
+    }
+    return no;
+}
+B
+E_data_Q_field_P_right( struct E_data_Q_field_Z *input
+){  if( *( input->s + input->s_i ))
+    {   U u;
+        N l = E_text_Z_s_Z_utf8_R_u( input->s + input->s_i, &u ) - ( input->s + input->s_i );
+        input->s_i += l;
+        return yes;
+    }
+    return no;
+}
+B
 E_data_Q_field_P_insert( struct E_data_Q_field_Z *input
 , U u
 ){  N l = E_text_Z_u_R_s_utf8_G(u);
@@ -198,15 +218,15 @@ E_data_Q_field_P_insert( struct E_data_Q_field_Z *input
         return no;
     E_text_Z_u_R_s_utf8( u, input->s + input->s_i );
     input->s_i += l;
-    return E_data_Q_field_R_valid(input);
+    return yes;
 }
 B
 E_data_Q_field_P_overwrite( struct E_data_Q_field_Z *input
 , U u
-){  N l_2 = E_text_Z_u_R_s_utf8_G(u);
+){  N l_1, l_2 = E_text_Z_u_R_s_utf8_G(u);
     if( *( input->s + input->s_i ))
     {   U u;
-        N l_1 = input->s + input->s_i - E_text_Z_s_Z_utf8_R_u( input->s, &u );
+        l_1 = E_text_Z_s_Z_utf8_R_u( input->s + input->s_i, &u ) - ( input->s + input->s_i );
         if( !~l_2 )
             return no;
         if( l_1 > l_2 )
@@ -218,27 +238,27 @@ E_data_Q_field_P_overwrite( struct E_data_Q_field_Z *input
     }else if( !E_mem_Q_blk_I_insert( &input->s, input->s_i, l_2 ))
         return no;
     E_text_Z_u_R_s_utf8( u, input->s + input->s_i );
-    input->s_i += l_2;
-    return E_data_Q_field_R_valid(input);
+    return yes;
 }
 B
 E_data_Q_field_P_remove_back( struct E_data_Q_field_Z *input
 ){  if( input->s_i )
     {   U u;
-        N l = input->s + input->s_i - E_text_Z_s_Z_utf8_R_u_rev( input->s, &u );
+        N l = input->s + input->s_i - E_text_Z_s_Z_utf8_R_u_rev( input->s + input->s_i, &u );
         input->s_i -= l;
         E_mem_Q_blk_I_remove( &input->s, input->s_i, l );
+        return yes;
     }
-    return E_data_Q_field_R_valid(input);
+    return no;
 }
 B
 E_data_Q_field_P_remove_on( struct E_data_Q_field_Z *input
 ){  if( *( input->s + input->s_i ))
     {   U u;
-        N l = input->s + input->s_i - E_text_Z_s_Z_utf8_R_u( input->s, &u );
-        input->s_i -= l;
+        N l = E_text_Z_s_Z_utf8_R_u( input->s + input->s_i, &u ) - ( input->s + input->s_i );
         E_mem_Q_blk_I_remove( &input->s, input->s_i, l );
+        return yes;
     }
-    return E_data_Q_field_R_valid(input);
+    return no;
 }
 /******************************************************************************/
