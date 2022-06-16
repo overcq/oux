@@ -272,6 +272,7 @@ E_ncurses_I_focus_internal( void
         : E_ncurses_S_scroll_max_y - ( getmaxy(stdscr) - 1 );
     E_data_Q_layout_S_focus_x = 0;
     E_data_Q_layout_S_focus_select = ~0;
+    E_data_Q_layout_S_overwrite = no;
     E_ncurses_I_lay();
 }
 B
@@ -389,27 +390,35 @@ D( ncurses, getch )
                                 {   for_each( input_id, E_ncurses_Q_layout_S, E_mem_Q_tab )
                                     {   struct E_ncurses_Q_field_Z *data = E_mem_Q_tab_R( E_ncurses_Q_layout_S, input_id );
                                         struct E_data_Q_field_Z *input = E_mem_Q_tab_R( E_data_Q_layout_S, input_id );
-                                        if( ev.y == data->y - E_ncurses_S_scroll_y
-                                        && (( ev.x >= data->x - E_ncurses_S_scroll_x
-                                            && ev.x < data->x - E_ncurses_S_scroll_x + E_text_Z_su0_R_n( input->label ) + 1
-                                          )
-                                          || ( ev.x >= data->x - E_ncurses_S_scroll_x + E_text_Z_su0_R_n( input->label ) + 1 + ( input->select_n ? 1 : 0 )
-                                            && ev.x < data->x - E_ncurses_S_scroll_x + E_text_Z_su0_R_n( input->label ) + 1 + ( input->select_n ? 1 : 0 ) + input->width
-                                        )))
-                                        {   E_data_Q_layout_S_focus = input_id;
-                                            E_ncurses_I_focus_internal();
+                                        if( ev.y == data->y - E_ncurses_S_scroll_y )
+                                        {   if(( ev.x >= data->x - E_ncurses_S_scroll_x
+                                                && ev.x < data->x - E_ncurses_S_scroll_x + E_text_Z_su0_R_n( input->label ) + 1
+                                              )
+                                              || ( ev.x >= data->x - E_ncurses_S_scroll_x + E_text_Z_su0_R_n( input->label ) + 1 + ( input->select_n ? 1 : 0 )
+                                                && ev.x < data->x - E_ncurses_S_scroll_x + E_text_Z_su0_R_n( input->label ) + 1 + ( input->select_n ? 1 : 0 ) + input->width
+                                            ))
+                                            {   E_data_Q_layout_S_focus = input_id;
+                                                E_ncurses_I_focus_internal();
+                                            }else if( ev.x == data->x - E_ncurses_S_scroll_x + E_text_Z_su0_R_n( input->label ) + 1 )
+                                                E_data_Q_layout_S_focus_select = 0;
                                             break;
                                         }
                                     }
                                 }
                             break;
                         }
+                  case KEY_IC:
+                        if( ~E_data_Q_layout_S_focus )
+                            E_data_Q_layout_S_overwrite = !E_data_Q_layout_S_overwrite;
+                        break;
                   case KEY_DC:
                         if( ~E_data_Q_layout_S_focus )
                         {   struct E_data_Q_field_Z *input = E_mem_Q_tab_R( E_data_Q_layout_S, E_data_Q_layout_S_focus );
                             if( !~E_data_Q_layout_S_focus_select )
                             {   if( E_data_Q_field_P_remove_on(input) )
                                     E_ncurses_I_lay();
+                                else
+                                    beep();
                             }else
                             {
                             }
@@ -422,7 +431,8 @@ D( ncurses, getch )
                             {   if( E_data_Q_field_P_remove_back(input) )
                                 {   E_data_Q_layout_S_focus_x--;
                                     E_ncurses_I_lay();
-                                }
+                                }else
+                                    beep();
                             }else
                             {
                             }
@@ -438,7 +448,8 @@ D( ncurses, getch )
                                 if( E_data_Q_field_P_right(input) )
                                 {   E_data_Q_layout_S_focus_x++;
                                     E_ncurses_I_lay();
-                                }
+                                }else
+                                    beep();
                             }else
                             {
                             }
@@ -451,18 +462,31 @@ D( ncurses, getch )
                                 if( E_data_Q_field_P_left(input) )
                                 {   E_data_Q_layout_S_focus_x--;
                                     E_ncurses_I_lay();
-                                }
+                                }else
+                                    beep();
                             }else
                             {
                             }
                         }
                         break;
                   case KEY_DOWN:
-                    {   break;
-                    }
+                        if( !~E_data_Q_layout_S_focus_select )
+                        {   struct E_data_Q_field_Z *input = E_mem_Q_tab_R( E_data_Q_layout_S, E_data_Q_layout_S_focus );
+                            if( input->select_n )
+                            {   E_data_Q_layout_S_focus_select = 0;
+                                E_ncurses_I_lay();
+                            }
+                        }
+                        break;
                   case KEY_UP:
-                    {   break;
-                    }
+                        if( !~E_data_Q_layout_S_focus_select )
+                        {   struct E_data_Q_field_Z *input = E_mem_Q_tab_R( E_data_Q_layout_S, E_data_Q_layout_S_focus );
+                            if( input->select_n )
+                            {   E_data_Q_layout_S_focus_select = input->select_n - 1;
+                                E_ncurses_I_lay();
+                            }
+                        }
+                        break;
                   case KEY_BTAB:
                         if( E_ncurses_S_scroll_max_x )
                         {   if( ~E_data_Q_layout_S_focus
@@ -554,7 +578,6 @@ D( ncurses, getch )
                 }
                 switch( E_ncurses_I_getch_S_c )
                 { case 3: // Ctrl+c
-
                         break;
                   case '\t':
                         if( E_ncurses_S_scroll_max_x )
@@ -566,6 +589,9 @@ D( ncurses, getch )
                                 E_data_Q_layout_S_focus = 0;
                             E_ncurses_I_focus_internal();
                         }
+                        break;
+                  case '\n':
+Enter:
                         break;
                   case 17: // Ctrl+q
                         U_F( E_base_S->E_flow_S_signal, exit );
@@ -581,13 +607,21 @@ D( ncurses, getch )
                             G_(); Gd( E_ncurses_I_getch_S_c ); //DBG
                             break;
                         }
-Enter:                  if( ~E_data_Q_layout_S_focus )
+                        if( ~E_data_Q_layout_S_focus )
                         {   struct E_data_Q_field_Z *input = E_mem_Q_tab_R( E_data_Q_layout_S, E_data_Q_layout_S_focus );
                             if( !~E_data_Q_layout_S_focus_select )
-                            {   if( E_data_Q_field_P_insert( input, E_ncurses_I_getch_S_c ))
-                                {   E_data_Q_layout_S_focus_x++;
-                                    E_ncurses_I_lay();
-                                }
+                            {   if( !E_data_Q_layout_S_overwrite )
+                                    if( E_data_Q_field_P_insert( input, E_ncurses_I_getch_S_c ))
+                                    {   E_data_Q_layout_S_focus_x++;
+                                        E_ncurses_I_lay();
+                                    }else
+                                        beep();
+                                else
+                                    if( E_data_Q_field_P_overwrite( input, E_ncurses_I_getch_S_c ))
+                                    {   E_data_Q_layout_S_focus_x++;
+                                        E_ncurses_I_lay();
+                                    }else
+                                        beep();
                             }else
                             {
                             }
