@@ -29,8 +29,8 @@ E_ncurses_I_lay( void
     getmaxyx( stdscr, max_y, max_x );
     max_x -= 2;
     max_y -= 2;
-    if( max_x - x > 0
-    && max_y - y > 0
+    if( max_x > 1
+    && max_y > 1
     && E_mem_Q_tab_R_n( E_data_Q_layout_S )
     )
     {   int focus_x_0 = ~0, focus_x, focus_y;
@@ -103,13 +103,14 @@ E_ncurses_I_lay( void
                 && x >= E_ncurses_S_scroll_x
                 && cur_x <= max_x
                 )
-                {   add_wch( !~E_data_Q_layout_S_focus_select ? WACS_DARROW : WACS_UARROW );
+                {   add_wch( input_id == E_data_Q_layout_S_focus && ~E_data_Q_layout_S_focus_select ? WACS_DARROW : WACS_UARROW );
                     cur_x++;
                 }
                 x++;
             }
+            B valid = E_data_Q_field_R_valid(input);
             s = input->s;
-            l = E_text_Z_su0_R_n( input->s );
+            l = E_text_Z_su0_R_n(s);
             N width = input->width;
             if( input_id == E_data_Q_layout_S_focus )
             {   focus_y = y;
@@ -154,7 +155,7 @@ E_ncurses_I_lay( void
                             s = E_text_Z_s_Z_utf8_R_u( s, &u );
                             cchar_t cc;
                             wchar_t wc[2] = { u, L'\0' };
-                            setcchar( &cc, &wc[0], A_NORMAL, 2, 0 );
+                            setcchar( &cc, &wc[0], A_NORMAL, valid ? 2 : 3, 0 );
                             add_wch( &cc );
                             cur_x++;
                         }
@@ -186,7 +187,7 @@ E_ncurses_I_lay( void
                 )
                 {   cchar_t cc;
                     wchar_t wc[2] = { u, L'\0' };
-                    setcchar( &cc, &wc[0], A_NORMAL, 2, 0 );
+                    setcchar( &cc, &wc[0], A_NORMAL, valid ? 2 : 3, 0 );
                     add_wch( &cc );
                     cur_x++;
                 }
@@ -201,7 +202,7 @@ E_ncurses_I_lay( void
                 )
                 {   cchar_t cc;
                     wchar_t wc[2] = L" ";
-                    setcchar( &cc, &wc[0], A_NORMAL, 2, 0 );
+                    setcchar( &cc, &wc[0], A_NORMAL, valid ? 2 : 3, 0 );
                     add_wch( &cc );
                     cur_x++;
                 }
@@ -224,6 +225,149 @@ E_ncurses_I_lay( void
         if( E_ncurses_S_scroll_max_x < x )
             E_ncurses_S_scroll_max_x = x;
         E_ncurses_S_scroll_max_y = y;
+        if( ~E_data_Q_layout_S_focus_select )
+        {   struct E_data_Q_field_Z *input = E_mem_Q_tab_R( E_data_Q_layout_S, E_data_Q_layout_S_focus );
+            struct E_ncurses_Q_field_Z *data = E_mem_Q_tab_R( E_ncurses_Q_layout_S, E_data_Q_layout_S_focus );
+            N label_l = E_text_Z_su0_R_n( input->label ) + 1;
+            N x_l = 0;
+            for_n( i, input->select_n )
+            {   N l = E_text_Z_su0_R_n( input->select[i] );
+                if( x_l < l )
+                    x_l = l;
+            }
+            int pos_y = data->y - E_ncurses_S_scroll_y;
+            if( getmaxy(stdscr) - 1 - ( pos_y + 1 ) < input->select_n + 1
+            && pos_y > getmaxy(stdscr) - 1 - ( pos_y + 1 )
+            ) // Upside.
+            {   N y_n = J_min( input->select_n, pos_y - 1 );
+                int x = data->x - E_ncurses_S_scroll_x + label_l;
+                move( pos_y - y_n - 1, x );
+                if( x >= 0
+                && x <= max_x
+                )
+                    add_wch( WACS_ULCORNER );
+                for( x++; x != data->x - E_ncurses_S_scroll_x + label_l + 1 + x_l; x++ )
+                    if( x >= 0
+                    && x <= max_x
+                    )
+                        add_wch( WACS_HLINE );
+                if( x >= 0
+                && x <= max_x
+                )
+                    add_wch( WACS_URCORNER );
+                N select = 0;
+                if( pos_y - 1 < input->select_n )
+                {   if( E_data_Q_layout_S_focus_select > y_n / 2 )
+                        select = E_data_Q_layout_S_focus_select - y_n / 2;
+                    if( select + y_n > input->select_n )
+                        select = input->select_n - y_n;
+                }
+                for( int y = pos_y - y_n; y != pos_y; y++ )
+                {   int x = data->x - E_ncurses_S_scroll_x + label_l;
+                    move( y, x );
+                    if( x >= 0
+                    && x <= max_x
+                    )
+                        add_wch( WACS_VLINE );
+                    x++;
+                    Pc s = input->select[select];
+                    while( *s )
+                    {   U u;
+                        s = E_text_Z_s_Z_utf8_R_u( s, &u );
+                        if( x >= 0
+                        && x <= max_x
+                        )
+                        {   cchar_t cc;
+                            wchar_t wc[2] = { u, L'\0' };
+                            setcchar( &cc, &wc[0], A_NORMAL, select == E_data_Q_layout_S_focus_select ? 2 : 1, 0 );
+                            add_wch( &cc );
+                        }
+                        x++;
+                    }
+                    for( ; x != data->x - E_ncurses_S_scroll_x + label_l + x_l + 1; x++ )
+                    {   U u;
+                        s = E_text_Z_s_Z_utf8_R_u( s, &u );
+                        if( x >= 0
+                        && x <= max_x
+                        )
+                        {   cchar_t cc;
+                            wchar_t wc[2] = L" ";
+                            setcchar( &cc, &wc[0], A_NORMAL, select == E_data_Q_layout_S_focus_select ? 2 : 1, 0 );
+                            add_wch( &cc );
+                        }
+                    }
+                    if( x >= 0
+                    && x <= max_x
+                    )
+                        add_wch( WACS_VLINE );
+                    select++;
+                }
+            }else // Downside.
+            {   N y_n = J_min( input->select_n, getmaxy(stdscr) - 1 - ( pos_y + 1 ) - 1 );
+                int x = data->x - E_ncurses_S_scroll_x + label_l;
+                move( pos_y + y_n + 1, x );
+                if( x >= 0
+                && x <= max_x
+                )
+                    add_wch( WACS_LLCORNER );
+                for( x++; x != data->x - E_ncurses_S_scroll_x + label_l + 1 + x_l; x++ )
+                    if( x >= 0
+                    && x <= max_x
+                    )
+                        add_wch( WACS_HLINE );
+                if( x >= 0
+                && x <= max_x
+                )
+                    add_wch( WACS_LRCORNER );
+                N select = 0;
+                if( getmaxy(stdscr) - 1 - ( pos_y + 1 ) - 1 < input->select_n )
+                {   if( E_data_Q_layout_S_focus_select > y_n / 2 )
+                        select = E_data_Q_layout_S_focus_select - y_n / 2;
+                    if( select + y_n > input->select_n )
+                        select = input->select_n - y_n;
+                }
+                for( int y = pos_y + 1; y != pos_y + 1 + y_n; y++ )
+                {   int x = data->x - E_ncurses_S_scroll_x + label_l;
+                    move( y, x );
+                    if( x >= 0
+                    && x <= max_x
+                    )
+                        add_wch( WACS_VLINE );
+                    x++;
+                    Pc s = input->select[select];
+                    while( *s )
+                    {   U u;
+                        s = E_text_Z_s_Z_utf8_R_u( s, &u );
+                        if( x >= 0
+                        && x <= max_x
+                        )
+                        {   cchar_t cc;
+                            wchar_t wc[2] = { u, L'\0' };
+                            setcchar( &cc, &wc[0], A_NORMAL, select == E_data_Q_layout_S_focus_select ? 2 : 1, 0 );
+                            add_wch( &cc );
+                        }
+                        x++;
+                    }
+                    for( ; x != data->x - E_ncurses_S_scroll_x + label_l + x_l + 1; x++ )
+                    {   U u;
+                        s = E_text_Z_s_Z_utf8_R_u( s, &u );
+                        if( x >= 0
+                        && x <= max_x
+                        )
+                        {   cchar_t cc;
+                            wchar_t wc[2] = L" ";
+                            setcchar( &cc, &wc[0], A_NORMAL, select == E_data_Q_layout_S_focus_select ? 2 : 1, 0 );
+                            add_wch( &cc );
+                        }
+                    }
+                    if( x >= 0
+                    && x <= max_x
+                    )
+                        add_wch( WACS_VLINE );
+                    select++;
+                }
+            }
+        }
         max_x++;
         max_y++;
         if( E_ncurses_S_scroll_max_x < max_x )
@@ -254,8 +398,8 @@ E_ncurses_I_lay( void
 _internal
 void
 E_ncurses_I_focus_internal( void
-){  struct E_ncurses_Q_field_Z *data = E_mem_Q_tab_R( E_ncurses_Q_layout_S, E_data_Q_layout_S_focus );
-    struct E_data_Q_field_Z *input = E_mem_Q_tab_R( E_data_Q_layout_S, E_data_Q_layout_S_focus );
+){  struct E_data_Q_field_Z *input = E_mem_Q_tab_R( E_data_Q_layout_S, E_data_Q_layout_S_focus );
+    struct E_ncurses_Q_field_Z *data = E_mem_Q_tab_R( E_ncurses_Q_layout_S, E_data_Q_layout_S_focus );
     if( data->x < E_ncurses_S_scroll_x
     || data->x >= E_ncurses_S_scroll_x + getmaxx(stdscr) - 1
     )
@@ -273,7 +417,6 @@ E_ncurses_I_focus_internal( void
     E_data_Q_layout_S_focus_x = 0;
     E_data_Q_layout_S_focus_select = ~0;
     E_data_Q_layout_S_overwrite = no;
-    E_ncurses_I_lay();
 }
 B
 E_ncurses_I_sigsuspend( sigset_t *sigset
@@ -309,6 +452,15 @@ D( ncurses, getch )
                       case KEY_LEFT:
                         {   break;
                         }
+                      case KEY_DOWN:
+                            if( !~E_data_Q_layout_S_focus_select )
+                            {   struct E_data_Q_field_Z *input = E_mem_Q_tab_R( E_data_Q_layout_S, E_data_Q_layout_S_focus );
+                                if( input->select_n )
+                                {   E_data_Q_layout_S_focus_select = 0;
+                                    E_ncurses_I_lay();
+                                }
+                            }
+                            break;
                       case KEY_A1: // “KEY_HOME” na klawiaturze numerycznej.
                             if( E_ncurses_S_scroll_max_x )
                             {   E_ncurses_S_scroll_x = 0;
@@ -351,7 +503,12 @@ D( ncurses, getch )
                     break;
                 }
                 switch( E_ncurses_I_getch_S_c )
-                { case KEY_MOUSE:
+                { case KEY_RESIZE:
+                        if( ~E_data_Q_layout_S_focus )
+                            E_data_Q_layout_S_focus = E_data_Q_layout_S_focus_select = ~0;
+                        E_ncurses_I_lay();
+                        break;
+                  case KEY_MOUSE:
                         if( E_ncurses_S_scroll_max_x )
                         {   MEVENT ev;
                             getmouse( &ev );
@@ -388,8 +545,8 @@ D( ncurses, getch )
                                 && ev.y != getmaxy(stdscr) - 1
                                 )
                                 {   for_each( input_id, E_ncurses_Q_layout_S, E_mem_Q_tab )
-                                    {   struct E_ncurses_Q_field_Z *data = E_mem_Q_tab_R( E_ncurses_Q_layout_S, input_id );
-                                        struct E_data_Q_field_Z *input = E_mem_Q_tab_R( E_data_Q_layout_S, input_id );
+                                    {   struct E_data_Q_field_Z *input = E_mem_Q_tab_R( E_data_Q_layout_S, input_id );
+                                        struct E_ncurses_Q_field_Z *data = E_mem_Q_tab_R( E_ncurses_Q_layout_S, input_id );
                                         if( ev.y == data->y - E_ncurses_S_scroll_y )
                                         {   if(( ev.x >= data->x - E_ncurses_S_scroll_x
                                                 && ev.x < data->x - E_ncurses_S_scroll_x + E_text_Z_su0_R_n( input->label ) + 1
@@ -399,8 +556,18 @@ D( ncurses, getch )
                                             ))
                                             {   E_data_Q_layout_S_focus = input_id;
                                                 E_ncurses_I_focus_internal();
+                                                E_ncurses_I_lay();
                                             }else if( ev.x == data->x - E_ncurses_S_scroll_x + E_text_Z_su0_R_n( input->label ) + 1 )
-                                                E_data_Q_layout_S_focus_select = 0;
+                                            {   if( E_data_Q_layout_S_focus != input_id )
+                                                {   E_data_Q_layout_S_focus = input_id;
+                                                    E_ncurses_I_focus_internal();
+                                                    E_data_Q_layout_S_focus_select = 0;
+                                                    E_ncurses_I_lay();
+                                                }else
+                                                {   E_data_Q_layout_S_focus_select = !~E_data_Q_layout_S_focus_select ? 0 : ~0;
+                                                    E_ncurses_I_lay();
+                                                }
+                                            }
                                             break;
                                         }
                                     }
@@ -443,46 +610,40 @@ D( ncurses, getch )
                         goto Enter;
                   case KEY_RIGHT:
                         if( ~E_data_Q_layout_S_focus )
-                        {   if( !~E_data_Q_layout_S_focus_select )
+                            if( !~E_data_Q_layout_S_focus_select )
                             {   struct E_data_Q_field_Z *input = E_mem_Q_tab_R( E_data_Q_layout_S, E_data_Q_layout_S_focus );
                                 if( E_data_Q_field_P_right(input) )
                                 {   E_data_Q_layout_S_focus_x++;
                                     E_ncurses_I_lay();
                                 }else
                                     beep();
-                            }else
-                            {
                             }
-                        }
                         break;
                   case KEY_LEFT:
                         if( ~E_data_Q_layout_S_focus )
-                        {   if( !~E_data_Q_layout_S_focus_select )
+                            if( !~E_data_Q_layout_S_focus_select )
                             {   struct E_data_Q_field_Z *input = E_mem_Q_tab_R( E_data_Q_layout_S, E_data_Q_layout_S_focus );
                                 if( E_data_Q_field_P_left(input) )
                                 {   E_data_Q_layout_S_focus_x--;
                                     E_ncurses_I_lay();
                                 }else
                                     beep();
-                            }else
-                            {
                             }
-                        }
                         break;
                   case KEY_DOWN:
-                        if( !~E_data_Q_layout_S_focus_select )
+                        if( ~E_data_Q_layout_S_focus_select )
                         {   struct E_data_Q_field_Z *input = E_mem_Q_tab_R( E_data_Q_layout_S, E_data_Q_layout_S_focus );
-                            if( input->select_n )
-                            {   E_data_Q_layout_S_focus_select = 0;
+                            if( E_data_Q_layout_S_focus_select + 1 != input->select_n )
+                            {   E_data_Q_layout_S_focus_select++;
                                 E_ncurses_I_lay();
                             }
                         }
                         break;
                   case KEY_UP:
-                        if( !~E_data_Q_layout_S_focus_select )
+                        if( ~E_data_Q_layout_S_focus_select )
                         {   struct E_data_Q_field_Z *input = E_mem_Q_tab_R( E_data_Q_layout_S, E_data_Q_layout_S_focus );
-                            if( input->select_n )
-                            {   E_data_Q_layout_S_focus_select = input->select_n - 1;
+                            if( E_data_Q_layout_S_focus_select )
+                            {   E_data_Q_layout_S_focus_select--;
                                 E_ncurses_I_lay();
                             }
                         }
@@ -496,6 +657,7 @@ D( ncurses, getch )
                             else
                                 E_data_Q_layout_S_focus = E_mem_Q_tab_R_n( E_data_Q_layout_S ) - 1;
                             E_ncurses_I_focus_internal();
+                            E_ncurses_I_lay();
                         }
                         break;
                   case KEY_HOME:
@@ -508,8 +670,9 @@ D( ncurses, getch )
                                     }while( E_data_Q_field_P_left(input) );
                                     E_ncurses_I_lay();
                                 }
-                            }else
-                            {
+                            }else if( E_data_Q_layout_S_focus_select )
+                            {   E_data_Q_layout_S_focus_select = 0;
+                                E_ncurses_I_lay();
                             }
                         }
                         break;
@@ -521,16 +684,17 @@ D( ncurses, getch )
                         break;
                   case KEY_END:
                         if( ~E_data_Q_layout_S_focus )
-                        {   if( !~E_data_Q_layout_S_focus_select )
-                            {   struct E_data_Q_field_Z *input = E_mem_Q_tab_R( E_data_Q_layout_S, E_data_Q_layout_S_focus );
-                                if( E_data_Q_field_P_right(input) )
+                        {   struct E_data_Q_field_Z *input = E_mem_Q_tab_R( E_data_Q_layout_S, E_data_Q_layout_S_focus );
+                            if( !~E_data_Q_layout_S_focus_select )
+                            {   if( E_data_Q_field_P_right(input) )
                                 {   do
                                     {   E_data_Q_layout_S_focus_x++;
                                     }while( E_data_Q_field_P_right(input) );
                                     E_ncurses_I_lay();
                                 }
-                            }else
-                            {
+                            }else if( E_data_Q_layout_S_focus_select != input->select_n - 1 )
+                            {   E_data_Q_layout_S_focus_select = input->select_n - 1;
+                                E_ncurses_I_lay();
                             }
                         }
                         break;
@@ -588,10 +752,18 @@ D( ncurses, getch )
                             else
                                 E_data_Q_layout_S_focus = 0;
                             E_ncurses_I_focus_internal();
+                            E_ncurses_I_lay();
                         }
                         break;
-                  case '\n':
-Enter:
+                  case '\r':
+Enter:                  if( ~E_data_Q_layout_S_focus_select )
+                        {   struct E_data_Q_field_Z *input = E_mem_Q_tab_R( E_data_Q_layout_S, E_data_Q_layout_S_focus );
+                            E_data_Q_field_P_select( input, E_data_Q_layout_S_focus_select );
+                            {   E_data_Q_layout_S_focus_x = 0;
+                                E_data_Q_layout_S_focus_select = ~0;
+                                E_ncurses_I_lay();
+                            }
+                        }
                         break;
                   case 17: // Ctrl+q
                         U_F( E_base_S->E_flow_S_signal, exit );

@@ -20,15 +20,8 @@ void
 E_flow_I_fork_I_end( N pid
 ){  if( !pid )
     {   GV_(NA); V();
-    }else if( ~pid )
-    {   sigset_t sigset_child = E_base_S->E_flow_I_fork_S_sigset;
-        V0_( sigaddset( &sigset_child, SIGCHLD ));
-        _sigprocmask( SIG_SETMASK, &sigset_child, 0 );
-        int status;
-        VO1( waitpid( pid, &status, 0 )){} // Czekanie do wykonania “daemon” w “E_flow_I_fork_I_exec”, jeśli “proces” potomny jeszcze istnieje.
-        _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_I_fork_S_sigset, 0 );
-    }else
-        _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_I_fork_S_sigset, 0 );
+    }
+    _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_I_fork_S_sigset, 0 );
 }
 //------------------------------------------------------------------------------
 // Poniższe procedury, wykonywane w “procesie” potomnym, mogą używać tylko pasywnych funkcjonalności technologii, nie zintegrowanych w przepływie wykonania. czyli na przykład tylko synchronicznych raportów linii. Nigdy nie wiadomo bez sprawdzenia tekstu procedur, czy nie używa ona wewnątrz funkcjonalności zintegrowanych.
@@ -130,7 +123,6 @@ End_2:  ;
         arg++;
     }
         #endif
-    V0_( daemon( yes, yes ));
     if(cwd)
     {   V0_( chdir(cwd) );
     }
