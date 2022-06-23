@@ -50,10 +50,11 @@ E_desk_cmd_M( void
       }
     , { "www"
       , ( Pc [] )
-        { "sh"
+        { "bash"
         , "-c"
         , "umask "
          "7;"
+         "args=(); while [ -n \"$1\" ]; do echo \"$1\" | grep -qEe '^(https?|file):/""/' && args+=( \"$1\" ) || args+=( \"file:/""/$1\" ); shift; done;"
          "exec "
          "sudo "
          "-g " "inc-www "
@@ -78,7 +79,7 @@ E_desk_cmd_M( void
         //"--proxy-pac-url=file:/" "/" E_const_P_home_dir "/lib/proxy.pac"
          "--new-window "
          "--start-maximized"
-         "${1:+ -- \"$@\"}"
+         "${args[0]:+ -- \"${args[@]}\"}"
         , "/bin/sh"
         , 0
         }
