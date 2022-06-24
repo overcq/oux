@@ -542,7 +542,72 @@ D( ncurses, getch )
                                     {   E_ncurses_S_scroll_y = E_ncurses_S_scroll_y_;
                                         E_ncurses_I_lay();
                                     }
-                                }else if( ev.x != getmaxx(stdscr) - 1
+                                }else if( ~E_data_Q_layout_S_focus_select )
+                                {   struct E_data_Q_field_Z *input = E_mem_Q_tab_R( E_data_Q_layout_S, E_data_Q_layout_S_focus );
+                                    struct E_ncurses_Q_field_Z *data = E_mem_Q_tab_R( E_ncurses_Q_layout_S, E_data_Q_layout_S_focus );
+                                    N l = E_text_Z_su0_R_n( input->label ) + 1;
+                                    int pos_x = data->x - E_ncurses_S_scroll_x;
+                                    if( ev.x >= pos_x + l
+                                    && ev.x <= pos_x + l + 1 + E_data_Q_layout_S_focus_select_width
+                                    )
+                                    {   B inside = no;
+                                        int pos_y = data->y - E_ncurses_S_scroll_y;
+                                        if( getmaxy(stdscr) - 1 - ( pos_y + 1 ) < input->select_n + 1
+                                        && pos_y > getmaxy(stdscr) - 1 - ( pos_y + 1 )
+                                        ) // Upside.
+                                        {   N y_n = J_min( input->select_n, pos_y - 1 );
+                                            if( ev.y >= pos_y - ( y_n + 1 )
+                                            && ev.y < pos_y
+                                            )
+                                            {   if( ev.x > pos_x + l
+                                                && ev.x < pos_x + l + 1 + E_data_Q_layout_S_focus_select_width
+                                                && ev.y > pos_y - ( y_n + 1 )
+                                                )
+                                                {   N select = 0;
+                                                    if( pos_y - 1 < input->select_n )
+                                                    {   if( E_data_Q_layout_S_focus_select > y_n / 2 )
+                                                            select = E_data_Q_layout_S_focus_select - y_n / 2;
+                                                        if( select + y_n > input->select_n )
+                                                            select = input->select_n - y_n;
+                                                    }
+                                                    select += ev.y - ( pos_y - y_n );
+                                                    if( E_data_Q_field_P_select( input, select ))
+                                                    {   E_data_Q_layout_S_focus_x = 0;
+                                                        E_data_Q_layout_S_focus_select = ~0;
+                                                        E_ncurses_I_lay();
+                                                    }
+                                                }
+                                                break;
+                                            }
+                                        }else
+                                        {   N y_n = J_min( input->select_n, getmaxy(stdscr) - 1 - ( pos_y + 1 ) - 1 );
+                                            if( ev.y > pos_y
+                                            && ev.y <= pos_y + y_n + 1
+                                            )
+                                            {   if( ev.x > pos_x + l
+                                                && ev.x < pos_x + l + 1 + E_data_Q_layout_S_focus_select_width
+                                                && ev.y < pos_y + y_n + 1
+                                                )
+                                                {   N select = 0;
+                                                    if( getmaxy(stdscr) - 1 - ( pos_y + 1 ) - 1 < input->select_n )
+                                                    {   if( E_data_Q_layout_S_focus_select > y_n / 2 )
+                                                            select = E_data_Q_layout_S_focus_select - y_n / 2;
+                                                        if( select + y_n > input->select_n )
+                                                            select = input->select_n - y_n;
+                                                    }
+                                                    select += ev.y - ( pos_y + 1 );
+                                                    if( E_data_Q_field_P_select( input, select ))
+                                                    {   E_data_Q_layout_S_focus_x = 0;
+                                                        E_data_Q_layout_S_focus_select = ~0;
+                                                        E_ncurses_I_lay();
+                                                    }
+                                                }
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                                if( ev.x != getmaxx(stdscr) - 1
                                 && ev.y != getmaxy(stdscr) - 1
                                 )
                                 {   for_each( input_id, E_ncurses_Q_layout_S, E_mem_Q_tab )
@@ -757,7 +822,7 @@ D( ncurses, getch )
                   case '\r':
 Enter:                  if( ~E_data_Q_layout_S_focus_select )
                         {   struct E_data_Q_field_Z *input = E_mem_Q_tab_R( E_data_Q_layout_S, E_data_Q_layout_S_focus );
-                            E_data_Q_field_P_select( input, E_data_Q_layout_S_focus_select );
+                            if( E_data_Q_field_P_select( input, E_data_Q_layout_S_focus_select ))
                             {   E_data_Q_layout_S_focus_x = 0;
                                 E_data_Q_layout_S_focus_select = ~0;
                                 E_ncurses_I_lay();
