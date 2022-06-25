@@ -223,10 +223,14 @@ E_text_syntax_T_name( Pc s
     while( *s_start )
     {   Pc s_end = E_text_Z_s_Z_utf8_R_u( s_start, &u );
         if(( !iswalnum(u)
+          && u != '-'
           && u != ' '
         )
         || ( u == ' '
           && u_prev == ' '
+        )
+        || ( u == '-'
+          && u_prev == '-'
         ))
             return no;
         s_start = s_end;
@@ -609,7 +613,7 @@ E_text_syntax_M( I file
                             goto End;
                         }
                         s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
-                        if( *s_start != ' ' )
+                        if( u != ' ' )
                         {   W(s);
                             G_();
                             goto End;
@@ -620,7 +624,13 @@ E_text_syntax_M( I file
                 }
                 B regex_casei = no;
                 if( entity_type == E_text_syntax_S_entity_regex )
-                {   if( u == 'i' )
+                {   if( s_end == s )
+                    {   W(s);
+                        G_();
+                        goto End;
+                    }
+                    E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+                    if( u == 'i' )
                     {   regex_casei = yes;
                         E_text_Z_s_Z_utf8_R_u_rev( --s_end, &u );
                     }
@@ -649,7 +659,13 @@ E_text_syntax_M( I file
                         //}
                     //}
                 }else if( entity_type == E_text_syntax_S_entity_negated_regex )
-                {   if( u == 'i' )
+                {   if( s_end == s + 1 )
+                    {   W(s);
+                        G_();
+                        goto End;
+                    }
+                    E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+                    if( u == 'i' )
                     {   regex_casei = yes;
                         E_text_Z_s_Z_utf8_R_u_rev( --s_end, &u );
                     }
@@ -678,7 +694,13 @@ E_text_syntax_M( I file
                         //}
                     //}
                 }else if( entity_type == E_text_syntax_S_entity_string )
-                {   if( u != '\"'
+                {   if( s_end == s )
+                    {   W(s);
+                        G_();
+                        goto End;
+                    }
+                    E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+                    if( u != '\"'
                     || s_end == s + 1
                     )
                     {   W(s);
