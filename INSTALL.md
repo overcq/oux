@@ -13,7 +13,7 @@ To run the test program ("make run") should be installed:
 
 Should do:
 1. as a regular user: “make” and confirm that you agree to the terms of use
-2.as user "root": "make install"
+2. as user "root": "make install"
 
 # Building programs dependent on this environment
 
