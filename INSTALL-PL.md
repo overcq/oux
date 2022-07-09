@@ -18,4 +18,5 @@ Należy wykonać:
 # Budowanie programów zależnych od tego środowiska
 
 Katalog “oux” powinien znajdować się w którymkolwiek nadrzędnym katalogu względem katalogu programu zależnego od tego środowiska, z wyjątkiem katalogu ”/”.
+
 Wtedy można w katalogu programu zależnego od tego środowiska wykonać “make”.

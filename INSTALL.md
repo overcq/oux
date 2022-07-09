@@ -18,4 +18,5 @@ Should do:
 # Building programs dependent on this environment
 
 The directory "oux" should be in any directory parent of the dependent program directory, except the directory "/".
+
 Then you can execute "make" in the directory of the program dependent on this environment.
