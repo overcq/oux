@@ -10,8 +10,7 @@ Parts inside modules:
 * memory tables: [mem-tab.cx](https://github.com/overcq/oux/tree/master/module/base/mem-tab.cx)
 * big floating-point numbers: [math-bignum.cx](https://github.com/overcq/oux/tree/master/module/base/math-bignum.cx)
 * read and write files: [mem-file.cx](https://github.com/overcq/oux/tree/master/module/base/mem-file.cx)
-* autolayout of objects in window: [x-obj.cx](https://github.com/overcq/oux/tree/master/module/x-window-hi-cpu/x-obj.cx)
-* font and theme: [M.cx](https://github.com/overcq/oux/tree/master/module/x-window-hi-cpu/M.cx)
+* universal user interface: [“ui” module](https://github.com/overcq/oux/tree/master/module/ui)
 
 and much more...
 
