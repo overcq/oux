@@ -7,7 +7,7 @@ The compilation system should include:
 * xcb
 
 To run the test program ("make run") should be installed:
-* modified [urxvt] (https://github.com/overcq/rxvt-unicode), possibly xterm
+* modified [urxvt](https://github.com/overcq/rxvt-unicode), possibly xterm
 
 # Compilation and installation
 
