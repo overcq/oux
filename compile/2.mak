@@ -142,7 +142,7 @@ H_make_S_lib_prefix := oux-
 H_make_S_compiler_cx_sources := simple.h base.h
 H_make_S_cx_sources := $(wildcard *.cx)
 H_make_S_headers := stdbool.h
-H_make_S_base_driver := flow_drv
+H_make_S_base_driver := flow-drv
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 H_make_Z_shell_cmd_arg_I_quote = '$(subst ','\'',$(1))'
 H_make_Z_shell_cmd_arg_I_quote_for = $(foreach s,$(1),$(call H_make_Z_shell_cmd_arg_I_quote,$(s)))

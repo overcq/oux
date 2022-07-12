@@ -577,25 +577,25 @@ E_flow_Q_task_in_thread_I_thread_proc( P args_
     struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
     Vr( pthread_sigmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ))
     {   *task->thread_switch_back = yes;
-        return 0;
+        return ~0;
     }
     Vr( pthread_mutex_lock( task->thread_flow_mutex ))
     {   *task->thread_switch_back = yes;
-        return 0;
+        return ~0;
     }
     struct E_flow_Q_task_in_thread_I_thread_proc_Z_args *args = args_;
     V0( sigaltstack( &args->alt_stack, 0 ))
     {   *task->thread_switch_back = yes;
         Vr_( pthread_mutex_unlock( task->thread_flow_mutex ));
-        return 0;
+        return ~0;
     }
     args->proc( task->thread_proc_arg );
     task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
     Vr_( pthread_mutex_unlock( task->thread_flow_mutex ));
     stack_t alt_stack;
-    V0( sigaltstack( 0, &alt_stack ))
-        return 0;
-    return alt_stack.ss_sp;
+    V0_( sigaltstack( 0, &alt_stack ));
+    V0_( munmap( alt_stack.ss_sp, alt_stack.ss_size ));
+    return 0;
 }
     #endif
 // ‹Zadanie› wykonuje to przed rozpoczęcięm swojej pętli; w instrukcji “I_D”.
@@ -639,14 +639,10 @@ E_flow_Q_task_W( I *uid
         E_base_S->E_flow_Q_task_S_current = id;
         Vr_( pthread_sigmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ));
         Vr_( pthread_mutex_unlock( task->thread_flow_mutex ));
-        P alt_stack;
-        Vr_( pthread_join( thread, &alt_stack ));
+        Vr_( pthread_join( thread, 0 ));
         Vr_( pthread_sigmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ));
         task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, id );
         E_base_S->E_flow_Q_task_S_current = task->run_state_object;
-        if( alt_stack )
-        {   V0_( munmap( alt_stack, 2 * E_base_S->E_mem_S_page_size )); //CONF #2
-        }
         Vr_( pthread_mutex_destroy( task->thread_flow_mutex ));
         W( task->thread_flow_mutex );
         W( task->thread_switch_back );
@@ -694,11 +690,10 @@ E_flow_Q_task_I_touch_stack( void
 ){  if( !E_base_S->E_flow_Q_task_S_current ) // ‹Zadanie› inne niż “main”, ponieważ to ma stos zarządzany przez system operacyjny.
         return;
     N pages = 4; //CONF
-    if( !pages || pages % 4 )
+    if( !pages )
     {   GV_(NDFN); V();
     }
-    // Poniżej– dlatego kolejno “strony” pamięci, ponieważ jest tylko jedna zabezpieczająca na dole “stosu” ‹zadania›.
-    Pc sp;
+    volatile Pc sp;
     __asm__ volatile (
     #if defined( __i386__ ) || defined( __x86_64__ )
         #if defined( __i386__ )
@@ -711,53 +706,11 @@ E_flow_Q_task_I_touch_stack( void
     #endif
     : "=r" (sp)
     );
-    if( pages == 4 )
-        __asm__ volatile (
-        #if defined( __i386__ ) || defined( __x86_64__ )
-            #if defined( __i386__ )
-        "\n" "movl  $0,(%1)"
-        "\n" "movl  $0,(%1,%2)"
-        "\n" "movl  $0,(%1,%2,2)"
-        "\n" "movl  $0,(%0,%2,4)"
-            #else
-        "\n" "movq  $0,(%1)"
-        "\n" "movq  $0,(%1,%2)"
-        "\n" "movq  $0,(%1,%2,2)"
-        "\n" "movq  $0,(%0,%2,4)"
-            #endif
-        #else
-#error not implemented
-        #endif
-        :
-        : "r" (sp), "r" ( sp - E_base_S->E_mem_S_page_size ), "r" ( -E_base_S->E_mem_S_page_size )
-        : "memory"
-        );
-    else
-        __asm__ volatile (
-        #if defined( __i386__ ) || defined( __x86_64__ )
-        "\n" "0:"
-        "\n" "lea   (%0,%2,4),%0"
-            #if defined( __i386__ )
-        "\n" "movl  $0,(%1)"
-        "\n" "movl  $0,(%1,%2)"
-        "\n" "movl  $0,(%1,%2,2)"
-        "\n" "movl  $0,(%0)"
-            #else
-        "\n" "movq  $0,(%1)"
-        "\n" "movq  $0,(%1,%2)"
-        "\n" "movq  $0,(%1,%2,2)"
-        "\n" "movq  $0,(%0)"
-            #endif
-        "\n" "lea   (%1,%2,4),%1"
-        "\n" "dec   %3"
-        "\n" "jnz   0b"
-        #else
-#error not implemented
-        #endif
-        :
-        : "r" (sp), "r" ( sp - E_base_S->E_mem_S_page_size ), "r" ( -E_base_S->E_mem_S_page_size ), "r" ( pages / 4 )
-        : "memory", "cc"
-        );
+    // Dlatego kolejno “strony” pamięci, ponieważ jest tylko jedna zabezpieczająca na dole “stosu” ‹zadania›.
+    while( pages-- )
+    {   sp -= E_base_S->E_mem_S_page_size;
+        *sp = 0;
+    }
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 I
