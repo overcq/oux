@@ -69,7 +69,13 @@ struct E_base_Z
   _(SIGVTALRM);
   _(SIGPROF);
         #if defined( E_io_C_aio )
+            #if defined( __gnu_linux__ ) || defined( __OpenBSD__ )
   _(SIGPOLL);
+            #elif defined( __FreeBSD__ )
+  _(SIGINFO);
+            #else
+#error not implemented
+            #endif
         #elif defined( E_io_Q_stream_out_C_sig )
   _(SIGIO);
         #endif
@@ -128,7 +134,7 @@ E_mem_M_blk( void
     , -1
     , 0
     )))
-        #elif defined( __OpenBSD__ )
+        #elif defined( __FreeBSD__ ) || defined( __OpenBSD__ )
     if( !~(N)( E_base_S = mmap( 0
     , initial_size
     , PROT_READ | PROT_WRITE
@@ -228,12 +234,12 @@ E_mem_M_file( void
     , -1
     , 0
     ));
-        #elif defined( __OpenBSD__ )
+        #elif defined( __FreeBSD__ ) || defined( __OpenBSD__ )
     V1p_( E_base_S->E_mem_Q_file_S_buffer = mmap( 0
     , E_base_S->E_mem_Q_file_S_buffer_l
     , PROT_READ | PROT_WRITE
     , MAP_PRIVATE
-    | MAP_ANONYMOUS
+    | MAP_ANON
     , -1
     , 0
     ));
@@ -263,6 +269,8 @@ E_base_M(
         #ifdef E_flow_C_errno_p
             #if defined( __gnu_linux__ )
     E_flow_S_errno = __errno_location();
+            #elif defined( __FreeBSD__ )
+    E_flow_S_errno = __error();
             #elif defined( __OpenBSD__ )
     E_flow_S_errno = __errno();
             #endif
@@ -340,8 +348,15 @@ E_base_M(
         #if defined( E_io_C_aio ) || defined( E_io_Q_stream_out_C_sig )
     E_base_S->E_flow_Z_sigset_S_io_ready = E_base_S->E_flow_Z_sigset_S_empty;
             #ifdef E_io_C_aio
+                #if defined( __gnu_linux__ ) || defined( __OpenBSD__ )
     V0_( sigaddset( &sigset, SIGPOLL ));
     V0_( sigaddset( &E_base_S->E_flow_Z_sigset_S_io_ready, SIGPOLL ));
+                #elif defined( __FreeBSD__ )
+    V0_( sigaddset( &sigset, SIGINFO ));
+    V0_( sigaddset( &E_base_S->E_flow_Z_sigset_S_io_ready, SIGINFO ));
+                #else
+#error not implemented
+                #endif
             #else
     V0_( sigaddset( &sigset, SIGIO ));
     V0_( sigaddset( &E_base_S->E_flow_Z_sigset_S_io_ready, SIGIO ));
@@ -363,7 +378,7 @@ E_base_M(
     E_base_S->E_flow_S_exe_args.argc = argc;
     E_base_S->E_flow_S_exe_args.argv = argv;
     long l;
-        #if defined( __gnu_linux__ )
+        #if defined( __gnu_linux__ ) || defined( __FreeBSD__ )
     V1_( l = sysconf( _SC_HOST_NAME_MAX ));
         #elif defined( __OpenBSD__ )
     l = MAXHOSTNAMELEN;
@@ -397,7 +412,13 @@ E_base_M(
     _sigaction_M( SIGPROF, &sa );
         #if defined( E_io_C_aio )
     sa.sa_sigaction = E_flow_Z_signal_V_io_ready;
+                #if defined( __gnu_linux__ ) || defined( __OpenBSD__ )
     _sigaction_M( SIGPOLL, &sa );
+                #elif defined( __FreeBSD__ )
+    _sigaction_M( SIGINFO, &sa );
+                #else
+#error not implemented
+                #endif
         #elif defined( E_io_Q_stream_out_C_sig )
             #ifndef E_io_C_sig_has_fd
     sa.sa_flags = 0;
@@ -408,33 +429,28 @@ E_base_M(
     // Ustawienie procedury “sygnału” “SEGV”— do obsługi pamięci stosów ‹zadań›.
     stack_t alt_stack =
     { .ss_flags = 0
-        #if defined( __gnu_linux__ )
+        #if defined( __gnu_linux__ ) || defined( __FreeBSD__ )
     , .ss_size = 2 * E_base_S->E_mem_S_page_size //CONF
         #elif defined( __OpenBSD__ )
-    , .ss_size = MINSIGSTKSZ //CONF
-        #endif
-    };
-        #if defined( __gnu_linux__ )
-    V1p_( alt_stack.ss_sp = mmap( 0
-    , alt_stack.ss_size
-    , PROT_READ | PROT_WRITE
-    , MAP_PRIVATE
-    | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_UNINITIALIZED
-    , -1
-    , 0
-    ));
-        #elif defined( __OpenBSD__ )
-    V1p_( alt_stack.ss_sp = mmap( 0
-    , alt_stack.ss_size
-    , PROT_READ | PROT_WRITE
-    , MAP_PRIVATE
-    | MAP_ANON | MAP_STACK
-    , -1
-    , 0
-    ));
+    , .ss_size = 3 * E_base_S->E_mem_S_page_size //CONF
         #else
 #error not implemented
         #endif
+    };
+    V1p_( alt_stack.ss_sp = mmap( 0
+    , alt_stack.ss_size
+    , PROT_READ | PROT_WRITE
+    , MAP_PRIVATE
+        #if defined( __gnu_linux__ )
+    | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_UNINITIALIZED
+        #elif defined( __FreeBSD__ ) || defined( __OpenBSD__ )
+    | MAP_ANON | MAP_STACK
+        #else
+#error not implemented
+        #endif
+    , -1
+    , 0
+    ));
     V0_( sigaltstack( &alt_stack, 0 ));
     sa.sa_sigaction = E_flow_Z_signal_V_segv;
     sa.sa_flags = SA_ONSTACK | SA_SIGINFO;
@@ -442,7 +458,22 @@ E_base_M(
     // Odblokowanie “sygnałów” ‘uniksowych’.
     _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_Z_sigset_S_empty, 0 );
     // Uruchomienie funkcjonalności ‹modułu›.
+        #if defined( __gnu_linux__ ) || defined( __OpenBSD__ )
     V1_( E_base_S->E_flow_Z_task_stacks_S_n_pages = sysconf( _SC_AVPHYS_PAGES ));
+        #elif defined( __FreeBSD__ )
+    int mib[2] =
+    { CTL_HW
+    , HW_PHYSMEM
+    };
+    size_t len;
+    V1_( sysctl( mib, 2, 0, &len, 0, 0 ));
+    if( len != sizeof(N) )
+    {   GV_(NDFN); V();
+    }
+    N phys_mem;
+    V1_( sysctl( mib, 2, &phys_mem, &len, 0, 0 ));
+    E_base_S->E_flow_Z_task_stacks_S_n_pages = phys_mem / E_base_S->E_mem_S_page_size;
+        #endif
         #ifdef E_flow_C_thread_system_unblock_reports
     E_base_S->E_flow_Q_task_S_uid_subid = E_mem_Q_tab_M( sizeof( struct E_mem_Q_tab_Z * ), 0 );
     if( !E_base_S->E_flow_Q_task_S_uid_subid )

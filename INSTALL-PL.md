@@ -1,6 +1,27 @@
+# Architektury
+
+* x86_64
+* x86
+
+# Systemy testowania
+
+* Gentoo Linux
+
+System operacyjny tworzenia oprogramowania.
+
+* FreeBSD 13.1
+
+Uruchamia się.
+![FreeBSD](FreeBSD.png)
+
+* OpenBSD 7.1
+
+Występuje błąd podczas uruchamiania.
+
 # Wymagania
 
 W systemie kompilacji powinny być zainstalowane:
+* programy narzędziowe
 * clang lub gcc
 * dokumentacja “man” funkcji systemowych i poniższych bibliotek
 * OpenSSL
@@ -10,6 +31,8 @@ Do uruchomienia programu testowego (“make run”) powinnien być zainstalowany
 * zmodyfikowany [urxvt](https://github.com/overcq/rxvt-unicode), ewentualnie xterm
 
 # Kompilacja i instalacja
+
+Poniżej jest odwołanie do programu ‟GNU make”, który może być urchamiany poleceniem “gmake”.
 
 Należy wykonać:
 1. jako zwykły użytkownik: “make” i potwierdzić zgodę na warunki użytkowania

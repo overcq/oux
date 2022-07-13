@@ -116,8 +116,12 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
     #else
         #if defined( __gnu_linux__ )
 #define Dh_()                               _unused int *E_flow_S_errno = __errno_location()
+        #elif defined( __FreeBSD__ )
+#define Dh_()                               _unused int *E_flow_S_errno = __error()
         #elif defined( __OpenBSD__ )
 #define Dh_()                               _unused int *E_flow_S_errno = __errno()
+        #else
+#error not implemented
         #endif
 //TODO Rozdzielić dla “Dh”— na ‹zadania› takie jak “D” (bez “subid”) oraz takie jak obecnie “Dh” (“Dhi”).
         #ifdef C_line_report

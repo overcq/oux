@@ -154,7 +154,11 @@ H_make_Q_packages_R_cflags = $(if $(1),$(shell pkg-config --cflags $(call H_make
 H_make_Q_packages_R_ldflags = $(if $(1),$(filter-out -l%,$(shell pkg-config --libs $(call H_make_Z_shell_cmd_arg_I_quote_for,$(1)))))
 H_make_Q_packages_R_ldlibs = $(if $(1),$(filter -l%,$(shell pkg-config --libs $(call H_make_Z_shell_cmd_arg_I_quote_for,$(1)))))
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ifneq (,$(filter Linux OpenBSD,$(H_make_S_os)))
 H_make_T_pthreads := $(if $(shell whatis pthreads),1)
+    else ifeq (FreeBSD,$(H_make_S_os))
+H_make_T_pthreads := $(if $(shell whatis pthread),1)
+    endif
 #===============================================================================
 # Ustawienie parametrów z przełączników ‘kompilacji’.
     ifneq (,$(H_make_C_middle_code))
@@ -322,7 +326,7 @@ $(H_make_S_compile_path)/headers-db: $(H_make_Z_shell_cmd_N_gen_headers_db)
     if [ -z '$(H_make_S_reports_consent)' ]; then \
 	tty -s ;\
 	if [ $$? = 0 ]; then \
-	    echo -n "$$msg [Yn] "; read ;\
+	    echo -n "$$msg [Yn] "; read REPLY;\
 	    [ "$$REPLY" = '' -o "$$REPLY" = 'y' -o "$$REPLY" = 'Y' ] || false ;\
 	else \
 	    which Xdialog >/dev/null 2>&1 ;\
@@ -461,7 +465,7 @@ $(foreach module,$(H_make_S_modules),$(addprefix $(H_make_S_module_path)/$(modul
 $(patsubst %.cx,%.c,$(H_make_S_cx_sources) $(foreach module,$(H_make_S_modules),$(wildcard $(H_make_S_module_path)/$(module)/*.cx)))
 	$(H_make_I_block_root)
 	$(call H_make_Q_stat_I_stat,0)
-	$(CC) $(call H_make_Q_packages_R_cflags,$(E_main_S_packages)) $(CFLAGS) $(call H_make_Q_packages_R_ldflags,$(E_main_S_packages)) $(LDFLAGS) $(TARGET_ARCH) -fPIE -pie -s -iquote$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_compile_path)) -iquote$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)) -include E_cplus_S_0_main_not_to_libs.h $(addprefix -include ,$(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_compiler_cx_sources))) $(call H_make_Z_shell_cmd_arg_I_quote_for,$(filter %.c,$^)) -o $(call H_make_Z_shell_cmd_arg_I_quote,$@) $(addprefix -l,$(call H_make_Z_shell_cmd_arg_I_quote_for,$(E_main_S_libraries))) $(call H_make_Q_packages_R_ldlibs,$(E_main_S_packages))
+	$(CC) $(call H_make_Q_packages_R_cflags,$(E_main_S_packages)) $(CFLAGS) $(call H_make_Q_packages_R_ldflags,$(E_main_S_packages)) $(LDFLAGS) $(TARGET_ARCH) -fPIE -pie -s -iquote $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_compile_path)) -iquote $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)) -include E_cplus_S_0_main_not_to_libs.h $(addprefix -include ,$(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_compiler_cx_sources))) $(call H_make_Z_shell_cmd_arg_I_quote_for,$(filter %.c,$^)) -o $(call H_make_Z_shell_cmd_arg_I_quote,$@) $(addprefix -l,$(call H_make_Z_shell_cmd_arg_I_quote_for,$(E_main_S_libraries))) $(call H_make_Q_packages_R_ldlibs,$(E_main_S_packages))
 
     else
 
@@ -471,7 +475,7 @@ $$(addprefix $$(H_make_S_compile_path)/,E_cplus_S_machine.h E_cplus_S_language.h
 $$(H_make_S_module_path)/E_cplus_S_0_to_libs.h \
 $$(foreach module,$$(H_make_S_modules),$$(addprefix $$(H_make_S_module_path)/$$(module)/,0.mak 0.h $$(patsubst %.cx,E_cplus_S_0_%.h,$$(notdir $$(wildcard $$(H_make_S_module_path)/$$(module)/*.cx))) $$(patsubst %.cx,E_cplus_S_1_%.h,$$(notdir $$(wildcard $$(H_make_S_module_path)/$$(module)/*.cx))) $$(patsubst %.cx,E_cplus_S_2_%.h,$$(notdir $$(wildcard $$(H_make_S_module_path)/$$(module)/*.cx)))))
 	$$(H_make_I_block_root)
-	$$(LIBTOOL) --quiet --mode=compile --tag=CC $$(CC) $$(call H_make_Q_packages_R_cflags,$$(E_module_S_packages)) $$(CFLAGS) $$(TARGET_ARCH) -shared -prefer-pic -c -iquote$$(call H_make_Z_shell_cmd_arg_I_quote,$$(H_make_S_compile_path)) -iquote$$(call H_make_Z_shell_cmd_arg_I_quote,$$(H_make_S_module_path)) -include E_cplus_S_0_to_libs.h $$(addprefix -include ,$$(call H_make_Z_shell_cmd_arg_I_quote_for,$$(H_make_S_compiler_cx_sources))) $$(call H_make_Z_shell_cmd_arg_I_quote,$$<) -o $$(call H_make_Z_shell_cmd_arg_I_quote,$$@)
+	$$(LIBTOOL) --quiet --mode=compile --tag=CC $$(CC) $$(call H_make_Q_packages_R_cflags,$$(E_module_S_packages)) $$(CFLAGS) $$(TARGET_ARCH) -shared -prefer-pic -c -iquote $$(call H_make_Z_shell_cmd_arg_I_quote,$$(H_make_S_compile_path)) -iquote $$(call H_make_Z_shell_cmd_arg_I_quote,$$(H_make_S_module_path)) -include E_cplus_S_0_to_libs.h $$(addprefix -include ,$$(call H_make_Z_shell_cmd_arg_I_quote_for,$$(H_make_S_compiler_cx_sources))) $$(call H_make_Z_shell_cmd_arg_I_quote,$$<) -o $$(call H_make_Z_shell_cmd_arg_I_quote,$$@)
 $$(H_make_S_module_path)/$(1)/lib$$(H_make_S_lib_prefix)$(1).so: $$(patsubst %.cx,%.lo,$$(wildcard $$(H_make_S_module_path)/$(1)/*.cx))
 	$$(LIBTOOL) --quiet --mode=link --tag=CC $$(CC) $$(call H_make_Q_packages_R_cflags,$$(E_module_S_packages)) $$(CFLAGS) $$(call H_make_Q_packages_R_ldflags,$$(E_$(2)_S_packages)) $$(LDFLAGS) $$(TARGET_ARCH) -s -shared -fPIC -Wc,-shared -Wc,-fPIC $$(call H_make_Z_shell_cmd_arg_I_quote_for,$$^) -o $$(call H_make_Z_shell_cmd_arg_I_quote,$$@) $$(addprefix -l,$$(call H_make_Z_shell_cmd_arg_I_quote_for,$$(E_$(2)_S_libraries))) $$(call H_make_Q_packages_R_ldlibs,$$(E_$(2)_S_packages))
         endef
@@ -488,7 +492,7 @@ $(patsubst %.cx,%.c,$(H_make_S_cx_sources)) \
 $(foreach module,$(H_make_S_modules),$(H_make_S_module_path)/$(module)/lib$(H_make_S_lib_prefix)$(module).so)
 	$(H_make_I_block_root)
 	$(call H_make_Q_stat_I_stat,0)
-	$(CC) $(call H_make_Q_packages_R_cflags,$(sort $(E_module_S_packages) $(E_main_S_packages))) $(CFLAGS) $(call H_make_Q_packages_R_ldflags,$(E_main_S_packages)) $(LDFLAGS) $(TARGET_ARCH) -fPIE -pie -s -iquote$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_compile_path)) -iquote$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)) -include E_cplus_S_0_main_not_to_libs.h $(addprefix -include ,$(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_compiler_cx_sources))) $(call H_make_Z_shell_cmd_arg_I_quote_for,$(filter %.c,$^)) -o $(call H_make_Z_shell_cmd_arg_I_quote,$@) $(foreach module,$(H_make_S_modules),-L$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module))) $(foreach module,$(H_make_S_modules),-l$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_lib_prefix)$(module))) $(addprefix -l,$(call H_make_Z_shell_cmd_arg_I_quote_for,$(E_main_S_libraries))) $(call H_make_Q_packages_R_ldlibs,$(E_main_S_packages))
+	$(CC) $(call H_make_Q_packages_R_cflags,$(sort $(E_module_S_packages) $(E_main_S_packages))) $(CFLAGS) $(call H_make_Q_packages_R_ldflags,$(E_main_S_packages)) $(LDFLAGS) $(TARGET_ARCH) -fPIE -pie -s -iquote $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_compile_path)) -iquote $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)) -include E_cplus_S_0_main_not_to_libs.h $(addprefix -include ,$(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_compiler_cx_sources))) $(call H_make_Z_shell_cmd_arg_I_quote_for,$(filter %.c,$^)) -o $(call H_make_Z_shell_cmd_arg_I_quote,$@) $(foreach module,$(H_make_S_modules),-L$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module))) $(foreach module,$(H_make_S_modules),-l$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_lib_prefix)$(module))) $(addprefix -l,$(call H_make_Z_shell_cmd_arg_I_quote_for,$(E_main_S_libraries))) $(call H_make_Q_packages_R_ldlibs,$(E_main_S_packages))
 
     endif
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

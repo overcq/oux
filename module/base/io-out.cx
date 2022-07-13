@@ -196,7 +196,11 @@ E_io_Q_stream_out_M_fd( int fd
 #endif
     stream->aiocb->aio_sigevent = ( struct sigevent )
     { .sigev_notify = SIGEV_SIGNAL
+        #if defined( __gnu_linux__ ) || defined( __OpenBSD__ )
     , .sigev_signo = SIGPOLL
+        #else
+#error not implemented
+        #endif
     , .sigev_value.sival_int = fd
     };
         #endif

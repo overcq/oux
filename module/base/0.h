@@ -41,7 +41,7 @@ typedef struct timeval Z_clock_time;
 typedef struct timespec Z_clock_time;
 #define Z_clock_time_minor_field        tv_nsec
 #define Z_clock_time_minor_field_S_max  999999999
-        #if defined( __gnu_linux__ )
+        #if defined( __gnu_linux__ ) || defined( __FreeBSD__ )
 #define _gettime(tp)                    { V0_( clock_gettime( CLOCK_BOOTTIME, (tp) )); }
         #elif defined( __OpenBSD__ )
 #define _gettime(tp)                    { V0_( clock_gettime( CLOCK_MONOTONIC, (tp) )); }
@@ -169,7 +169,7 @@ struct E_flow_Z_args
 #define E_io_Q_stream_out_S_delay 1
     #endif
 //------------------------------------------------------------------------------
-    #ifndef E_io_C_aio
+    #if !defined( E_io_C_aio ) && !defined( __FreeBSD__ )
 struct aiocb
 { int aio_fildes;
   P aio_buf;

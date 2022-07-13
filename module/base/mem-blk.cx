@@ -605,7 +605,7 @@ E_mem_Q_blk_Q_table_M_from_free_or_map_0( N allocated_or_table_i
             , -1
             , 0
             ))
-                #elif defined( __OpenBSD__ )
+                #elif defined( __FreeBSD__ ) || defined( __OpenBSD__ )
             V1p( p_1 = mmap( 0
             , l_
             , PROT_READ | PROT_WRITE
@@ -647,7 +647,7 @@ E_mem_Q_blk_Q_table_M_from_free_or_map_0( N allocated_or_table_i
                         , MREMAP_MAYMOVE | MREMAP_FIXED
                         , dst_page_end
                         ));
-                            #elif defined( __OpenBSD__ )
+                            #elif defined( __FreeBSD__ ) || defined( __OpenBSD__ )
                         // Kopiowanie po jednej “stronie”, by tak właśnie zachodziło rzeczywiste ‘mapowanie’ w sprzętowym trybie “map on write”, gdy pojedyncze “strony” są też ‘odmapowywane’.
                         E_mem_Q_blk_I_copy( dst_page_end, src_page_, E_base_S->E_mem_S_page_size );
                         V0_( munmap( src_page_, E_base_S->E_mem_S_page_size ));
@@ -1719,7 +1719,11 @@ E_mem_Q_blk_I_remove( P p
 //==============================================================================
     #ifdef C_to_libs_C_replace_c_alloc
 size_t
+        #if defined( __gnu_linux__ ) || defined( __OpenBSD__ )
 malloc_usable_size( P p
+        #elif defined( __FreeBSD__ )
+malloc_usable_size( const void *p
+        #endif
 ){  Dh_();
     _single_thread_begin;
     for_n( allocated_i, E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].n )
@@ -1731,16 +1735,33 @@ malloc_usable_size( P p
     GV_(NXP); Gh(p);
     return 0;
 }
+int
+posix_memalign( P *p
+, size_t align
+, size_t size
+){  Dh_();
+    if( !E_simple_Z_n_T_power_2(align)
+    || align % sizeof(P)
+    )
+        return EINVAL;
+    P p_ = E_mem_Q_blk_M_malloc( size, align );
+    if( !p_ )
+        return ENOMEM;
+    *p = p_;
+    return 0;
+}
 _internal
 P
 E_mem_Q_blk_M_malloc( N l
-){  return E_mem_Q_blk_M_tab_calloc( 1, l );
+, N align
+){  return E_mem_Q_blk_M_tab_calloc( 1, l, align );
 }
 _internal
 P
 E_mem_Q_blk_M_tab_calloc(
   N u
 , N n
+, N align
 ){  _single_thread_begin;
     struct E_mem_Q_blk_Z_allocated allocated_p;
     N allocated_i = E_mem_Q_blk_Q_sys_table_R_new_id( E_base_S->E_mem_Q_blk_S_table_allocated_id, (Pc)&allocated_p.p - (Pc)&allocated_p, (Pc)&allocated_p.n - (Pc)&allocated_p, 0, 0 );
@@ -1753,7 +1774,7 @@ E_mem_Q_blk_M_tab_calloc(
     struct E_mem_Q_blk_Z_free free_p_;
     if( !~E_mem_Q_blk_Q_sys_table_R_new_id( E_mem_Q_blk_S_allocated_S_mapped_id, (Pc)&mapped_p_.p - (Pc)&mapped_p_, (Pc)&mapped_p_.l - (Pc)&mapped_p_, 0, 0 )
     || !~E_mem_Q_blk_Q_sys_table_R_new_id( E_mem_Q_blk_S_allocated_S_free_id, (Pc)&free_p_.p - (Pc)&free_p_, (Pc)&free_p_.l - (Pc)&free_p_, 0, 0 )
-    || !E_mem_Q_blk_Q_table_M_from_free_or_map_0( allocated_i, u, n, 0, 0, 0, E_mem_Q_blk_S_align_to_all )
+    || !E_mem_Q_blk_Q_table_M_from_free_or_map_0( allocated_i, u, n, 0, 0, 0, align )
     )
     {   E_mem_Q_blk_I_assert_on_return( __LINE__ );
         _single_thread_end;
@@ -1770,7 +1791,7 @@ E_mem_Q_blk_M_tab_calloc(
 P
 malloc( size_t l
 ){  Dh_();
-    P p = E_mem_Q_blk_M_malloc(l);
+    P p = E_mem_Q_blk_M_malloc( l, E_mem_Q_blk_S_align_to_all );
     if( !p )
         _errno = ENOMEM;
     return p;
@@ -1783,7 +1804,7 @@ calloc( size_t n
     {   _errno = ENOMEM;
         return 0;
     }
-    P p = E_mem_Q_blk_M_tab_calloc( 1, n * u );
+    P p = E_mem_Q_blk_M_tab_calloc( 1, n * u, E_mem_Q_blk_S_align_to_all );
     if( !p )
         _errno = ENOMEM;
     else

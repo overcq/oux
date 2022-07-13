@@ -55,7 +55,11 @@ H_make_S_cc_version := $(shell $(H_make_S_cc) -dumpversion | sed -e 's`^\([0-9][
     ifneq (,$(H_make_C_middle_code))
 undefine H_make_C_to_libs
     endif
-    ifeq (OpenBSD,$(H_make_S_os))
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ifeq (FreeBSD,$(H_make_S_os))
+undefine H_make_C_to_libs_C_replace_c_alloc
+undefine E_io_C_aio
+    else ifeq (OpenBSD,$(H_make_S_os))
 undefine H_make_C_to_libs_C_replace_c_alloc
     endif
 #===============================================================================
