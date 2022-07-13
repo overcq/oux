@@ -12,7 +12,7 @@ System operacyjny tworzenia oprogramowania.
 * FreeBSD 13.1
 
 Uruchamia się.
-![FreeBSD](pictures/FreeBSD.png)
+![FreeBSD](picture/FreeBSD.png)
 
 * OpenBSD 7.1
 
