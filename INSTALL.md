@@ -12,7 +12,7 @@ Software development operating system.
 * FreeBSD 13.1
 
 It starts.
-![FreeBSD](FreeBSD.png)
+![FreeBSD](pictures/FreeBSD.png)
 
 * OpenBSD 7.1
 

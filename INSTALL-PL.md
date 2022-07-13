@@ -12,7 +12,7 @@ System operacyjny tworzenia oprogramowania.
 * FreeBSD 13.1
 
 Uruchamia się.
-![FreeBSD](FreeBSD.png)
+![FreeBSD](pictures/FreeBSD.png)
 
 * OpenBSD 7.1
 
@@ -22,7 +22,8 @@ Występuje błąd podczas uruchamiania.
 
 W systemie kompilacji powinny być zainstalowane:
 * programy narzędziowe
-* clang lub gcc
+* clang lub gccu
+
 * dokumentacja “man” funkcji systemowych i poniższych bibliotek
 * OpenSSL
 * xcb
