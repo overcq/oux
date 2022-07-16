@@ -165,7 +165,7 @@ H_make_T_pthreads := $(if $(shell whatis pthread),1)
 CFLAGS += -DC_middle_code -ffreestanding
 #H_make_C_pthreads := 1
 #CFLAGS += -DE_flow_C_thread_system_unblock_reports
-        ifeq (OpenBSD,$(H_make_S_os)) #“sigwait”.
+        ifeq (OpenBSD,$(H_make_S_os)) # “sigwait”.
 H_make_C_pthreads := 1
         endif
     else
@@ -243,9 +243,7 @@ CFLAGS += -pedantic -fno-common -Wall -Wextra -Wno-missing-braces -Wno-parenthes
 -fno-stack-protector -fno-trapping-math -fwrapv \
 -pipe
     ifeq (clang,$(H_make_S_cc))
-        ifeq (Linux,$(H_make_S_os))
 CFLAGS += -flto -Wa,-emit-llvm
-        endif
     endif
 #-------------------------------------------------------------------------------
     ifeq (,$(H_make_C_debug))

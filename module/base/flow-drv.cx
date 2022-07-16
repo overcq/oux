@@ -340,27 +340,20 @@ E_flow_Q_task_M( I *uid
         task->thread_switch_back = thread_switch_back;
         *thread_switch_back = no;
         task_proc_args.alt_stack.ss_size += E_base_S->E_mem_S_page_size;
+        V1p( task_proc_args.alt_stack.ss_sp = mmap( 0
+        , task_proc_args.alt_stack.ss_size
+        , PROT_READ | PROT_WRITE
+        , MAP_PRIVATE
             #if defined( __gnu_linux__ )
-        V1p( task_proc_args.alt_stack.ss_sp = mmap( 0
-        , task_proc_args.alt_stack.ss_size
-        , PROT_READ | PROT_WRITE
-        , MAP_PRIVATE
         | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_UNINITIALIZED
-        , -1
-        , 0
-        ))
             #elif defined( __FreeBSD__ ) || defined( __OpenBSD__ )
-        V1p( task_proc_args.alt_stack.ss_sp = mmap( 0
-        , task_proc_args.alt_stack.ss_size
-        , PROT_READ | PROT_WRITE
-        , MAP_PRIVATE
         | MAP_ANON | MAP_STACK
-        , -1
-        , 0
-        ))
             #else
 #error not implemented
             #endif
+        , -1
+        , 0
+        ))
         {   W( thread_switch_back );
             Vr_( pthread_mutex_destroy( thread_flow_mutex ));
             W( thread_flow_mutex );
