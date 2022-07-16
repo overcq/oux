@@ -437,20 +437,27 @@ E_base_M(
 #error not implemented
         #endif
     };
+        #if defined( __gnu_linux__ )
     V1p_( alt_stack.ss_sp = mmap( 0
     , alt_stack.ss_size
     , PROT_READ | PROT_WRITE
     , MAP_PRIVATE
-        #if defined( __gnu_linux__ )
     | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_UNINITIALIZED
-        #elif defined( __FreeBSD__ ) || defined( __OpenBSD__ )
-    | MAP_ANON | MAP_STACK
-        #else
-#error not implemented
-        #endif
     , -1
     , 0
     ));
+        #elif defined( __FreeBSD__ ) || defined( __OpenBSD__ )
+    V1p_( alt_stack.ss_sp = mmap( 0
+    , alt_stack.ss_size
+    , PROT_READ | PROT_WRITE
+    , MAP_PRIVATE
+    | MAP_ANON | MAP_STACK
+    , -1
+    , 0
+    ));
+        #else
+#error not implemented
+        #endif
     V0_( sigaltstack( &alt_stack, 0 ));
     sa.sa_sigaction = E_flow_Z_signal_V_segv;
     sa.sa_flags = SA_ONSTACK | SA_SIGINFO;

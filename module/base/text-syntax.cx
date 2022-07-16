@@ -32,7 +32,7 @@ struct E_text_syntax_Z_entity
     Pc s;
     regex_t re;
   }data;
-  N re_l;
+  N re_n;
   B alternative;
   B optional;
 };
@@ -169,7 +169,7 @@ E_text_syntax_I_unescape( Pc *s_
                 }
               case 'u':
               case 'U':
-                {   N l = E_text_Z_u_R_s_utf8_G(n);
+                {   N l = E_text_Z_u_R_su_G(n);
                     if( l < ret_s - s )
                     {   N s_i = s - *s_;
                         if( !E_mem_Q_blk_I_remove( s_, ( ret_s - s ) - (( ret_s - s ) - l ), ( ret_s - s ) - l ))
@@ -183,7 +183,7 @@ E_text_syntax_I_unescape( Pc *s_
                         }
                         s = *s_ + s_i;
                     }
-                    E_text_Z_u_R_s_utf8( n, s );
+                    E_text_Z_u_R_su( n, s );
                     s += l - 1;
                     break;
                 }
@@ -222,7 +222,7 @@ E_text_syntax_T_name( Pc s
 ){  Pc s_start = s;
     U u, u_prev; // Procedura nadrzędna zapewnia, że zawsze będzie poprawny tekst UTF-8 i “iswalpha” pierwszego znaku.
     while( *s_start )
-    {   Pc s_end = E_text_Z_s_Z_utf8_R_u( s_start, &u );
+    {   Pc s_end = E_text_Z_su_R_u( s_start, &u );
         if(( !iswalnum(u)
           && u != '-'
           && u != ' '
@@ -270,7 +270,7 @@ E_text_syntax_M( I file
         }
         Pc s_end = E_text_Z_s0_R_end(s);
         U u;
-        Pc s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+        Pc s_start = E_text_Z_su_R_u_rev( s_end, &u );
         if( E_text_Z_s0_R_l(s) != s_end - s_start
         && *( s_start - 1 ) != '\n'
         )
@@ -284,7 +284,7 @@ E_text_syntax_M( I file
             {   G_();
                 goto End;
             }
-            // Komentarz linowy w osobnej linii.
+            // Komentarz liniowy w osobnej linii.
             ret = E_mem_Q_file_R_u_outof( file, "/", &s );
             if( !~ret )
                 goto End;
@@ -297,7 +297,7 @@ E_text_syntax_M( I file
                 }
                 break;
             }
-            s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+            s_start = E_text_Z_su_R_u_rev( s_end, &u );
             W(s);
             if( u != E_mem_Q_file_S_filename_separator )
             {   ret = E_mem_Q_file_R_u_upto( file, "\n", &s );
@@ -343,7 +343,7 @@ E_text_syntax_M( I file
         if( ret == E_mem_Q_file_S_eof )
         {   s_start = s;
             while( *s_start )
-            {   s_end = E_text_Z_s_Z_utf8_R_u( s_start, &u );
+            {   s_end = E_text_Z_su_R_u( s_start, &u );
                 if( s_start == s_end
                 || ( u != ' '
                   && u != '\t'
@@ -362,7 +362,7 @@ E_text_syntax_M( I file
             break;
         }
         if( s_end != s )
-            O{  s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+            O{  s_start = E_text_Z_su_R_u_rev( s_end, &u );
                 if( u != ' ' )
                     break;
                 s_end = s_start;
@@ -390,7 +390,7 @@ E_text_syntax_M( I file
             G_();
             goto End;
         }
-        s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+        s_start = E_text_Z_su_R_u_rev( s_end, &u );
         while( s_start == s ) // Brak odstępów na początku linii, to linia deklaracji.
         {   W(s);
             if( u == '/' )
@@ -407,7 +407,7 @@ E_text_syntax_M( I file
                     goto End;
                 }
                 s_end = E_text_Z_s0_R_end(s);
-                s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+                s_start = E_text_Z_su_R_u_rev( s_end, &u );
                 W(s);
                 ret = E_mem_Q_file_R_u_upto( file, "\n", &s );
                 if( !~ret )
@@ -421,10 +421,10 @@ E_text_syntax_M( I file
                 {   W(s);
                     goto End;
                 }
-                E_text_Z_u_R_s_utf8( u, s );
+                E_text_Z_u_R_su( u, s );
                 s_end = E_text_Z_s0_R_end(s) - 1;
                 if( s_end != s )
-                {   O{  s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+                {   O{  s_start = E_text_Z_su_R_u_rev( s_end, &u );
                         if( u != ' ' )
                             break;
                         s_end = s_start;
@@ -446,7 +446,7 @@ E_text_syntax_M( I file
                     G_();
                     goto End;
                 }
-                s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+                s_start = E_text_Z_su_R_u_rev( s_end, &u );
             }else
             {   G_();
                 goto End;
@@ -466,7 +466,7 @@ E_text_syntax_M( I file
                         goto End;
                     }
                     s_start = s;
-                    O{  s_end = E_text_Z_s_Z_utf8_R_u( s_start, &u );
+                    O{  s_end = E_text_Z_su_R_u( s_start, &u );
                         if( u != ' ' )
                             break;
                         s_start = s_end;
@@ -492,7 +492,7 @@ E_text_syntax_M( I file
                         G_();
                         goto End;
                     }
-                    E_text_Z_s_Z_utf8_R_u( s, &u );
+                    E_text_Z_su_R_u( s, &u );
                     if( u != '/'
                     && u != '\"'
                     )
@@ -513,7 +513,7 @@ E_text_syntax_M( I file
                     {   W(s);
                         goto End;
                     }
-                    E_text_Z_u_R_s_utf8( u, s );
+                    E_text_Z_u_R_su( u, s );
                     entity_type = E_text_syntax_S_entity_uid;
                 }else
                 {   W(s);
@@ -535,7 +535,7 @@ E_text_syntax_M( I file
                   )
                   && s_end != s + 1
                 ))
-                    O{  s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+                    O{  s_start = E_text_Z_su_R_u_rev( s_end, &u );
                         if( u != ' ' )
                             break;
                         s_end = s_start;
@@ -560,12 +560,12 @@ E_text_syntax_M( I file
                     )
                     && s_end != s + 1
                 )))
-                {   s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+                {   s_start = E_text_Z_su_R_u_rev( s_end, &u );
                     if( u == '.' )
                     {   N i = 1;
                         s_end = s_start;
                         if( s_end != s )
-                            O{  s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+                            O{  s_start = E_text_Z_su_R_u_rev( s_end, &u );
                                 if( u != '.' )
                                     break;
                                 i++;
@@ -596,7 +596,7 @@ E_text_syntax_M( I file
                             G_();
                             goto End;
                         }
-                        s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+                        s_start = E_text_Z_su_R_u_rev( s_end, &u );
                         if( *s_start != ' ' )
                         {   W(s);
                             G_();
@@ -620,7 +620,7 @@ E_text_syntax_M( I file
                     )
                     && s_end != s + 1
                 )))
-                {   s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+                {   s_start = E_text_Z_su_R_u_rev( s_end, &u );
                     if( u == '?' )
                     {   s_end = s_start;
                         if(( entity_type != E_text_syntax_S_entity_negated_regex
@@ -636,7 +636,7 @@ E_text_syntax_M( I file
                             G_();
                             goto End;
                         }
-                        s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+                        s_start = E_text_Z_su_R_u_rev( s_end, &u );
                         if( u != ' ' )
                         {   W(s);
                             G_();
@@ -653,10 +653,10 @@ E_text_syntax_M( I file
                         G_();
                         goto End;
                     }
-                    E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+                    E_text_Z_su_R_u_rev( s_end, &u );
                     if( u == 'i' )
                     {   regex_casei = yes;
-                        E_text_Z_s_Z_utf8_R_u_rev( --s_end, &u );
+                        E_text_Z_su_R_u_rev( --s_end, &u );
                     }
                     if( u != '/'
                     || s_end <= s + 1
@@ -672,7 +672,7 @@ E_text_syntax_M( I file
                         G_();
                         goto End;
                     }
-                    E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+                    E_text_Z_su_R_u_rev( s_end, &u );
                     if( u == 'i' )
                     {   s_end--;
                         if( s_end == s + 1 )
@@ -681,7 +681,7 @@ E_text_syntax_M( I file
                             goto End;
                         }
                         regex_casei = yes;
-                        E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+                        E_text_Z_su_R_u_rev( s_end, &u );
                     }
                     if( u != '/'
                     || s_end <= s + 2
@@ -697,7 +697,7 @@ E_text_syntax_M( I file
                         G_();
                         goto End;
                     }
-                    E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+                    E_text_Z_su_R_u_rev( s_end, &u );
                     if( u != '\"'
                     || s_end <= s + 1
                     )
@@ -712,7 +712,7 @@ E_text_syntax_M( I file
                         G_();
                         goto End;
                     }
-                    E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+                    E_text_Z_su_R_u_rev( s_end, &u );
                     if( u != '\"'
                     || s_end <= s + 2
                     )
@@ -748,7 +748,7 @@ E_text_syntax_M( I file
                         G_();
                         goto End;
                     }
-                    syntax->entities[ syntax->entities_n - 1 ].entity[ syntax->entities[ syntax->entities_n - 1 ].entity_n ].re_l = E_text_Z_s0_R_l(s);
+                    syntax->entities[ syntax->entities_n - 1 ].entity[ syntax->entities[ syntax->entities_n - 1 ].entity_n ].re_n = E_text_Z_su0_R_n(s);
                     if( !E_text_Z_s_I_s0_prepend( &s, "^(" )
                     || !E_text_Z_s0_I_s0_append( &s, ")$" )
                     )
@@ -771,7 +771,7 @@ E_text_syntax_M( I file
                         G_();
                         goto End;
                     }
-                    syntax->entities[ syntax->entities_n - 1 ].entity[ syntax->entities[ syntax->entities_n - 1 ].entity_n ].re_l = E_text_Z_s0_R_l(s);
+                    syntax->entities[ syntax->entities_n - 1 ].entity[ syntax->entities[ syntax->entities_n - 1 ].entity_n ].re_n = E_text_Z_su0_R_n(s);
                     if( !E_text_Z_s_I_s0_prepend( &s, "^(" )
                     || !E_text_Z_s0_I_s0_append( &s, ")" )
                     )
@@ -818,7 +818,7 @@ E_text_syntax_M( I file
                     G_();
                     goto End;
                 }
-                s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+                s_start = E_text_Z_su_R_u_rev( s_end, &u );
                 W(s);
             }
             N pos = E_mem_Q_file_R_pos(file);
@@ -848,7 +848,7 @@ E_text_syntax_M( I file
                 G_();
                 goto End;
             }
-            s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+            s_start = E_text_Z_su_R_u_rev( s_end, &u );
             W(s);
         }
     }
@@ -1037,33 +1037,33 @@ Cont:
                   case E_text_syntax_S_builtin_alpha:
                         if( iswalpha(u) )
                         {   parsed = yes;
-                            N l = E_text_Z_u_R_s_utf8_G(u);
+                            N l = E_text_Z_u_R_su_G(u);
                             s = M( l + 1 );
                             if( !s )
                                 goto End;
-                            E_text_Z_u_R_s_utf8( u, s );
+                            E_text_Z_u_R_su( u, s );
                             s[l] = '\0';
                         }
                         break;
                   case E_text_syntax_S_builtin_digit:
                         if( iswdigit(u) )
                         {   parsed = yes;
-                            N l = E_text_Z_u_R_s_utf8_G(u);
+                            N l = E_text_Z_u_R_su_G(u);
                             s = M( l + 1 );
                             if( !s )
                                 goto End;
-                            E_text_Z_u_R_s_utf8( u, s );
+                            E_text_Z_u_R_su( u, s );
                             s[l] = '\0';
                         }
                         break;
                   case E_text_syntax_S_builtin_text:
                         if( iswgraph(u) )
                         {   parsed = yes;
-                            N l = E_text_Z_u_R_s_utf8_G(u);
+                            N l = E_text_Z_u_R_su_G(u);
                             s = M( l + 1 );
                             if( !s )
                                 goto End;
-                            E_text_Z_u_R_s_utf8( u, s );
+                            E_text_Z_u_R_su( u, s );
                             s[l] = '\0';
                             O{  N pos = E_mem_Q_file_R_pos(file);
                                 ret = E_mem_Q_file_R_u( file, &u );
@@ -1077,9 +1077,9 @@ Cont:
                                 {   E_mem_Q_file_P_pos( file, pos );
                                     break;
                                 }
-                                N l = E_text_Z_u_R_s_utf8_G(u);
+                                N l = E_text_Z_u_R_su_G(u);
                                 C t[l];
-                                E_text_Z_u_R_s_utf8( u, &t[0] );
+                                E_text_Z_u_R_su( u, &t[0] );
                                 if( !E_text_Z_s0_I_s_append( &s, t, t + l ))
                                 {   W(s);
                                     goto End;
@@ -1291,15 +1291,15 @@ Bi_no:          {   if( state[ *state_n - 1 ].in_space )
                     if( pos == E_mem_Q_file_R_pos(file) )
                         goto Re_no;
                 Pc s;
-                N l = E_text_Z_u_R_s_utf8_G(u);
+                N l = E_text_Z_u_R_su_G(u);
                 s = M( l + 1 );
                 if( !s )
                     goto End;
-                E_text_Z_u_R_s_utf8( u, s );
+                E_text_Z_u_R_su( u, s );
                 s[l] = '\0';
-                l = 0;
+                N n = 0;
                 B re;
-                while( l != entity->re_l //NDFN Spekulacja długości dopasowania.
+                while( n != entity->re_n //NDFN Spekulacja długości dopasowania.
                 && ( re = regexec( &entity->data.re, s, 0, 0, 0 ))
                 )
                 {   ret = E_mem_Q_file_R_u( file, &u );
@@ -1309,14 +1309,14 @@ Bi_no:          {   if( state[ *state_n - 1 ].in_space )
                     }
                     if( ret == E_mem_Q_file_S_eof )
                         break;
-                    N l_ = E_text_Z_u_R_s_utf8_G(u);
+                    N l_ = E_text_Z_u_R_su_G(u);
                     C t[ l_ ];
-                    E_text_Z_u_R_s_utf8( u, &t[0] );
+                    E_text_Z_u_R_su( u, &t[0] );
                     if( !E_text_Z_s0_I_s_append( &s, t, t + l_ ))
                     {   W(s);
                         goto End;
                     }
-                    l++;
+                    n++;
                 }
                 if( !re )
                 {   parsed = yes;
@@ -1330,16 +1330,16 @@ Bi_no:          {   if( state[ *state_n - 1 ].in_space )
                         {   E_mem_Q_file_P_pos( file, pos );
                             break;
                         }
-                        N l_ = E_text_Z_u_R_s_utf8_G(u);
+                        N l_ = E_text_Z_u_R_su_G(u);
                         C t[ l_ ];
-                        E_text_Z_u_R_s_utf8( u, &t[0] );
+                        E_text_Z_u_R_su( u, &t[0] );
                         if( !E_text_Z_s0_I_s_append( &s, t, t + l_ ))
                         {   W(s);
                             goto End;
                         }
                         if( regexec( &entity->data.re, s, 0, 0, 0 ))
                         {   Pc s_end = E_text_Z_s0_R_end(s);
-                            Pc s_start = E_text_Z_s_Z_utf8_R_u_rev( s_end, &u );
+                            Pc s_start = E_text_Z_su_R_u_rev( s_end, &u );
                             if( !E_mem_Q_blk_I_remove( &s, s_start - s, s_end - s_start ))
                             {   W(s);
                                 goto End;
@@ -1551,15 +1551,15 @@ Re_no:          {   if( state[ *state_n - 1 ].in_space )
                     if( pos == E_mem_Q_file_R_pos(file) )
                         goto Nre_skip;
                 Pc s;
-                N l = E_text_Z_u_R_s_utf8_G(u);
+                N l = E_text_Z_u_R_su_G(u);
                 s = M( l + 1 );
                 if( !s )
                     goto End;
-                E_text_Z_u_R_s_utf8( u, s );
+                E_text_Z_u_R_su( u, s );
                 s[l] = '\0';
-                l = 0;
+                N n = 0;
                 B re;
-                while( l != entity->re_l //NDFN Spekulacja długości dopasowania.
+                while( n != entity->re_n //NDFN Spekulacja długości dopasowania.
                 && ( re = regexec( &entity->data.re, s, 0, 0, 0 ))
                 )
                 {   ret = E_mem_Q_file_R_u( file, &u );
@@ -1569,14 +1569,14 @@ Re_no:          {   if( state[ *state_n - 1 ].in_space )
                     }
                     if( ret == E_mem_Q_file_S_eof )
                         break;
-                    N l_ = E_text_Z_u_R_s_utf8_G(u);
+                    N l_ = E_text_Z_u_R_su_G(u);
                     C t[ l_ ];
-                    E_text_Z_u_R_s_utf8( u, &t[0] );
+                    E_text_Z_u_R_su( u, &t[0] );
                     if( !E_text_Z_s0_I_s_append( &s, t, t + l_ ))
                     {   W(s);
                         goto End;
                     }
-                    l++;
+                    n++;
                 }
                 if( ret != E_mem_Q_file_S_eof
                 && re
@@ -1591,9 +1591,9 @@ Re_no:          {   if( state[ *state_n - 1 ].in_space )
                             }
                         }
                         if( ret != E_mem_Q_file_S_eof )
-                        {   N l_ = E_text_Z_u_R_s_utf8_G(u);
+                        {   N l_ = E_text_Z_u_R_su_G(u);
                             C t[ l_ ];
-                            E_text_Z_u_R_s_utf8( u, &t[0] );
+                            E_text_Z_u_R_su( u, &t[0] );
                             N s_start_i = s_start - s;
                             if( !E_text_Z_s0_I_s_append( &s, t, t + l_ ))
                             {   W(s);
@@ -1601,15 +1601,15 @@ Re_no:          {   if( state[ *state_n - 1 ].in_space )
                             }
                             s_start = s + s_start_i;
                         }else
-                            l--;
+                            n--;
                         U u;
-                        Pc s_start_ = E_text_Z_s_Z_utf8_R_u( s_start, &u );
+                        Pc s_start_ = E_text_Z_su_R_u( s_start, &u );
                         pos += s_start_ - s_start;
                         s_start = s_start_;
-                    }while( l
+                    }while( n
                     && regexec( &entity->data.re, s_start, 0, 0, 0 )
                     );
-                    if(l)
+                    if(n)
                     {   E_mem_Q_file_P_pos( file, pos );
                         if( !E_text_Z_s0_I_s_append( &state[ *state_n - 1 ].s, s, s_start ))
                         {   W(s);
@@ -1692,20 +1692,33 @@ Nre_skip:       if( state[ *state_n - 1 ].in_space )
                 break;
             }
           case E_text_syntax_S_entity_string:
-            {   N l = E_text_Z_s0_R_l( entity->data.s );
-                Pc s = M(l);
+            {   N n = E_text_Z_su0_R_n( entity->data.s );
+                Pc s = M(1);
                 if( !s )
                     goto End;
+                *s = '\0';
+                N s_end_i = 0;
                 N pos = E_mem_Q_file_R_pos(file);
-                N ret = E_mem_Q_file_R_s( file, s, l );
-                if( !~ret )
-                {   W(s);
-                    goto End;
-                }
-                if( ret == E_mem_Q_file_S_eof )
-                    goto S_skip;
-                if( E_text_Z_s_T_s0_eq( s, s + l, entity->data.s ))
-                {   if( !E_text_Z_s0_I_s_append( &state[ *state_n - 1 ].s, s, s + l ))
+                N ret;
+                do
+                {   U u;
+                    ret = E_mem_Q_file_R_u( file, &u );
+                    if( !~ret )
+                    {   W(s);
+                        goto End;
+                    }
+                    if( ret == E_mem_Q_file_S_eof )
+                        goto S_skip;
+                    N l = E_text_Z_u_R_su_G(u);
+                    if( !E_mem_Q_blk_I_insert( &s, s_end_i, l ))
+                    {   W(s);
+                        goto End;
+                    }
+                    E_text_Z_u_R_su( u, s + s_end_i );
+                    s_end_i += l;
+                }while( --n );
+                if( E_text_Z_s0_T_s0_eq( s, entity->data.s ))
+                {   if( !E_text_Z_s0_I_s0_append( &state[ *state_n - 1 ].s, s ))
                     {   W(s);
                         goto End;
                     }
@@ -1899,16 +1912,31 @@ S_skip:         {   W(s);
                 break;
             }
           case E_text_syntax_S_entity_negated_string:
-            {   N l = E_text_Z_s0_R_l( entity->data.s );
-                Pc s = M(l);
+            {   N n = E_text_Z_su0_R_n( entity->data.s );
+                Pc s = M(1);
                 if( !s )
                     goto End;
+                *s = '\0';
+                N s_end_i = 0;
                 N pos = E_mem_Q_file_R_pos(file);
-                N ret = E_mem_Q_file_R_s( file, s, l );
-                if( !~ret )
-                {   W(s);
-                    goto End;
-                }
+                N ret;
+                do
+                {   U u;
+                    ret = E_mem_Q_file_R_u( file, &u );
+                    if( !~ret )
+                    {   W(s);
+                        goto End;
+                    }
+                    if( ret == E_mem_Q_file_S_eof )
+                        break;
+                    N l = E_text_Z_u_R_su_G(u);
+                    if( !E_mem_Q_blk_I_insert( &s, s_end_i, l ))
+                    {   W(s);
+                        goto End;
+                    }
+                    E_text_Z_u_R_su( u, s + s_end_i );
+                    s_end_i += l;
+                }while( --n );
                 while( ret != E_mem_Q_file_S_eof
                 && !E_text_Z_s0_T_s0_eq( s, entity->data.s )
                 )
@@ -1920,27 +1948,31 @@ S_skip:         {   W(s);
                     }
                     if( ret != E_mem_Q_file_S_eof )
                     {   U u_;
-                        N l_start = E_text_Z_s_Z_utf8_R_u( s, &u_ ) - s;
+                        N l_start = E_text_Z_su_R_u( s, &u_ ) - s;
                         if( !E_text_Z_s0_I_s_append( &state[ *state_n - 1 ].s, s, s + l_start ))
                         {   W(s);
                             goto End;
                         }
                         pos += l_start;
                         E_text_Z_s_P_s0_copy( s, s + l_start );
-                        Pc s_end = E_text_Z_s0_R_end(s);
-                        N l_end = E_text_Z_u_R_s_utf8_G(u);
+                        N l_end = E_text_Z_u_R_su_G(u);
                         if( l_start != l_end )
                             if( l_start < l_end )
-                            {   if( !E_mem_Q_blk_I_insert( &s, s_end - s, l_end - l_start ))
+                            {   if( !E_mem_Q_blk_I_append( &s, l_end - l_start ))
                                 {   W(s);
                                     goto End;
                                 }
+                                s_end_i += l_end - l_start;
+                                s[ s_end_i ] = '\0';
                             }else
-                                if( !E_mem_Q_blk_I_remove( &s, s_end - s - ( l_start - l_end ), l_start - l_end ))
+                            {   if( !E_mem_Q_blk_I_remove( &s, s_end_i + 1 - ( l_start - l_end ), l_start - l_end ))
                                 {   W(s);
                                     goto End;
                                 }
-                        E_text_Z_u_R_s_utf8( u, s_end - l_end );
+                                s_end_i -= l_start - l_end;
+                                s[ s_end_i ] = '\0';
+                            }
+                        E_text_Z_u_R_su( u, s + s_end_i - l_end );
                     }
                 }
                 if( ret != E_mem_Q_file_S_eof )
