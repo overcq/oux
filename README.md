@@ -14,7 +14,7 @@ Parts inside modules:
 
 and much more...
 
-https://overcq.ct8.pl/oux-c-plux.html
+https://overcq.ct8.pl/oux-c-plus.html
 
 # Other Licenses
 
