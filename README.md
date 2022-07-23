@@ -14,11 +14,7 @@ Parts inside modules:
 
 and much more...
 
-Blog in Polish: https://oux.refy.pl/
-
-From my desktop: https://youtu.be/ff9olrjh3HI
-
-Chat on Discord: https://discord.gg/raBeaBeKXp (overcq#8855)
+https://overcq.ct8.pl/oux-c-plux.html
 
 # Other Licenses
 
