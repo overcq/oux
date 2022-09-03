@@ -297,7 +297,7 @@ case "$1" in
             }
             if( /^(?:(?:enum|struct|union)\s+)?\w+\s+\**E_.*;/ ) #zmienne publiczne.
             {   print1;
-            }elsif( /^(?:enum|struct|union)\s+E_\w+/ ) #typy publiczne.
+            }elsif( /^(?:enum|struct|union)\s+E_\w/ ) #typy publiczne.
             {   $inside_enum = /^enum/;
                 unless( $inside_enum )
                 {   print1;
@@ -305,7 +305,7 @@ case "$1" in
                 {   print_blank;
                 }
                 $inside_braces = 1;
-            }elsif( /^E_\w*\(/ ) #procedura publiczna.
+            }elsif( /^E_\w+\(/ ) #procedura publiczna.
             {   print1;
                 $inside_braces = 4;
             }elsif( /^D(\([^)]*\))/ ) #‹zadanie›.
@@ -321,7 +321,7 @@ case "$1" in
             {   print1;
             }
         }
-        print $last_line;
+        print $last_line if defined $last_line;
     ' "$2"
     ;;
 esac
