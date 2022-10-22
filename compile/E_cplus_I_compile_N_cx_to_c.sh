@@ -94,7 +94,7 @@ case "$1" in
         fi
     fi
     ;;
--h1_) #‹report› ‘uid’ declarations for these are used by ‹modules› and owned elsewhere; in the executable program if compiled with the ‹modules› as ‘dlls’.
+-h1_) #‹report› ‘uid’ declarations for these are used by ‹modules› and owned elsewhere; in the executable program if compiled with the ‹modules› as ‘dll’.
     trap 'rm "$tmp_file_0" "$tmp_file_1" "$tmp_file_2"' EXIT
     tmp_file_0=$(mktemp); tmp_file_1=$(mktemp); tmp_file_2=$(mktemp)
     while [ -n "$2" ]; do
