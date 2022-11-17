@@ -25,6 +25,64 @@ case "$1" in
         print '\''};'\'';
     ' "$@"
     ;;
+-h1_) #‹report› ‘uid’ declarations for these are used by ‹modules› and owned elsewhere; in the executable program if compiled with the ‹modules› as ‘dll’.
+    trap 'rm "$tmp_file_0" "$tmp_file_1" "$tmp_file_2"' EXIT
+    tmp_file_0=$(mktemp); tmp_file_1=$(mktemp); tmp_file_2=$(mktemp)
+    while [ -n "$2" ]; do
+        awk '
+            /\/\*/,/\*\// {
+                print ""
+                next
+            }
+            { print }
+        ' <"$2" \
+        | perl -ne '
+            local $\ = $/;
+            chomp;
+            /\bX_A\(\s*(\w+)\s*,\s*(\w+)\s*\)/ and print "$1,X_$2";
+            /\bYi_A\(\s*(\w+)\s*,\s*(\w+)\s*\)/ and print "$1,Yi_$2";
+        ' \
+        | sort -u \
+        >> "$tmp_file_1"
+        awk '
+            /\/\*/,/\*\// {
+                print ""
+                next
+            }
+            { print }
+        ' <"$2" \
+        | perl -ne '
+            local $\ = $/;
+            chomp;
+            /\bX_B\(\s*(\w+)\s*,\s*(\w+)\s*,/ and print "$1,X_$2";
+            /\bYi_B\(\s*(\w+)\s*,\s*(\w+)\s*\)/ and print "$1,Yi_$2";
+        ' \
+        | sort -u \
+        >> "$tmp_file_2"
+        shift
+    done
+    sort "$tmp_file_1" "$tmp_file_2" \
+    | uniq -u \
+    > "$tmp_file_0"
+    sort "$tmp_file_1" "$tmp_file_0" \
+    | uniq -d \
+    > "$tmp_file_2"
+    if [ -s "$tmp_file_2" ]; then
+        echo 'enum'
+        echo -n '{'
+        perl -e '
+            local $\ = $/;
+            $_ = <>;
+            chomp;
+            print " _XhYi_uid($_) = _F_uid_v( ~0 << ( sizeof(int) * 8 / 2 - 1 ))";
+            while(<>)
+            {   chomp;
+                print ", _XhYi_uid($_)";
+            }
+        ' "$tmp_file_2"
+        echo '};'
+    fi
+    ;;
 -h1) #‹report› ‘uid’ declarations.
     trap 'rm "$tmp_file_0" "$tmp_file_1" "$tmp_file_2"' EXIT
     tmp_file_0=$(mktemp); tmp_file_1=$(mktemp); tmp_file_2=$(mktemp)
@@ -94,67 +152,8 @@ case "$1" in
         fi
     fi
     ;;
--h1_) #‹report› ‘uid’ declarations for these are used by ‹modules› and owned elsewhere; in the executable program if compiled with the ‹modules› as ‘dll’.
-    trap 'rm "$tmp_file_0" "$tmp_file_1" "$tmp_file_2"' EXIT
-    tmp_file_0=$(mktemp); tmp_file_1=$(mktemp); tmp_file_2=$(mktemp)
-    while [ -n "$2" ]; do
-        awk '
-            /\/\*/,/\*\// {
-                print ""
-                next
-            }
-            { print }
-        ' <"$2" \
-        | perl -ne '
-            local $\ = $/;
-            chomp;
-            /\bX_A\(\s*(\w+)\s*,\s*(\w+)\s*\)/ and print "$1,X_$2";
-            /\bYi_A\(\s*(\w+)\s*,\s*(\w+)\s*\)/ and print "$1,Yi_$2";
-        ' \
-        | sort -u \
-        >> "$tmp_file_1"
-        awk '
-            /\/\*/,/\*\// {
-                print ""
-                next
-            }
-            { print }
-        ' <"$2" \
-        | perl -ne '
-            local $\ = $/;
-            chomp;
-            /\bX_B\(\s*(\w+)\s*,\s*(\w+)\s*,/ and print "$1,X_$2";
-            /\bYi_B\(\s*(\w+)\s*,\s*(\w+)\s*\)/ and print "$1,Yi_$2";
-        ' \
-        | sort -u \
-        >> "$tmp_file_2"
-        shift
-    done
-    sort "$tmp_file_1" "$tmp_file_2" \
-    | uniq -u \
-    > "$tmp_file_0"
-    sort "$tmp_file_1" "$tmp_file_0" \
-    | uniq -d \
-    > "$tmp_file_2"
-    if [ -s "$tmp_file_2" ]; then
-        echo 'enum'
-        echo -n '{'
-        perl -e '
-            local $\ = $/;
-            $_ = <>;
-            chomp;
-            print " _XhYi_uid($_) = _F_uid_v( ~0 << ( sizeof(int) * 8 / 2 - 1 ))";
-            while(<>)
-            {   chomp;
-                print ", _XhYi_uid($_)";
-            }
-        ' "$tmp_file_2"
-        echo '};'
-    fi
-    ;;
 -h2) #type forward declarations.
     perl -e '
-        my $last_line;
         local $\ = $/;
         while(<>)
         {   chomp;
@@ -218,7 +217,7 @@ case "$1" in
             }elsif( /^(?:enum|struct|union)\s+E_\w+/ ) #typy publiczne.
             {   $inside_braces = 1;
                 $last_line = $_;
-            }elsif( /^E_\w*\(/ ) #procedura publiczna.
+            }elsif( /^E_\w+\(/ ) #procedura publiczna.
             {   print $last_line;
                 print;
                 $inside_braces = 4;

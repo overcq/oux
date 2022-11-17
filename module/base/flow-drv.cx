@@ -48,7 +48,7 @@ struct E_flow_Q_task_Z
     #ifdef C_line_report
   Pc proc_name;
     #endif
-  N run_state_object;
+  I run_state_object;
   N stack_size;
     #ifdef E_flow_C_thread_system_unblock_reports
   pthread_mutex_t *thread_flow_mutex;
@@ -324,7 +324,7 @@ E_flow_Q_task_M( I *uid
                 W( thread_proc_arg );
             return ~0;
         }
-        B *M_( thread_switch_back );
+        volatile B *M_( thread_switch_back );
         if( !thread_switch_back )
         {   Vr_( pthread_mutex_destroy( thread_flow_mutex ));
             W( thread_flow_mutex );
@@ -485,8 +485,10 @@ E_flow_Q_task_M( I *uid
         task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id );
         if( task->run_state != E_flow_Z_run_state_S_ready )
         {   E_base_S->E_flow_Q_task_S_current = task_id_;
+            task->run_state = E_flow_Z_run_state_S_stopping_by_task;
             Vr_( pthread_mutex_unlock( thread_flow_mutex ));
             Vr_( pthread_join( task->thread, 0 ));
+            E_base_S->E_flow_Q_task_S_current = task_id_;
             V0_( munmap( task_proc_args.alt_stack.ss_sp, task_proc_args.alt_stack.ss_size ));
             W( thread_switch_back );
             Vr_( pthread_mutex_destroy( thread_flow_mutex ));
@@ -539,7 +541,7 @@ E_flow_Q_task_M( I *uid
     return task_id;
 }
     #ifdef E_flow_C_thread_system_unblock_reports
-// Nie wolno tworzyć “wątku”/‘instancji’ tego samego ‹zadania› w bloku startowym (innej ‘instancji’) tego samego ‹zadania›. Czyli nie wolno tworzyć wogóle w takim ‹zadaniu›, ponieważ ‹zadania› tworzy się w bloku startowym.
+// Nie wolno tworzyć “wątku”/‘instancji’ tego samego ‹zadania› w bloku startowym (innej ‘instancji’) tego samego ‹zadania›. Czyli nie wolno tworzyć w ogóle w takim ‹zadaniu›, ponieważ ‹zadania› tworzy się w bloku startowym.
 I
 E_flow_Q_task_M_thread( I *uid
 , I subid
@@ -609,7 +611,7 @@ E_flow_Q_task_I_begin( void
     task->run_state = E_flow_Z_run_state_S_ready;
         #ifdef E_flow_C_thread_system_unblock_reports
     if( U_R( task->type, system_unblock_report ))
-    {   B *thread_switch_back = task->thread_switch_back;
+    {   volatile B *thread_switch_back = task->thread_switch_back;
         *thread_switch_back = yes;
         pthread_mutex_t *thread_flow_mutex = task->thread_flow_mutex;
         Vr_( pthread_sigmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ));
@@ -938,7 +940,7 @@ E_flow_Q_impulser_I_wait( I id
 void
 E_flow_Q_thread_system_unblock_report_M( void ( *thread_unblock_proc )(P)
 , pthread_mutex_t **thread_flow_mutex
-, B **thread_switch_back
+, volatile B **thread_switch_back
 ){  struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
     task->thread_unblock_proc = thread_unblock_proc;
     *thread_flow_mutex = task->thread_flow_mutex;
@@ -1140,7 +1142,7 @@ Loop:
         {   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id );
                 #ifdef E_flow_C_thread_system_unblock_reports
             if( U_R( task->type, system_unblock_report ))
-            {   B *thread_switch_back = task->thread_switch_back;
+            {   volatile B *thread_switch_back = task->thread_switch_back;
                 if( !*thread_switch_back )
                 {   E_base_S->E_flow_Q_task_S_current = task_id;
                     pthread_mutex_t *thread_flow_mutex = task->thread_flow_mutex;
@@ -1178,7 +1180,7 @@ Loop:
         struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
             #ifdef E_flow_C_thread_system_unblock_reports
         if( U_R( task->type, system_unblock_report ))
-        {   B *thread_switch_back = task->thread_switch_back;
+        {   volatile B *thread_switch_back = task->thread_switch_back;
             if( !*thread_switch_back )
             {   pthread_mutex_t *thread_flow_mutex = task->thread_flow_mutex;
                 Vr_( pthread_sigmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ));

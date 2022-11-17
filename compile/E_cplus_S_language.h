@@ -1,4 +1,3 @@
-//-*-C-*-
 /*******************************************************************************
 *   ___   publicplace
 *  ¦OUX¦  ‟C+” into ‟C”
@@ -169,7 +168,7 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
 // Deklaracja ‹procedury› generującej ‹systemowy raport odblokowujący› dla ‹zadania›; odblokowującej to ‹zadanie›.
 #define Xh_A( thread_unblock_proc_ ) \
   pthread_mutex_t *J_autogen( thread_flow_mutex ); \
-  B *J_autogen( thread_switch_back ); \
+  volatile B *J_autogen( thread_switch_back ); \
   E_flow_Q_thread_system_unblock_report_M(( thread_unblock_proc_ ), &J_autogen( thread_flow_mutex ), &J_autogen( thread_switch_back ))
 // Tuż przed wywołaniem procedury blokującej w oczekiwaniu na ‹systemowy raport odblokowujący›.
 #define Xh_B_() \
