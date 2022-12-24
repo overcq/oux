@@ -512,6 +512,9 @@ E_flow_Q_task_M( I *uid
     task->thread = pthread_self();
         #endif
     P *p = ( P * )exe_stack - 1;
+        #if defined( __i386__ )
+    p--;
+        #endif
     *p = (P)&E_flow_Q_task_I_stop;
     E_flow_Q_task_I_switch( task_id );
     if( !task->exe_stack ) // W bloku– nowe ‹zadanie›: nic nie zmieniać na stosie należącym do przełączanego.
@@ -526,7 +529,7 @@ E_flow_Q_task_M( I *uid
         //NKN Pozostaje zagwarantowanie, że procedura ‹zadania› nie będzie nigdy oczekiwać (ze względu na ‘abi’) niczego tutaj nie zapewnianego przez ‘callera’ (m.in. rezerwacji obszaru na stosie, gdy argumentów i tak nie ma przekazywanych).
         :
         : "r" (p), "r" ( task_proc )
-                #if defined( __i386__ )
+            #if defined( __i386__ )
         : "esp"
             #else
         : "rsp"
@@ -1306,7 +1309,7 @@ E_flow_Q_task_I_switch( I task_to_id
     "\n" "test      %1,%1"
 //CONF jest ‘cmov’?
             #if 1
-    "\n" "cmovne    %1,%%esp"
+    "\n" "cmovnz    %1,%%esp"
             #else
     "\n" "jz        0f"
     "\n" "mov       %1,%%esp"

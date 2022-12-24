@@ -479,7 +479,9 @@ E_x_Q_window_M( I display_id
 ){  struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
     I window_id = E_mem_Q_tab_I_add( display->window );
     if( !~window_id )
+    {   GV_(NA);
         return ~0;
+    }
     struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
     window->screen_id = ~screen_id ? screen_id : display->Z_screen_id_S_default;
     struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, window->screen_id );
@@ -488,8 +490,32 @@ E_x_Q_window_M( I display_id
     window->width_new = window->width = width;
     window->height_new = window->height = height;
     window->object = E_mem_Q_tab_M( sizeof( struct E_x_Q_object_Z ), 0 );
+    if( !window->object )
+    {   GV_(NA);
+        if( !~E_mem_Q_tab_I_remove( display->window, window_id ))
+        {   GV_(NA);
+        }
+        return ~0;
+    }
     Mt_( window->drawable, window->width * window->height );
+    if( !window->drawable )
+    {   GV_(NA);
+        E_mem_Q_tab_W( window->object );
+        if( !~E_mem_Q_tab_I_remove( display->window, window_id ))
+        {   GV_(NA);
+        }
+        return ~0;
+    }
     Mt_( window->object_mask, window->width * window->height );
+    if( !window->object_mask )
+    {   GV_(NA);
+        W( window->drawable );
+        E_mem_Q_tab_W( window->object );
+        if( !~E_mem_Q_tab_I_remove( display->window, window_id ))
+        {   GV_(NA);
+        }
+        return ~0;
+    }
     for_n( i, window->width * window->height )
         window->object_mask[i] = ~0;
     window->user_activity_time = window->last_user_activity_time = 0;
