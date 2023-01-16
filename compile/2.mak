@@ -553,9 +553,7 @@ distclean: clean
 maintainer-clean: distclean
 	$(RM) -r $(foreach module,$(H_make_S_modules),$(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/.libs))
 	$(RM) $(foreach module,$(H_make_S_modules),$(addprefix $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/$(module)/),*.so *.o E_cplus_S_0_$(module)__*.h E_cplus_S_1_$(module)__*.h E_cplus_S_2_$(module)__*.h *.c)) \
-    *.o E_cplus_S_0_*.h E_cplus_S_1_*.h E_cplus_S_2_*.h *.c \
-    $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/E_cplus_S_to_libs.h) E_cplus_S_not_to_libs.h \
-    $(H_make_S_module_path)/E_cplus_S_cx_sources E_cplus_S_cx_sources
+      *.o E_cplus_S_0_*.h E_cplus_S_1_*.h E_cplus_S_2_*.h *.c
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Uruchamianie rezultatu nie zainstalowanego.
 run:

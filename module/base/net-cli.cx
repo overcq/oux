@@ -86,9 +86,9 @@ E_net_cli_Q_headers_R_i( Pc *headers
     Pc s = M( l + 1 );
     if( !s )
         return 0;
-    E_text_Z_s_P_s0_copy_0( E_text_Z_s_P_s0_copy( s, header ), ": " );
+    E_text_Z_s_P_copy_s0_0( E_text_Z_s_P_copy_s0( s, header ), ": " );
     for_n( i, headers_n )
-        if( E_text_Z_s0_T_s0_starts_case( headers[i], s )
+        if( E_text_Z_s0_T_starts_case_s0( headers[i], s )
         && !header_i--
         )
         {   W(s);
@@ -238,7 +238,7 @@ Cont:   ai_1 = ai_1->ai_next;
     Pc s;
     unsigned l;
     SSL_get0_alpn_selected( ssl, ( N8 ** )&s, &l );
-    *http2 = E_text_Z_s_T_s_eq( s, s + l, (Pc)&E_net_http2_S_alpn[1], (Pc)&E_net_http2_S_alpn[1] + 2 );
+    *http2 = E_text_Z_s_T_eq_s( s, s + l, (Pc)&E_net_http2_S_alpn[1], (Pc)&E_net_http2_S_alpn[1] + 2 );
     if( *http2 )
     {   if( !E_mem_Q_blk_I_append( &E_net_http2_S_connect, 1 ))
         {   C buf[ 9 + 8 ];
@@ -619,31 +619,31 @@ D( net, cli )
                 G_(); Gd(i); Gs0_( "doczytano dane" ); Gd(l); Gd( E_net_http_S_connect[i].buf_l );
             }
             if( !E_net_http_S_connect[i].next )
-            {   Pc headers_end = E_text_Z_s_R_s0_search( E_net_http_S_connect[i].buf, E_net_http_S_connect[i].buf + E_net_http_S_connect[i].buf_l, "\r\n\r\n" );
+            {   Pc headers_end = E_text_Z_s_R_search_s0( E_net_http_S_connect[i].buf, E_net_http_S_connect[i].buf + E_net_http_S_connect[i].buf_l, "\r\n\r\n" );
                 if( headers_end == E_net_http_S_connect[i].buf + E_net_http_S_connect[i].buf_l )
                     goto End_2;
-                Pc s = E_text_Z_s_R_s0_search( E_net_http_S_connect[i].buf, E_net_http_S_connect[i].buf + E_net_http_S_connect[i].buf_l, "\r\n" );
-                Pc s_1 = E_text_Z_s_R_c_search( E_net_http_S_connect[i].buf, s, ' ' );
+                Pc s = E_text_Z_s_R_search_s0( E_net_http_S_connect[i].buf, E_net_http_S_connect[i].buf + E_net_http_S_connect[i].buf_l, "\r\n" );
+                Pc s_1 = E_text_Z_s_R_search_c( E_net_http_S_connect[i].buf, s, ' ' );
                 if( s_1 == s
-                || !E_text_Z_s_T_s0_eq( E_net_http_S_connect[i].buf, s_1, "HTTP/1.1" )
+                || !E_text_Z_s_T_eq_s0( E_net_http_S_connect[i].buf, s_1, "HTTP/1.1" )
                 )
                     goto End_1;
-                Pc s_2 = E_text_Z_s_R_c_search( s_1 + 1, s, ' ' );
+                Pc s_2 = E_text_Z_s_R_search_c( s_1 + 1, s, ' ' );
                 if( s_2 == s
-                || !E_text_Z_s_T_s0_eq( s_1 + 1, s_2, "200" )
+                || !E_text_Z_s_T_eq_s0( s_1 + 1, s_2, "200" )
                 )
                     goto End_1;
-                s_1 = E_text_Z_s_R_s0_search( s, headers_end, "\r\nContent-Length: " );
+                s_1 = E_text_Z_s_R_search_s0( s, headers_end, "\r\nContent-Length: " );
                 if( s_1 == headers_end )
                     goto End_1;
-                s_2 = E_text_Z_s_R_s0_search( s_1 + 18, headers_end + 2, "\r\n" );
+                s_2 = E_text_Z_s_R_search_s0( s_1 + 18, headers_end + 2, "\r\n" );
                 E_net_http_S_connect[i].l = E_text_Z_s_Z_10_N_n( s_1 + 18, s_2, &s_1 );
                 if( s_1 != s_2 )
                     goto End_1;
-                s_1 = E_text_Z_s_R_s0_search( s, headers_end, "\r\nContent-Encoding: " );
+                s_1 = E_text_Z_s_R_search_s0( s, headers_end, "\r\nContent-Encoding: " );
                 if( s_1 != headers_end )
-                {   s_2 = E_text_Z_s_R_s0_search( s_1 + 20, headers_end + 2, "\r\n" );
-                    if( E_text_Z_s_T_s0_eq( s_1 + 20, s_2, "gzip" ))
+                {   s_2 = E_text_Z_s_R_search_s0( s_1 + 20, headers_end + 2, "\r\n" );
+                    if( E_text_Z_s_T_eq_s0( s_1 + 20, s_2, "gzip" ))
                     {   M_( E_net_http_S_connect[i].z_stream );
                         if( !E_net_http_S_connect[i].z_stream )
                             goto End_1;
@@ -673,7 +673,7 @@ D( net, cli )
                     }
                     goto End_1;
                 }
-                E_text_Z_s_P_s0_copy_0( E_net_http_S_connect[i].file_name, "/tmp/oux-net-cli-XXXXXX" );
+                E_text_Z_s_P_copy_s0_0( E_net_http_S_connect[i].file_name, "/tmp/oux-net-cli-XXXXXX" );
                 int fd;
                 V1( fd = mkstemp( E_net_http_S_connect[i].file_name ))
                 {   W( E_net_http_S_connect[i].file_name );
@@ -893,7 +893,7 @@ End_1:      if( E_net_http_S_connect[i].ssl )
                             {   goaway_error = E_net_http2_Z_error_S_internal_error;
                                 goto End2_2;
                             }
-                            E_text_Z_s_P_s0_copy_0( stream->file_name, "/tmp/oux-net-cli-XXXXXX" );
+                            E_text_Z_s_P_copy_s0_0( stream->file_name, "/tmp/oux-net-cli-XXXXXX" );
                             int fd;
                             V1( fd = mkstemp( stream->file_name ))
                             {   W( stream->file_name );
@@ -910,7 +910,7 @@ End_1:      if( E_net_http_S_connect[i].ssl )
                             }
                             Pc enc = E_net_cli_Q_headers_R( stream->headers, stream->headers_n, "content-encoding" );
                             if( enc
-                            && E_text_Z_s0_T_s0_eq( enc, "gzip" )
+                            && E_text_Z_s0_T_eq_s0( enc, "gzip" )
                             )
                             {   M_( stream->z_stream );
                                 if( !stream->z_stream )
@@ -1079,7 +1079,7 @@ End_1:      if( E_net_http_S_connect[i].ssl )
 Http2_empty_data:               ;
                                 Pc status = E_net_cli_Q_headers_R( stream->headers, stream->headers_n, ":status" );
                                 if( !status
-                                || !E_text_Z_s0_T_s0_eq( status, "200" )
+                                || !E_text_Z_s0_T_eq_s0( status, "200" )
                                 )
                                     ;
                                 goto Reset_stream;

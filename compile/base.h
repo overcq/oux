@@ -22,13 +22,13 @@ E_text_Z_s0_R_l( Pc s
 }
 _inline
 Pc
-E_text_Z_s0_R_0_end( Pc s
+E_text_Z_s0_R_end_0( Pc s
 ){  return E_text_Z_s0_R_end(s) + 1;
 }
 _inline
 N
-E_text_Z_s0_R_0_l( Pc s
-){  return E_text_Z_s0_R_0_end(s) - s;
+E_text_Z_s0_R_l_0( Pc s
+){  return E_text_Z_s0_R_end_0(s) - s;
 }
 //------------------------------------------------------------------------------
 _inline
@@ -39,9 +39,9 @@ E_text_Z_s_P_0( Pc s
 }
 _inline
 Pc
-E_text_Z_s0_R_c_search_last( Pc s
+E_text_Z_s0_R_search_last_c( Pc s
 , C c
-){  return E_text_Z_s_R_c_search_last( s, E_text_Z_s0_R_0_end(s), c );
+){  return E_text_Z_s_R_search_last_c( s, E_text_Z_s0_R_end_0(s), c );
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 _inline
