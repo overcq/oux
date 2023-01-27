@@ -412,6 +412,7 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
     #endif
 #define _forced_statement                   __asm__ volatile ( "" )
 #define _internal                           __attribute__ ((__visibility__( "internal" )))
+#define _packed                             __attribute__ ((__packed__))
     #ifndef _unreachable
 #define _unreachable                        __builtin_unreachable()
     #endif

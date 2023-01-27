@@ -138,13 +138,24 @@ I
 E_mem_Q_file_M( Pc path
 , B readonly
 , mode_t create_mode
-){  int fd;
+){  struct stat st;
+    V1( stat( path, &st ))
+        return ~0;
+    switch( st.st_mode & S_IFMT )
+    { case S_IFBLK:
+      case S_IFREG:
+            break;
+      default:
+            return ~0;
+    }
+    int fd;
     if(readonly)
         if( create_mode )
+        {   create_mode |= S_IRUSR | S_IWUSR;
                 #ifdef __gnu_linux__
-        {   VO1( fd = open( path, O_CREAT | O_RDONLY | O_DIRECT, create_mode ))
+            VO1( fd = open( path, O_CREAT | O_RDONLY | O_DIRECT, create_mode ))
                 #else
-        {   VO1( fd = open( path, O_CREAT | O_RDONLY, create_mode ))
+            VO1( fd = open( path, O_CREAT | O_RDONLY, create_mode ))
                 #endif
                 return ~0;
         }else
@@ -157,10 +168,11 @@ E_mem_Q_file_M( Pc path
         }
     else
         if( create_mode )
+        {   create_mode |= S_IRUSR | S_IWUSR;
                 #ifdef __gnu_linux__
-        {   VO1( fd = open( path, O_CREAT | O_RDWR | O_DIRECT, create_mode ))
+            VO1( fd = open( path, O_CREAT | O_RDWR | O_DIRECT, create_mode ))
                 #else
-        {   VO1( fd = open( path, O_CREAT | O_RDWR, create_mode ))
+            VO1( fd = open( path, O_CREAT | O_RDWR, create_mode ))
                 #endif
                 return ~0;
         }else
@@ -197,18 +209,10 @@ E_mem_Q_file_M( Pc path
         E_mem_Q_tab_I_remove( E_base_S->E_mem_Q_file_S, id );
         return ~0;
     }
-    struct stat st;
-    V1( fstat( fd, &st ))
-    {   W( file->unsaved );
-        W( file->blk );
-        V0( close(fd)){}
-        E_mem_Q_tab_I_remove( E_base_S->E_mem_Q_file_S, id );
-        return ~0;
-    }
-    U_R( file->mode, readonly ) = readonly;
     file->pos = 0;
     file->fd = fd;
     file->st_mode = st.st_mode;
+    U_R( file->mode, readonly ) = readonly;
     U_L( file->mode, opened_by_fd );
     U_L( file->current_blk, valid );
     U_L( file->current_blk, valid_sob );
@@ -217,7 +221,10 @@ E_mem_Q_file_M( Pc path
 }
 I
 E_mem_Q_file_M_fd( int fd
-){  I id = E_mem_Q_tab_I_add( E_base_S->E_mem_Q_file_S );
+){  struct stat st;
+    V1( fstat( fd, &st ))
+        return ~0;
+    I id = E_mem_Q_tab_I_add( E_base_S->E_mem_Q_file_S );
     if( !~id )
         return ~0;
     struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
@@ -238,18 +245,62 @@ E_mem_Q_file_M_fd( int fd
         E_mem_Q_tab_I_remove( E_base_S->E_mem_Q_file_S, id );
         return ~0;
     }
-    struct stat st;
-    V1( fstat( file->fd, &st ))
-    {   W( file->unsaved );
-        W( file->blk );
-        E_mem_Q_tab_I_remove( E_base_S->E_mem_Q_file_S, id );
-        return ~0;
-    }
-    U_R( file->mode, readonly ) = no;
     file->pos = 0;
     file->fd = fd;
     file->st_mode = st.st_mode;
+    U_L( file->mode, readonly );
     U_F( file->mode, opened_by_fd );
+    U_L( file->current_blk, valid );
+    U_L( file->current_blk, valid_sob );
+    U_L( file->current_blk, valid_eob );
+    return id;
+}
+// Utworzenie zmiennej plikowej.
+I
+E_mem_Q_file_Z_variable_M( void
+){  int fd;
+        #ifdef __gnu_linux__
+    VO1( fd = open( "/var/tmp", O_TMPFILE | O_RDWR | O_DIRECT, S_IRUSR | S_IWUSR ))
+        #else
+    VO1( fd = open( "/var/tmp", O_TMPFILE | O_RDWR, S_IRUSR | S_IWUSR ))
+        #endif
+        return ~0;
+    struct stat st;
+    V1( fstat( fd, &st ))
+    {   V0( close(fd)){}
+        return ~0;
+    }
+    I id = E_mem_Q_tab_I_add( E_base_S->E_mem_Q_file_S );
+    if( !~id )
+    {   V0( close(fd) ){}
+        return ~0;
+    }
+    struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
+    Mt_( file->blk, file->blk_n = 0 );
+    if( !file->blk )
+    {   V0( close(fd)){}
+        E_mem_Q_tab_I_remove( E_base_S->E_mem_Q_file_S, id );
+        return ~0;
+    }
+    Mt_( file->unsaved, file->unsaved_n = 0 );
+    if( !file->unsaved )
+    {   W( file->blk );
+        V0( close(fd)){}
+        E_mem_Q_tab_I_remove( E_base_S->E_mem_Q_file_S, id );
+        return ~0;
+    }
+    V1( file->l = lseek( fd, 0, SEEK_END ))
+    {   W( file->unsaved );
+        W( file->blk );
+        V0( close(fd)){}
+        E_mem_Q_tab_I_remove( E_base_S->E_mem_Q_file_S, id );
+        return ~0;
+    }
+    file->pos = 0;
+    file->fd = fd;
+    file->st_mode = st.st_mode;
+    U_L( file->mode, readonly );
+    U_L( file->mode, opened_by_fd );
     U_L( file->current_blk, valid );
     U_L( file->current_blk, valid_sob );
     U_L( file->current_blk, valid_eob );
@@ -456,6 +507,20 @@ E_mem_Q_file_I_save( I id
             file->unsaved_n = 0;
         }
     }
+    return 0;
+}
+// Zapis zmiennej plikowej i zwolnienie pamięci.
+N
+E_mem_Q_file_Z_variable_I_save( I id
+){  N ret = E_mem_Q_file_I_save(id);
+    if(ret)
+        return ret;
+    struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
+    for_n( blk_i, file->blk_n )
+        W( file->blk[ blk_i ].data );
+    if( !E_mem_Q_blk_I_remove( &file->blk, 0, file->blk_n ))
+        return ~0;
+    file->blk_n = 0;
     return 0;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

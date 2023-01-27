@@ -57,23 +57,82 @@ void
 E_mem_W_file( void
 ){  for_each( id, E_base_S->E_mem_Q_file_S, E_mem_Q_tab )
     {   struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
-        struct E_mem_Z_range *range = file->unsaved;
-            #ifdef __gnu_linux__
-        V0( fcntl( file->fd, F_SETFL, 0 )){}
-            #endif
-        VO1( ftruncate( file->fd, file->l )){}
-        for_n( unsaved_i, file->unsaved_n )
-        {   for_n( blk_i, file->blk_n )
-                if( range->pos >= file->blk[ blk_i ].pos )
-                    break;
-            N l = E_mem_Q_file_I_write_pos( file->fd
-            , range->pos
-            , file->blk[ blk_i ].data + range->pos - file->blk[ blk_i ].pos
-            , range->pos_end - range->pos
-            );
-            if( !~l )
-                return ~0;
-            range++;
+        if( !U_R( file->mode, readonly ))
+        {   if(( file->st_mode & S_IFMT ) == S_IFREG )
+            {   VO1( ftruncate( file->fd, file->l ))
+                    return ~0;
+            }
+            if( file->unsaved_n )
+            {   struct E_mem_Z_range *range = file->unsaved;
+                if(( file->st_mode & S_IFMT ) == S_IFBLK )
+                {   N last_pos_end = 0;
+                    for_n( unsaved_i, file->unsaved_n )
+                    {   for_n( blk_i, file->blk_n )
+                            if( range->pos < file->blk[ blk_i ].pos )
+                                break;
+                        blk_i--;
+                        if( range->pos_end < last_pos_end )
+                        {   range++;
+                            continue;
+                        }
+                        last_pos_end = E_simple_Z_n_I_align_up_to_v2( range->pos_end, E_base_S->E_mem_Q_file_S_buffer_l );
+                        if( blk_i != file->blk_n - 1 )
+                        {   N pos;
+                            for( pos = E_simple_Z_n_I_align_down_to_v2( range->pos, E_base_S->E_mem_Q_file_S_buffer_l ); pos != E_simple_Z_n_I_align_up_to_v2( range->pos_end, E_base_S->E_mem_Q_file_S_buffer_l ); pos += E_base_S->E_mem_Q_file_S_buffer_l )
+                            {   E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_file_S_buffer, file->blk[ blk_i ].data + pos - file->blk[ blk_i ].pos, E_base_S->E_mem_Q_file_S_buffer_l );
+                                N l = E_mem_Q_file_I_write_pos_blk( file->fd
+                                , pos
+                                , E_base_S->E_mem_Q_file_S_buffer
+                                , E_base_S->E_mem_Q_file_S_buffer_l
+                                );
+                                if( l != E_base_S->E_mem_Q_file_S_buffer_l )
+                                    return ~0;
+                            }
+                        }else
+                        {   N pos;
+                            for( pos = E_simple_Z_n_I_align_down_to_v2( range->pos, E_base_S->E_mem_Q_file_S_buffer_l ); pos != E_simple_Z_n_I_align_up_to_v2( range->pos_end, E_base_S->E_mem_Q_file_S_buffer_l ) - E_base_S->E_mem_Q_file_S_buffer_l; pos += E_base_S->E_mem_Q_file_S_buffer_l )
+                            {   E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_file_S_buffer, file->blk[ blk_i ].data + pos - file->blk[ blk_i ].pos, E_base_S->E_mem_Q_file_S_buffer_l );
+                                N l = E_mem_Q_file_I_write_pos_blk( file->fd
+                                , pos
+                                , E_base_S->E_mem_Q_file_S_buffer
+                                , E_base_S->E_mem_Q_file_S_buffer_l
+                                );
+                                if( l != E_base_S->E_mem_Q_file_S_buffer_l )
+                                    return l;
+                            }
+                            N buffer_l = J_min( E_simple_Z_n_I_align_up_to_v2( range->pos_end, E_base_S->E_mem_Q_file_S_buffer_l ), file->l ) - pos;
+                            E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_file_S_buffer, file->blk[ blk_i ].data + pos - file->blk[ blk_i ].pos, buffer_l );
+                            N l = E_mem_Q_file_I_write_pos_blk( file->fd
+                            , pos
+                            , E_base_S->E_mem_Q_file_S_buffer
+                            , E_base_S->E_mem_Q_file_S_buffer_l
+                            );
+                            if( l != buffer_l )
+                                return ~0;
+                        }
+                        range++;
+                    }
+                }else
+                {
+                        #ifdef __gnu_linux__
+                    V0( fcntl( file->fd, F_SETFL, 0 ))
+                        return ~0;
+                        #endif
+                    for_n( unsaved_i, file->unsaved_n )
+                    {   for_n_rev( blk_i, file->blk_n )
+                            if( range->pos >= file->blk[ blk_i ].pos )
+                                break;
+                        N l = E_mem_Q_file_I_write_pos( file->fd
+                        , range->pos
+                        , file->blk[ blk_i ].data + range->pos - file->blk[ blk_i ].pos
+                        , range->pos_end - range->pos
+                        );
+                        if( !~l )
+                            return l;
+                        range++;
+                    }
+                }
+            }
         }
         V0( close( file->fd )){}
     }
