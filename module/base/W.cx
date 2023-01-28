@@ -52,6 +52,7 @@ E_io_W_stream( void
     VO0_( nanosleep( &ts, &ts ));
         #endif
 }
+    #endif
 _internal
 void
 E_mem_W_file( void
@@ -59,8 +60,7 @@ E_mem_W_file( void
     {   struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
         if( !U_R( file->mode, readonly ))
         {   if(( file->st_mode & S_IFMT ) == S_IFREG )
-            {   VO1( ftruncate( file->fd, file->l ))
-                    return ~0;
+            {   VO1( ftruncate( file->fd, file->l )){}
             }
             if( file->unsaved_n )
             {   struct E_mem_Z_range *range = file->unsaved;
@@ -85,8 +85,6 @@ E_mem_W_file( void
                                 , E_base_S->E_mem_Q_file_S_buffer
                                 , E_base_S->E_mem_Q_file_S_buffer_l
                                 );
-                                if( l != E_base_S->E_mem_Q_file_S_buffer_l )
-                                    return ~0;
                             }
                         }else
                         {   N pos;
@@ -97,8 +95,6 @@ E_mem_W_file( void
                                 , E_base_S->E_mem_Q_file_S_buffer
                                 , E_base_S->E_mem_Q_file_S_buffer_l
                                 );
-                                if( l != E_base_S->E_mem_Q_file_S_buffer_l )
-                                    return l;
                             }
                             N buffer_l = J_min( E_simple_Z_n_I_align_up_to_v2( range->pos_end, E_base_S->E_mem_Q_file_S_buffer_l ), file->l ) - pos;
                             E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_file_S_buffer, file->blk[ blk_i ].data + pos - file->blk[ blk_i ].pos, buffer_l );
@@ -107,16 +103,13 @@ E_mem_W_file( void
                             , E_base_S->E_mem_Q_file_S_buffer
                             , E_base_S->E_mem_Q_file_S_buffer_l
                             );
-                            if( l != buffer_l )
-                                return ~0;
                         }
                         range++;
                     }
                 }else
                 {
                         #ifdef __gnu_linux__
-                    V0( fcntl( file->fd, F_SETFL, 0 ))
-                        return ~0;
+                    V0( fcntl( file->fd, F_SETFL, 0 )){}
                         #endif
                     for_n( unsaved_i, file->unsaved_n )
                     {   for_n_rev( blk_i, file->blk_n )
@@ -127,17 +120,20 @@ E_mem_W_file( void
                         , file->blk[ blk_i ].data + range->pos - file->blk[ blk_i ].pos
                         , range->pos_end - range->pos
                         );
-                        if( !~l )
-                            return l;
                         range++;
                     }
                 }
             }
         }
+            #ifdef C_middle_code
         V0( close( file->fd )){}
+            #endif
     }
+        #ifdef C_middle_code
     V0_( munmap( E_base_S->E_mem_Q_file_S_buffer, E_base_S->E_mem_Q_file_S_buffer_l ));
+        #endif
 }
+    #ifdef C_middle_code
 _internal
 void
 E_mem_W_blk( void
@@ -188,6 +184,7 @@ E_base_W( void
     W( E_base_S->E_flow_Q_process_call_S_service_path_guid );
         #endif
     D_W( io, stream_write );
+    E_mem_W_file();
         #ifdef C_middle_code
             #ifdef E_flow_drv_C_timer_monotonic
     V0_( timer_delete( E_base_S->E_flow_S_timer ));
@@ -200,7 +197,6 @@ E_base_W( void
     stack_t alt_stack;
     V0_( sigaltstack( 0, &alt_stack ));
     V0_( munmap( alt_stack.ss_sp, alt_stack.ss_size ));
-    E_mem_W_file();
         #endif
     _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_Z_sigset_S_process_exec, 0 );
         #ifdef C_middle_code
