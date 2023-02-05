@@ -239,7 +239,7 @@ CFLAGS += -O2 -Wno-overflow
 CFLAGS += -Wno-old-style-declaration -Wno-shift-negative-value
 		endif
     endif
-CFLAGS += -pedantic -fno-common -Wall -Wextra -Wno-missing-braces -Wno-parentheses -Wno-sign-compare -Wstrict-prototypes -Wno-switch -Wno-unused-parameter \
+CFLAGS += -fno-common -Wall -Wextra -Wno-missing-braces -Wno-parentheses -Wno-sign-compare -Wstrict-prototypes -Wno-switch -Wno-unused-parameter \
 -fno-stack-protector -fno-trapping-math -fwrapv \
 -pipe
     ifeq (clang,$(H_make_S_cc))

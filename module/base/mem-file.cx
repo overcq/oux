@@ -261,10 +261,21 @@ E_mem_Q_file_Z_variable_M( void
 ){  int fd;
         #ifdef __gnu_linux__
     VO1( fd = open( "/var/tmp", O_TMPFILE | O_RDWR | O_DIRECT, S_IRUSR | S_IWUSR ))
-        #else
-    VO1( fd = open( "/var/tmp", O_TMPFILE | O_RDWR, S_IRUSR | S_IWUSR ))
-        #endif
         return ~0;
+        #else
+    Pc file_name;
+    Vp( file_name = tempnam( "/var/tmp", "ocq" ))
+        return ~0;
+    VO1( fd = open( file_name, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR ))
+    {   free( file_name );
+        return ~0;
+    }
+    V1( unlink( file_name ))
+    {   free( file_name );
+        return ~0;
+    }
+    free( file_name );
+        #endif
     struct stat st;
     V1( fstat( fd, &st ))
     {   V0( close(fd)){}

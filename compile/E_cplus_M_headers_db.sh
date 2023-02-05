@@ -15,14 +15,14 @@ do
     apropos ${a}
 done \
 | awk '
-    /^[A-Za-z_][0-9A-Za-z_]*( *, *[A-Za-z_][0-9A-Za-z_]*)*( \[[0-9A-Za-z_-]+\])? *\([23]([A-Za-z][0-9A-Za-z]*)?(\/[0-9A-Za-z]*)?( *, *[23]([A-Za-z][0-9A-Za-z]*)?(\/[0-9A-Za-z]*)?)*\)/ {
-        if( match( $0, "^[A-Za-z_][0-9A-Za-z_]*( *, *[A-Za-z_][0-9A-Za-z_]*)* *, *PCRE2?\\([23]([A-Za-z][0-9A-Za-z]*)?(/[0-9A-Za-z]*)?( *, *[23]([A-Za-z][0-9A-Za-z]*)?(/[0-9A-Za-z]*)?)*\\)" ) != 0 )
+    /^[A-Za-z_][0-9A-Za-z_]*( *, *[A-Za-z_][0-9A-Za-z_]*)*?( \[[0-9A-Za-z_-]+\])? *\([23]([A-Za-z][0-9A-Za-z]*)?(\/[0-9A-Za-z]*)?( *, *[23]([A-Za-z][0-9A-Za-z]*)?(\/[0-9A-Za-z]*)?)*?\)/ {
+        if( match( $0, "^[A-Za-z_][0-9A-Za-z_]*( *, *[A-Za-z_][0-9A-Za-z_]*)*? *, *PCRE2?\\([23]([A-Za-z][0-9A-Za-z]*)?(/[0-9A-Za-z]*)?( *, *[23]([A-Za-z][0-9A-Za-z]*)?(/[0-9A-Za-z]*)?)*?\\)" ) != 0 )
             next
-        match( $0, "\\([23]([A-Za-z][0-9A-Za-z]*)?(/[0-9A-Za-z]*)?( *, *[23]([A-Za-z][0-9A-Za-z]*)?(/[0-9A-Za-z]*)?)*\\)" )
+        match( $0, "\\([23]([A-Za-z][0-9A-Za-z]*)?(/[0-9A-Za-z]*)?( *, *[23]([A-Za-z][0-9A-Za-z]*)?(/[0-9A-Za-z]*)?)*?\\)" )
         sects = substr( $0, RSTART, RLENGTH )
         match( sects, "^\\([23]([A-Za-z][0-9A-Za-z]*)?" )
         sect = substr( sects, RSTART + 1, RLENGTH - 1 )
-        match( $0, "^[A-Za-z_][0-9A-Za-z_]*( *, *[A-Za-z_][0-9A-Za-z_]*)*" )
+        match( $0, "^[A-Za-z_][0-9A-Za-z_]*( *, *[A-Za-z_][0-9A-Za-z_]*)*?" )
         split( substr( $0, RSTART, RLENGTH ), a, " *, *" )
         for ( i in a )
             print sect, a[i]

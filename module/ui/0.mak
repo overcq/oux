@@ -11,4 +11,5 @@ S_libraries := m util
     ifeq (FreeBSD,$(H_make_S_os))
 CFLAGS += -DNCURSES_WIDECHAR=1
 	endif
+S_headers := regex.h
 #*******************************************************************************
