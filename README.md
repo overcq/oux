@@ -61,9 +61,9 @@ To build the project, it is required to have the “man” documentation install
 The user should make regular updates, e.g. with a command `git pull`.
 Before using this command can be executed `make clean`, to remove any remaining intermediate files that depend on source files that have been removed in the new product version.
 
-Security updates can be installed after updating the product by executing the command `make; su; make install`. Then follow the appropriate update and installation instructions for the products that depend on the current one.
+Security updates can be installed after updating the product by executing the commands `make; su; make install`. Then follow the appropriate update and installation instructions for the products that depend on the current one.
 
-To completely remove the product from the user's device, execute, for example, the command `su; make uninstall; rm -fr oux`.
+To completely remove the product from the user's device, execute, for example, the commands `su; make uninstall; rm -fr oux`.
 
 # Other Licenses
 
