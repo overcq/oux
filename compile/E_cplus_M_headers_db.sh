@@ -25,15 +25,13 @@ done \
         match( $0, "^[A-Za-z_][0-9A-Za-z_]*( *, *[A-Za-z_][0-9A-Za-z_]*)*?" )
         split( substr( $0, RSTART, RLENGTH ), a, " *, *" )
         for ( i in a )
-            #if( match( a[i], "PCRE" ))
+            if( a[i] != "pcreposix" )
                 print sect, a[i]
     }
 ' \
 | sort -u \
 | grep -Eve " (${exc_man_re})\$" \
-| grep -Fie 3 \
-| grep -Fvie 3ssl \
-| xargs -n 2 bash -c "echo \$@ >/dev/stderr; env MANPAGER='/bin/cat' PAGER='/bin/cat' man \$@" bash \
+| xargs -n 2 env MANPAGER='/bin/cat' PAGER='/bin/cat' man \
 | awk '
     {
         gsub( "\033\\[[0-9]+m", "" )
@@ -42,8 +40,6 @@ done \
     }
     /[^ ]/
 ' \
-| grep -C 20 -Fwe pcreposix.h
-echo \
 | awk '
     /^SYNOPSIS$/,/^DESCRIPTION$/ {
         if( match( $0, "^SYNOPSIS$" ) != 0 )
