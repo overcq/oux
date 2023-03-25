@@ -7,16 +7,16 @@
 *         window driver
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2015‒4‒28 *
 *******************************************************************************/
-//zewnętrzne trwałe “XGrabServer” blokuje system; na przykład używane przez różnych “menedżerów okien” ‟X” podczas przeciągania okna.
-//w przyszłości, gdy jakiekolwiek pozostałe “NDFN” zostaną zrobione, to w celu sprawdzenia poprawności działania tego sterownika nie wystarczy jego użytkowanie w różnych warunkach, lecz będzie konieczne celowe przetestowanie przez podawanie wszystkich możliwych sekwencji “zdarzeń” odsuniętych o losowe minimalne odległości czasowe i punktowe: ⁃w forsowaniu użytkowania, ⁃na wewnętrznie obciążonym podsystemie ‟X”. by wyszukiwać błędne przełączenie przy którymś ekstremum integralności i wtedy dezintegrację sterownika rozpoznawaną po błędnym pojedynczym stanie, podczas gdy nienadążanie nie jest błędem.
+// Zewnętrzne trwałe “XGrabServer” blokuje system; na przykład używane przez różnych “menedżerów okien” ‟X” podczas przeciągania okna.
+// W przyszłości, gdy jakiekolwiek pozostałe “NDFN” zostaną zrobione, to w celu sprawdzenia poprawności działania tego sterownika nie wystarczy jego użytkowanie w różnych warunkach, lecz będzie konieczne celowe przetestowanie przez podawanie wszystkich możliwych sekwencji “zdarzeń” odsuniętych o losowe minimalne odległości czasowe i punktowe: ⁃w forsowaniu użytkowania, ⁃na wewnętrznie obciążonym podsystemie ‟X”. By wyszukiwać błędne przełączenie przy którymś ekstremum integralności i wtedy dezintegrację sterownika rozpoznawaną po błędnym pojedynczym stanie, podczas gdy nienadążanie nie jest błędem.
 //------------------------------------------------------------------------------
-//okno ‘dnd’ potrzebuje być utrzymywane w “menedżerze okien” na wierzchu wszystkich możliwych. typ okna “_NET_WM_WINDOW_TYPE_DND”, jeśli “menedżer okien” go obsługuje: czy ma być łącznie z “OVERRIDE_REDIRECT”, tak jak musi być dla zwykłych “menedżerów okien”?
-//TODO rozważyć jeszcze ·dodatkowo· blok usuniętego “grab_server”.
-//TODO uzupełnić o deterministyczny czas opóźnienia przerysowania po ponownym pokazaniu się okna ‹operatorowi›.
-//czy działa przeciąganie pomiędzy przyległymi wyświetlaczami bez “Xinerama”.
-//⁃uzupełnić o upuszczanie obiektu. podczas “drag” (‘grabnięcia’) “configure_notify” raportuje pozycję względem okna “root” z błędnym, pozostawionym z ostatnich operacji— “above_sibling”, ale i tak jest bezużyteczne dla ‘drop’, a tylko służy do przyszłej zmiany rozmiaru okna ‘dnd’ (np. przez dodawanie obiektów).
-//⁃zuniwersalizować synchronizację do zwizualizowania kliknięcia ( “U_X( display->req, draw_click )” ).
-//TODO kiedyś można zrobić tak, by uchwycenie animowanego elementu obiektu utrzymywało okno ‘dnd’ względem bieżącego położenia tego punktu elementu w obiekcie.
+// Okno ‘dnd’ potrzebuje być utrzymywane w “menedżerze okien” na wierzchu wszystkich możliwych. typ okna “_NET_WM_WINDOW_TYPE_DND”, jeśli “menedżer okien” go obsługuje: czy ma być łącznie z “OVERRIDE_REDIRECT”, tak jak musi być dla zwykłych “menedżerów okien”?
+//TODO Rozważyć jeszcze ·dodatkowo· blok usuniętego “grab_server”.
+//TODO Uzupełnić o deterministyczny czas opóźnienia przerysowania po ponownym pokazaniu się okna ‹operatorowi›.
+// Czy działa przeciąganie pomiędzy przyległymi wyświetlaczami bez “Xinerama”.
+// ⁃uzupełnić o upuszczanie obiektu. podczas “drag” (‘grabnięcia’) “configure_notify” raportuje pozycję względem okna “root” z błędnym, pozostawionym z ostatnich operacji— “above_sibling”, ale i tak jest bezużyteczne dla ‘drop’, a tylko służy do przyszłej zmiany rozmiaru okna ‘dnd’ (np. przez dodawanie obiektów).
+// ⁃zuniwersalizować synchronizację do zwizualizowania kliknięcia ( “U_X( display->req, draw_click )” ).
+//TODO Kiedyś można zrobić tak, by uchwycenie animowanego elementu obiektu utrzymywało okno ‘dnd’ względem bieżącego położenia tego punktu elementu w obiekcie.
 //==============================================================================
     #ifdef E_flow_C_thread_system_unblock_reports
 _internal
@@ -44,7 +44,8 @@ D( x_window, events_pointer_button_check )
     I_D
     {   Yi_B( x_window, events_pointer_button_check )
             break;
-        E_flow_Q_thread_system_unblock_report_I_unblock( D_id(x_window,events), 0 ); //NDFN “0”. zamiast obecnego zrobić ciągły, kolejkowany ‹impulsator›.
+        I display_id = 0;
+        E_x_window_D_events_I_unblock( &display_id ); //NDFN “0”. Zamiast obecnego zrobić ciągły, kolejkowany ‹impulsator›.
     }
     Yi_W( x_window, events_pointer_button_check );
 }
@@ -291,7 +292,8 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                         {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->cursor_window );
                             struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->cursor_object );
                             if( object->draw == E_x_Q_object_Z_entry_I_draw )
-                            {   struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
+                            {   B U_L( req, draw );
+                                struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
                                 if( ~u && iswprint(u) )
                                 {   Pc s = object_data->text;
                                     for_n( i, object_data->cursor_pos )
@@ -351,18 +353,22 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                             object_data->text_start--;
                                         }
                                     }
+                                    U_F( req, draw );
                                 }else if( !alt && !alt_r && !ctrl && !logo && !shift )
                                     switch(keysym)
                                     { case XK_Return:
                                       case XK_KP_Enter:
-                                            if( U_E( object_data->state, cursor_visible_ ))
-                                                E_x_Q_object_I_draw(window);
+                                            U_L( object_data->state, cursor_visible_ );
                                             display->cursor_window = ~0;
+                                            U_F( req, draw );
                                             break;
                                       case XK_Home:
                                       case XK_KP_Home:
+                                            if( !object_data->text_start )
+                                                break;
                                             object_data->text_start = 0;
                                             object_data->cursor_pos = 0;
+                                            U_F( req, draw );
                                             break;
                                       case XK_Left:
                                       case XK_KP_Left:
@@ -373,8 +379,8 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                             {   if( object_data->text_start > object_data->cursor_pos - 1 )
                                                     object_data->text_start = object_data->cursor_pos - 1;
                                             }else
-                                                if( object_data->text_start )
-                                                    object_data->text_start = 0;
+                                                object_data->text_start = 0;
+                                            U_F( req, draw );
                                             break;
                                       case XK_Right:
                                       case XK_KP_Right:
@@ -425,11 +431,15 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                                     object_data->text_start--;
                                                 }
                                             }
+                                            U_F( req, draw );
                                             break;
                                         }
                                       case XK_End:
                                       case XK_KP_End:
-                                        {   object_data->text_start = E_text_Z_su0_R_l( object_data->text );
+                                        {   N text_start = E_text_Z_su0_R_l( object_data->text );
+                                            if( object_data->text_start == text_start )
+                                                break;
+                                            object_data->text_start = text_start;
                                             struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, object_data->font );
                                             S16 x = object->width;
                                             Pc s = E_text_Z_s0_R_end( object_data->text );
@@ -451,6 +461,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                                 object_data->text_start--;
                                             }
                                             object_data->cursor_pos = E_text_Z_su0_R_l( object_data->text );
+                                            U_F( req, draw );
                                             break;
                                         }
                                       case XK_BackSpace:
@@ -475,6 +486,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                             {   GV_(bad UTF-8 character); V();
                                             }
                                             E_mem_Q_blk_I_remove( &object_data->text, s - object_data->text, s_ - s );
+                                            U_F( req, draw );
                                             break;
                                         }
                                       case XK_Delete:
@@ -495,6 +507,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                             {   GV_(bad UTF-8 character); V();
                                             }
                                             E_mem_Q_blk_I_remove( &object_data->text, s - object_data->text, s_ - s );
+                                            U_F( req, draw );
                                             break;
                                         }
                                     }
@@ -543,8 +556,8 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                             {   if( object_data->text_start > object_data->cursor_pos - 1 )
                                                     object_data->text_start = object_data->cursor_pos - 1;
                                             }else
-                                                if( object_data->text_start )
-                                                    object_data->text_start = 0;
+                                                object_data->text_start = 0;
+                                            U_F( req, draw );
                                             break;
                                         }
                                       case XK_Right:
@@ -630,9 +643,15 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                                     object_data->text_start--;
                                                 }
                                             }
+                                            U_F( req, draw );
                                             break;
                                         }
                                     }
+                                if( U_R( req, draw ))
+                                {   U_F( window->req, draw );
+                                    U_F( display->req, draw );
+                                    U_F( display->req, flush );
+                                }
                             }
                         }
                         break;
@@ -880,12 +899,12 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                         break;
                     }
                   default:
-                        //czy da się zrobić uproszczone zabezpieczenie przed “zdarzeniami” ‘x’ przychodzącymi nie z ‘servera’ ‟X”— przez rozpoznawanie tych od “menedżera okien” ‟X”?
+                        // Czy da się zrobić uproszczone zabezpieczenie przed “zdarzeniami” ‘x’ przychodzącymi nie z ‘servera’ ‟X” — przez rozpoznawanie tych od “menedżera okien” ‟X”?
                         switch( XCB_EVENT_RESPONSE_TYPE( x_event ))
                         { case XCB_CONFIGURE_NOTIFY:
                             {   xcb_configure_notify_event_t *x_configure = (P)x_event;
                                 G(); Gs0_( "configure notify" ); Gd( x_configure->above_sibling ); Gd( x_configure->x ); Gd( x_configure->y ); Gd( x_configure->width ); Gd( x_configure->height );
-                                //NDFN nie wiadomo co robić z obiektami, jeśli nie mieszczą się w nowym rozmiarze okna. uniemożliwiać zmniejszanie okna tak, że zakrywałoby obiekty?
+                                //NDFN Nie wiadomo co robić z obiektami, jeśli nie mieszczą się w nowym rozmiarze okna. Uniemożliwiać zmniejszanie okna tak, że zakrywałoby obiekty?
                                 window->width_new = x_configure->width;
                                 window->height_new = x_configure->height;
                                 U_L( window->mode, resize );
@@ -1068,7 +1087,10 @@ Loop:           free( x_event );
                                 struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->cursor_object );
                                 struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
                                 if( U_E( object_data->state, cursor_visible_ ))
-                                    E_x_Q_object_I_draw(window);
+                                {   U_F( window->req, draw );
+                                    U_F( display->req, draw );
+                                    U_F( display->req, flush );
+                                }
                             }
                             I xbutton_object_id;
                             if( display->pointer_button_S_x >= 0
@@ -1081,14 +1103,13 @@ Loop:           free( x_event );
                                 , display->pointer_button_S_x, display->pointer_button_S_y
                                 );
                             else
-                                xbutton_object_id = ~0;
-                            if( ~xbutton_object_id )
+                                xbutton_object_id = (I)~( ~0 << E_x_Q_obj_C_id_bits );
+                            if( (I)xbutton_object_id != (I)~( ~0 << E_x_Q_obj_C_id_bits ))
                             {   struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, xbutton_object_id );
                                 if( U_R( object->mode, draggable )
                                 && display->pointer_button_S_seq_i == 1
                                 && display->pointer_button == 1
-                                ){  if( ~display->cursor_window )
-                                        display->cursor_window = ~0;
+                                ){  display->cursor_window = ~0;
                                     Mt_( display->drag_S_object_src, 1 );
                                     if( display->drag_S_object_src )
                                     {   struct E_x_Q_window_Z *dnd_window = &screen->dnd_window;
@@ -1273,7 +1294,7 @@ Drag_start_error:                   {   GV_(NA);
                                         object = E_mem_Q_tab_R( window->object, object_id );
                                     }
                                 }
-                            }else if( ~display->cursor_window )
+                            }else
                                 display->cursor_window = ~0;
                         }else
                         {   if( display->pointer_button_S_seq_i == 2
@@ -1301,6 +1322,7 @@ Drag_start_error:                   {   GV_(NA);
                         if( display->pointer_button_S_impulser_time != grab_time )
                         {   display->pointer_button_S_impulser_time = grab_time;
                             Yi_F( x_window, events_pointer_button_check, ( display->pointer_button_S_seq_i & 1 ? display->pointer_button_C_release_timeout : display->pointer_button_C_seq_timeout ) * 1000 );
+                            G_();
                         }
                             #endif
                     }
@@ -1712,7 +1734,7 @@ D( x_window, draw )
                         , screen->object_mask_gc
                         , XCB_GC_FOREGROUND | XCB_GC_CLIP_MASK
                         , ( N32[] )
-                          { ~0
+                          { ~( ~0 << E_x_Q_obj_C_id_bits )
                           , window->drawable_mask_2
                           }
                         );

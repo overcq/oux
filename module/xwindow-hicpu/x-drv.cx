@@ -298,7 +298,8 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                         {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->cursor_window );
                             struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->cursor_object );
                             if( object->draw == E_x_Q_object_Z_entry_I_draw )
-                            {   struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
+                            {   B U_L( req, draw );
+                                struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
                                 if( ~u && iswprint(u) )
                                 {   Pc s = object_data->text;
                                     for_n( i, object_data->cursor_pos )
@@ -358,18 +359,22 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                             object_data->text_start--;
                                         }
                                     }
+                                    U_F( req, draw );
                                 }else if( !alt && !alt_r && !ctrl && !logo && !shift )
                                     switch(keysym)
                                     { case XK_Return:
                                       case XK_KP_Enter:
-                                            if( U_E( object_data->state, cursor_visible_ ))
-                                                E_x_Q_object_I_draw(window);
+                                            U_L( object_data->state, cursor_visible_ );
                                             display->cursor_window = ~0;
+                                            U_F( req, draw );
                                             break;
                                       case XK_Home:
                                       case XK_KP_Home:
+                                            if( !object_data->text_start )
+                                                break;
                                             object_data->text_start = 0;
                                             object_data->cursor_pos = 0;
+                                            U_F( req, draw );
                                             break;
                                       case XK_Left:
                                       case XK_KP_Left:
@@ -382,6 +387,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                             }else
                                                 if( object_data->text_start )
                                                     object_data->text_start = 0;
+                                            U_F( req, draw );
                                             break;
                                       case XK_Right:
                                       case XK_KP_Right:
@@ -432,11 +438,15 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                                     object_data->text_start--;
                                                 }
                                             }
+                                            U_F( req, draw );
                                             break;
                                         }
                                       case XK_End:
                                       case XK_KP_End:
-                                        {   object_data->text_start = E_text_Z_su0_R_l( object_data->text );
+                                        {   N text_start = E_text_Z_su0_R_l( object_data->text );
+                                            if( object_data->text_start == text_start )
+                                                break;
+                                            object_data->text_start = text_start;
                                             struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, object_data->font );
                                             S16 x = object->width;
                                             Pc s = E_text_Z_s0_R_end( object_data->text );
@@ -458,6 +468,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                                 object_data->text_start--;
                                             }
                                             object_data->cursor_pos = E_text_Z_su0_R_l( object_data->text );
+                                            U_F( req, draw );
                                             break;
                                         }
                                       case XK_BackSpace:
@@ -482,6 +493,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                             {   GV_(bad UTF-8 character); V();
                                             }
                                             E_mem_Q_blk_I_remove( &object_data->text, s - object_data->text, s_ - s );
+                                            U_F( req, draw );
                                             break;
                                         }
                                       case XK_Delete:
@@ -502,6 +514,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                             {   GV_(bad UTF-8 character); V();
                                             }
                                             E_mem_Q_blk_I_remove( &object_data->text, s - object_data->text, s_ - s );
+                                            U_F( req, draw );
                                             break;
                                         }
                                     }
@@ -552,6 +565,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                             }else
                                                 if( object_data->text_start )
                                                     object_data->text_start = 0;
+                                            U_F( req, draw );
                                             break;
                                         }
                                       case XK_Right:
@@ -637,9 +651,15 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                                     object_data->text_start--;
                                                 }
                                             }
+                                            U_F( req, draw );
                                             break;
                                         }
                                     }
+                                if( U_R( req, draw ))
+                                {   U_F( window->req, draw );
+                                    U_F( display->req, draw );
+                                    U_F( display->req, flush );
+                                }
                             }
                         }
                         break;
@@ -1013,7 +1033,7 @@ Loop:           free( x_event );
                     U_L( display->mode, drag_stop );
                 U_F( display->req, draw );
                 U_F( display->req, flush );
-            }else if( !U_R( display->mode, drag_stop ) // ‘drag’ jest wyjątkowym trybem dla interpretacji “pointer_button”, bo ‘grabnięcie’ jest względem okna ‘dnd’— i poniższy blok nie może do czasu ‘odgrabnięcia’ czytać danych z tego okna, ponieważ jest ukryte, zasoby wyrzucone.
+            }else if( !U_R( display->mode, drag_stop ) // ‘Drag’ jest wyjątkowym trybem dla interpretacji “pointer_button”, bo ‘grabnięcie’ jest względem okna ‘dnd’— i poniższy blok nie może do czasu ‘odgrabnięcia’ czytać danych z tego okna, ponieważ jest ukryte, zasoby wyrzucone.
             && display->pointer_button_S_seq_i
             )
             {   struct E_x_Q_window_Z *window;
@@ -1065,7 +1085,10 @@ Loop:           free( x_event );
                                 struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->cursor_object );
                                 struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
                                 if( U_E( object_data->state, cursor_visible_ ))
-                                    E_x_Q_object_I_draw(window);
+                                {   U_F( window->req, draw );
+                                    U_F( display->req, draw );
+                                    U_F( display->req, flush );
+                                }
                             }
                             I xbutton_object_id;
                             if( display->pointer_button_S_x >= 0
@@ -1215,11 +1238,12 @@ Drag_start_error:                   {   GV_(NA);
                                         if( x > click_x )
                                             break;
                                     }
-                                    if( !~cursor_window )
-                                        U_F( object_data->state, cursor_visible_ );
+                                    U_F( object_data->state, cursor_visible_ );
+                                    U_F( window->req, draw );
+                                    U_F( display->req, draw );
+                                    U_F( display->req, flush );
                                 }else
-                                {   if( ~display->cursor_window )
-                                        display->cursor_window = ~0;
+                                {   display->cursor_window = ~0;
                                     I object_id = xbutton_object_id;
                                     O{  if( object->click )
                                         {   object->click( window, object, display->pointer_button, display->pointer_button_S_seq_i );
@@ -1231,7 +1255,7 @@ Drag_start_error:                   {   GV_(NA);
                                         object = E_mem_Q_tab_R( window->object, object_id );
                                     }
                                 }
-                            }else if( ~display->cursor_window )
+                            }else
                                 display->cursor_window = ~0;
                         }else
                         {   if( display->pointer_button_S_seq_i == 2

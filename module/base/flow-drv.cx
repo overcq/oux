@@ -1239,10 +1239,14 @@ Loop:
             if( E_base_S->E_flow_Z_itimer_system_unblock_report_I_sigsuspend )
             {   B system_unblock_report = no;
                 while( !U_R( E_base_S->E_flow_S_signal, wake ))
-                    if( system_unblock_report = E_base_S->E_flow_Z_itimer_system_unblock_report_I_sigsuspend( &E_base_S->E_flow_Z_sigset_S_empty ))
+                {   E_base_S->switch_back_suspend = yes;
+                    E_base_S->switch_back_try = no;
+                    system_unblock_report = E_base_S->E_flow_Z_itimer_system_unblock_report_I_sigsuspend( &E_base_S->E_flow_Z_sigset_S_empty );
+                    E_base_S->switch_back_suspend = no;
+                    if( system_unblock_report )
                         U_F( E_base_S->E_flow_S_signal, wake );
                     else
-                    {   if( U_has_suspend_time
+                        if( U_has_suspend_time
                         && E_base_S->E_flow_Z_itimer_system_unblock_report_I_setitimer
                         ){  _gettime( &tv );
                             if( _timercmp( &tv, <, &next_real_time )) // Ustaw pozostały czas.
@@ -1251,7 +1255,7 @@ Loop:
                             }else // Lub był upłynął.
                                 U_F( E_base_S->E_flow_S_signal, wake );
                         }
-                    }
+                }
                 if( system_unblock_report )
                 {   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Z_itimer_system_unblock_report_S_task_id );
                     task->run_state = E_flow_Z_run_state_S_ready;

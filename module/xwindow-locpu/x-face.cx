@@ -102,7 +102,7 @@ struct E_x_Q_display_Z
   xcb_get_keyboard_mapping_reply_t *keyboard_mapping;
   struct E_mem_Q_tab_Z *screen; // Indeksy wyświetlaczy ‘servera’ ‟X” są utożsamione z indeksami tablicy; w protokole ‟X” jest “N8” dla numeru wyświetlacza, co wystarcza, by “(I)~0” było różne od “(N8)~0”.
   struct E_mem_Q_tab_Z *window;
-  struct E_x_Z_drag_object_src *drag_S_object_src; //NDFN przed zaprojektowaniem ‘drop’.
+  struct E_x_Z_drag_object_src *drag_S_object_src; //NDFN Przed zaprojektowaniem ‘drop’.
   N drag_S_object_src_n; //NDFN przed zaprojektowaniem ‘drop’.
   xcb_timestamp_t pointer_button_S_time, pointer_button_S_start_time, pointer_button_S_grab_time; // ‘Grabnięcie’ jest rozszerzeniem “zdarzeń” “pointer_button”.
     #ifdef E_flow_C_thread_system_unblock_reports
@@ -112,7 +112,7 @@ struct E_x_Q_display_Z
   xcb_cursor_t drag_S_cursor, drag_S_copy_cursor;
   S16 pointer_button_S_root_x, pointer_button_S_root_y;
   S16 pointer_button_S_x, pointer_button_S_y;
-  S16 drag_S_stop_root_x, drag_S_stop_root_y; //NDFN przed zaprojektowaniem ‘drop’.
+  S16 drag_S_stop_root_x, drag_S_stop_root_y; //NDFN Przed zaprojektowaniem ‘drop’.
   S16 drag_S_grab_x, drag_S_grab_y;
   I pointer_button_S_window_id;
   I drag_S_dnd_window_screen_id;
@@ -133,7 +133,7 @@ struct E_x_Q_display_Z
   unsigned U_R( req, draw )                         :1;
   //unsigned U_R( req, draw_click )                   :1;
   unsigned U_R( req, flush )                        :1;
-  unsigned U_R( req, restart )                      :1; //TODO wymagana obsługa.
+  unsigned U_R( req, restart )                      :1; //TODO Wymagana obsługa.
 };
 struct E_mem_Q_tab_Z *E_x_Q_display_S;
 //==============================================================================
@@ -755,14 +755,14 @@ E_x_Q_image_R_pixel( struct E_x_Q_display_Z *display
 ){  J_assert( x >= 0 );
     J_assert( y >= 0 );
     xcb_get_image_cookie_t ret_id = xcb_get_image_unchecked( display->x_display
-    , XCB_IMAGE_FORMAT_Z_PIXMAP
+    , XCB_IMAGE_FORMAT_XY_PIXMAP
     , pixmap
     , x, y, 1, 1
     , ~0 //NDFN
     );
     xcb_get_image_reply_t *ret = xcb_get_image_reply( display->x_display, ret_id, 0 ); //NDFN Po pewnym czasie zwraca 0.
-    N32 pixel = *( N32 * )xcb_get_image_data(ret) & 0xffffff;
+    N32 pixel = ret ? *( N32 * )xcb_get_image_data(ret) : ~0;
     free(ret);
-    return pixel;
+    return pixel & 0xffffff;
 }
 /******************************************************************************/
