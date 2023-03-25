@@ -337,7 +337,7 @@ $(H_make_S_compile_path)/headers-db: $(H_make_Z_shell_cmd_N_gen_headers_db)
 	fi \
     fi
 	echo 'Wait patiently for the header database needed for the operating system procedures to build...'
-	 $(H_make_Z_shell_cmd_N_gen_headers_db) > $(call H_make_Z_shell_cmd_arg_I_quote,$@)
+	$(H_make_Z_shell_cmd_N_gen_headers_db) > $(call H_make_Z_shell_cmd_arg_I_quote,$@)
 #-------------------------------------------------------------------------------
 E_cplus_S_not_to_libs.h: \
 $(H_make_Z_shell_cmd_N_cx_to_c) \
