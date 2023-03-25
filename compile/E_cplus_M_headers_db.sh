@@ -39,6 +39,8 @@ done \
     }
     /[^ ]/
 ' \
+| grep -C 15 -Fe pcreposix.h
+echo \
 | awk '
     /^SYNOPSIS$/,/^DESCRIPTION$/ {
         if( match( $0, "^SYNOPSIS$" ) != 0 )
