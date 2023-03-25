@@ -25,7 +25,8 @@ done \
         match( $0, "^[A-Za-z_][0-9A-Za-z_]*( *, *[A-Za-z_][0-9A-Za-z_]*)*?" )
         split( substr( $0, RSTART, RLENGTH ), a, " *, *" )
         for ( i in a )
-            print sect, a[i]
+            if( a[i] != "PCRE" )
+                print sect, a[i]
     }
 ' \
 | sort -u \
@@ -39,8 +40,6 @@ done \
     }
     /[^ ]/
 ' \
-| grep -C 15 -Fe pcreposix.h
-echo \
 | awk '
     /^SYNOPSIS$/,/^DESCRIPTION$/ {
         if( match( $0, "^SYNOPSIS$" ) != 0 )
