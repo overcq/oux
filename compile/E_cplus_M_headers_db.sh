@@ -31,7 +31,8 @@ done \
 ' \
 | sort -u \
 | grep -Eve " (${exc_man_re})\$" \
-| grep -Fvie 3 \
+| grep -Fie 3 \
+| grep -Fvie 3ssl \
 | xargs -n 2 bash -c "echo \$@ >/dev/stderr; env MANPAGER='/bin/cat' PAGER='/bin/cat' man \$@" bash \
 | awk '
     {
