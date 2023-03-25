@@ -14,7 +14,7 @@ for a in a b c d e f g h i j k l m n o p q r s t u v w x y z
 do
     apropos ${a}
 done \
-| cat
+| grep -Fie regex
 echo \
 | awk '
     /^[A-Za-z_][0-9A-Za-z_]*( *, *[A-Za-z_][0-9A-Za-z_]*)*?( \[[0-9A-Za-z_-]+\])? *\([23]([A-Za-z][0-9A-Za-z]*)?(\/[0-9A-Za-z]*)?( *, *[23]([A-Za-z][0-9A-Za-z]*)?(\/[0-9A-Za-z]*)?)*?\)/ {
