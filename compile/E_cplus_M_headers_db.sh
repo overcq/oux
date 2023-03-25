@@ -29,7 +29,7 @@ done \
                 print sect, a[i]
     }
 ' \
-cat
+| cat
 echo \
 | sort -u \
 | grep -Eve " (${exc_man_re})\$" \
