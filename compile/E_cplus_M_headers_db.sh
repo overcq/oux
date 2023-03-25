@@ -31,7 +31,7 @@ done \
 ' \
 | sort -u \
 | grep -Eve " (${exc_man_re})\$" \
-| xargs -n 2 bash -c "echo $@ >&2; env MANPAGER='/bin/cat' PAGER='/bin/cat' man $@" bash \
+| xargs -n 2 bash -c "echo \$@ >/dev/stderr; env MANPAGER='/bin/cat' PAGER='/bin/cat' man \$@" bash \
 | awk '
     {
         gsub( "\033\\[[0-9]+m", "" )
