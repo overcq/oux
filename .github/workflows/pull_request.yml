@@ -1,0 +1,26 @@
+name: Compile after pull request merged
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches: [ main ]
+    paths-ignore:
+    - '.github/**'
+    - 'picture/**'
+    - 'program/**'
+    - '*.md'
+    - '**/.autoopen-text'
+    - '.autoopen-text'
+    - '.gitignore'
+
+jobs:
+  merged:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: packages install
+      run: sudo apt-get update; sudo apt-get install libncurses-dev libssl-doc libxcb-icccm4-dev libxcb-shape0-dev libxcb-util-dev libxcb-xkb-dev libxkbcommon-x11-dev manpages-dev ncurses-doc
+    - name: make
+      run: PATH="${PATH}:/usr/lib/R/bin" PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig make build
