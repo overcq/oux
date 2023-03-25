@@ -430,6 +430,7 @@ $$(H_make_Z_shell_cmd_N_c_to_h)
 	$$(H_make_Z_shell_cmd_N_c_to_h) $$(call H_make_Z_shell_cmd_arg_I_quote,$$(H_make_S_compile_path)/headers-db) \
 	$$(call H_make_Z_shell_cmd_arg_I_quote,$$<) \
 	> $$(call H_make_Z_shell_cmd_arg_I_quote,$$@)
+	cat ../../module/base/E_cplus_S_0_base__text-syntax.h
     endef
 $(foreach module,$(H_make_S_modules),$(eval $(call H_make_I_module_header_0,$(module))))
 E_cplus_S_0_%.h: %.c \
