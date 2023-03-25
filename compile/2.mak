@@ -322,22 +322,22 @@ $(H_make_S_compile_path)/headers-db: $(H_make_Z_shell_cmd_N_gen_headers_db)
 	$(H_make_I_block_root)
 	msg='The installer of this program and the program itself sends usage reports to the developer. Do you agree to this and continue installing the program?' ;\
     if [ -z '$(H_make_S_reports_consent)' ]; then \
-		tty -s ;\
-		if [ $$? = 0 ]; then \
-			echo -n "$$msg [Yn] "; read REPLY;\
-			[ "$$REPLY" = '' -o "$$REPLY" = 'y' -o "$$REPLY" = 'Y' ] || false ;\
-		else \
-			which Xdialog >/dev/null 2>&1 ;\
-			if [ $$? = 0 ]; then \
-			Xdialog --yesno "$$msg" 0 0 ;\
-			[ $$? = 0 ] || false ;\
-			else \
-				false ;\
-			fi \
-		fi \
+	tty -s ;\
+	if [ $$? = 0 ]; then \
+	    echo -n "$$msg [Yn] "; read REPLY;\
+	    [ "$$REPLY" = '' -o "$$REPLY" = 'y' -o "$$REPLY" = 'Y' ] || false ;\
+	else \
+	    which Xdialog >/dev/null 2>&1 ;\
+	    if [ $$? = 0 ]; then \
+		Xdialog --yesno "$$msg" 0 0 ;\
+		[ $$? = 0 ] || false ;\
+	    else \
+		    false ;\
+	    fi \
+	fi \
     fi
 	echo 'Wait patiently for the header database needed for the operating system procedures to build...'
-	$(H_make_Z_shell_cmd_N_gen_headers_db) > $(call H_make_Z_shell_cmd_arg_I_quote,$@)
+	$(H_make_Z_shell_cmd_N_gen_headers_db) #> $(call H_make_Z_shell_cmd_arg_I_quote,$@)
 #-------------------------------------------------------------------------------
 E_cplus_S_not_to_libs.h: \
 $(H_make_Z_shell_cmd_N_cx_to_c) \
@@ -430,7 +430,6 @@ $$(H_make_Z_shell_cmd_N_c_to_h)
 	$$(H_make_Z_shell_cmd_N_c_to_h) $$(call H_make_Z_shell_cmd_arg_I_quote,$$(H_make_S_compile_path)/headers-db) \
 	$$(call H_make_Z_shell_cmd_arg_I_quote,$$<) \
 	> $$(call H_make_Z_shell_cmd_arg_I_quote,$$@)
-	cat $$(call H_make_Z_shell_cmd_arg_I_quote,$$@) || true
     endef
 $(foreach module,$(H_make_S_modules),$(eval $(call H_make_I_module_header_0,$(module))))
 E_cplus_S_0_%.h: %.c \
