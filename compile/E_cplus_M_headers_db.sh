@@ -25,10 +25,12 @@ done \
         match( $0, "^[A-Za-z_][0-9A-Za-z_]*( *, *[A-Za-z_][0-9A-Za-z_]*)*?" )
         split( substr( $0, RSTART, RLENGTH ), a, " *, *" )
         for ( i in a )
-            if( a[i] != "PCRE" )
+            if( match( a[i], "PCRE" ))
                 print sect, a[i]
     }
 ' \
+cat
+echo \
 | sort -u \
 | grep -Eve " (${exc_man_re})\$" \
 | xargs -n 2 env MANPAGER='/bin/cat' PAGER='/bin/cat' man \
