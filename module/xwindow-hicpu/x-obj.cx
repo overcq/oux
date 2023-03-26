@@ -111,9 +111,7 @@ E_x_Q_object_M(
     return object_id;
 }
 void
-E_x_Q_object_W(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_window_Z *window
+E_x_Q_object_W( struct E_x_Q_window_Z *window
 , I object_id
 ){  struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
     if( object->data )
@@ -183,28 +181,57 @@ End:E_mem_Q_tab_I_remove( window->object, id );
     return 0;
 }
 N
-E_x_Q_object_I_rem_descendants( struct E_x_Q_window_Z *window
+E_x_Q_object_I_remove_descendants( struct E_x_Q_window_Z *window
 , I id
 ){  struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, id );
     N ids_n = object->child_n;
-    I * Mt_( ids, ids_n );
+    I *Mt_( ids, ids_n );
     if( !ids )
         return ~0;
     for_n( child_i, object->child_n )
         ids[ child_i ] = object->child[ child_i ];
-    if( object->child_n )
-    {   E_mem_Q_blk_I_remove( &object->child, 0, object->child_n );
-        object->child_n = 0;
-        for_n( ids_i, ids_n )
-        {   object = E_mem_Q_tab_R( window->object, ids[ ids_i ] );
+    object->child_n = 0;
+    for_n( ids_i, ids_n )
+    {   object = E_mem_Q_tab_R( window->object, ids[ ids_i ] );
+        if( object->child_n )
             if( !E_mem_Q_blk_I_append( &ids, object->child_n ))
+            {   W(ids);
                 return ~0;
-            for_n( child_i, object->child_n )
-                ids[ ids_n + child_i ] = object->child[ child_i ];
-            ids_n += object->child_n;
-        }
-        for_n_( ids_i, ids_n )
-            E_mem_Q_tab_I_remove( window->object, ids[ ids_i ] );
+            }
+        for_n( child_i, object->child_n )
+            ids[ ids_n + child_i ] = object->child[ child_i ];
+        ids_n += object->child_n;
+    }
+    for_n_( ids_i, ids_n )
+         E_x_Q_object_W( window, ids[ ids_i ] );
+    W(ids);
+    return 0;
+}
+N
+E_x_Q_object_I_remove_drag_src_descendants( struct E_x_Q_window_Z *window
+, I id
+){  struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, id );
+    N ids_n = object->child_n;
+    I *Mt_( ids, ids_n );
+    if( !ids )
+        return ~0;
+    for_n( child_i, object->child_n )
+        ids[ child_i ] = object->child[ child_i ];
+    object->child_n = 0;
+    for_n( ids_i, ids_n )
+    {   object = E_mem_Q_tab_R( window->object, ids[ ids_i ] );
+        if( object->child_n )
+            if( !E_mem_Q_blk_I_append( &ids, object->child_n ))
+            {   W(ids);
+                return ~0;
+            }
+        for_n( child_i, object->child_n )
+            ids[ ids_n + child_i ] = object->child[ child_i ];
+        ids_n += object->child_n;
+    }
+    for_n_( ids_i, ids_n )
+    {   object = E_mem_Q_tab_R( window->object, ids[ ids_i ] );
+        U_L( object->mode, drag_src );
     }
     W(ids);
     return 0;
@@ -287,14 +314,14 @@ E_x_Q_object_Z_entry_M(
     );
     struct E_x_Q_object_Z_data_Z_entry *M_( object_data );
     if( !object_data )
-    {   E_x_Q_object_W( display, window, object_id );
+    {   E_x_Q_object_W( window, object_id );
         return ~0;
     }
     object_data->font = font_id;
     object_data->text = M( E_text_Z_s0_R_l_0(text) );
     object_data->text_start = 0;
     if( !object_data->text )
-    {   E_x_Q_object_W( display, window, object_id );
+    {   E_x_Q_object_W( window, object_id );
         return ~0;
     }
     E_text_Z_s_P_copy_s0_0( object_data->text, text );
@@ -439,13 +466,13 @@ E_x_Q_object_Z_font_M(
     );
     struct E_x_Q_object_Z_data_Z_font *M_( object_data );
     if( !object_data )
-    {   E_x_Q_object_W( display, window, object_id );
+    {   E_x_Q_object_W( window, object_id );
         return ~0;
     }
     object_data->font = font_id;
     object_data->label = M( E_text_Z_s0_R_l_0(label) );
     if( !object_data->label )
-    {   E_x_Q_object_W( display, window, object_id );
+    {   E_x_Q_object_W( window, object_id );
         return ~0;
     }
     E_text_Z_s_P_copy_s0_0( object_data->label, label );

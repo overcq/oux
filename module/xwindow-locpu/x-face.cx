@@ -755,12 +755,17 @@ E_x_Q_image_R_pixel( struct E_x_Q_display_Z *display
 ){  J_assert( x >= 0 );
     J_assert( y >= 0 );
     xcb_get_image_cookie_t ret_id = xcb_get_image_unchecked( display->x_display
-    , XCB_IMAGE_FORMAT_XY_PIXMAP
+    , XCB_IMAGE_FORMAT_Z_PIXMAP
     , pixmap
     , x, y, 1, 1
     , ~0 //NDFN
     );
-    xcb_get_image_reply_t *ret = xcb_get_image_reply( display->x_display, ret_id, 0 ); //NDFN Po pewnym czasie zwraca 0.
+    xcb_generic_error_t *e;
+    xcb_get_image_reply_t *ret = xcb_get_image_reply( display->x_display, ret_id, &e ); //NDFN Po pewnym czasie zwraca 0.
+    if(e)
+    {   G_(); Gd( e->error_code );
+        free(e);
+    }
     N32 pixel = ret ? *( N32 * )xcb_get_image_data(ret) : ~0;
     free(ret);
     return pixel & 0xffffff;
