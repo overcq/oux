@@ -18,10 +18,11 @@ E_flow_I_fork_I_begin( void
 }
 void
 E_flow_I_fork_I_end( N pid
-){  if( !pid )
+){  if( !~pid )
     {   GV_(NA); V();
     }
     _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_I_fork_S_sigset, 0 );
+    V1( waitpid( pid, 0, 0 )){}
 }
 //------------------------------------------------------------------------------
 // Poniższe procedury, wykonywane w “procesie” potomnym, mogą używać tylko pasywnych funkcjonalności technologii, nie zintegrowanych w przepływie wykonania. czyli na przykład tylko synchronicznych raportów linii. Nigdy nie wiadomo bez sprawdzenia tekstu procedur, czy nie używa ona wewnątrz funkcjonalności zintegrowanych.
@@ -140,5 +141,53 @@ End_2:  ;
     V0_( sigaction( SIGTSTP, &sa, 0 ));
     _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_Z_sigset_S_empty, 0 );
     V1(( execvp( argv[0], argv ), ~0 )){}
+}
+N
+E_flow_I_fork_I_wait( pid_t pid
+){  int fd;
+    V1( fd = fanotify_init( FAN_CLASS_NOTIF | FAN_REPORT_FID, O_RDONLY ))
+        return ~0;
+    N path_l = 6 + E_text_Z_n_N_s_G( pid, sizeof(pid), 10 ) + 1;
+    Pc path = M( path_l );
+    if( !path )
+    {   V1( close(fd) ){}
+        return ~0;
+    }
+    E_text_Z_s_P_copy_s0( path, "/proc/" );
+    path[ path_l - 1 ] = '\0';
+    E_text_Z_n_N_s( path + path_l - 1, pid, sizeof(pid), 10 );
+    _errno = 0;
+    int ret = fanotify_mark( fd, FAN_MARK_ADD | FAN_MARK_ONLYDIR, FAN_DELETE_SELF, ~0, path );
+    if( !~ret )
+    {   if( _errno == ENOENT ) // Proces już nie istnieje.
+        {   V1( close(fd) ){}
+            return 0;
+        }
+        Ve();
+        V1( close(fd) ){}
+        return ~0;
+    }
+    struct fanotify_event_metadata event;
+    O{  N l;
+        VO1( l = read( fd, &event, sizeof(event) ))
+        {   V1( close(fd) ){}
+            return ~0;
+        }
+        if( l != sizeof(event)
+        || event.event_len != sizeof(event)
+        || event.vers != FANOTIFY_METADATA_VERSION
+        )
+        {   V1( close(fd) ){}
+            return ~0;
+        }
+        if( event.fd != FAN_NOFD )
+        {   V1( close( event.fd )){}
+        }
+        if( event.mask & FAN_DELETE_SELF )
+            break;
+    }
+    G_();
+    V1( close(fd) ){}
+    return 0;
 }
 /******************************************************************************/

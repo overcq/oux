@@ -284,30 +284,31 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //NKN ‹Nierealizacje blokowe› (“V”[…]), które wystąpiły w ‹zadaniu› innym niż “main”, muszą być obsługiwane przez zablokowanie się ‹zadania› na linii wyjścia z “I_D” i sygnalizację błędu (pół‐‹zdarzenie›?), by ‹zadanie›, które je uruchomiło (co najmniej “main” usuwające pośrednio wszystkie ‹zadania› i kończące program), mogło normalnie je usunąć. Wtedy nie będzie już nigdy krytycznego (przez zgubienie danych i bytów sterowanych) przerywania programu z powodu błędu procedury systemu operacyjnego oprócz sytuacji, gdy lepiej będzie natychmiast przerwać program niż jeszcze coś rozwalić z jego uszkodzonego wewnętrznego stanu.
     #ifdef C_line_report
+#define Ve()                                E_flow_Z_line_report_Z_line_I_error( &__FILE__[0], __LINE__ )
 #define Vr(statement) \
   int J_autogen_line(e) = (statement); \
-  if( !J_autogen_line(e) || ( _errno = J_autogen_line(e), E_flow_Z_line_report_Z_line_I_error( &__FILE__[0], __LINE__ ), no )) \
+  if( !J_autogen_line(e) || ( _errno = J_autogen_line(e), Ve(), no )) \
   { \
   }else
 #define Vr1(statement) \
   int J_autogen_line(e) = (statement); \
-  if( J_autogen_line(e) <= 0 || ( _errno = J_autogen_line(e), E_flow_Z_line_report_Z_line_I_error( &__FILE__[0], __LINE__ ), no )) \
+  if( J_autogen_line(e) <= 0 || ( _errno = J_autogen_line(e), Ve(), no )) \
   { \
   }else
 #define Vr_1(statement) \
   int J_autogen_line(e) = (statement); \
-  if( J_autogen_line(e) >= 0 || ( _errno = -J_autogen_line(e), E_flow_Z_line_report_Z_line_I_error( &__FILE__[0], __LINE__ ), no )) \
+  if( J_autogen_line(e) >= 0 || ( _errno = -J_autogen_line(e), Ve(), no )) \
   { \
   }else
 #define _Ve(statement,e) \
-  if( _errno = 0, (statement) || ( e = _errno, E_flow_Z_line_report_Z_line_I_error( &__FILE__[0], __LINE__ ), no )) \
+  if( _errno = 0, (statement) || ( e = _errno, Ve(), no )) \
   { \
   }else
 #define _VOe(statement,e) \
   J_autogen_line(Loop): \
   if( _errno = 0, (statement) || ( e = _errno, no )) \
   { \
-  }else if( e == EINTR || ( E_flow_Z_line_report_Z_line_I_error( &__FILE__[0], __LINE__ ), no )) \
+  }else if( e == EINTR || ( Ve(), no )) \
       goto J_autogen_line(Loop); \
   else
     #else
