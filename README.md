@@ -8,7 +8,7 @@ Contact the manufacturer: ocq@tutanota.com
 
 ## 2.
 
-Report vulnerabilities via e‐mail: ocq@tutanota.com
+Report vulnerabilities: https://github.com/overcq/oux/security/advisories or via e‐mail: ocq@tutanota.com
 
 ## 3.
 
