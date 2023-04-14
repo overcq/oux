@@ -262,13 +262,14 @@ TARGET_ARCH += -march=native
 #===============================================================================
 # Definicje wytworzenia.
 .PHONY: all \
-  build install install-0 install-1 uninstall uninstall-0 uninstall-1 \
+  build build-0 build-1 install install-0 install-1 uninstall uninstall-0 uninstall-1 \
   recompile rebuild \
   mostlyclean clean distclean maintainer-clean \
   run rebuild-run
 .DEFAULT: all
 #-------------------------------------------------------------------------------
-build: a.out
+build: build-0 build-1
+build-0: a.out
 install: install-0 install-1
 uninstall: uninstall-1
 recompile: mostlyclean build
