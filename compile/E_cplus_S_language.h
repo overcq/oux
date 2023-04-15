@@ -214,31 +214,31 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
 // Wyjście z ‹zadania› po procedurze zawierającej instrukcję przełączenia.
 #define I_V()                               if( !E_flow_Q_task_R_exit() ){} else
 //==============================================================================
-#define _G_var      J_autogen_line(G)
+#define _G_var          J_autogen_line(G)
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #ifdef C_line_report
 //TODO W przyszłości zastąpić niegwarantowane wypisywanie synchroniczne na wypisywanie do specjalnego wyjścia danych, zawsze dostępnego, a niekoniecznie o dużej pojemności.
 // ‹Raport linii› nie wymagający integralności programu. w miejscach, gdzie nie można wykonywać funkcji wypisywania integralnej tego programu. ponieważ nie można wywoływać żadnej funkcji obiektowości zarządzanej albo takiej funkcji może użyć funkcja żądania wypisania integralna tego programu.
-#define G_()        _unused B _G_var = yes; E_flow_Z_line_report_Z_line_I_sync( &__FILE__[0], __LINE__, 0 )
+#define G_()            _unused B _G_var = yes; E_flow_Z_line_report_Z_line_I_sync( &__FILE__[0], __LINE__, 0 )
 // ‹Raport linii›.
-#define G()         _unused B _G_var = no; E_flow_Z_line_report_Z_line_I( &__FILE__[0], __LINE__, 0 )
+#define G()             _unused B _G_var = no; E_flow_Z_line_report_Z_line_I( &__FILE__[0], __LINE__, 0 )
 // ‹Niepowodzenie zakańczające› (ewentualną instrukcją “V” umieszczoną na końcu linii). zaistniałe przez wejście na tę linię tekstu programu.
-#define GV_(s)      _unused B _G_var = yes; E_flow_Z_line_report_Z_line_I_sync( &__FILE__[0], __LINE__, J_s(s) )
+#define GV_(s)          _unused B _G_var = yes; E_flow_Z_line_report_Z_line_I_sync( &__FILE__[0], __LINE__, J_s(s) )
 // ‹Niepowodzenie ostrzegające› (bez instrukcji “V”). 〃
-#define GV(s)       _unused B _G_var = no; E_flow_Z_line_report_Z_line_I( &__FILE__[0], __LINE__, J_s(s) )
+#define GV(s)           _unused B _G_var = no; E_flow_Z_line_report_Z_line_I( &__FILE__[0], __LINE__, J_s(s) )
 //------------------------------------------------------------------------------
 // Wypisywanie zmiennych programu; po “G”/“GV”/“G_”/“GV_” w linii.
-#define Gc(c)       if( _G_var ) E_flow_Z_line_report_Z_text_c_I_sync( J_s(c), c ); else E_flow_Z_line_report_Z_text_c_I( J_s(c), c )
-#define Gs(s,s_end) if( (s_end) - (s) ) Gs_l( s, s, (s_end) - (s) ); else Gs_l( s, "", 0 )
-#define Gs_(s,s_end) if( (s_end) - (s) ) Gs_l_( s, (s_end) - (s) ); else Gs_l_( "", 0 )
-#define Gs0(s)      Gs_l( s, s, 0 )
-#define Gs0_(s)     Gs_l_( s, 0 )
-#define Gsl(s,l)    if(l) Gs_l( s, s, (l) ); else Gs_l( s, "", 0 )
-#define Gsl_(s,l)   if(l) Gs_l_( s, (l) ); else Gs_l_( "", 0 )
-#define Gs_l(t,s,l) if( _G_var ) E_flow_Z_line_report_Z_text_s_I_sync( J_s(t), (s), (l) ); else E_flow_Z_line_report_Z_text_s_I( J_s(t), (s), (l) )
-#define Gs_l_(s,l)  if( _G_var ) E_flow_Z_line_report_Z_s_I_sync( (s), (l) ); else E_flow_Z_line_report_Z_s_I( (s), (l) )
-#define Gd(n)       if( _G_var ) E_flow_Z_line_report_Z_text_n_I_sync( J_s(n), (N)(n), sizeof(n), 10 ); else E_flow_Z_line_report_Z_text_n_I( J_s(n), (N)(n), sizeof(n), 10 )
-#define Gh(n)       if( _G_var ) E_flow_Z_line_report_Z_text_n_I_sync( J_s(n), (N)(n), sizeof(n), 16 ); else E_flow_Z_line_report_Z_text_n_I( J_s(n), (N)(n), sizeof(n), 16 )
+#define Gc(c)           if( _G_var ) E_flow_Z_line_report_Z_text_c_I_sync( J_s(c), c ); else E_flow_Z_line_report_Z_text_c_I( J_s(c), c )
+#define Gs(s,s_end)     if( (s_end) - (s) ) Gs_l( s, s, (s_end) - (s) ); else Gs_l( s, "", 0 )
+#define Gs_(s,s_end)    if( (s_end) - (s) ) Gs_l_( s, (s_end) - (s) ); else Gs_l_( "", 0 )
+#define Gs0(s)          Gs_l( s, s, 0 )
+#define Gs0_(s)         Gs_l_( s, 0 )
+#define Gsl(s,l)        if(l) Gs_l( s, s, (l) ); else Gs_l( s, "", 0 )
+#define Gsl_(s,l)       if(l) Gs_l_( s, (l) ); else Gs_l_( "", 0 )
+#define Gs_l(t,s,l)     if( _G_var ) E_flow_Z_line_report_Z_text_s_I_sync( J_s(t), (s), (l) ); else E_flow_Z_line_report_Z_text_s_I( J_s(t), (s), (l) )
+#define Gs_l_(s,l)      if( _G_var ) E_flow_Z_line_report_Z_s_I_sync( (s), (l) ); else E_flow_Z_line_report_Z_s_I( (s), (l) )
+#define Gd(n)           if( _G_var ) E_flow_Z_line_report_Z_text_n_I_sync( J_s(n), (N)(n), sizeof(n), 10 ); else E_flow_Z_line_report_Z_text_n_I( J_s(n), (N)(n), sizeof(n), 10 )
+#define Gh(n)           if( _G_var ) E_flow_Z_line_report_Z_text_n_I_sync( J_s(n), (N)(n), sizeof(n), 16 ); else E_flow_Z_line_report_Z_text_n_I( J_s(n), (N)(n), sizeof(n), 16 )
 #define Gq(q)
     #else
 #define G()
@@ -257,7 +257,7 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
 #define Gq(q)
     #endif
 //------------------------------------------------------------------------------
-#define V()         _exit( EXIT_FAILURE )
+#define V()             abort()
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //NDFN Zintegrować koncepcje “V” razem z “K”. i wtedy zostanie dołączona koncepcja procesów ‘restartowalnych’ ze stanu zachowanego w momencie wystąpienia takiego błędu (a nie zachowywanego ciągle).
 //NKN “V” są drogami wyjścia po nieudanym “K” wewnętrznym funkcji wołanej.
