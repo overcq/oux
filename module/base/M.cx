@@ -29,7 +29,10 @@ struct E_base_Z
     #endif
   N E_mem_S_page_size;
   struct E_mem_Q_blk_Z_allocated *E_mem_Q_blk_S_allocated;
-  N E_mem_Q_blk_S_table_allocated_id;
+  N E_mem_Q_blk_S_mapped_id, E_mem_Q_blk_S_free_id, E_mem_Q_blk_S_allocated_id;
+  N *E_mem_Q_blk_Q_table_M_from_free_or_map_0_S_allocated_id[3];
+  N E_mem_Q_blk_Q_table_M_from_free_or_map_0_S_table_id[3];
+  N E_mem_Q_blk_Q_table_M_from_free_or_map_0_S_allocated_id_n;
   N E_flow_Z_task_stacks_S_n_pages;
   struct E_mem_Q_tab_Z *E_flow_Q_task_S; // Ta tablica nie może mieć tworzonego “E_mem_Q_tab_Q_iter”.
     #ifdef E_flow_C_thread_system_unblock_reports
@@ -172,25 +175,28 @@ E_mem_M_blk( void
     U_L( E_base_S->E_flow_S_signal, io_ready );
     U_L( E_base_S->E_flow_S_signal, exit_all );
     E_base_S->E_flow_S_exe_pid = getpid();
-    E_base_S->E_mem_Q_blk_S_table_allocated_id = 2;
+    E_base_S->E_mem_Q_blk_S_mapped_id = 1;
+    E_base_S->E_mem_Q_blk_S_free_id = 2;
+    E_base_S->E_mem_Q_blk_S_allocated_id = 3;
+    E_base_S->E_mem_Q_blk_Q_table_M_from_free_or_map_0_S_allocated_id_n = 0;
     E_base_S->E_mem_Q_blk_S_allocated = (P)( (Pc)E_base_S + sizeof( *E_base_S ) + sizeof( struct E_mem_Q_blk_Z_mapped ) + sizeof( struct E_mem_Q_blk_Z_free ));
+    E_base_S->E_mem_Q_blk_S_allocated[0].p = (P)E_base_S;
+    E_base_S->E_mem_Q_blk_S_allocated[0].u = 1;
+    E_base_S->E_mem_Q_blk_S_allocated[0].n = sizeof( *E_base_S );
     E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_mapped_id ].p = (P)( (Pc)E_base_S + sizeof( *E_base_S ));
     E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_mapped_id ].u = sizeof( struct E_mem_Q_blk_Z_mapped );
     E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_mapped_id ].n = 1;
     E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_free_id ].p = (P)( (Pc)E_base_S + sizeof( *E_base_S ) + sizeof( struct E_mem_Q_blk_Z_mapped ));
     E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_free_id ].u = sizeof( struct E_mem_Q_blk_Z_free );
     E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_free_id ].n = 1;
-    E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].p = (P)E_base_S->E_mem_Q_blk_S_allocated;
-    E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].u = sizeof( struct E_mem_Q_blk_Z_allocated );
-    E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].n = 4;
-    E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id + 1 ].p = (P)E_base_S;
-    E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id + 1 ].u = 1;
-    E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id + 1 ].n = sizeof( *E_base_S );
+    E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_allocated_id ].p = (P)E_base_S->E_mem_Q_blk_S_allocated;
+    E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_allocated_id ].u = sizeof( struct E_mem_Q_blk_Z_allocated );
+    E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_allocated_id ].n = 4;
     struct E_mem_Q_blk_Z_mapped *mapped_p = (P)E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_mapped_id ].p;
     mapped_p[0].p = (P)E_base_S;
     mapped_p[0].l = initial_size;
     struct E_mem_Q_blk_Z_free *free_p = (P)E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_free_id ].p;
-    free_p[0].p = (P)( (Pc)E_base_S->E_mem_Q_blk_S_allocated + E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].n * E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_table_allocated_id ].u );
+    free_p[0].p = (P)( (Pc)E_base_S->E_mem_Q_blk_S_allocated + E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_allocated_id ].n * E_base_S->E_mem_Q_blk_S_allocated[ E_mem_Q_blk_S_allocated_S_allocated_id ].u );
     free_p[0].l = mapped_p[0].p + mapped_p[0].l - free_p[0].p;
     if( !free_p[0].l )
         free_p[0].p = 0;
@@ -303,7 +309,7 @@ E_base_M(
     if( !E_base_S->E_flow_Q_task_S )
     {   GV_(NA); V();
     }
-    _tasks_table_end;
+    U_F( E_base_S->E_flow_S_mode, Z_task_table_S_can_read );
     struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, 0 );
     *task = ( struct E_flow_Q_task_Z )
     { .run_state = E_flow_Z_run_state_S_ready
@@ -371,7 +377,7 @@ E_base_M(
     _sigprocmask( SIG_SETMASK, &sigset, &E_base_S->E_flow_Z_saved_initial_S_blocked_signals );
         #endif
     // Ustawienie podstawowych zmiennych ‹modułu›.
-    if(argc) //NDFN Dlaczego to sprawdzenie? Czy standard nie gwarantuje “>= 1”?
+    if(argc) //NDFN Dlaczego to sprawdzenie? Czy standard nie gwarantuje “>= 1”?
     {   Pc s = E_text_Z_s0_R_search_last_c( argv[0], E_mem_Q_file_S_filename_separator );
         E_base_S->E_flow_S_exe_name = *s == E_mem_Q_file_S_filename_separator ? s + 1 : argv[0];
     }
@@ -507,7 +513,7 @@ E_base_M(
     E_base_S->E_flow_Q_process_call_S_shm_key = ftok( E_base_S->E_flow_Q_process_call_S_service_path_guid, E_flow_Q_process_call_S_ftok_id );
         #endif
         #ifdef E_flow_drv_C_timer_monotonic
-    V0_( timer_create( CLOCK_MONOTONIC, 0, &E_base_S->E_flow_S_timer )); //NDFN Funkcjonalność na ‟Linuksach”. “CLOCK_REALTIME” przy stosowanym we “flow_drv” ustawianiu wartości względnych (domyślnych) ma zapisane w dokumentacji (“man”), że “adjtime” nie zmienia jego czasu odliczania, co jest oczekiwane przy “E_flow_drv_C_clock_monotonic”, ale nigdzie nie ma napisane, którego typu zegara można używać dla zgodności z “CLOCK_BOOTTIME” od “clock_gettime”, by był zaliczony czas trwania “suspend”: “CLOCK_REALTIME” czy “CLOCK_MONOTONIC”. Z testu wynika, że oba zegary są natychmiast zakańczane po zakończeniu “suspend” komputera…
+    V0_( timer_create( CLOCK_MONOTONIC, 0, &E_base_S->E_flow_S_timer )); //NDFN Funkcjonalność na ‟Linuksach”. “CLOCK_REALTIME” przy stosowanym we “flow_drv” ustawianiu wartości względnych (domyślnych) ma zapisane w dokumentacji (“man”), że “adjtime” nie zmienia jego czasu odliczania, co jest oczekiwane przy “E_flow_drv_C_clock_monotonic”, ale nigdzie nie ma napisane, którego typu zegara można używać dla zgodności z “CLOCK_BOOTTIME” od “clock_gettime”, by był zaliczony czas trwania “suspend”: “CLOCK_REALTIME” czy “CLOCK_MONOTONIC”. Z testu wynika, że oba zegary są natychmiast zakańczane po zakończeniu “suspend” komputera…
         #endif
     E_mem_M_file();
     E_io_M_stream();

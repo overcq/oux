@@ -149,8 +149,10 @@ typedef struct timespec Z_clock_time;
   }
     #endif
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#define E_mem_Q_blk_S_allocated_S_mapped_id ( E_base_S->E_mem_Q_blk_S_table_allocated_id - 2 )
-#define E_mem_Q_blk_S_allocated_S_free_id   ( E_base_S->E_mem_Q_blk_S_table_allocated_id - 1 )
+//TODO Zamienić i usunąć “define”.
+#define E_mem_Q_blk_S_allocated_S_mapped_id     ( E_base_S->E_mem_Q_blk_S_mapped_id )
+#define E_mem_Q_blk_S_allocated_S_free_id       ( E_base_S->E_mem_Q_blk_S_free_id )
+#define E_mem_Q_blk_S_allocated_S_allocated_id  ( E_base_S->E_mem_Q_blk_S_allocated_id )
 //------------------------------------------------------------------------------
     #ifdef C_to_libs_C_replace_c_alloc
 typedef P ( *E_mem_Q_blk_I_libc_realloc_Z )( P, size_t );

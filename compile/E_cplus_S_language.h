@@ -250,6 +250,8 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
 #define Gs_(s,s_end)
 #define Gs0(s)
 #define Gs0_(s)
+#define Gsl(s,l)
+#define Gsl_(s,l)
 #define Gs_l(s)
 #define Gs_l_(s)
 #define Gd(n)
@@ -312,6 +314,7 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
       goto J_autogen_line(Loop); \
   else
     #else
+#define Ve()
 #define Vr(statement) \
   if( !(statement) ) \
   { \
@@ -378,7 +381,7 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
               && too_small_errno \
               && errno_ == ( too_small_errno ) \
               ) \
-              {   if( !E_mem_Q_blk_M_replace( &( pointer_variable ), J_autogen_line(l) += J_autogen_line(l) < E_base_S->E_mem_S_page_size ? J_autogen_line(l) : E_base_S->E_mem_S_page_size )) \
+              {   if( !E_mem_Q_blk_M_replace( &( pointer_variable ), J_autogen_line(l) += ( J_autogen_line(l) != E_base_S->E_mem_S_page_size ? J_autogen_line(l) : E_base_S->E_mem_S_page_size ))) \
                   {   GV_(NA); V(); \
                   } \
                   continue; \
@@ -386,7 +389,9 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
               V(); \
           } \
           if( too_small_errno ) \
+          {   J_autogen_line( p_end ) = E_text_Z_s0_R_end_0( pointer_variable ); \
               break; \
+          } \
           J_autogen_line( p_end ) = E_text_Z_s_R_search_0(( pointer_variable ), (Pc)( pointer_variable ) + J_autogen_line(l) ); \
           if( J_autogen_line( p_end ) != (Pc)( pointer_variable ) + J_autogen_line(l) ) \
           {   J_autogen_line( p_end )++; \
@@ -396,8 +401,6 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
           {   GV_(NA); V(); \
           } \
       } \
-      if( too_small_errno ) \
-          J_autogen_line( p_end ) = E_text_Z_s0_R_end_0( pointer_variable ); \
       if( (Pc)( pointer_variable ) + J_autogen_line(l) != J_autogen_line( p_end )) \
           if( !E_mem_Q_blk_I_remove( &( pointer_variable ), J_autogen_line( p_end ) - ( pointer_variable ), (Pc)( pointer_variable ) + J_autogen_line(l) - J_autogen_line( p_end ))) \
           {   GV_(NA); \

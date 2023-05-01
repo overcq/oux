@@ -195,11 +195,14 @@ E_flow_I_fork_I_wait( pid_t pid
     _errno = 0;
     int ret = fanotify_mark( fd, FAN_MARK_ADD | FAN_MARK_ONLYDIR, FAN_DELETE_SELF, ~0, path );
     if( !~ret )
-    {   if( _errno == ENOENT ) // Proces już nie istnieje.
+    {   if( _errno == ENOENT // Proces już nie istnieje.
+        || _errno == ENODEV
+        )
         {   V1( close(fd) ){}
             return 0;
         }
         Ve();
+        G_(); Gs0(path);
         V1( close(fd) ){}
         return ~0;
     }
