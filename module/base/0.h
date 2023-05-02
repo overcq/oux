@@ -156,6 +156,7 @@ typedef struct timespec Z_clock_time;
 //------------------------------------------------------------------------------
     #ifdef C_to_libs_C_replace_c_alloc
 typedef P ( *E_mem_Q_blk_I_libc_realloc_Z )( P, size_t );
+typedef P ( *E_mem_Q_blk_I_libc_reallocarray_Z )( P, size_t, size_t );
 typedef void ( *E_mem_Q_blk_I_libc_free_Z )(P);
     #endif
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
