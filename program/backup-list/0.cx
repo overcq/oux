@@ -192,6 +192,26 @@ E_main_I_top_dirs( Pc **top_dirs
                         if( ret == ~0 - 1 )
                             continue;
                     }
+                    if( E_text_Z_s_T_eq_s0( path, path + path_l - 1, "/dev" )
+                    || E_text_Z_s_T_eq_s0( path, path + path_l - 1, "/lost+found" )
+                    || E_text_Z_s_T_eq_s0( path, path + path_l - 1, "/media" )
+                    || E_text_Z_s_T_eq_s0( path, path + path_l - 1, "/mnt" )
+                    || E_text_Z_s_T_eq_s0( path, path + path_l - 1, "/proc" )
+                    || E_text_Z_s_T_eq_s0( path, path + path_l - 1, "/run" )
+                    || E_text_Z_s_T_eq_s0( path, path + path_l - 1, "/sys" )
+                    || E_text_Z_s_T_eq_s0( path, path + path_l - 1, "/usr/portage" )
+                    || E_text_Z_s_T_eq_s0( path, path + path_l - 1, "/var" )
+                    )
+                    {   if( !~Q_path_I_pop( &path, &path_l ))
+                        {   GV_(NA);
+                            V1( closedir(dir) ){}
+                            for( N i = 0; i != dirs_n; i++ )
+                            {   V1( closedir( dirs[i] )){}
+                            }
+                            return ~0;
+                        }
+                        continue;
+                    }
                     C attr_value[4];
                     _errno = 0;
                     N attr_value_l = getxattr( path, E_main_S_attribute_backup, &attr_value[0], sizeof( attr_value ) - 1 );
@@ -664,8 +684,6 @@ main(
         for( int i = 0; i != argc; i++ )
             free( argv_normalized[i] );
     }
-    if( !~E_flow_I_fork_M() )
-        goto Error;
     for( N i = 0; i != top_dirs_n; i++ )
         if( !~E_main_I_dir( top_dirs[i], rebuild ))
             goto Error;

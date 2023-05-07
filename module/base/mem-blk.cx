@@ -1453,7 +1453,7 @@ E_mem_Q_blk_Q_table_M_from_free_or_map( N *allocated_or_table_i
         E_base_S->E_mem_Q_blk_S_allocated[ *allocated_or_table_i ].p = p_1;
         *allocated_or_table_i = E_mem_Q_blk_Q_sys_table_a_I_sort_inserted( *allocated_or_table_i );
         if( *allocated_or_table_i == E_mem_Q_blk_S_allocated_S_mapped_id )
-        {   struct E_mem_Q_blk_Z_free *mapped_p = (P)p_1;
+        {   struct E_mem_Q_blk_Z_mapped *mapped_p = (P)p_1;
             mapped_p[ E_base_S->E_mem_Q_blk_S_allocated[ *allocated_or_table_i ].n ].p = 0;
             mapped_p[ E_base_S->E_mem_Q_blk_S_allocated[ *allocated_or_table_i ].n ].l = 0;
             E_base_S->E_mem_Q_blk_S_allocated[ *allocated_or_table_i ].n++;
@@ -2089,7 +2089,9 @@ E_mem_Q_blk_I_append_( P p
                             if( free_p[ free_j ].l >= ( p_align - free_p[ free_j ].p ) + l )
                             {   free_p[ free_j ].l = p_align - free_p[ free_j ].p;
                                 if( !free_p[ free_j ].l )
-                                    E_mem_Q_blk_Q_sys_table_f_I_move_empty_entry( free_j );
+                                {   E_mem_Q_blk_Q_sys_table_f_I_move_empty_entry( free_j );
+                                    free_i--;
+                                }
                                 if( l_1 )
                                 {   free_p[ free_i ].l -= l_1;
                                     free_p[ free_i ].l += ( p_0 - p_align ) - l;
@@ -2136,9 +2138,12 @@ E_mem_Q_blk_I_append_( P p
                         {   if( free_p[ free_j ].l >= l )
                             {   free_p[ free_j ].l -= l;
                                 if( !free_p[ free_j ].l )
-                                    E_mem_Q_blk_Q_sys_table_f_I_move_empty_entry( free_j );
+                                {   E_mem_Q_blk_Q_sys_table_f_I_move_empty_entry( free_j );
+                                    free_i--;
+                                }
                                 if( l_1 )
-                                {   if( free_p[ free_i ].l -= l_1 )
+                                {   free_p[ free_i ].l -= l_1;
+                                    if( free_p[ free_i ].l )
                                         free_p[ free_i ].p += l_1;
                                     else
                                         E_mem_Q_blk_Q_sys_table_f_I_move_empty_entry( free_i );

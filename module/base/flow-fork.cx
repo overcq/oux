@@ -7,40 +7,6 @@
 *         flow fork
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2016‒1‒22 o
 *******************************************************************************/
-#ifdef __gnu_linux__
-N
-E_flow_I_fork_M( void
-){  cap_t cap;
-    Vp( cap = cap_get_proc() )
-        return ~0;
-    V1( cap_set_flag( cap, CAP_EFFECTIVE, 1, ( const cap_value_t [] ){ CAP_SYS_ADMIN }, CAP_SET ))
-    {   V1( cap_free(cap) ){}
-        return ~0;
-    }
-    V1( cap_set_proc(cap) )
-    {   V1( cap_free(cap) ){}
-        return ~0;
-    }
-    V1( cap_free(cap) ){}
-    return 0;
-}
-N
-E_flow_I_fork_W( void
-){  cap_t cap;
-    Vp( cap = cap_get_proc() )
-        return ~0;
-    V1( cap_set_flag( cap, CAP_EFFECTIVE, 1, ( const cap_value_t [] ){ CAP_SYS_ADMIN }, CAP_CLEAR ))
-    {   V1( cap_free(cap) ){}
-        return ~0;
-    }
-    V1( cap_set_proc(cap) )
-    {   V1( cap_free(cap) ){}
-        return ~0;
-    }
-    V1( cap_free(cap) ){}
-    return 0;
-}
-#endif
 // Rozłączenie procesu skopiowanego przez “fork” (w nowym procesie). Nie wolno przełączać ‹zadań› w części od “begin” do “end”.
 pid_t
 E_flow_I_fork_I_begin( void
@@ -179,54 +145,31 @@ End_2:  ;
 N
 E_flow_I_fork_I_wait( pid_t pid
 ){
-#if defined( __gnu_linux__ )
-    int fd;
-    V1( fd = fanotify_init( FAN_CLASS_NOTIF | FAN_REPORT_FID, O_RDONLY ))
-        return ~0;
+        #if defined( __gnu_linux__ )
     N path_l = 6 + E_text_Z_n_N_s_G( pid, sizeof(pid), 10 ) + 1;
     Pc path = M( path_l );
     if( !path )
-    {   V1( close(fd) ){}
         return ~0;
-    }
     E_text_Z_s_P_copy_s0( path, "/proc/" );
     path[ path_l - 1 ] = '\0';
     E_text_Z_n_N_s( path + path_l - 1, pid, sizeof(pid), 10 );
-    _errno = 0;
-    int ret = fanotify_mark( fd, FAN_MARK_ADD | FAN_MARK_ONLYDIR, FAN_DELETE_SELF, ~0, path );
-    if( !~ret )
-    {   if( _errno == ENOENT // Proces już nie istnieje.
-        || _errno == ENODEV
-        )
-        {   V1( close(fd) ){}
-            return 0;
-        }
-        Ve();
-        G_(); Gs0(path);
-        V1( close(fd) ){}
-        return ~0;
-    }
-    struct fanotify_event_metadata event;
-    O{  N l;
-        VO1( l = read( fd, &event, sizeof(event) ))
-        {   V1( close(fd) ){}
+    O{  DIR *dir;
+        int e;
+        _errno = 0;
+        dir = opendir(path);
+        if( !dir )
+        {   if( _errno == ENOENT )
+                break;
+            Ve();
+            G_(); Gs0(path);
+            W(path);
             return ~0;
         }
-        if( l != sizeof(event)
-        || event.event_len != sizeof(event)
-        || event.vers != FANOTIFY_METADATA_VERSION
-        )
-        {   V1( close(fd) ){}
-            return ~0;
-        }
-        if( event.fd != FAN_NOFD )
-        {   V1( close( event.fd )){}
-        }
-        if( event.mask & FAN_DELETE_SELF )
-            break;
+        V1( closedir(dir) ){}
+        sched_yield();
     }
-    V1( close(fd) ){}
-#elif defined( __OpenBSD__ )
+    W(path);
+        #elif defined( __OpenBSD__ )
     char errbuf[ _POSIX2_LINE_MAX ];
     kvm_t *kernel = kvm_openfiles( NULL, NULL, NULL, KVM_NO_FILES, errbuf );
     O{  int n = 0;
