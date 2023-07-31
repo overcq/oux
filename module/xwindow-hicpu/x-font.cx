@@ -62,12 +62,37 @@ E_x_Q_window_I_draw_Z_font(
                                 brightness = 1;
                                 break;
                         }
-                        E_x_Q_window_I_draw_aa_Z_pixel( display, screen, window
-                        , x_, y_
-                        , color
-                        , brightness
-                        , 0
-                        );
+                        if(brightness)
+                        {   N32 color_;
+                            if( brightness == 1 )
+                                color_ = color;
+                            else
+                            {   N8 red = E_x_Z_color_R_red(color);
+                                N8 green = E_x_Z_color_R_green(color);
+                                N8 blue = E_x_Z_color_R_blue(color);
+                                N8 background_red = E_x_Z_color_R_red( E_x_Q_theme.window_bg );
+                                N8 background_green = E_x_Z_color_R_green( E_x_Q_theme.window_bg );
+                                N8 background_blue = E_x_Z_color_R_blue( E_x_Q_theme.window_bg );
+                                if( red > background_red )
+                                    red = background_red + ( red - background_red ) * brightness;
+                                else
+                                    red = background_red - ( background_red - red ) * brightness;
+                                if( green > background_green )
+                                    green = background_green + ( green - background_green ) * brightness;
+                                else
+                                    green = background_green - ( background_green - green ) * brightness;
+                                if( blue > background_blue )
+                                    blue = background_blue + ( blue - background_blue ) * brightness;
+                                else
+                                    blue = background_blue - ( background_blue - blue ) * brightness;
+                                color_ = E_x_Z_color_M( red, green, blue );
+                            }
+                            E_x_Q_window_I_draw_P_color( display, screen, color_ );
+                            E_x_Q_window_I_draw_Z_points( display, screen, window
+                            , 1
+                            , &( xcb_point_t ){ x_, y_ }
+                            );
+                        }
                     }
                     x_++;
                     j++;
@@ -101,7 +126,7 @@ E_x_Q_window_I_draw_Z_font_Z_s(
         s = s_;
         if( u == '\n' )
         {   x_ = x;
-            y += font->height + 1;
+            y += font->height + font->height / 2;
             continue;
         }
         if( E_x_Q_window_I_draw_Z_font( display, screen, window, x_, y, color, font_id, u ))
@@ -111,7 +136,7 @@ E_x_Q_window_I_draw_Z_font_Z_s(
         }
         for_n( i, font->bitmap_n )
             if( font->bitmap[i].u == u )
-            {   x_ += font->bitmap[i].width + 1;
+            {   x_ += font->bitmap[i].width + font->bitmap[0].width / 2;
                 break;
             }
     }
@@ -129,8 +154,8 @@ E_x_Q_object_I_draw_Z_font(
 , N color
 , I font_id
 , U u
-){  return E_x_Q_window_I_draw_Z_font_(
-      object->x + x
+){  return E_x_Q_window_I_draw_Z_font( display, screen, window
+    , object->x + x
     , object->y + y
     , !U_R( object->mode, drag_src ) ? color : E_x_Q_theme.inactive_text
     , font_id, u
@@ -147,8 +172,8 @@ E_x_Q_object_I_draw_Z_font_Z_s(
 , N color
 , I font_id
 , Pc s
-){  return E_x_Q_window_I_draw_Z_font_Z_s_(
-      object->x + x
+){  return E_x_Q_window_I_draw_Z_font_Z_s( display, screen, window
+    , object->x + x
     , object->y + y
     , !U_R( object->mode, drag_src ) ? color : E_x_Q_theme.inactive_text
     , font_id, s

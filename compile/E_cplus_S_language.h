@@ -30,6 +30,7 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
 #define J_swap(type,a,b)                    { type J_autogen(_) = a; a = b; b = J_autogen(_); }
 #define J_min(a,b)                          ( (a) > (b) ? (b) : (a) )
 #define J_max(a,b)                          ( (a) < (b) ? (b) : (a) )
+#define J_min_max(a,b,c)                    ( J_min( (a), J_max( (b), (c) )))
 #define J_abs(v)                            ( (S)(v) < 0 ? -(v) : (v) )
 //------------------------------------------------------------------------------
 #define J_autogen_S                         _autogen

@@ -86,7 +86,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
             xcb_generic_event_t *x_event = xcb_poll_for_event( display->x_display );
             int e;
             if( e = xcb_connection_has_error( display->x_display ))
-            {   GV(NA); Gd(e); V(); //NDFN Tu powinno być ‹zdarzenie›.
+            {   GV_(NA); Gd(e); V(); //NDFN Tu powinno być ‹zdarzenie›.
             }
                 #else
             xcb_connection_t *x_display = display->x_display;
@@ -98,7 +98,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
             }
             if( !x_event )
             {   int e = xcb_connection_has_error( display->x_display );
-                GV(NA); Gd(e); V(); //NDFN Tu powinno być ‹zdarzenie›.
+                GV_(NA); Gd(e); V(); //NDFN Tu powinno być ‹zdarzenie›.
             }
             display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
                 #endif
@@ -114,7 +114,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
             do
             {   if( !x_event->response_type )
                 {   xcb_generic_error_t *x_error = (P)x_event;
-                    GV(NA); Gd( x_error->sequence ); Gd( x_error->major_code ); Gd( x_error->minor_code ); Gd( x_error->error_code ); Gd( x_error->resource_id ); V(); //NDFN Nienaprawialny błąd zbiorczy ‟X.org”.
+                    GV_(NA); Gd( x_error->sequence ); Gd( x_error->major_code ); Gd( x_error->minor_code ); Gd( x_error->error_code ); Gd( x_error->resource_id ); V(); //NDFN Nienaprawialny błąd zbiorczy ‟X.org”.
                 }
                 xcb_window_t x_event_window;
                 // Każde “zdarzenie” ‘x’ mające być dołączone do interpretacji wymaga sprawdzenia osadzenia znaczenia zmiennych dostarczanych z tym “zdarzeniem”; np. “window”. a na końcu usunąć niepotrzebne dla interpretacji “zdarzenia” z obu “switch” i zmienić, by błędne “zdarzenia” były ignorowane.
@@ -820,6 +820,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                     }
                   case XCB_EXPOSE:
                     {   G(); Gs0_( "expose" );
+                        //NDFN Wyłączone, ponieważ pojawia się błąd połączenia “xcb”.
                         U_F( window->req, draw );
                         U_F( display->req, draw );
                         break;
@@ -971,7 +972,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                       break;
                 }
 Loop:           free( x_event );
-            }while( x_event = xcb_poll_for_queued_event( display->x_display )); //NDFN Ograniczyć liczbę ‘iteracji’ realizowanych jednorazowo.
+            }while( x_event = xcb_poll_for_queued_event( display->x_display )); //NDFN Ograniczyć liczbę ‘iteracji’ realizowanych jednorazowo?
             // Poniżej jest punkt przełączenia tymczasowego trybu “drag && drag_stop” na “drag_stop”, więc tylko w powyższym “switch” może być ten pierwszy (złożony), ale już nic nie mający aktywować.
             if( U_R( display->mode, drag_stop )
             && U_E( display->mode, drag )
@@ -1181,7 +1182,7 @@ Loop:           free( x_event );
                                         free(ret);
                                         Mt_( dnd_window->drawable, dnd_window->width * dnd_window->height );
                                         if( !dnd_window->drawable )
-                                        {   GV(NA); V();
+                                        {   GV_(NA); V();
                                         }
                                         xcb_configure_window( display->x_display
                                         , dnd_window->x_window
@@ -1204,7 +1205,7 @@ Loop:           free( x_event );
                                         );
                                         //M( dnd_window->width * dnd_window->height / 8 + ( dnd_window->width * dnd_window->height % 8 ? 1 : 0 ));
                                         //if( !screen->dnd_window_shape_pixmap )
-                                        //{   GV(NA); V();
+                                        //{   GV_(NA); V();
                                         //}
                                             #endif
                                         U_L( dnd_window->mode, resize );
@@ -1352,7 +1353,7 @@ Drag_start_error:                   {   GV_(NA);
                     dnd_window = &screen->dnd_window;
                     Mt_( dnd_window->drawable, dnd_window->width * dnd_window->height );
                     if( !dnd_window->drawable )
-                    {   GV(NA); V();
+                    {   GV_(NA); V();
                     }
                     xcb_configure_window( display->x_display
                     , dnd_window->x_window
@@ -1390,7 +1391,7 @@ Drag_start_error:                   {   GV_(NA);
                     {   window->width = window->width_new;
                         window->height = window->height_new;
                         if( !E_mem_Q_blk_M_replace( &window->drawable, window->width * window->height * sizeof( *window->drawable )))
-                        {   GV(NA); V();
+                        {   GV_(NA); V();
                         }
                         U_F( window->req, draw );
                         U_F( display->req, draw );
@@ -1415,10 +1416,10 @@ Drag_start_error:                   {   GV_(NA);
                         {   window->width = window->width_new;
                             window->height = window->height_new;
                             if( !E_mem_Q_blk_M_replace( &window->drawable, window->width * window->height * sizeof( *window->drawable )))
-                            {   GV(NA); V();
+                            {   GV_(NA); V();
                             }
                             if( !E_mem_Q_blk_M_replace( &window->object_mask, window->width * window->height * sizeof( *window->object_mask )))
-                            {   GV(NA); V();
+                            {   GV_(NA); V();
                             }
                             for_n( i, window->width * window->height )
                                 window->object_mask[i] = ~0;
@@ -1497,53 +1498,53 @@ D( x_window, draw )
                         U_F( display->req, flush );
                     }
                 }
-            }
-            if( U_R( display->mode, drag ))
-            {   struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, display->drag_S_dnd_window_screen_id );
-                struct E_x_Q_window_Z *window = &screen->dnd_window;
-                if( !U_R( window->mode, resize )
-                && U_E( window->req, draw )
-                )
-                {   for_n( i, window->width * window->height )
-                        window->drawable[i] = E_x_Q_theme.window_bg;
-                        #ifdef C_xcb_shape
-                    xcb_poly_fill_rectangle( display->x_display
-                    , screen->dnd_window_shape_pixmap
-                    , screen->bitmask_0_gc
-                    , 1
-                    , ( xcb_rectangle_t [] )
-                      { 0, 0
-                      , window->width, window->height
-                      }
-                    );
-                        #endif
-                    U_F( screen->state, draw_object_drag_move );
-                    for_each( object_id, window->object, E_mem_Q_tab )
-                    {   struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
-                        object->draw( display, screen, window, object );
+                if( U_R( display->mode, drag ))
+                {   struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, display->drag_S_dnd_window_screen_id );
+                    struct E_x_Q_window_Z *window = &screen->dnd_window;
+                    if( !U_R( window->mode, resize )
+                    && U_E( window->req, draw )
+                    )
+                    {   for_n( i, window->width * window->height )
+                            window->drawable[i] = E_x_Q_theme.window_bg;
+                            #ifdef C_xcb_shape
+                        xcb_poly_fill_rectangle( display->x_display
+                        , screen->dnd_window_shape_pixmap
+                        , screen->bitmask_0_gc
+                        , 1
+                        , ( xcb_rectangle_t [] )
+                          { 0, 0
+                          , window->width, window->height
+                          }
+                        );
+                            #endif
+                        U_F( screen->state, draw_object_drag_move );
+                        for_each( object_id, window->object, E_mem_Q_tab )
+                        {   struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
+                            object->draw( display, screen, window, object );
+                        }
+                        U_L( screen->state, draw_object_drag_move );
+                            #ifdef C_xcb_shape
+                        xcb_shape_mask( display->x_display
+                        , XCB_SHAPE_SO_SET
+                        , XCB_SHAPE_SK_BOUNDING
+                        , window->x_window
+                        , 0, 0
+                        , screen->dnd_window_shape_pixmap
+                        );
+                            #endif
+                        xcb_put_image( display->x_display
+                        , XCB_IMAGE_FORMAT_Z_PIXMAP
+                        , window->x_window
+                        , screen->drawable_gc
+                        , window->width, window->height
+                        , 0, 0
+                        , 0
+                        , 24
+                        , window->width * window->height * sizeof(N32)
+                        , (P)window->drawable
+                        );
+                        U_F( display->req, flush );
                     }
-                    U_L( screen->state, draw_object_drag_move );
-                        #ifdef C_xcb_shape
-                    xcb_shape_mask( display->x_display
-                    , XCB_SHAPE_SO_SET
-                    , XCB_SHAPE_SK_BOUNDING
-                    , window->x_window
-                    , 0, 0
-                    , screen->dnd_window_shape_pixmap
-                    );
-                        #endif
-                    xcb_put_image( display->x_display
-                    , XCB_IMAGE_FORMAT_Z_PIXMAP
-                    , window->x_window
-                    , screen->drawable_gc
-                    , window->width, window->height
-                    , 0, 0
-                    , 0
-                    , 24
-                    , window->width * window->height * sizeof(N32)
-                    , (P)window->drawable
-                    );
-                    U_F( display->req, flush );
                 }
             }
             if( U_R( display->req, flush ))
