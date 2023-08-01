@@ -319,13 +319,14 @@ E_x_Q_window_I_draw_Z_segments(
             }
         }
     }
-    if(brightness)
-    {   if( !~E_x_Q_window_I_draw_aa_Z_points( display, screen, window, points_i, points, brightness ))
-        {   W(points);
-            return ~0;
-        }
-    }else
-        E_x_Q_window_I_draw_Z_points( display, screen, window, points_i, points );
+    if( points_i )
+        if(brightness)
+        {   if( !~E_x_Q_window_I_draw_aa_Z_points( display, screen, window, points_i, points, brightness ))
+            {   W(points);
+                return ~0;
+            }
+        }else
+            E_x_Q_window_I_draw_Z_points( display, screen, window, points_i, points );
     W(points);
     return 0;
 }
@@ -359,7 +360,7 @@ E_x_Q_window_I_draw_Z_lines(
     }
     N k = 0, l = 0;
     for_n( i, n - 1 )
-    {   F alpha = atan( (F)( J_abs( points[ i + 1 ].y - points[i].y )) / J_abs( points[ i + 1 ].x - points[i].x ));
+    {   F alpha = atan(( J_abs( points[ i + 1 ].y - points[i].y ) * screen->pixel_height ) / ( J_abs( points[ i + 1 ].x - points[i].x ) * screen->pixel_width ));
         N16 dxy = alpha >= M_PI_4 && alpha <= M_PI_2 + M_PI_4 ? 1 : 0;
         if( thickness_int )
         {   for_n( j, ( thickness_int - 1 ) / 2 )
