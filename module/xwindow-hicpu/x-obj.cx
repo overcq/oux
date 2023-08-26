@@ -258,7 +258,27 @@ E_x_Q_object_Z_button_I_draw(
 , struct E_x_Q_screen_Z *screen
 , struct E_x_Q_window_Z *window
 , struct E_x_Q_object_Z *object
-){  E_x_Q_object_I_draw_P_color( display, screen, object, E_x_Q_theme.line );
+){  if( !~display->pointer_button_S_object_id )
+        E_x_Q_object_I_draw_P_color( display, screen, object, E_x_Q_theme.object_bg );
+    else
+    {   for_each( object_id, window->object, E_mem_Q_tab )
+        {   struct E_x_Q_object_Z *object_ = E_mem_Q_tab_R( window->object, object_id );
+            if( object_ == object )
+                break;
+        }
+        E_x_Q_object_I_draw_P_color( display, screen, object, object_id == display->pointer_button_S_object_id && U_R( display->state, pointer_button_S_pressing ) ? E_x_Q_theme.volatile_window_bg : E_x_Q_theme.object_bg );
+    }
+    E_x_Q_object_I_fill_Z_rectangles( display, screen, window, object
+    , 1
+    , ( xcb_rectangle_t[] )
+      { { .x = 2
+        , .y = 2
+        , .width = object->width - 4
+        , .height = object->height - 4
+        }
+      }
+    );
+    E_x_Q_object_I_draw_P_color( display, screen, object, E_x_Q_theme.line );
     E_x_Q_object_I_draw_Z_rectangles( display, screen, window, object
     , 1
     , ( xcb_rectangle_t[] )
@@ -269,26 +289,6 @@ E_x_Q_object_Z_button_I_draw(
         }
       }
     , 2
-    );
-    I object_id;
-    if( ~display->pointer_button_S_object_id )
-    {   for_each_( object_id, window->object, E_mem_Q_tab )
-        {   struct E_x_Q_object_Z *object_ = E_mem_Q_tab_R( window->object, object_id );
-            if( object_ == object )
-                break;
-        }
-    }else
-        object_id = 0;
-    E_x_Q_object_I_draw_P_color( display, screen, object, object_id == display->pointer_button_S_object_id && U_R( display->state, pointer_button_S_pressing ) ? E_x_Q_theme.volatile_window_bg : E_x_Q_theme.object_bg );
-    E_x_Q_object_I_fill_Z_rectangles( display, screen, window, object
-    , 1
-    , ( xcb_rectangle_t[] )
-      { { .x = 2
-        , .y = 2
-        , .width = object->width - 4
-        , .height = object->height - 4
-        }
-      }
     );
 }
 void
@@ -348,20 +348,7 @@ E_x_Q_object_Z_entry_I_draw(
 , struct E_x_Q_screen_Z *screen
 , struct E_x_Q_window_Z *window
 , struct E_x_Q_object_Z *object
-){  E_x_Q_object_I_draw_P_color( display, screen, object, E_x_Q_theme.window_bg );
-    E_x_Q_object_I_fill_Z_rectangles( display, screen, window, object
-    , 1
-    , ( xcb_rectangle_t[] )
-      { { .x = 0
-        , .y = 0
-        , .width = object->width
-        , .height = object->height
-        }
-      }
-    );
-    struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
-    struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, object_data->font );
-    S16 x = E_x_Q_object_S_layout_dx;
+){  struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
     Pc s = object_data->text;
     for_n( i, object_data->text_start )
     {   U u = ~0;
@@ -371,6 +358,8 @@ E_x_Q_object_Z_entry_I_draw(
         }
     }
     Pc s_ = s;
+    struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, object_data->font );
+    S16 x = E_x_Q_object_S_layout_dx;
     while( *s )
     {   U u = ~0;
         s = E_text_Z_su_R_u( s, &u );
@@ -379,12 +368,11 @@ E_x_Q_object_Z_entry_I_draw(
         }
         for_n( i, font->bitmap_n )
             if( font->bitmap[i].u == u )
-            {   x += ( x != 0 ? font->bitmap[0].width / 2 : 0 ) + font->bitmap[i].width;
                 break;
-            }
         if( i == font->bitmap_n )
-            x += ( x != 0 ? font->bitmap[0].width / 2 : 0 ) + font->bitmap[0].width;
-        if( x > object->width )
+            i = 0;
+        x += ( x != E_x_Q_object_S_layout_dx ? font->bitmap[0].width / 2 : 0 ) + font->bitmap[i].width;
+        if( x >= object->width )
             break;
     }
     C c = *s;
@@ -392,9 +380,7 @@ E_x_Q_object_Z_entry_I_draw(
     E_x_Q_object_I_draw_Z_font_Z_s( display, screen, window, object, 0, 0, E_x_Q_theme.text, object_data->font, s_ );
     *s = c;
     if( U_R( object_data->state, cursor_visible_ ))
-    {   struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, object_data->font );
-        S16 x = 0;
-        Pc s = object_data->text;
+    {   Pc s = object_data->text;
         for_n( i, object_data->text_start )
         {   U u = ~0;
             s = E_text_Z_su_R_u( s, &u );
@@ -402,6 +388,8 @@ E_x_Q_object_Z_entry_I_draw(
             {   GV_(bad UTF-8 character); V();
             }
         }
+        struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, object_data->font );
+        S16 x = 0;
         N l = object_data->cursor_pos - object_data->text_start;
         while( l && *s )
         {   U u = ~0;
@@ -411,11 +399,10 @@ E_x_Q_object_Z_entry_I_draw(
             }
             for_n( i, font->bitmap_n )
                 if( font->bitmap[i].u == u )
-                {   x += ( x != 0 ? font->bitmap[0].width / 2 : 0 ) + font->bitmap[i].width;
                     break;
-                }
             if( i == font->bitmap_n )
-                x += ( x != 0 ? font->bitmap[0].width / 2 : 0 ) + font->bitmap[0].width;
+                i = 0;
+            x += ( x != 0 ? font->bitmap[0].width / 2 : 0 ) + font->bitmap[i].width;
             l--;
         }
         E_x_Q_object_I_draw_P_color( display, screen, object, E_x_Q_theme.cursor );
@@ -524,7 +511,18 @@ E_x_Q_object_Z_frame_I_draw(
 , struct E_x_Q_screen_Z *screen
 , struct E_x_Q_window_Z *window
 , struct E_x_Q_object_Z *object
-){  E_x_Q_object_I_draw_P_color( display, screen, object, E_x_Q_theme.line );
+){  E_x_Q_object_I_draw_P_color( display, screen, object, E_x_Q_theme.window_bg );
+    E_x_Q_object_I_fill_Z_rectangles( display, screen, window, object
+    , 1
+    , ( xcb_rectangle_t[] )
+      { { .x = 1
+        , .y = 1
+        , .width = object->width - 2
+        , .height = object->height - 2
+        }
+      }
+    );
+    E_x_Q_object_I_draw_P_color( display, screen, object, E_x_Q_theme.line );
     E_x_Q_object_I_draw_Z_rectangles( display, screen, window, object
     , 1
     , ( xcb_rectangle_t[] )
