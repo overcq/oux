@@ -352,7 +352,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                             if( i == font->bitmap_n )
                                                 i = 0;
                                             x -= font->bitmap[i].width + ( x != object->width ? font->bitmap[0].width / 2 : 0 );
-                                            if( x <= 0 )
+                                            if( x < 0 )
                                                 break;
                                             object_data->text_start--;
                                         }
@@ -392,7 +392,6 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                         {   if( object_data->cursor_pos == E_text_Z_su0_R_l( object_data->text ) )
                                                 break;
                                             object_data->cursor_pos++;
-                                            struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, object_data->font );
                                             Pc s = object_data->text;
                                             for_n( i, object_data->text_start )
                                             {   U u = ~0;
@@ -401,6 +400,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                                 {   GV_(bad UTF-8 character); V();
                                                 }
                                             }
+                                            struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, object_data->font );
                                             S16 x = 0;
                                             for_n_( i, object_data->cursor_pos - object_data->text_start )
                                             {   U u = ~0;
@@ -429,7 +429,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                                     if( i == font->bitmap_n )
                                                         i = 0;
                                                     x -= font->bitmap[i].width + ( x != object->width ? font->bitmap[0].width / 2 : 0 );
-                                                    if( x <= 0 )
+                                                    if( x < 0 )
                                                         break;
                                                     object_data->text_start--;
                                                 }
@@ -458,7 +458,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                                 if( i == font->bitmap_n )
                                                     i = 0;
                                                 x -= font->bitmap[i].width + ( x != object->width ? font->bitmap[0].width / 2 : 0 );
-                                                if( x <= 0 )
+                                                if( x < 0 )
                                                     break;
                                                 object_data->text_start--;
                                             }
@@ -602,7 +602,6 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                                     break;
                                                 object_data->cursor_pos++;
                                             }
-                                            struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, object_data->font );
                                             s = object_data->text;
                                             for_n_( i, object_data->text_start )
                                             {   U u = ~0;
@@ -611,6 +610,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                                 {   GV_(bad UTF-8 character); V();
                                                 }
                                             }
+                                            struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, object_data->font );
                                             S16 x = 0;
                                             for_n_( i, object_data->cursor_pos - object_data->text_start )
                                             {   U u = ~0;
@@ -639,7 +639,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                                     if( i == font->bitmap_n )
                                                         i = 0;
                                                     x -= font->bitmap[i].width + ( x != object->width ? font->bitmap[0].width / 2 : 0 );
-                                                    if( x <= 0 )
+                                                    if( x < 0 )
                                                         break;
                                                     object_data->text_start--;
                                                 }
@@ -782,12 +782,10 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                         {   U_L( display->state, pointer_S_in_window );
                             if( !U_R( display->mode, drag ))
                             {   display->pointer_button_S_seq_i = 0;
-                                if( display->pointer_button == 1 )
-                                {   display->pointer_button_S_object_id = ~0;
-                                    U_F( window->req, draw );
-                                    U_F( display->req, draw );
-                                    U_F( display->req, flush );
-                                }
+                                display->pointer_button_S_object_id = ~0;
+                                U_F( window->req, draw );
+                                U_F( display->req, draw );
+                                U_F( display->req, flush );
                             }
                         }else if( x_leave_notify->mode == XCB_NOTIFY_MODE_UNGRAB )
                         {   U_L( display->req, pointer_S_ungrab );
@@ -797,9 +795,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                             Yi_L( x_window, events_pointer_button_check );
                                 #endif
                             display->pointer_button_S_seq_i = 0;
-                            if( !U_R( display->mode, drag )
-                            && display->pointer_button == 1
-                            )
+                        if( !U_R( display->mode, drag ))
                             {   display->pointer_button_S_object_id = ~0;
                                 U_F( window->req, draw );
                                 U_F( display->req, draw );
@@ -1068,38 +1064,40 @@ Loop:           free( x_event );
                 if( ret->status == XCB_GRAB_STATUS_SUCCESS ) // Czy aktualny stan od pierwszego kliknięcia serii.
                 {   free(ret);
                     I xbutton_object_id;
-                    if( display->pointer_button_S_x >= 0
-                    && display->pointer_button_S_x < window->width
-                    && display->pointer_button_S_y >= 0
-                    && display->pointer_button_S_y < window->height
-                    )
-                    {   xbutton_object_id = window->object_mask[ display->pointer_button_S_y * window->width + display->pointer_button_S_x ];
-                        if( ~xbutton_object_id )
-                        {   struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, xbutton_object_id );
-                            if( object->draw == E_x_Q_object_Z_font_I_draw )
-                            {   I object_id = E_x_Q_object_R_parent( window, xbutton_object_id );
-                                if( ~object_id )
-                                {   struct E_x_Q_object_Z *object_parent = E_mem_Q_tab_R( window->object, object_id );
-                                    if( object_parent->draw == E_x_Q_object_Z_button_I_draw )
-                                        xbutton_object_id = object_id;
-                                }
-                            }else if( object->draw == E_x_Q_object_Z_frame_I_draw )
-                            {   for_n( child_i, object->child_n )
-                                {   struct E_x_Q_object_Z *object_child = E_mem_Q_tab_R( window->object, object->child[ child_i ] );
-                                    if( object_child->draw == E_x_Q_object_Z_entry_I_draw )
-                                    {   xbutton_object_id = object->child[ child_i ];
-                                        break;
+                    if( !U_R( display->mode, drag ))
+                        if( display->pointer_button_S_x >= 0
+                        && display->pointer_button_S_x < window->width
+                        && display->pointer_button_S_y >= 0
+                        && display->pointer_button_S_y < window->height
+                        )
+                        {   xbutton_object_id = window->object_mask[ display->pointer_button_S_y * window->width + display->pointer_button_S_x ];
+                            if( ~xbutton_object_id )
+                            {   struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, xbutton_object_id );
+                                if( object->draw == E_x_Q_object_Z_font_I_draw )
+                                {   I object_id = E_x_Q_object_R_parent( window, xbutton_object_id );
+                                    if( ~object_id )
+                                    {   struct E_x_Q_object_Z *object_parent = E_mem_Q_tab_R( window->object, object_id );
+                                        if( object_parent->draw == E_x_Q_object_Z_button_I_draw )
+                                            xbutton_object_id = object_id;
+                                    }
+                                }else if( object->draw == E_x_Q_object_Z_frame_I_draw )
+                                {   for_n( child_i, object->child_n )
+                                    {   struct E_x_Q_object_Z *object_child = E_mem_Q_tab_R( window->object, object->child[ child_i ] );
+                                        if( object_child->draw == E_x_Q_object_Z_entry_I_draw )
+                                        {   xbutton_object_id = object->child[ child_i ];
+                                            break;
+                                        }
                                     }
                                 }
+                                if( !~display->pointer_button_S_object_id ) // Czy pierwsze kliknięcie/a?
+                                    display->pointer_button_S_object_id = xbutton_object_id;
                             }
-                            if( !~display->pointer_button_S_object_id ) // Czy pierwsze kliknięci(a)?
-                                display->pointer_button_S_object_id = xbutton_object_id;
-                        }
-                    }else
-                        xbutton_object_id = ~0;
-                    if( ~xbutton_object_id
-                    && xbutton_object_id == display->pointer_button_S_object_id
-                    ) // Czy kliknięto nad początkowym obiektem?
+                        }else
+                            xbutton_object_id = ~0;
+                    if( U_R( display->mode, drag )
+                    || ( ~xbutton_object_id
+                      && xbutton_object_id == display->pointer_button_S_object_id
+                    )) // Czy kliknięto nad początkowym obiektem?
                     {   U_F( display->req, pointer_S_ungrab );
                         xcb_timestamp_t grab_time = display->pointer_button_S_time + ( display->pointer_button_S_seq_i & 1 ? display->pointer_button_C_release_timeout : display->pointer_button_C_seq_timeout );
                         ret_id = xcb_grab_pointer_unchecked( display->x_display
@@ -1288,7 +1286,7 @@ Drag_start_error:                       {   GV_(NA);
                                 }
                                 display->pointer_button_S_object_id = ~0;
                             }else
-                            {   if( display->pointer_button_S_seq_i == 2
+                                if( display->pointer_button_S_seq_i == 2
                                 && display->pointer_button == 3
                                 )
                                     xcb_change_active_pointer_grab( display->x_display
@@ -1296,7 +1294,6 @@ Drag_start_error:                       {   GV_(NA);
                                     , display->pointer_button_S_grab_time
                                     , event_mask
                                     );
-                            }
                             if( !U_R( display->mode, drag )
                             && !U_R( display->state, pointer_button_S_pressing )
                             )
@@ -1313,17 +1310,6 @@ Drag_start_error:                       {   GV_(NA);
                             }
                                 #endif
                         }
-                    }else
-                    {   if( ~display->cursor_window )
-                        {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->cursor_window );
-                            struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->cursor_object );
-                            struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
-                            U_L( object_data->state, cursor_visible_ );
-                            display->cursor_window = ~0;
-                        }
-                        display->pointer_button_S_object_id = ~0;
-                        xcb_ungrab_pointer( display->x_display, display->pointer_button_S_grab_time );
-                        display->pointer_button_S_seq_i = 0;
                     }
                     U_F( window->req, draw );
                     U_F( display->req, draw );

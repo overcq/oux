@@ -359,7 +359,7 @@ E_x_Q_object_Z_entry_I_draw(
     }
     Pc s_ = s;
     struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, object_data->font );
-    S16 x = E_x_Q_object_S_layout_dx;
+    S16 x = E_x_Q_object_S_layout_dx; //NDFN Dlaczego tutaj nie ma być 0?
     while( *s )
     {   U u = ~0;
         s = E_text_Z_su_R_u( s, &u );
@@ -406,13 +406,14 @@ E_x_Q_object_Z_entry_I_draw(
             l--;
         }
         E_x_Q_object_I_draw_P_color( display, screen, object, E_x_Q_theme.cursor );
-        xcb_segment_t segments[1] =
-        { x
-        , 0
-        , x
-        , object->height - 1
-        };
-        E_x_Q_object_I_draw_Z_segments( display, screen, window, object, 1, segments, 0 );
+        E_x_Q_object_I_draw_Z_segments( display, screen, window, object, 1
+        , ( xcb_segment_t[] ){
+            x
+          , 0
+          , x
+          , object->height - 1
+          }
+        , 0 );
     }
 }
 //------------------------------------------------------------------------------
