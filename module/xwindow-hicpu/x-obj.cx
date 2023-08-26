@@ -268,16 +268,25 @@ E_x_Q_object_Z_button_I_draw(
         , .height = object->height
         }
       }
-    , 1
+    , 2
     );
-    E_x_Q_object_I_draw_P_color( display, screen, object, E_x_Q_theme.object_bg );
+    I object_id;
+    if( ~display->pointer_button_S_object_id )
+    {   for_each_( object_id, window->object, E_mem_Q_tab )
+        {   struct E_x_Q_object_Z *object_ = E_mem_Q_tab_R( window->object, object_id );
+            if( object_ == object )
+                break;
+        }
+    }else
+        object_id = 0;
+    E_x_Q_object_I_draw_P_color( display, screen, object, object_id == display->pointer_button_S_object_id && U_R( display->state, pointer_button_S_pressing ) ? E_x_Q_theme.volatile_window_bg : E_x_Q_theme.object_bg );
     E_x_Q_object_I_fill_Z_rectangles( display, screen, window, object
     , 1
     , ( xcb_rectangle_t[] )
-      { { .x = 1
-        , .y = 1
-        , .width = object->width - 2
-        , .height = object->height - 2
+      { { .x = 2
+        , .y = 2
+        , .width = object->width - 4
+        , .height = object->height - 4
         }
       }
     );
