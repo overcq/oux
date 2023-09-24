@@ -1126,8 +1126,13 @@ Loop:           free( x_event );
                                 if( U_R( object->mode, draggable )
                                 && display->pointer_button == 1
                                 && display->pointer_button_S_seq_i == 1
-                                ){  if( ~display->cursor_window )
-                                        display->cursor_window = ~0;
+                                )
+                                {   display->cursor_window = ~0;
+                                    if( ~display->select_window )
+                                    {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->select_window );
+                                        E_x_Q_object_W( window, display->select_list_object );
+                                        display->select_window = ~0;
+                                    }
                                     Mt_( display->drag_S_object_src, 1 );
                                     if( display->drag_S_object_src )
                                     {   struct E_x_Q_window_Z *dnd_window = &screen->dnd_window;
@@ -1244,7 +1249,13 @@ Drag_start_error:                       {   GV_(NA);
                                 }else if( object->draw == E_x_Q_object_Z_entry_I_draw
                                 && display->pointer_button == 1
                                 && display->pointer_button_S_seq_i == 2
-                                ){  display->cursor_window = display->pointer_button_S_window_id;
+                                )
+                                {   if( ~display->select_window )
+                                    {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->select_window );
+                                        E_x_Q_object_W( window, display->select_list_object );
+                                        display->select_window = ~0;
+                                    }
+                                    display->cursor_window = display->pointer_button_S_window_id;
                                     display->cursor_object = display->pointer_button_S_object_id;
                                     struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
                                     S16 click_x = display->pointer_button_S_x - object->x;
@@ -1271,8 +1282,90 @@ Drag_start_error:                       {   GV_(NA);
                                         x += font->bitmap[i].width + font->bitmap[0].width / 2;
                                     }
                                     U_F( object_data->state, cursor_visible_ );
+                                }else if( object->draw == E_x_Q_object_Z_select_I_draw
+                                && display->pointer_button == 1
+                                && display->pointer_button_S_seq_i == 2
+                                )
+                                {   if( !~display->select_window )
+                                    {   display->cursor_window = ~0;
+                                        struct E_x_Q_object_Z_data_Z_select *object_data = object->data;
+                                        if( object_data->select_n )
+                                        {   I parent_id = E_x_Q_object_R_parent( window, display->pointer_button_S_object_id );
+                                            struct E_x_Q_object_Z *object_parent = E_mem_Q_tab_R( window->object, parent_id );
+                                            struct E_x_Q_object_Z *entry = E_mem_Q_tab_R( window->object, object_parent->child[1] );
+                                            struct E_x_Q_object_Z_data_Z_entry *entry_data = entry->data;
+                                            struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, entry_data->font );
+                                            N16 width = 0;
+                                            for_n( select_i, object_data->select_n )
+                                            {   N16 width_ = 0;
+                                                Pc s = object_data->select[ select_i ];
+                                                while( *s )
+                                                {   for_n( i, font->bitmap_n )
+                                                        if( font->bitmap[i].u == *s )
+                                                            break;
+                                                    if( i == font->bitmap_n )
+                                                        i = 0;
+                                                    width_ += ( select_i ? font->bitmap[0].width / 2 : 0 ) + font->bitmap[i].width;
+                                                    s++;
+                                                }
+                                                if( width < width_ )
+                                                    width = width_;
+                                            }
+                                            width += 2;
+                                            S16 x;
+                                            if( width <= window->width - object->x )
+                                                x = object->x;
+                                            else if( width <= window->width )
+                                                x = window->width - width;
+                                            else
+                                            {   x = 0;
+                                                width = window->width;
+                                            }
+                                            N16 height = object_data->select_n * font->height + 2;
+                                            S16 y;
+                                            if( height <= window->height - ( object->y + object->height ))
+                                                y = object->y + object->height;
+                                            else if( height <= object->y )
+                                                y = object->y - height;
+                                            else if( object->y > window->height - ( object->y + object->height ))
+                                            {   y = 0;
+                                                height = object->y / font->height * font->height;
+                                            }
+                                            I select_list_id = E_x_Q_object_M( display, window
+                                            , 0
+                                            , x
+                                            , y
+                                            , width
+                                            , height
+                                            , 0
+                                            , E_x_Q_object_Z_select_list_I_draw
+                                            , 0
+                                            );
+                                            if( ~select_list_id )
+                                            {   display->select_window = display->pointer_button_S_window_id;
+                                                display->select_object = display->pointer_button_S_object_id;
+                                                display->select_list_object = select_list_id;
+                                            }
+                                        }
+                                    }else
+                                    {   E_x_Q_object_W( window, display->select_list_object );
+                                        display->select_window = ~0;
+                                    }
+                                }else if( object->draw == E_x_Q_object_Z_select_list_I_draw )
+                                {   if( display->pointer_button == 1
+                                    && display->pointer_button_S_seq_i == 2
+                                    )
+                                    {   
+                                        E_x_Q_object_W( window, display->select_list_object );
+                                        display->select_window = ~0;
+                                    }
                                 }else
                                 {   display->cursor_window = ~0;
+                                    if( ~display->select_window )
+                                    {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->select_window );
+                                        E_x_Q_object_W( window, display->select_list_object );
+                                        display->select_window = ~0;
+                                    }
                                     I object_id = display->pointer_button_S_object_id;
                                     O{  if( object->click )
                                         {   object->click( window, object, display->pointer_button, display->pointer_button_S_seq_i );
