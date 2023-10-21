@@ -63,6 +63,10 @@ struct E_x_Q_object_Z_data_Z_select
 { Pc *select;
   N select_n;
 };
+struct E_x_Q_object_Z_data_Z_select_list
+{ N scroll;
+  N selected;
+};
 //==============================================================================
 S16 E_x_Q_object_S_layout_dx = 4, E_x_Q_object_S_layout_dy = 4;
 //==============================================================================
@@ -622,6 +626,37 @@ E_x_Q_object_Z_select_I_draw(
     , 2
     );
 }
+I
+E_x_Q_object_Z_select_list_M(
+  struct E_x_Q_display_Z *display
+, struct E_x_Q_window_Z *window
+, S16 x
+, S16 y
+, N16 width
+, N16 height
+){  I object_id = E_x_Q_object_M( display, window
+    , 0
+    , x
+    , y
+    , width
+    , height
+    , 0
+    , E_x_Q_object_Z_select_list_I_draw
+    , 0
+    );
+    if( !~object_id )
+        return ~0;
+    struct E_x_Q_object_Z_data_Z_select_list *M_( object_data );
+    if( !object_data )
+    {   E_x_Q_object_W( window, object_id );
+        return ~0;
+    }
+    object_data->scroll = 0;
+    object_data->selected = ~0;
+    struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
+    object->data = object_data;
+    return object_id;
+}
 void
 E_x_Q_object_Z_select_list_I_draw(
   struct E_x_Q_display_Z *display
@@ -651,16 +686,30 @@ E_x_Q_object_Z_select_list_I_draw(
       }
     , 1
     );
-    struct E_x_Q_object_Z *object_select = E_mem_Q_tab_R( window->object, display->select_object );
-    struct E_x_Q_object_Z_data_Z_select *select_data = object_select->data;
+    struct E_x_Q_object_Z *select = E_mem_Q_tab_R( window->object, display->select_object );
+    struct E_x_Q_object_Z_data_Z_select *select_data = select->data;
     I parent_id = E_x_Q_object_R_parent( window, display->select_object );
     struct E_x_Q_object_Z *object_parent = E_mem_Q_tab_R( window->object, parent_id );
     struct E_x_Q_object_Z *entry = E_mem_Q_tab_R( window->object, object_parent->child[1] );
     struct E_x_Q_object_Z_data_Z_entry *entry_data = entry->data;
     struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, entry_data->font );
+    struct E_x_Q_object_Z_data_Z_select_list *object_data = object->data;
     N y = 1;
-    for_n( i, select_data->select_n )
-    {   if( !~E_x_Q_object_I_draw_Z_font_Z_s( display, screen, window, object
+    for( N i = object_data->scroll; i != select_data->select_n; i++ )
+    {   if( i == object_data->selected )
+        {   E_x_Q_object_I_draw_P_color( display, screen, object, E_x_Q_theme.line_selection_bg );
+            E_x_Q_object_I_fill_Z_rectangles( display, screen, window, object
+            , 1
+            , ( xcb_rectangle_t[] )
+              { { .x = 1
+                , .y = 1 + ( object_data->selected - object_data->scroll ) * font->height
+                , .width = object->width - 2
+                , .height = font->height
+                }
+              }
+            );
+        }
+        if( !~E_x_Q_object_I_draw_Z_font_Z_s( display, screen, window, object
         , 1
         , y
         , E_x_Q_theme.text
@@ -669,6 +718,8 @@ E_x_Q_object_Z_select_list_I_draw(
         ))
             return;
         y += font->height;
+        if( y == object->height - 1 )
+            break;
     }
 }
 //------------------------------------------------------------------------------
@@ -728,6 +779,11 @@ E_x_Q_object_I_lay(
 , struct E_x_Q_window_Z *window
 ){  if( !E_mem_Q_tab_R_n( window->object ))
         return 0;
+    if( ~display->select_window )
+    {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->select_window );
+        E_x_Q_object_W( window, display->select_list_object );
+        display->select_window = ~0;
+    }
     struct Z_stack
     { struct E_x_Q_object_Z *object;
       N i;

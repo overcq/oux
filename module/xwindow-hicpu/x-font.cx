@@ -110,12 +110,14 @@ E_x_Q_window_I_draw_Z_font_Z_s(
 , struct E_x_Q_window_Z *window
 , S16 x
 , S16 y
+, N16 width
+, N16 height
 , N color
 , I font_id
 , Pc s
 ){  struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, font_id );
     U u;
-    S16 x_ = x;
+    S16 x_ = x, y_ = y;
     while( *s )
     {   u = ~0;
         Pc s_ = E_text_Z_su_R_u( s, &u );
@@ -126,19 +128,25 @@ E_x_Q_window_I_draw_Z_font_Z_s(
         s = s_;
         if( u == '\n' )
         {   x_ = x;
-            y += font->height + font->height / 2;
+            y_ += font->height + font->height / 2;
+            if( y_ + font->height > y + height )
+                return 1;
             continue;
         }
-        if( E_x_Q_window_I_draw_Z_font( display, screen, window, x_, y, color, font_id, u ))
-        {   u = font->bitmap[0].u;
-            if( E_x_Q_window_I_draw_Z_font( display, screen, window, x_, y, color, font_id, u ))
-                return ~0;
-        }
+        S16 x_next = x_;
         for_n( i, font->bitmap_n )
             if( font->bitmap[i].u == u )
-            {   x_ += font->bitmap[i].width + font->bitmap[0].width / 2;
+            {   x_next += font->bitmap[i].width + font->bitmap[0].width / 2;
+                if( x_next > x + width )
+                    return 1;
                 break;
             }
+        if( E_x_Q_window_I_draw_Z_font( display, screen, window, x_, y_, color, font_id, u ))
+        {   u = font->bitmap[0].u;
+            if( E_x_Q_window_I_draw_Z_font( display, screen, window, x_, y_, color, font_id, u ))
+                return ~0;
+        }
+        x_ = x_next;
     }
     return 0;
 }
@@ -175,6 +183,8 @@ E_x_Q_object_I_draw_Z_font_Z_s(
 ){  return E_x_Q_window_I_draw_Z_font_Z_s( display, screen, window
     , object->x + x
     , object->y + y
+    , object->width
+    , object->height
     , !U_R( object->mode, drag_src ) ? color : E_x_Q_theme.inactive_text
     , font_id, s
     );
