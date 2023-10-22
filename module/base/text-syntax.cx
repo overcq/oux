@@ -260,10 +260,12 @@ E_text_syntax_M( I file
         return ~0;
     }
     syntax->entities_n = 0;
-    O{  Pc s;
+    O{  Pc s = 0;
         N ret = E_mem_Q_file_R_u_outof( file, E_text_syntax_S_space, &s );
         if( !~ret )
+        {   W(s);
             goto End;
+        }
         if( ret == E_mem_Q_file_S_eof )
         {   W(s);
             break;
@@ -279,7 +281,7 @@ E_text_syntax_M( I file
             goto End;
         }
         if( !iswalpha(u) )
-        {   W(s);
+        {   W_(s);
             if( u != '/' )
             {   G_();
                 goto End;
@@ -287,7 +289,9 @@ E_text_syntax_M( I file
             // Komentarz liniowy w osobnej linii.
             ret = E_mem_Q_file_R_u_outof( file, "/", &s );
             if( !~ret )
+            {   W(s);
                 goto End;
+            }
             s_end = E_text_Z_s0_R_end(s);
             if( ret == E_mem_Q_file_S_eof )
             {   W(s);
@@ -298,11 +302,13 @@ E_text_syntax_M( I file
                 break;
             }
             s_start = E_text_Z_su_R_u_rev( s_end, &u );
-            W(s);
+            W_(s);
             if( u != E_mem_Q_file_S_filename_separator )
             {   ret = E_mem_Q_file_R_u_upto( file, "\n", &s );
                 if( !~ret )
+                {   W(s);
                     goto End;
+                }
                 if( ret == E_mem_Q_file_S_eof )
                 {   W(s);
                     break;
@@ -332,13 +338,15 @@ E_text_syntax_M( I file
         }
         syntax->entities[ syntax->entities_n ].entity_n = 0;
         E_text_Z_s_P_copy_s_0( syntax->entities[ syntax->entities_n ].name, s_start, s_end );
-        W(s);
+        W_(s);
         syntax->entities[ syntax->entities_n ].space.s = 0;
         syntax->entities[ syntax->entities_n ].repeat = no;
         syntax->entities_n++;
         ret = E_mem_Q_file_R_u_upto( file, "\n", &s );
         if( !~ret )
+        {   W(s);
             goto End;
+        }
         s_end = E_text_Z_s0_R_end(s) - 1;
         if( ret == E_mem_Q_file_S_eof )
         {   s_start = s;
@@ -376,14 +384,16 @@ E_text_syntax_M( I file
                 goto End;
             }
         E_text_Z_s_P_copy_s_0( syntax->entities[ syntax->entities_n - 1 ].name + i, s, s_end );
-        W(s);
+        W_(s);
         if( !E_text_syntax_T_name( syntax->entities[ syntax->entities_n - 1 ].name ))
         {   G_();
             goto End;
         }
         ret = E_mem_Q_file_R_u_outof( file, E_text_syntax_S_line_space, &s );
         if( !~ret )
+        {   W(s);
             goto End;
+        }
         s_end = E_text_Z_s0_R_end(s);
         if( ret == E_mem_Q_file_S_eof )
         {   W(s);
@@ -392,69 +402,78 @@ E_text_syntax_M( I file
         }
         s_start = E_text_Z_su_R_u_rev( s_end, &u );
         while( s_start == s ) // Brak odstępów na początku linii, to linia deklaracji.
-        {   W(s);
-            if( u == '/' )
-            {   if( syntax->entities[ syntax->entities_n - 1 ].space.s )
-                {   G_();
-                    goto End;
-                }
-                ret = E_mem_Q_file_R_u_outof( file, E_text_syntax_S_line_space, &s );
-                if( !~ret )
-                    goto End;
-                if( ret == E_mem_Q_file_S_eof )
-                {   W(s);
-                    G_();
-                    goto End;
-                }
-                s_end = E_text_Z_s0_R_end(s);
-                s_start = E_text_Z_su_R_u_rev( s_end, &u );
-                W(s);
-                ret = E_mem_Q_file_R_u_upto( file, "\n", &s );
-                if( !~ret )
-                    goto End;
-                if( ret == E_mem_Q_file_S_eof )
-                {   W(s);
-                    G_();
-                    goto End;
-                }
-                if( !E_mem_Q_blk_I_prepend( &s, s_end - s_start ))
-                {   W(s);
-                    goto End;
-                }
-                E_text_Z_u_R_su( u, s );
-                s_end = E_text_Z_s0_R_end(s) - 1;
-                if( s_end != s )
-                {   O{  s_start = E_text_Z_su_R_u_rev( s_end, &u );
-                        if( u != ' ' )
-                            break;
-                        s_end = s_start;
-                        if( s_start == s )
-                            break;
-                    }
-                }
-                if( !E_mem_Q_blk_I_remove( &s, s_end - s, E_text_Z_s0_R_end(s) - s_end ))
-                {   W(s);
-                    goto End;
-                }
-                syntax->entities[ syntax->entities_n - 1 ].space.s = s;
-                ret = E_mem_Q_file_R_u_outof( file, E_text_syntax_S_line_space, &s );
-                if( !~ret )
-                    goto End;
-                s_end = E_text_Z_s0_R_end(s);
-                if( ret == E_mem_Q_file_S_eof )
-                {   W(s);
-                    G_();
-                    goto End;
-                }
-                s_start = E_text_Z_su_R_u_rev( s_end, &u );
-            }else
+        {   W_(s);
+            if( u != '/' )
             {   G_();
                 goto End;
             }
+            if( syntax->entities[ syntax->entities_n - 1 ].space.s )
+            {   G_();
+                goto End;
+            }
+            ret = E_mem_Q_file_R_u_outof( file, E_text_syntax_S_line_space, &s );
+            if( !~ret )
+            {   W(s);
+                goto End;
+            }
+            if( ret == E_mem_Q_file_S_eof )
+            {   W(s);
+                G_();
+                goto End;
+            }
+            s_end = E_text_Z_s0_R_end(s);
+            s_start = E_text_Z_su_R_u_rev( s_end, &u );
+            W_(s);
+            ret = E_mem_Q_file_R_u_upto( file, "\n", &s );
+            if( !~ret )
+            {   W(s);
+                goto End;
+            }
+            if( ret == E_mem_Q_file_S_eof )
+            {   W(s);
+                G_();
+                goto End;
+            }
+            if( !E_mem_Q_blk_I_prepend( &s, s_end - s_start ))
+            {   W(s);
+                goto End;
+            }
+            E_text_Z_u_R_su( u, s );
+            s_end = E_text_Z_s0_R_end(s) - 1;
+            if( s_end != s )
+            {   O{  s_start = E_text_Z_su_R_u_rev( s_end, &u );
+                    if( u != ' ' )
+                        break;
+                    s_end = s_start;
+                    if( s_start == s )
+                        break;
+                }
+            }
+            if( !E_mem_Q_blk_I_remove( &s, s_end - s, E_text_Z_s0_R_end(s) - s_end ))
+            {   W(s);
+                goto End;
+            }
+            syntax->entities[ syntax->entities_n - 1 ].space.s = s;
+            s = 0;
+            ret = E_mem_Q_file_R_u_outof( file, E_text_syntax_S_line_space, &s );
+            if( !~ret )
+            {   W(s);
+                goto End;
+            }
+            if( ret == E_mem_Q_file_S_eof )
+            {   W(s);
+                G_();
+                goto End;
+            }
+            s_end = E_text_Z_s0_R_end(s);
+            s_start = E_text_Z_su_R_u_rev( s_end, &u );
         }
+        W_(s);
         O{  O{  ret = E_mem_Q_file_R_u_upto( file, ",|\n", &s );
                 if( !~ret )
+                {   W(s);
                     goto End;
+                }
                 B end_of_entities = no;
                 if( ret == E_mem_Q_file_S_eof )
                     end_of_entities = yes;
@@ -807,19 +826,22 @@ E_text_syntax_M( I file
                 syntax->entities[ syntax->entities_n - 1 ].entity[ syntax->entities[ syntax->entities_n - 1 ].entity_n ].alternative = alternative_entity;
                 syntax->entities[ syntax->entities_n - 1 ].entity[ syntax->entities[ syntax->entities_n - 1 ].entity_n ].optional = optional_entity;
                 syntax->entities[ syntax->entities_n - 1 ].entity_n++;
+                s = 0;
                 if( end_of_entities )
                     break;
                 ret = E_mem_Q_file_R_u_outof( file, E_text_syntax_S_line_space, &s );
                 if( !~ret )
+                {   W(s);
                     goto End;
-                s_end = E_text_Z_s0_R_end(s);
+                }
                 if( ret == E_mem_Q_file_S_eof )
                 {   W(s);
                     G_();
                     goto End;
                 }
+                s_end = E_text_Z_s0_R_end(s);
                 s_start = E_text_Z_su_R_u_rev( s_end, &u );
-                W(s);
+                W_(s);
             }
             N pos = E_mem_Q_file_R_pos(file);
             ret = E_mem_Q_file_R_u( file, &u );
@@ -841,15 +863,17 @@ E_text_syntax_M( I file
             }
             ret = E_mem_Q_file_R_u_outof( file, E_text_syntax_S_line_space, &s );
             if( !~ret )
+            {   W(s);
                 goto End;
-            s_end = E_text_Z_s0_R_end(s);
+            }
             if( ret == E_mem_Q_file_S_eof )
             {   W(s);
                 G_();
                 goto End;
             }
+            s_end = E_text_Z_s0_R_end(s);
             s_start = E_text_Z_su_R_u_rev( s_end, &u );
-            W(s);
+            W_(s);
         }
     }
     for_n( i, syntax->entities_n )

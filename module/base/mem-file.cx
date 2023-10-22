@@ -729,15 +729,21 @@ E_mem_Q_file_R_u( I id
 N
 E_mem_Q_file_R_u_upto( I id
 , Pc upto
-, Pc *s // Nowo alokowany ciąg znaków “utf-8”.
+, Pc *s // Realokowany lub nowo alokowany ciąg znaków “UTF-8”.
 ){  U u;
-    *s = M(1);
-    if( !*s )
-        return ~0;
+    if( *s )
+    {   if( !E_mem_Q_blk_M_replace( s, 1 ))
+            return ~0;
+    }else
+    {   Pc s_ = M(1);
+        if( !s_ )
+            return ~0;
+        *s = s_;
+    }
     N s_i = 0;
     O{  N i = E_mem_Q_file_R_u( id, &u );
         if( !~i )
-        {   W( *s );
+        {   (*s)[ s_i ] = '\0';
             return i;
         }
         if( i == E_mem_Q_file_S_eof )
@@ -745,7 +751,7 @@ E_mem_Q_file_R_u_upto( I id
             return i;
         }
         if( !E_mem_Q_blk_I_append( s, i ))
-        {   W( *s );
+        {   (*s)[ s_i ] = '\0';
             return ~0;
         }
         E_text_Z_u_R_su( u, *s + s_i );
@@ -755,7 +761,7 @@ E_mem_Q_file_R_u_upto( I id
         {   U u_1;
             Pc upto_2 = E_text_Z_su_R_u( upto_1, &u_1 );
             if( upto_1 == upto_2 )
-            {   W( *s );
+            {   (*s)[ s_i ] = '\0';
                 return ~0;
             }
             upto_1 = upto_2;
@@ -768,22 +774,30 @@ E_mem_Q_file_R_u_upto( I id
 }
 N
 E_mem_Q_file_R_u_upto_0( I id
-, Pc *s // Nowo alokowany ciąg znaków “utf-8”.
+, Pc *s // Realokowany lub nowo alokowany ciąg znaków “UTF-8”.
 ){  U u;
-    *s = M(0);
-    if( !*s )
-        return ~0;
+    if( *s )
+    {   if( !E_mem_Q_blk_M_replace( s, 1 ))
+            return ~0;
+    }else
+    {   Pc s_ = M(1);
+        if( !s_ )
+            return ~0;
+        *s = s_;
+    }
     N s_i = 0;
     do
     {   N i = E_mem_Q_file_R_u( id, &u );
         if( !~i )
-        {   W( *s );
+        {   (*s)[ s_i ] = '\0';
             return i;
         }
         if( i == E_mem_Q_file_S_eof )
+        {   (*s)[ s_i ] = '\0';
             return i;
+        }
         if( !E_mem_Q_blk_I_append( s, i ))
-        {   W( *s );
+        {   (*s)[ s_i ] = '\0';
             return ~0;
         }
         E_text_Z_u_R_su( u, *s + s_i );
@@ -794,17 +808,22 @@ E_mem_Q_file_R_u_upto_0( I id
 N
 E_mem_Q_file_R_u_outof( I id
 , Pc outof
-, Pc *s // Nowo alokowany ciąg znaków “utf-8”.
+, Pc *s // Realokowany lub nowo alokowany ciąg znaków “UTF-8”.
 ){  U u;
-    *s = M(1);
-    if( !*s )
-        return ~0;
+    if( *s )
+    {   if( !E_mem_Q_blk_M_replace( s, 1 ))
+            return ~0;
+    }else
+    {   Pc s_ = M(1);
+        if( !s_ )
+            return ~0;
+        *s = s_;
+    }
     N s_i = 0;
-Cont:
-    ;
+Cont:;
     N i = E_mem_Q_file_R_u( id, &u );
     if( !~i )
-    {   W( *s );
+    {   (*s)[ s_i ] = '\0';
         return i;
     }
     if( i == E_mem_Q_file_S_eof )
@@ -812,7 +831,7 @@ Cont:
         return i;
     }
     if( !E_mem_Q_blk_I_append( s, i ))
-    {   W( *s );
+    {   (*s)[ s_i ] = '\0';
         return ~0;
     }
     E_text_Z_u_R_su( u, *s + s_i );
@@ -822,7 +841,7 @@ Cont:
     {   U u_1;
         Pc outof_2 = E_text_Z_su_R_u( outof_1, &u_1 );
         if( outof_1 == outof_2 )
-        {   W( *s );
+        {   (*s)[ s_i ] = '\0';
             return ~0;
         }
         outof_1 = outof_2;
