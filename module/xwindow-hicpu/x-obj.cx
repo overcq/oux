@@ -266,16 +266,7 @@ E_x_Q_object_Z_button_I_draw(
 , struct E_x_Q_screen_Z *screen
 , struct E_x_Q_window_Z *window
 , struct E_x_Q_object_Z *object
-){  if( !~display->pointer_button_S_object_id )
-        E_x_Q_object_I_draw_P_color( display, screen, object, E_x_Q_theme.object_bg );
-    else
-    {   for_each( object_id, window->object, E_mem_Q_tab )
-        {   struct E_x_Q_object_Z *object_ = E_mem_Q_tab_R( window->object, object_id );
-            if( object_ == object )
-                break;
-        }
-        E_x_Q_object_I_draw_P_color( display, screen, object, object_id == display->pointer_button_S_object_id && U_R( display->state, pointer_button_S_pressing ) ? E_x_Q_theme.volatile_window_bg : E_x_Q_theme.object_bg );
-    }
+){  E_x_Q_object_I_draw_P_color( display, screen, object, E_x_Q_theme.object_bg );
     E_x_Q_object_I_fill_Z_rectangles( display, screen, window, object
     , 1
     , ( xcb_rectangle_t[] )
@@ -327,7 +318,7 @@ E_x_Q_object_Z_entry_M(
     , 0
     , 0
     , 0
-    , 16
+    , 20
     , font->height
     , E_x_Q_object_Z_font_I_clear_data
     , E_x_Q_object_Z_entry_I_draw
@@ -375,12 +366,28 @@ E_x_Q_object_Z_entry_I_draw(
         if( !~u )
         {   GV_(bad UTF-8 character); V();
         }
-        for_n( i, font->bitmap_n )
-            if( font->bitmap[i].u == u )
+        N min = 0;
+        N max = font->bitmap_n;
+        N i = max / 2;
+        O{  if( font->bitmap[i].u == u )
                 break;
-        if( i == font->bitmap_n )
-            i = 0;
-        x += ( x != E_x_Q_object_S_layout_dx ? font->bitmap[0].width / 2 : 0 ) + font->bitmap[i].width;
+            if( font->bitmap[i].u > u )
+            {   if( i == min )
+                {   i = 63;
+                    break;
+                }
+                max = i - 1;
+                i = max - ( i - min ) / 2;
+            }else
+            {   if( i == max )
+                {   i = 63;
+                    break;
+                }
+                min = i + 1;
+                i = min + ( max - i ) / 2;
+            }
+        }
+        x += ( x != E_x_Q_object_S_layout_dx ? font->bitmap[63].width / 2 : 0 ) + font->bitmap[i].width;
         if( x >= object->width )
             break;
     }
@@ -406,12 +413,28 @@ E_x_Q_object_Z_entry_I_draw(
             if( !~u )
             {   GV_(bad UTF-8 character); V();
             }
-            for_n( i, font->bitmap_n )
-                if( font->bitmap[i].u == u )
+            N min = 0;
+            N max = font->bitmap_n;
+            N i = max / 2;
+            O{  if( font->bitmap[i].u == u )
                     break;
-            if( i == font->bitmap_n )
-                i = 0;
-            x += ( x != 0 ? font->bitmap[0].width / 2 : 0 ) + font->bitmap[i].width;
+                if( font->bitmap[i].u > u )
+                {   if( i == min )
+                    {   i = 63;
+                        break;
+                    }
+                    max = i - 1;
+                    i = max - ( i - min ) / 2;
+                }else
+                {   if( i == max )
+                    {   i = 63;
+                        break;
+                    }
+                    min = i + 1;
+                    i = min + ( max - i ) / 2;
+                }
+            }
+            x += ( x != 0 ? font->bitmap[63].width / 2 : 0 ) + font->bitmap[i].width;
             l--;
         }
         E_x_Q_object_I_draw_P_color( display, screen, object, E_x_Q_theme.cursor );
@@ -438,12 +461,12 @@ E_x_Q_object_Z_font_M(
 , I font_id
 , Pc label
 ){  struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, font_id );
-    N16 width = font->bitmap[0].width / 2, width_ = 0;
+    N16 width = font->bitmap[63].width / 2, width_ = 0;
     N16 height = font->height;
     Pc s = label;
     while( *s )
     {   if( *s == '\n' )
-        {   if( width_ > width )
+        {   if( width < width_ )
                 width = width_;
             width_ = 0;
             height += font->height / 2 + font->height;
@@ -453,16 +476,28 @@ E_x_Q_object_Z_font_M(
             s = E_text_Z_su_R_u( s, &u );
             if( !~u )
                 return ~0;
-            for_n( i, font->bitmap_n )
-                if( font->bitmap[i].u == u )
-                {   width_ += ( width_ != 0 ? font->bitmap[0].width / 2 : 0 ) + font->bitmap[i].width;
+            N min = 0;
+            N max = font->bitmap_n;
+            N i = max / 2;
+            O{  if( font->bitmap[i].u == u )
+                {   width_ += ( width_ ? font->bitmap[63].width / 2 : 0 ) + font->bitmap[i].width;
                     break;
                 }
-            if( i == font->bitmap_n )
-                return ~0;
+                if( font->bitmap[i].u > u )
+                {   if( i == min )
+                        return ~0;
+                    max = i - 1;
+                    i = max - ( i - min ) / 2;
+                }else
+                {   if( i == max )
+                        return ~0;
+                    min = i + 1;
+                    i = min + ( max - i ) / 2;
+                }
+            }
         }
     }
-    if( width_ > width )
+    if( width < width_ )
         width = width_;
     I object_id = E_x_Q_object_M( display, window
     , 0
