@@ -234,6 +234,8 @@ E_x_Q_display_M( void
         #endif
     xcb_screen_iterator_t screen_iter = xcb_setup_roots_iterator( display->setup );
     display->screen = E_mem_Q_tab_M( sizeof( struct E_x_Q_screen_Z ), screen_iter.rem );
+    if( !display->screen )
+        return ~0;
     I screen_id = 0;
     do
     {   G(); Gd( screen_id );
@@ -362,6 +364,10 @@ E_x_Q_display_M( void
     }while( screen_iter.rem != 1
     && ( xcb_screen_next( &screen_iter ), screen_id++, yes ));
     display->window = E_mem_Q_tab_M( sizeof( struct E_x_Q_window_Z ), 0 );
+    if( !display->window )
+    {   E_mem_Q_tab_W( display->screen );
+        return ~0;
+    }
     if( E_mem_Q_tab_R_n( E_x_Q_display_S ) == 1 )
     {   D_M( x_window, flush )
         {   E_mem_Q_tab_W( display->window );

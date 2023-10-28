@@ -122,6 +122,29 @@ E_data_Q_field_R_valid( struct E_data_Q_field_Z *input
             )
                 return no;
             break;
+      case E_data_Q_field_S_url:
+        {   if( !E_text_Z_s0_T_starts_case_s0( input->s, "https:/""/" )
+            && !E_text_Z_s0_T_starts_case_s0( input->s, "http:/""/" )
+            )
+                return no;
+            Pc domain = E_text_Z_s_R_search_c_( input->s, '/' ) + 2;
+            Pc path = E_text_Z_s0_R_search_c( domain, '/' );
+            if( !*path
+            || domain == path
+            )
+                return no;
+            Pc hash = E_text_Z_s0_R_search_c( domain, '#' );
+            if( *hash
+            && hash < path
+            )
+                return no;
+            Pc query = E_text_Z_s_R_search_c( domain, hash, '?' );
+            if( *query
+            && query < path
+            )
+                return no;
+            break;
+        }
       case E_data_Q_field_S_number:
             if( input->conf.number.slider )
                 if( input->conf.number.floating_point )
