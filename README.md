@@ -90,7 +90,7 @@ Fetching for first use can be done with a command, for example `git clone git@gi
 To build the project, it is required to have the “man” documentation installed in the operating system.
 
 The user should make regular updates, e.g. with a command `git pull && make`, then as “root”: `make install`. Then follow the appropriate update and installation instructions for the products that depend on the current one.
-Before using this commands can be executed `make clean`, to remove any remaining intermediate files that depend on source files that have been removed in the new product version.
+Before using this commands can be executed as “root”: `make uninstall` and/or as the user: `make clean`, to remove any remaining intermediate files that depend on source files that have been removed in the new product version.
 
 To completely remove the product from the user's device, execute, for example, as “root”: `make uninstall`, then as the user: `rm -fr oux`.
 
