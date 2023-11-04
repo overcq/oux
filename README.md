@@ -22,7 +22,7 @@ OUX/C+ 2. Detailed version in git log.
 
 ## 4. Purpose
 
-The product is intended for software development in 'unix' systems.
+The product is intended for software development in unix-like systems.
 
 Parts inside modules:
 
