@@ -23,22 +23,23 @@
 // ‘req’– żądanie realizacji funkcji zbiorczej.
 // ‘ex’– uzupełnienie rodzaju następującej zmiany (np. ‘mode’).
 //==============================================================================
+B E_gui_xcb_S_init;
 _internal
-N32 *E_x_S_wm_icon;
+N32 *E_gui_xcb_S_wm_icon;
 _internal
-N E_x_S_wm_icon_S_n;
+N E_gui_xcb_S_wm_icon_S_n;
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 _internal
-struct E_x_Z_keysym_to_unicode *E_x_S_keysym_to_unicode;
+struct E_gui_xcb_Z_keysym_to_unicode *E_x_S_keysym_to_unicode;
 _internal
-N E_x_S_keysym_to_unicode_n;
+N E_gui_xcb_S_keysym_to_unicode_n;
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 _internal
-S16 E_x_Q_window_S_hidden_x;
+S16 E_gui_xcb_Q_window_S_hidden_x;
 _internal
-S16 E_x_Q_window_S_hidden_y;
+S16 E_gui_xcb_Q_window_S_hidden_y;
 //==============================================================================
-struct E_x_Q_window_Z
+struct E_gui_xcb_Q_window_Z
 { struct E_mem_Q_tab_Z *object;
   xcb_window_t x_window;
     #ifdef C_xcb_glx
@@ -56,7 +57,7 @@ struct E_x_Q_window_Z
   unsigned U_R( req, draw )                             :1;
   unsigned U_R( req, close )                            :1;
 };
-struct E_x_Q_screen_Z
+struct E_gui_xcb_Q_screen_Z
 { F dpi_x, dpi_y;
   F pixel_width, pixel_height;
   N32 draw_color;
@@ -71,16 +72,16 @@ struct E_x_Q_screen_Z
     #endif
   //S16 pointer_button_drag_copy_x_delta, pointer_button_drag_copy_y_delta;
   N8 depth; //NDFN w trakcie przeprojektowywania “screen”.
-  struct E_x_Q_window_Z dnd_window; // Używane dane obecne w całości tylko w trybie “drag”.
+  struct E_gui_xcb_Q_window_Z dnd_window; // Używane dane obecne w całości tylko w trybie “drag”.
   unsigned U_R( state, draw_object_drag_move )          :1;
   unsigned U_R( mode, animation )                       :1;
 };
 //------------------------------------------------------------------------------
-struct E_x_Z_drag_object_src
+struct E_gui_xcb_Z_drag_object_src
 { I window_id;
   I object_id;
 };
-struct E_x_Z_keysym_to_unicode
+struct E_gui_xcb_Z_keysym_to_unicode
 { xcb_keysym_t keysym;
   U u;
 };
@@ -88,7 +89,7 @@ struct E_x_Z_keysym_to_unicode
 // “pointer”– rozszerzenie “zdarzeń” ‘x’ dla przesuwania wskazania.
 // “pointer_button”– rozszerzenie “zdarzeń” ‘x’ dla “button”.
 // “drag”– rozszerzenie “zdarzeń” ‘x’ dla przeciągania.
-struct E_x_Q_display_Z
+struct E_gui_xcb_Q_display_Z
 { xcb_connection_t *x_display;
     #ifdef __gnu_linux__
   xcb_xkb_device_spec_t xkb_keyboard;
@@ -103,7 +104,7 @@ struct E_x_Q_display_Z
   xcb_get_keyboard_mapping_reply_t *keyboard_mapping;
   struct E_mem_Q_tab_Z *screen; // Indeksy wyświetlaczy ‘servera’ ‟X” są utożsamione z indeksami tablicy; w protokole ‟X” jest “N8” dla numeru wyświetlacza, co wystarcza, by “(I)~0” było różne od “(N8)~0”.
   struct E_mem_Q_tab_Z *window;
-  struct E_x_Z_drag_object_src *drag_S_object_src; //NDFN przed zaprojektowaniem ‘drop’.
+  struct E_gui_xcb_Z_drag_object_src *drag_S_object_src; //NDFN przed zaprojektowaniem ‘drop’.
   N drag_S_object_src_n; //NDFN przed zaprojektowaniem ‘drop’.
   xcb_timestamp_t pointer_button_S_time, pointer_button_S_start_time, pointer_button_S_grab_time; // ‘Grabnięcie’ jest rozszerzeniem “zdarzeń” “pointer_button”.
     #ifdef E_flow_C_thread_system_unblock_reports
@@ -138,21 +139,21 @@ struct E_x_Q_display_Z
   unsigned U_R( req, flush )                        :1;
   unsigned U_R( req, restart )                      :1; //TODO wymagana obsługa.
 };
-struct E_mem_Q_tab_Z *E_x_Q_display_S;
+struct E_mem_Q_tab_Z *E_gui_xcb_Q_display_S;
 //==============================================================================
 I
-E_x_Q_display_M( void
-){  I display_id = E_mem_Q_tab_I_add( E_x_Q_display_S );
+E_gui_xcb_Q_display_M( void
+){  I display_id = E_mem_Q_tab_I_add( E_gui_xcb_Q_display_S );
     if( !~display_id )
         return ~0;
-    struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
+    struct E_gui_xcb_Q_display_Z *display = E_mem_Q_tab_R( E_gui_xcb_Q_display_S, display_id );
     //NDFN można szukać innych dostępnych połączeń z serwerem ‟X” na lokalnej maszynie i wykrywać nie połączenie już tutaj.
     int x_screen_id_default_;
     display->x_display = xcb_connect( 0, &x_screen_id_default_ );
     display->Z_screen_id_S_default = x_screen_id_default_;
     Mt_( display->atom, XCB_ATOM_AFTER_LAST - XCB_ATOM_FIRST_DEFINED );
     if( !display->atom )
-    {   E_mem_Q_tab_I_remove( E_x_Q_display_S, display_id );
+    {   E_mem_Q_tab_I_remove( E_gui_xcb_Q_display_S, display_id );
         return ~0;
     }
 #define _(atom) J_s(atom)
@@ -219,7 +220,7 @@ E_x_Q_display_M( void
     if( !display->class_name )
     {   W( display->atom );
         xcb_disconnect( display->x_display );
-        E_mem_Q_tab_I_remove( E_x_Q_display_S, display_id );
+        E_mem_Q_tab_I_remove( E_gui_xcb_Q_display_S, display_id );
         return ~0;
     }
     E_text_Z_s_P_copy_s0_0( E_text_Z_s_P_copy_s0_0( display->class_name, E_base_S->E_flow_S_exe_name ), E_base_S->E_flow_S_system_name );
@@ -233,13 +234,13 @@ E_x_Q_display_M( void
     display->xkb_keyboard = xkb_x11_get_core_keyboard_device_id( display->x_display );
         #endif
     xcb_screen_iterator_t screen_iter = xcb_setup_roots_iterator( display->setup );
-    display->screen = E_mem_Q_tab_M( sizeof( struct E_x_Q_screen_Z ), screen_iter.rem );
+    display->screen = E_mem_Q_tab_M( sizeof( struct E_gui_xcb_Q_screen_Z ), screen_iter.rem );
     if( !display->screen )
         return ~0;
     I screen_id = 0;
     do
     {   G(); Gd( screen_id );
-        struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, screen_id );
+        struct E_gui_xcb_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, screen_id );
         screen->dpi_x = 25.4 * screen_iter.data->width_in_pixels / screen_iter.data->width_in_millimeters;
         screen->dpi_y = 25.4 * screen_iter.data->height_in_pixels / screen_iter.data->height_in_millimeters;
         screen->pixel_width = (F)screen_iter.data->width_in_millimeters / screen_iter.data->width_in_pixels;
@@ -288,14 +289,14 @@ E_x_Q_display_M( void
             #endif
         //screen->xbutton_drag_copy_x_delta = 20; //CONF
         //screen->xbutton_drag_copy_y_delta = 20; //CONF
-        struct E_x_Q_window_Z *dnd_window = &screen->dnd_window;
+        struct E_gui_xcb_Q_window_Z *dnd_window = &screen->dnd_window;
         dnd_window->x_window = xcb_generate_id( display->x_display );
         xcb_create_window( display->x_display
         , XCB_COPY_FROM_PARENT
         , dnd_window->x_window
         , screen_iter.data->root
-        , E_x_Q_window_S_hidden_x
-        , E_x_Q_window_S_hidden_y
+        , E_gui_xcb_Q_window_S_hidden_x
+        , E_gui_xcb_Q_window_S_hidden_y
         , 1
         , 1
         , 0
@@ -363,35 +364,35 @@ E_x_Q_display_M( void
         U_L( screen->mode, animation );
     }while( screen_iter.rem != 1
     && ( xcb_screen_next( &screen_iter ), screen_id++, yes ));
-    display->window = E_mem_Q_tab_M( sizeof( struct E_x_Q_window_Z ), 0 );
+    display->window = E_mem_Q_tab_M( sizeof( struct E_gui_xcb_Q_window_Z ), 0 );
     if( !display->window )
     {   E_mem_Q_tab_W( display->screen );
         return ~0;
     }
-    if( E_mem_Q_tab_R_n( E_x_Q_display_S ) == 1 )
+    if( E_mem_Q_tab_R_n( E_gui_xcb_Q_display_S ) == 1 )
     {   D_M( x_window, flush )
         {   E_mem_Q_tab_W( display->window );
             E_mem_Q_tab_W( display->screen );
             W( display->class_name );
             W( display->atom );
             xcb_disconnect( display->x_display );
-            E_mem_Q_tab_I_remove( E_x_Q_display_S, display_id );
+            E_mem_Q_tab_I_remove( E_gui_xcb_Q_display_S, display_id );
             return ~0;
         }
         D_M( x_window, draw )
-        {   if( E_mem_Q_tab_R_n( E_x_Q_display_S ) == 1 )
+        {   if( E_mem_Q_tab_R_n( E_gui_xcb_Q_display_S ) == 1 )
                 D_W( x_window, flush );
             E_mem_Q_tab_W( display->window );
             E_mem_Q_tab_W( display->screen );
             W( display->class_name );
             W( display->atom );
             xcb_disconnect( display->x_display );
-            E_mem_Q_tab_I_remove( E_x_Q_display_S, display_id );
+            E_mem_Q_tab_I_remove( E_gui_xcb_Q_display_S, display_id );
             return ~0;
         }
             #ifndef E_flow_C_thread_system_unblock_reports
         D_M( x_window, events )
-        {   if( E_mem_Q_tab_R_n( E_x_Q_display_S ) == 1 )
+        {   if( E_mem_Q_tab_R_n( E_gui_xcb_Q_display_S ) == 1 )
             {   D_W( x_window, draw );
                 D_W( x_window, flush );
             }
@@ -400,7 +401,7 @@ E_x_Q_display_M( void
             W( display->class_name );
             W( display->atom );
             xcb_disconnect( display->x_display );
-            E_mem_Q_tab_I_remove( E_x_Q_display_S, display_id );
+            E_mem_Q_tab_I_remove( E_gui_xcb_Q_display_S, display_id );
             return ~0;
         }
             #endif
@@ -408,7 +409,7 @@ E_x_Q_display_M( void
         #ifdef E_flow_C_thread_system_unblock_reports
     I *M_( thread_proc_arg );
     if( !thread_proc_arg )
-    {   if( E_mem_Q_tab_R_n( E_x_Q_display_S ) == 1 )
+    {   if( E_mem_Q_tab_R_n( E_gui_xcb_Q_display_S ) == 1 )
         {   D_W( x_window, draw );
             D_W( x_window, flush );
         }
@@ -417,12 +418,12 @@ E_x_Q_display_M( void
         W( display->class_name );
         W( display->atom );
         xcb_disconnect( display->x_display );
-        E_mem_Q_tab_I_remove( E_x_Q_display_S, display_id );
+        E_mem_Q_tab_I_remove( E_gui_xcb_Q_display_S, display_id );
         return ~0;
     }
     *thread_proc_arg = display_id;
     Dh_M( x_window, events, display_id, thread_proc_arg )
-    {   if( E_mem_Q_tab_R_n( E_x_Q_display_S ) == 1 )
+    {   if( E_mem_Q_tab_R_n( E_gui_xcb_Q_display_S ) == 1 )
         {   D_W( x_window, draw );
             D_W( x_window, flush );
         }
@@ -431,7 +432,7 @@ E_x_Q_display_M( void
         W( display->class_name );
         W( display->atom );
         xcb_disconnect( display->x_display );
-        E_mem_Q_tab_I_remove( E_x_Q_display_S, display_id );
+        E_mem_Q_tab_I_remove( E_gui_xcb_Q_display_S, display_id );
         return ~0;
     }
         #endif
@@ -450,12 +451,12 @@ E_x_Q_display_M( void
     return display_id;
 }
 void
-E_x_Q_display_W( I id
-){  struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, id );
+E_gui_xcb_Q_display_W( I id
+){  struct E_gui_xcb_Q_display_Z *display = E_mem_Q_tab_R( E_gui_xcb_Q_display_S, id );
         #ifdef E_flow_C_thread_system_unblock_reports
     Dh_W( x_window, events, id );
         #endif
-    if( E_mem_Q_tab_R_n( E_x_Q_display_S ) == 1 )
+    if( E_mem_Q_tab_R_n( E_gui_xcb_Q_display_S ) == 1 )
     {
             #ifndef E_flow_C_thread_system_unblock_reports
         D_W( x_window, events );
@@ -466,11 +467,11 @@ E_x_Q_display_W( I id
     xcb_disconnect( display->x_display );
     if( U_R( display->mode, drag ))
     {   W( display->drag_S_object_src );
-        struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, display->drag_S_dnd_window_screen_id );
+        struct E_gui_xcb_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, display->drag_S_dnd_window_screen_id );
         E_mem_Q_tab_W( screen->dnd_window.object );
     }
     for_each_rev( window_id, display->window, E_mem_Q_tab )
-    {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
+    {   struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
         E_mem_Q_tab_W( window->object );
     }
     E_mem_Q_tab_W( display->window );
@@ -478,28 +479,28 @@ E_x_Q_display_W( I id
     free( display->keyboard_mapping );
     W( display->class_name );
     W( display->atom );
-    E_mem_Q_tab_I_remove( E_x_Q_display_S, id );
+    E_mem_Q_tab_I_remove( E_gui_xcb_Q_display_S, id );
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 I
-E_x_Q_window_M( I display_id
+E_gui_xcb_Q_window_M( I display_id
 , I screen_id
 , N16 width
 , N16 height
-){  struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
+){  struct E_gui_xcb_Q_display_Z *display = E_mem_Q_tab_R( E_gui_xcb_Q_display_S, display_id );
     I window_id = E_mem_Q_tab_I_add( display->window );
     if( !~window_id )
     {   GV_(NA);
         return ~0;
     }
-    struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
+    struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
     window->screen_id = ~screen_id ? screen_id : display->Z_screen_id_S_default;
-    struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, window->screen_id );
+    struct E_gui_xcb_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, window->screen_id );
     window->x = 0;
     window->y = 0;
     window->width_new = window->width = width;
     window->height_new = window->height = height;
-    window->object = E_mem_Q_tab_M( sizeof( struct E_x_Q_object_Z ), 0 );
+    window->object = E_mem_Q_tab_M( sizeof( struct E_gui_xcb_Q_object_Z ), 0 );
     if( !window->object )
     {   GV_(NA);
         if( !~E_mem_Q_tab_I_remove( display->window, window_id ))
@@ -604,8 +605,8 @@ E_x_Q_window_M( I display_id
     E_x_Z_property_P_( display, window, _NET_WM_ICON
     , CARDINAL
     , 32
-    , E_x_S_wm_icon_S_n
-    , E_x_S_wm_icon
+    , E_gui_xcb_S_wm_icon_S_n
+    , E_gui_xcb_S_wm_icon
     );
     E_x_Z_property_P_text( display, window, WM_CLIENT_MACHINE
     , STRING
@@ -630,10 +631,10 @@ E_x_Q_window_M( I display_id
     return window_id;
 }
 void
-E_x_Q_window_W( I display_id
+E_gui_xcb_Q_window_W( I display_id
 , I window_id
-){  struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
-    struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
+){  struct E_gui_xcb_Q_display_Z *display = E_mem_Q_tab_R( E_gui_xcb_Q_display_S, display_id );
+    struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
         #ifdef C_xcb_glx
     xcb_glx_delete_window( display->x_display, window->glx_window );
         #endif
@@ -656,7 +657,7 @@ E_x_Q_window_W( I display_id
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 xcb_keysym_t
-E_x_Q_display_R_keysym( struct E_x_Q_display_Z *display
+E_gui_xcb_Q_display_R_keysym( struct E_gui_xcb_Q_display_Z *display
 , xcb_keycode_t keycode
 , N keysym_pos
 ){  J_assert( keycode >= display->setup->min_keycode );
@@ -665,7 +666,7 @@ E_x_Q_display_R_keysym( struct E_x_Q_display_Z *display
     return keysyms[ ( keycode - display->setup->min_keycode ) * display->keyboard_mapping->keysyms_per_keycode + keysym_pos ];
 }
 U
-E_x_Q_display_I_keysym_to_unicode( struct E_x_Q_display_Z *display
+E_gui_xcb_Q_display_I_keysym_to_unicode( struct E_gui_xcb_Q_display_Z *display
 , xcb_keysym_t keysym
 ){  if(( keysym >= 0x20 && keysym <= 0x7e )
     || ( keysym >= 0xa0 && keysym <= 0xff )
@@ -673,7 +674,7 @@ E_x_Q_display_I_keysym_to_unicode( struct E_x_Q_display_Z *display
         return keysym;
     if(( keysym & 0xff000000 ) == 0x1000000 )
         return keysym & 0xffffff;
-    S first = 0, last = E_x_S_keysym_to_unicode_n;
+    S first = 0, last = E_gui_xcb_S_keysym_to_unicode_n;
     S i;
     do
     {   i = first + ( last - first ) / 2;
@@ -688,7 +689,7 @@ E_x_Q_display_I_keysym_to_unicode( struct E_x_Q_display_Z *display
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 N32
-E_x_Q_image_R_pixel( struct E_x_Q_window_Z *window
+E_gui_xcb_Q_image_R_pixel( struct E_gui_xcb_Q_window_Z *window
 , N32 *pixmap
 , S16 x
 , S16 y

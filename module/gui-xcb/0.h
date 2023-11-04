@@ -7,12 +7,12 @@
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”              2015‒9‒4 *
 *******************************************************************************/
     #ifdef C_id_small
-#define E_x_Q_obj_C_id_bits         16
+#define E_gui_xcb_Q_obj_C_id_bits         16
     #else
-#define E_x_Q_obj_C_id_bits         32
+#define E_gui_xcb_Q_obj_C_id_bits         32
     #endif
-#define E_x_Q_window_C_hidden_x     -1
-#define E_x_Q_window_C_hidden_y     -1
+#define E_gui_xcb_Q_window_C_hidden_x     -1
+#define E_gui_xcb_Q_window_C_hidden_y     -1
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #define XCB_ATOM_LAST_PREDEFINED    XCB_ATOM_WM_TRANSIENT_FOR
 #define XCB_ATOM_FIRST_DEFINED_     C_STRING
@@ -34,7 +34,7 @@
 // Tutaj kolejne używane ‘atomy’ ‘x’.
 //==============================================================================
 #define _(atom) J_ab( XCB_ATOM_, atom )
-enum E_x_Q_display_Z_atom
+enum E_gui_xcb_Q_display_Z_atom
 { _( XCB_ATOM_FIRST_DEFINED_ ) = XCB_ATOM_LAST_PREDEFINED + 1
   E_x_Z_atom_J_atoms_
 , _( AFTER_LAST )

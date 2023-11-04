@@ -49,7 +49,7 @@ E_x_Z_color_M_gray( N8 luminance
 ){  return E_x_Z_color_M( luminance, luminance, luminance );
 }
 N32
-E_x_Z_color_P_luminance( struct E_x_Q_display_Z *display
+E_x_Z_color_P_luminance( struct E_gui_xcb_Q_display_Z *display
 , N32 color
 , F luminance
 ){  J_assert( luminance >= 0 && luminance <= 1 );
@@ -70,25 +70,25 @@ E_x_Z_color_P_luminance( struct E_x_Q_display_Z *display
     return E_x_Z_color_M( red, green, blue );
 }
 F
-E_x_Z_color_R_luminance( struct E_x_Q_display_Z *display
+E_x_Z_color_R_luminance( struct E_gui_xcb_Q_display_Z *display
 , N32 color
 ){  return ( display->red_luminance_ratio * E_x_Z_color_R_red(color) + display->green_luminance_ratio * E_x_Z_color_R_green(color) + display->blue_luminance_ratio * E_x_Z_color_R_blue(color) ) / 255;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 void
-E_x_Q_window_I_draw_P_color(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_screen_Z *screen
+E_gui_xcb_Q_window_I_draw_P_color(
+  struct E_gui_xcb_Q_display_Z *display
+, struct E_gui_xcb_Q_screen_Z *screen
 , N32 color
 ){  J_assert( !( color & ~0xffffff ));
     screen->draw_color = color;
 }
 //------------------------------------------------------------------------------
 void
-E_x_Q_window_I_draw_Z_points(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_screen_Z *screen
-, struct E_x_Q_window_Z *window
+E_gui_xcb_Q_window_I_draw_Z_points(
+  struct E_gui_xcb_Q_display_Z *display
+, struct E_gui_xcb_Q_screen_Z *screen
+, struct E_gui_xcb_Q_window_Z *window
 , N n
 , xcb_point_t *points
 ){  J_assert(n);
@@ -111,10 +111,10 @@ E_x_Q_window_I_draw_Z_points(
         );
 }
 N
-E_x_Q_window_I_draw_aa_Z_points(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_screen_Z *screen
-, struct E_x_Q_window_Z *window
+E_gui_xcb_Q_window_I_draw_aa_Z_points(
+  struct E_gui_xcb_Q_display_Z *display
+, struct E_gui_xcb_Q_screen_Z *screen
+, struct E_gui_xcb_Q_window_Z *window
 , N n
 , xcb_point_t *points
 , F brightness
@@ -125,14 +125,14 @@ E_x_Q_window_I_draw_aa_Z_points(
         return ~0;
     for_n( i, n )
     {   N p[8];
-        p[0] = points[i].x + 1 < window->width ? E_x_Q_image_R_pixel( window, window->drawable, points[i].x + 1, points[i].y ) : screen->draw_color;
-        p[1] = points[i].x + 1 < window->width && points[i].y + 1 < window->height ? E_x_Q_image_R_pixel( window, window->drawable, points[i].x + 1, points[i].y + 1 ) : screen->draw_color;
-        p[2] = points[i].y + 1 < window->height ? E_x_Q_image_R_pixel( window, window->drawable, points[i].x, points[i].y + 1 ) : screen->draw_color;
-        p[3] = points[i].x > 0 && points[i].y + 1 < window->height ? E_x_Q_image_R_pixel( window, window->drawable, points[i].x - 1, points[i].y + 1 ) : screen->draw_color;
-        p[4] = points[i].x > 0 ? E_x_Q_image_R_pixel( window, window->drawable, points[i].x - 1, points[i].y ) : screen->draw_color;
-        p[5] = points[i].x > 0 && points[i].y > 0 ? E_x_Q_image_R_pixel( window, window->drawable, points[i].x - 1, points[i].y - 1 ) : screen->draw_color;
-        p[6] = points[i].y > 0 ? E_x_Q_image_R_pixel( window, window->drawable, points[i].x, points[i].y - 1 ) : screen->draw_color;
-        p[7] = points[i].x + 1 < window->width && points[i].y > 0 ? E_x_Q_image_R_pixel( window, window->drawable, points[i].x + 1, points[i].y - 1 ) : screen->draw_color;
+        p[0] = points[i].x + 1 < window->width ? E_gui_xcb_Q_image_R_pixel( window, window->drawable, points[i].x + 1, points[i].y ) : screen->draw_color;
+        p[1] = points[i].x + 1 < window->width && points[i].y + 1 < window->height ? E_gui_xcb_Q_image_R_pixel( window, window->drawable, points[i].x + 1, points[i].y + 1 ) : screen->draw_color;
+        p[2] = points[i].y + 1 < window->height ? E_gui_xcb_Q_image_R_pixel( window, window->drawable, points[i].x, points[i].y + 1 ) : screen->draw_color;
+        p[3] = points[i].x > 0 && points[i].y + 1 < window->height ? E_gui_xcb_Q_image_R_pixel( window, window->drawable, points[i].x - 1, points[i].y + 1 ) : screen->draw_color;
+        p[4] = points[i].x > 0 ? E_gui_xcb_Q_image_R_pixel( window, window->drawable, points[i].x - 1, points[i].y ) : screen->draw_color;
+        p[5] = points[i].x > 0 && points[i].y > 0 ? E_gui_xcb_Q_image_R_pixel( window, window->drawable, points[i].x - 1, points[i].y - 1 ) : screen->draw_color;
+        p[6] = points[i].y > 0 ? E_gui_xcb_Q_image_R_pixel( window, window->drawable, points[i].x, points[i].y - 1 ) : screen->draw_color;
+        p[7] = points[i].x + 1 < window->width && points[i].y > 0 ? E_gui_xcb_Q_image_R_pixel( window, window->drawable, points[i].x + 1, points[i].y - 1 ) : screen->draw_color;
         N n_ = 0;
         N background_red = 0, background_green = 0, background_blue = 0;
         for_n( j, 8 )
@@ -147,9 +147,9 @@ E_x_Q_window_I_draw_aa_Z_points(
             background_green /= n_;
             background_blue /= n_;
         }else
-        {   background_red = E_x_Z_color_R_red( E_x_Q_theme.window_bg );
-            background_green = E_x_Z_color_R_green( E_x_Q_theme.window_bg );
-            background_blue = E_x_Z_color_R_blue( E_x_Q_theme.window_bg );
+        {   background_red = E_x_Z_color_R_red( E_gui_xcb_Q_theme.window_bg );
+            background_green = E_x_Z_color_R_green( E_gui_xcb_Q_theme.window_bg );
+            background_blue = E_x_Z_color_R_blue( E_gui_xcb_Q_theme.window_bg );
         }
         N red = E_x_Z_color_R_red( screen->draw_color );
         N green = E_x_Z_color_R_green( screen->draw_color );
@@ -169,18 +169,18 @@ E_x_Q_window_I_draw_aa_Z_points(
         colors[i] = E_x_Z_color_M( red, green, blue );
     }
     for_n_( i, n )
-    {   E_x_Q_window_I_draw_P_color( display, screen, colors[i] );
-        E_x_Q_window_I_draw_Z_points( display, screen, window, 1, &points[i] );
+    {   E_gui_xcb_Q_window_I_draw_P_color( display, screen, colors[i] );
+        E_gui_xcb_Q_window_I_draw_Z_points( display, screen, window, 1, &points[i] );
     }
     W(colors);
     return 0;
 }
 //------------------------------------------------------------------------------
 N
-E_x_Q_window_I_draw_Z_segments(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_screen_Z *screen
-, struct E_x_Q_window_Z *window
+E_gui_xcb_Q_window_I_draw_Z_segments(
+  struct E_gui_xcb_Q_display_Z *display
+, struct E_gui_xcb_Q_screen_Z *screen
+, struct E_gui_xcb_Q_window_Z *window
 , N n
 , xcb_segment_t *segments
 , F brightness
@@ -321,20 +321,20 @@ E_x_Q_window_I_draw_Z_segments(
     }
     if( points_i )
         if(brightness)
-        {   if( !~E_x_Q_window_I_draw_aa_Z_points( display, screen, window, points_i, points, brightness ))
+        {   if( !~E_gui_xcb_Q_window_I_draw_aa_Z_points( display, screen, window, points_i, points, brightness ))
             {   W(points);
                 return ~0;
             }
         }else
-            E_x_Q_window_I_draw_Z_points( display, screen, window, points_i, points );
+            E_gui_xcb_Q_window_I_draw_Z_points( display, screen, window, points_i, points );
     W(points);
     return 0;
 }
 N
-E_x_Q_window_I_draw_Z_lines(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_screen_Z *screen
-, struct E_x_Q_window_Z *window
+E_gui_xcb_Q_window_I_draw_Z_lines(
+  struct E_gui_xcb_Q_display_Z *display
+, struct E_gui_xcb_Q_screen_Z *screen
+, struct E_gui_xcb_Q_window_Z *window
 , N n
 , xcb_point_t *points
 , F thickness
@@ -405,7 +405,7 @@ E_x_Q_window_I_draw_Z_lines(
         }
     }
     if( thickness_int )
-    {   if( !~E_x_Q_window_I_draw_Z_segments( display, screen, window
+    {   if( !~E_gui_xcb_Q_window_I_draw_Z_segments( display, screen, window
         , ( n - 1 ) * thickness_int
         , segments
         , 0
@@ -416,7 +416,7 @@ E_x_Q_window_I_draw_Z_lines(
         W(segments);
     }
     if(thickness)
-    {   if( !~E_x_Q_window_I_draw_Z_segments( display, screen, window
+    {   if( !~E_gui_xcb_Q_window_I_draw_Z_segments( display, screen, window
         , ( n - 1 ) * 2
         , segments_aa
         , thickness
@@ -429,10 +429,10 @@ E_x_Q_window_I_draw_Z_lines(
     return 0;
 }
 N
-E_x_Q_window_I_draw_Z_rectangles(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_screen_Z *screen
-, struct E_x_Q_window_Z *window
+E_gui_xcb_Q_window_I_draw_Z_rectangles(
+  struct E_gui_xcb_Q_display_Z *display
+, struct E_gui_xcb_Q_screen_Z *screen
+, struct E_gui_xcb_Q_window_Z *window
 , N n
 , xcb_rectangle_t *rectangles
 , F thickness
@@ -446,14 +446,14 @@ E_x_Q_window_I_draw_Z_rectangles(
         , rectangles[i].x, rectangles[i].y + rectangles[i].height - 1
         , rectangles[i].x, rectangles[i].y
         };
-        if( !~E_x_Q_window_I_draw_Z_lines( display, screen, window, 5, points, thickness ))
+        if( !~E_gui_xcb_Q_window_I_draw_Z_lines( display, screen, window, 5, points, thickness ))
             return ~0;
     }
     return 0;
 }
 _internal
 void
-E_x_Q_window_I_draw_Z_arcs_I_8points_a( xcb_arc_t arc
+E_gui_xcb_Q_window_I_draw_Z_arcs_I_8points_a( xcb_arc_t arc
 , xcb_point_t point
 , N points_i
 , xcb_point_t *points
@@ -476,7 +476,7 @@ E_x_Q_window_I_draw_Z_arcs_I_8points_a( xcb_arc_t arc
 }
 _internal
 void
-E_x_Q_window_I_draw_Z_arcs_I_8points_b( xcb_arc_t arc
+E_gui_xcb_Q_window_I_draw_Z_arcs_I_8points_b( xcb_arc_t arc
 , xcb_point_t point
 , N points_i
 , xcb_point_t *points
@@ -498,10 +498,10 @@ E_x_Q_window_I_draw_Z_arcs_I_8points_b( xcb_arc_t arc
     points[ points_i + 7 ].y = arc.y - point.x;
 }
 N
-E_x_Q_window_I_draw_Z_arcs(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_screen_Z *screen
-, struct E_x_Q_window_Z *window
+E_gui_xcb_Q_window_I_draw_Z_arcs(
+  struct E_gui_xcb_Q_display_Z *display
+, struct E_gui_xcb_Q_screen_Z *screen
+, struct E_gui_xcb_Q_window_Z *window
 , N n
 , xcb_arc_t *arcs
 , F thickness
@@ -513,8 +513,8 @@ E_x_Q_window_I_draw_Z_arcs(
         return ~0;
     for_n( i, n )
     {   void (*I_8points)( xcb_arc_t, xcb_point_t, N, xcb_point_t * ) = arcs[i].height > arcs[i].width
-        ? &E_x_Q_window_I_draw_Z_arcs_I_8points_b
-        : &E_x_Q_window_I_draw_Z_arcs_I_8points_a;
+        ? &E_gui_xcb_Q_window_I_draw_Z_arcs_I_8points_b
+        : &E_gui_xcb_Q_window_I_draw_Z_arcs_I_8points_a;
         S x = 0;
         S y = J_max( arcs[i].width, arcs[i].height ) / 2;
         S c = 2 * ( 1 - J_max( arcs[i].width, arcs[i].height ) / 2 );
@@ -537,15 +537,15 @@ E_x_Q_window_I_draw_Z_arcs(
             c += 2 * x + 1;
         }
     }
-    E_x_Q_window_I_draw_Z_points( display, screen, window, points_i, points );
+    E_gui_xcb_Q_window_I_draw_Z_points( display, screen, window, points_i, points );
     W(points);
     return 0;
 }
 void
-E_x_Q_window_I_fill_Z_points(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_screen_Z *screen
-, struct E_x_Q_window_Z *window
+E_gui_xcb_Q_window_I_fill_Z_points(
+  struct E_gui_xcb_Q_display_Z *display
+, struct E_gui_xcb_Q_screen_Z *screen
+, struct E_gui_xcb_Q_window_Z *window
 , N n
 , xcb_point_t *points
 ){  J_assert( n > 2 );
@@ -553,10 +553,10 @@ E_x_Q_window_I_fill_Z_points(
 
 }
 N
-E_x_Q_window_I_fill_Z_rectangles(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_screen_Z *screen
-, struct E_x_Q_window_Z *window
+E_gui_xcb_Q_window_I_fill_Z_rectangles(
+  struct E_gui_xcb_Q_display_Z *display
+, struct E_gui_xcb_Q_screen_Z *screen
+, struct E_gui_xcb_Q_window_Z *window
 , N n
 , xcb_rectangle_t *rectangles
 ){  J_assert(n);
@@ -578,7 +578,7 @@ E_x_Q_window_I_fill_Z_rectangles(
             };
         }
     }
-    if( !~E_x_Q_window_I_draw_Z_segments( display, screen, window
+    if( !~E_gui_xcb_Q_window_I_draw_Z_segments( display, screen, window
     , segment_n
     , segments
     , 0
@@ -591,7 +591,7 @@ E_x_Q_window_I_fill_Z_rectangles(
 }
 _internal
 void
-E_x_Q_window_I_fill_Z_arcs_I_4segments_a( xcb_arc_t arc
+E_gui_xcb_Q_window_I_fill_Z_arcs_I_4segments_a( xcb_arc_t arc
 , xcb_point_t point
 , N segments_i
 , xcb_segment_t *segments
@@ -614,7 +614,7 @@ E_x_Q_window_I_fill_Z_arcs_I_4segments_a( xcb_arc_t arc
 }
 _internal
 void
-E_x_Q_window_I_fill_Z_arcs_I_4segments_b( xcb_arc_t arc
+E_gui_xcb_Q_window_I_fill_Z_arcs_I_4segments_b( xcb_arc_t arc
 , xcb_point_t point
 , N segments_i
 , xcb_segment_t *segments
@@ -636,10 +636,10 @@ E_x_Q_window_I_fill_Z_arcs_I_4segments_b( xcb_arc_t arc
     segments[ segments_i + 3 ].y2 = arc.y - point.x;
 }
 N
-E_x_Q_window_I_fill_Z_arcs(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_screen_Z *screen
-, struct E_x_Q_window_Z *window
+E_gui_xcb_Q_window_I_fill_Z_arcs(
+  struct E_gui_xcb_Q_display_Z *display
+, struct E_gui_xcb_Q_screen_Z *screen
+, struct E_gui_xcb_Q_window_Z *window
 , N n
 , xcb_arc_t *arcs
 ){  J_assert(n);
@@ -649,8 +649,8 @@ E_x_Q_window_I_fill_Z_arcs(
         return ~0;
     for_n( i, n )
     {   void (*I_4segments)( xcb_arc_t, xcb_point_t, N, xcb_segment_t * ) = arcs[i].height > arcs[i].width
-        ? &E_x_Q_window_I_fill_Z_arcs_I_4segments_b
-        : &E_x_Q_window_I_fill_Z_arcs_I_4segments_a;
+        ? &E_gui_xcb_Q_window_I_fill_Z_arcs_I_4segments_b
+        : &E_gui_xcb_Q_window_I_fill_Z_arcs_I_4segments_a;
         S x = 0;
         S y = J_max( arcs[i].width, arcs[i].height ) / 2;
         S c = 2 * ( 1 - J_max( arcs[i].width, arcs[i].height ) / 2 );
@@ -673,7 +673,7 @@ E_x_Q_window_I_fill_Z_arcs(
             c += 2 * x + 1;
         }
     }
-    E_x_Q_window_I_draw_Z_segments( display, screen, window, segments_i, segments, 0 );
+    E_gui_xcb_Q_window_I_draw_Z_segments( display, screen, window, segments_i, segments, 0 );
     W(segments);
     return 0;
 }
@@ -694,35 +694,35 @@ E_x_I_polygon_area(
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 void
-E_x_Q_object_I_draw_P_color(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_screen_Z *screen
-, struct E_x_Q_object_Z *object
+E_gui_xcb_Q_object_I_draw_P_color(
+  struct E_gui_xcb_Q_display_Z *display
+, struct E_gui_xcb_Q_screen_Z *screen
+, struct E_gui_xcb_Q_object_Z *object
 , N32 color
 ){  if( !U_R( object->mode, drag_src ))
-        E_x_Q_window_I_draw_P_color( display, screen, color );
+        E_gui_xcb_Q_window_I_draw_P_color( display, screen, color );
 }
 //------------------------------------------------------------------------------
 void
-E_x_Q_object_I_draw_Z_points(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_screen_Z *screen
-, struct E_x_Q_window_Z *window
-, struct E_x_Q_object_Z *object
+E_gui_xcb_Q_object_I_draw_Z_points(
+  struct E_gui_xcb_Q_display_Z *display
+, struct E_gui_xcb_Q_screen_Z *screen
+, struct E_gui_xcb_Q_window_Z *window
+, struct E_gui_xcb_Q_object_Z *object
 , N32 n
 , xcb_point_t *points
 ){  for_n( i, n )
     {   points[i].x += object->x;
         points[i].y += object->y;
     }
-    E_x_Q_window_I_draw_Z_points( display, screen, window, n, points );
+    E_gui_xcb_Q_window_I_draw_Z_points( display, screen, window, n, points );
 }
 N
-E_x_Q_object_I_draw_aa_Z_points(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_screen_Z *screen
-, struct E_x_Q_window_Z *window
-, struct E_x_Q_object_Z *object
+E_gui_xcb_Q_object_I_draw_aa_Z_points(
+  struct E_gui_xcb_Q_display_Z *display
+, struct E_gui_xcb_Q_screen_Z *screen
+, struct E_gui_xcb_Q_window_Z *window
+, struct E_gui_xcb_Q_object_Z *object
 , N n
 , xcb_point_t *points
 , F brightness
@@ -730,7 +730,7 @@ E_x_Q_object_I_draw_aa_Z_points(
     {   points[i].x += object->x;
         points[i].y += object->y;
     }
-    if( !~E_x_Q_window_I_draw_aa_Z_points( display, screen, window
+    if( !~E_gui_xcb_Q_window_I_draw_aa_Z_points( display, screen, window
     , n
     , points
     , brightness
@@ -740,11 +740,11 @@ E_x_Q_object_I_draw_aa_Z_points(
 }
 //------------------------------------------------------------------------------
 void
-E_x_Q_object_I_draw_Z_segments(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_screen_Z *screen
-, struct E_x_Q_window_Z *window
-, struct E_x_Q_object_Z *object
+E_gui_xcb_Q_object_I_draw_Z_segments(
+  struct E_gui_xcb_Q_display_Z *display
+, struct E_gui_xcb_Q_screen_Z *screen
+, struct E_gui_xcb_Q_window_Z *window
+, struct E_gui_xcb_Q_object_Z *object
 , N32 n
 , xcb_segment_t *segments
 , F brightness
@@ -754,14 +754,14 @@ E_x_Q_object_I_draw_Z_segments(
         segments[i].x2 += object->x;
         segments[i].y2 += object->y;
     }
-    E_x_Q_window_I_draw_Z_segments( display, screen, window, n, segments, brightness );
+    E_gui_xcb_Q_window_I_draw_Z_segments( display, screen, window, n, segments, brightness );
 }
 void
-E_x_Q_object_I_draw_Z_lines(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_screen_Z *screen
-, struct E_x_Q_window_Z *window
-, struct E_x_Q_object_Z *object
+E_gui_xcb_Q_object_I_draw_Z_lines(
+  struct E_gui_xcb_Q_display_Z *display
+, struct E_gui_xcb_Q_screen_Z *screen
+, struct E_gui_xcb_Q_window_Z *window
+, struct E_gui_xcb_Q_object_Z *object
 , N32 n
 , xcb_point_t *points
 , F thickness
@@ -769,14 +769,14 @@ E_x_Q_object_I_draw_Z_lines(
     {   points[i].x += object->x;
         points[i].y += object->y;
     }
-    E_x_Q_window_I_draw_Z_lines( display, screen, window, n, points, thickness );
+    E_gui_xcb_Q_window_I_draw_Z_lines( display, screen, window, n, points, thickness );
 }
 void
-E_x_Q_object_I_draw_Z_rectangles(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_screen_Z *screen
-, struct E_x_Q_window_Z *window
-, struct E_x_Q_object_Z *object
+E_gui_xcb_Q_object_I_draw_Z_rectangles(
+  struct E_gui_xcb_Q_display_Z *display
+, struct E_gui_xcb_Q_screen_Z *screen
+, struct E_gui_xcb_Q_window_Z *window
+, struct E_gui_xcb_Q_object_Z *object
 , N32 n
 , xcb_rectangle_t *rectangles
 , F thickness
@@ -784,14 +784,14 @@ E_x_Q_object_I_draw_Z_rectangles(
     {   rectangles[i].x += object->x;
         rectangles[i].y += object->y;
     }
-    E_x_Q_window_I_draw_Z_rectangles( display, screen, window, n, rectangles, thickness );
+    E_gui_xcb_Q_window_I_draw_Z_rectangles( display, screen, window, n, rectangles, thickness );
 }
 void
-E_x_Q_object_I_draw_Z_arcs(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_screen_Z *screen
-, struct E_x_Q_window_Z *window
-, struct E_x_Q_object_Z *object
+E_gui_xcb_Q_object_I_draw_Z_arcs(
+  struct E_gui_xcb_Q_display_Z *display
+, struct E_gui_xcb_Q_screen_Z *screen
+, struct E_gui_xcb_Q_window_Z *window
+, struct E_gui_xcb_Q_object_Z *object
 , N32 n
 , xcb_arc_t *arcs
 , F thickness
@@ -799,48 +799,48 @@ E_x_Q_object_I_draw_Z_arcs(
     {   arcs[i].x += object->x;
         arcs[i].y += object->y;
     }
-    E_x_Q_window_I_draw_Z_arcs( display, screen, window, n, arcs, thickness );
+    E_gui_xcb_Q_window_I_draw_Z_arcs( display, screen, window, n, arcs, thickness );
 }
 void
-E_x_Q_object_I_fill_Z_points(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_screen_Z *screen
-, struct E_x_Q_window_Z *window
-, struct E_x_Q_object_Z *object
+E_gui_xcb_Q_object_I_fill_Z_points(
+  struct E_gui_xcb_Q_display_Z *display
+, struct E_gui_xcb_Q_screen_Z *screen
+, struct E_gui_xcb_Q_window_Z *window
+, struct E_gui_xcb_Q_object_Z *object
 , N32 n
 , xcb_point_t *points
 ){  for_n( i, n )
     {   points[i].x += object->x;
         points[i].y += object->y;
     }
-    E_x_Q_window_I_fill_Z_points( display, screen, window, n, points );
+    E_gui_xcb_Q_window_I_fill_Z_points( display, screen, window, n, points );
 }
 void
-E_x_Q_object_I_fill_Z_rectangles(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_screen_Z *screen
-, struct E_x_Q_window_Z *window
-, struct E_x_Q_object_Z *object
+E_gui_xcb_Q_object_I_fill_Z_rectangles(
+  struct E_gui_xcb_Q_display_Z *display
+, struct E_gui_xcb_Q_screen_Z *screen
+, struct E_gui_xcb_Q_window_Z *window
+, struct E_gui_xcb_Q_object_Z *object
 , N32 n
 , xcb_rectangle_t *rectangles
 ){  for_n( i, n )
     {   rectangles[i].x += object->x;
         rectangles[i].y += object->y;
     }
-    E_x_Q_window_I_fill_Z_rectangles( display, screen, window, n, rectangles );
+    E_gui_xcb_Q_window_I_fill_Z_rectangles( display, screen, window, n, rectangles );
 }
 void
-E_x_Q_object_I_fill_Z_arcs(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_screen_Z *screen
-, struct E_x_Q_window_Z *window
-, struct E_x_Q_object_Z *object
+E_gui_xcb_Q_object_I_fill_Z_arcs(
+  struct E_gui_xcb_Q_display_Z *display
+, struct E_gui_xcb_Q_screen_Z *screen
+, struct E_gui_xcb_Q_window_Z *window
+, struct E_gui_xcb_Q_object_Z *object
 , N32 n
 , xcb_arc_t *arcs
 ){  for_n( i, n )
     {   arcs[i].x += object->x;
         arcs[i].y += object->y;
     }
-    E_x_Q_window_I_fill_Z_arcs( display, screen, window, n, arcs );
+    E_gui_xcb_Q_window_I_fill_Z_arcs( display, screen, window, n, arcs );
 }
 /******************************************************************************/

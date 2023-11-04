@@ -32,8 +32,8 @@ main(
   int argc
 , Pc argv[]
 ){  E_base_M( argc, argv );
-    E_x_M();
-    E_ui_M();
+    E_gui_xcb_M();
+    E_tui_M();
 #ifndef C_line_report
     I out = E_io_Q_stream_out_M_fd( STDERR_FILENO );
 #else
@@ -88,10 +88,10 @@ Skip:
 End_3:;
     //goto End;
 
-    E_data_Q_layout_I_add( E_data_Q_field_S_text, "Text input ąę", 5 );
+    E_tui_data_Q_layout_I_add( E_tui_data_Q_field_S_text, "Text input ąę", 5 );
     for_n( i, 42 )
-    {   E_data_Q_layout_I_add( E_data_Q_field_S_text, "Second text input ąę", 100 );
-        struct E_data_Q_field_Z *input = E_mem_Q_tab_R( E_data_Q_layout_S, 1 + i );
+    {   E_tui_data_Q_layout_I_add( E_tui_data_Q_field_S_text, "Second text input ąę", 100 );
+        struct E_tui_data_Q_field_Z *input = E_mem_Q_tab_R( E_tui_data_Q_layout_S, 1 + i );
         input->select_n = 50;
         Mt_( input->select, input->select_n );
         if( !input->select )
@@ -105,132 +105,137 @@ End_3:;
             E_text_Z_s_P_copy_s0_0( input->select[i] + l, ". select select select select select select select select select select select select select select select select select select select select select select select select select select select select select select select" );
         }
     }
-    E_data_Q_layout_I_add( E_data_Q_field_S_text, "44. text input ąę", 100 );
+    E_tui_data_Q_layout_I_add( E_tui_data_Q_field_S_text, "44. text input ąę", 100 );
     E_ncurses_I_lay();
 
     X_M( x_window, close_window );
-    for_n_( i, 1 )
-    {   D_M( main, timer_draw )
-            goto End_1;
-        N display_id = E_x_Q_display_M();
-        if( !~display_id )
-            goto End_2;
-        struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
-        for_each( screen_id, display->screen, E_mem_Q_tab )
-        {   struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, screen_id );
-            U_F( screen->mode, animation );
-            for_n( i, 2 )
-            {   N window_id = E_x_Q_window_M( display_id, screen_id
-                , 490, 480
-                );
-                if( !~window_id )
-                    goto End;
-                struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
-                I object_id = E_x_Q_object_Z_frame_M( display, window );
-                if( !~object_id )
-                    goto End;
-                for_n( i, 3 )
-                {   I id = E_x_Q_object_Z_frame_M( display, window );
-                    if( !~id )
+    if( E_gui_xcb_S_init )
+    {   for_n_( i, 1 )
+        {   D_M( main, timer_draw )
+                goto End_1;
+            N display_id = E_gui_xcb_Q_display_M();
+            if( !~display_id )
+                goto End_2;
+            struct E_gui_xcb_Q_display_Z *display = E_mem_Q_tab_R( E_gui_xcb_Q_display_S, display_id );
+            for_each( screen_id, display->screen, E_mem_Q_tab )
+            {   struct E_gui_xcb_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, screen_id );
+                U_F( screen->mode, animation );
+                for_n( i, 2 )
+                {   N window_id = E_gui_xcb_Q_window_M( display_id, screen_id
+                    , 490, 480
+                    );
+                    if( !~window_id )
                         goto End;
-                    if( !~E_x_Q_object_I_add( window, object_id, id ))
+                    struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
+                    I object_id = E_gui_xcb_Q_object_Z_frame_M( display, window );
+                    if( !~object_id )
                         goto End;
-                    for_n( i, 5 )
-                    {   I id_2 = E_x_Q_object_Z_frame_M( display, window );
-                        if( !~id_2 )
+                    for_n( i, 3 )
+                    {   I id = E_gui_xcb_Q_object_Z_frame_M( display, window );
+                        if( !~id )
                             goto End;
-                        if( !~E_x_Q_object_I_add( window, id, id_2 ))
+                        if( !~E_gui_xcb_Q_object_I_add( window, object_id, id ))
                             goto End;
-                        for_n( i, 2 )
-                        {   I id_3 = E_x_Q_object_Z_frame_M( display, window );
-                            if( !~id_3 )
+                        for_n( i, 5 )
+                        {   I id_2 = E_gui_xcb_Q_object_Z_frame_M( display, window );
+                            if( !~id_2 )
                                 goto End;
-                            if( !~E_x_Q_object_I_add( window, id_2, id_3 ))
+                            if( !~E_gui_xcb_Q_object_I_add( window, id, id_2 ))
                                 goto End;
-                            for_n( i, 3 )
-                            {   I id_4 = E_x_Q_object_Z_button_font_M( display, window, 0, "abc" );
-                                if( !~id_4 )
+                            for_n( i, 2 )
+                            {   I id_3 = E_gui_xcb_Q_object_Z_frame_M( display, window );
+                                if( !~id_3 )
                                     goto End;
-                                if( !~E_x_Q_object_I_add( window, id_3, id_4 ))
+                                if( !~E_gui_xcb_Q_object_I_add( window, id_2, id_3 ))
+                                    goto End;
+                                for_n( i, 3 )
+                                {   I id_4 = E_gui_xcb_Q_object_Z_button_font_M( display, window, 0, "abc" );
+                                    if( !~id_4 )
+                                        goto End;
+                                    if( !~E_gui_xcb_Q_object_I_add( window, id_3, id_4 ))
+                                        goto End;
+                                }
+                            }
+                            for_n_( i, 2 )
+                            {   I id_3 = E_gui_xcb_Q_object_Z_button_font_M( display, window, 0, "abcde" );
+                                if( !~id_3 )
+                                    goto End;
+                                if( !~E_gui_xcb_Q_object_I_add( window, id_2, id_3 ))
                                     goto End;
                             }
                         }
-                        for_n_( i, 2 )
-                        {   I id_3 = E_x_Q_object_Z_button_font_M( display, window, 0, "abcde" );
-                            if( !~id_3 )
+                        for_n_( i, 5 )
+                        {   I id_2 = E_gui_xcb_Q_object_Z_frame_select_M( display, window, 0, "abcdefghijkl" );
+                            if( !~id_2 )
                                 goto End;
-                            if( !~E_x_Q_object_I_add( window, id_2, id_3 ))
+                            if( !~E_gui_xcb_Q_object_I_add( window, id, id_2 ))
                                 goto End;
+                            struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, id_2 );
+                            object = E_mem_Q_tab_R( window->object, object->child[0] );
+                            struct E_gui_xcb_Q_object_Z_data_Z_select *object_data = object->data;
+                            object_data->select_n = 5;
+                            if( !E_mem_Q_blk_M_replace_tab( &object_data->select, sizeof( Pc ), object_data->select_n ))
+                                goto End;
+                            for_n( i, object_data->select_n )
+                            {   N l = E_text_Z_n_N_s_G( i, sizeof(i), 10 );
+                                object_data->select[i] = M( l + 218 + 1 );
+                                if( !object_data->select[i] )
+                                    goto End;
+                                E_text_Z_n_N_s( object_data->select[i] + l, i, sizeof(i), 10 );
+                                E_text_Z_s_P_copy_s0_0( object_data->select[i] + l, ". select select select select select select select select select select select select select select select select select select select select select select select select select select select select select select select" );
+                            }
                         }
                     }
-                    for_n_( i, 5 )
-                    {   I id_2 = E_x_Q_object_Z_frame_select_M( display, window, 0, "abcdefghijkl" );
-                        if( !~id_2 )
-                            goto End;
-                        if( !~E_x_Q_object_I_add( window, id, id_2 ))
-                            goto End;
-                        struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, id_2 );
-                        object = E_mem_Q_tab_R( window->object, object->child[0] );
-                        struct E_x_Q_object_Z_data_Z_select *object_data = object->data;
-                        object_data->select_n = 5;
-                        if( !E_mem_Q_blk_M_replace_tab( &object_data->select, sizeof( Pc ), object_data->select_n ))
-                            goto End;
-                        for_n( i, object_data->select_n )
-                        {   N l = E_text_Z_n_N_s_G( i, sizeof(i), 10 );
-                            object_data->select[i] = M( l + 218 + 1 );
-                            if( !object_data->select[i] )
-                                goto End;
-                            E_text_Z_n_N_s( object_data->select[i] + l, i, sizeof(i), 10 );
-                            E_text_Z_s_P_copy_s0_0( object_data->select[i] + l, ". select select select select select select select select select select select select select select select select select select select select select select select select select select select select select select select" );
-                        }
-                    }
+                    object_id = E_gui_xcb_Q_object_M( display, window
+                    , 0
+                    , 5, 5
+                    , 61, 61
+                    , 0
+                    , E_main_Q_timer_I_draw
+                    , 0
+                    );
+                    struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
+                    U_F( object->mode, draggable );
+                    object_id = E_gui_xcb_Q_object_M( display, window
+                    , 0
+                    , 55, 53
+                    , 171, 191
+                    , 0
+                    , E_main_Q_timer_I_draw
+                    , 0
+                    );
+                    object = E_mem_Q_tab_R( window->object, object_id );
+                    U_F( object->mode, draggable );
+                    object_id = E_gui_xcb_Q_object_M( display, window
+                    , 0
+                    , 151, 191
+                    , 21, 21
+                    , 0
+                    , E_main_Q_timer_I_draw
+                    , 0
+                    );
+                    object = E_mem_Q_tab_R( window->object, object_id );
+                    U_F( object->mode, draggable );
+                    E_gui_xcb_Q_object_I_lay( display, window );
                 }
-                object_id = E_x_Q_object_M( display, window
-                , 0
-                , 5, 5
-                , 61, 61
-                , 0
-                , E_main_Q_timer_I_draw
-                , 0
-                );
-                struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
-                U_F( object->mode, draggable );
-                object_id = E_x_Q_object_M( display, window
-                , 0
-                , 55, 53
-                , 171, 191
-                , 0
-                , E_main_Q_timer_I_draw
-                , 0
-                );
-                object = E_mem_Q_tab_R( window->object, object_id );
-                U_F( object->mode, draggable );
-                object_id = E_x_Q_object_M( display, window
-                , 0
-                , 151, 191
-                , 21, 21
-                , 0
-                , E_main_Q_timer_I_draw
-                , 0
-                );
-                object = E_mem_Q_tab_R( window->object, object_id );
-                U_F( object->mode, draggable );
-                E_x_Q_object_I_lay( display, window );
             }
+            //D_M( main, cursor );
+            X_B( x_window, close_window, 0 )
+                U_F( E_base_S->E_flow_S_signal, exit );
+            //D_W( main, cursor );
+            E_gui_xcb_Q_display_W( display_id );
+End_2:      D_W( main, timer_draw );
+            if( U_R( E_base_S->E_flow_S_signal, exit ))
+                break;
         }
-        //D_M( main, cursor );
+End_1:  ;
+    }else
         X_B( x_window, close_window, 0 )
             U_F( E_base_S->E_flow_S_signal, exit );
-        //D_W( main, cursor );
-        E_x_Q_display_W( display_id );
-End_2:  D_W( main, timer_draw );
-        if( U_R( E_base_S->E_flow_S_signal, exit ))
-            break;
-    }
-End_1:
     X_W( x_window, close_window );
-End:E_ui_W();
-    E_x_W();
+End:E_tui_W();
+    if( E_gui_xcb_S_init )
+        E_gui_xcb_W();
     E_base_W();
     return 0;
 }
@@ -244,11 +249,11 @@ End:E_ui_W();
         //if( cursor_no == XC_num_glyphs )
             //cursor_no = 0;
         //G(); Gd( cursor_no );
-        //for_each( display_id, E_x_Q_display_S, E_mem_Q_tab )
-        //{   struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
+        //for_each( display_id, E_gui_xcb_Q_display_S, E_mem_Q_tab )
+        //{   struct E_gui_xcb_Q_display_Z *display = E_mem_Q_tab_R( E_gui_xcb_Q_display_S, display_id );
             //Cursor cursor = XCreateFontCursor( display->x_display, cursor_no );
             //for_each( window_id, display->window, E_mem_Q_tab )
-            //{   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
+            //{   struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
                 //if( U_R( window->state, visible ))
                     //XDefineCursor( display->x_display, window->x_window, cursor );
             //}
@@ -279,23 +284,23 @@ D( main, timer_draw )
         E_main_Q_timer_S_hour += E_main_Q_timer_S_minute / 60;
         E_main_Q_timer_S_minute %= 60;
         E_main_Q_timer_S_hour %= 12;
-        E_x_Q_object_I_draw_Z_draw_proc( E_main_Q_timer_I_draw, !!timer_lost_count );
+        E_gui_xcb_Q_object_I_draw_Z_draw_proc( E_main_Q_timer_I_draw, !!timer_lost_count );
     }
     Y_W(timer);
 }
 #define E_main_I_draw_Z_angle_line_(arc_i,arc_n,line_length_i,line_length_n,color)    E_main_I_draw_Z_angle_line( display, screen, window, object, arc_i, arc_n, line_length_i, line_length_n, color )
 void
 E_main_I_draw_Z_angle_line(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_screen_Z *screen
-, struct E_x_Q_window_Z *window
-, struct E_x_Q_object_Z *object
+  struct E_gui_xcb_Q_display_Z *display
+, struct E_gui_xcb_Q_screen_Z *screen
+, struct E_gui_xcb_Q_window_Z *window
+, struct E_gui_xcb_Q_object_Z *object
 , N arc_i
 , N arc_n
 , N line_length_i
 , N line_length_n
 , N32 color
-){  E_x_Q_object_I_draw_P_color( display, screen, object, color );
+){  E_gui_xcb_Q_object_I_draw_P_color( display, screen, object, color );
     S16 x = line_length_i * ( object->width / 2 - 1 ) / line_length_n;
     S16 y = line_length_i * ( object->height / 2 - 1 ) / line_length_n;
     N l = 2 * ( object->width + object->height );
@@ -331,7 +336,7 @@ E_main_I_draw_Z_angle_line(
             y = -y;
             break;
     }
-    E_x_Q_object_I_draw_Z_lines( display, screen, window, object
+    E_gui_xcb_Q_object_I_draw_Z_lines( display, screen, window, object
     , 2
     , ( xcb_point_t[] )
       { { object->width / 2
@@ -347,12 +352,12 @@ E_main_I_draw_Z_angle_line(
 //NDFN konkretne stany wyglądu obiektów mające konkretne znaczenia.
 void
 E_main_Q_timer_I_draw(
-  struct E_x_Q_display_Z *display
-, struct E_x_Q_screen_Z *screen
-, struct E_x_Q_window_Z *window
-, struct E_x_Q_object_Z *object
-){  E_x_Q_object_I_draw_P_color( display, screen, object, E_x_Z_color_M( 0xff, 0xff, 0xff ));
-    E_x_Q_object_I_draw_Z_rectangles( display, screen, window, object
+  struct E_gui_xcb_Q_display_Z *display
+, struct E_gui_xcb_Q_screen_Z *screen
+, struct E_gui_xcb_Q_window_Z *window
+, struct E_gui_xcb_Q_object_Z *object
+){  E_gui_xcb_Q_object_I_draw_P_color( display, screen, object, E_x_Z_color_M( 0xff, 0xff, 0xff ));
+    E_gui_xcb_Q_object_I_draw_Z_rectangles( display, screen, window, object
     , 1
     , ( xcb_rectangle_t[] )
       { 0
@@ -362,8 +367,8 @@ E_main_Q_timer_I_draw(
       }
     , 1
     );
-    E_x_Q_object_I_draw_Z_font_Z_s( display, screen, window, object, 1, 1, 0, 0, "AĄBCĆDEĘFGHIJKLŁMNŃOÓPQRSŚTUVWXYZŹŻ\naąbcćdeęfghijklłmnńoópqrsśtuvwxyzźż\n0123456789\n!\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~\n′−¡‽²➪³№ ‒⁄÷°〃⇢×⁑⁂–—≈±⁃―‣•®℠©™µ❛❝❜❞⁅〈⁆〉 ¦‐՚‛‟‚„‘“’”⏎⁋✓·…‹«›» ¿€¢" );
-    E_x_Q_object_I_draw_P_color( display, screen, object, E_x_Z_color_M( 0, 0, 0x9f ));
+    E_gui_xcb_Q_object_I_draw_Z_font_Z_s( display, screen, window, object, 1, 1, 0, 0, "AĄBCĆDEĘFGHIJKLŁMNŃOÓPQRSŚTUVWXYZŹŻ\naąbcćdeęfghijklłmnńoópqrsśtuvwxyzźż\n0123456789\n!\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~\n′−¡‽²➪³№ ‒⁄÷°〃⇢×⁑⁂–—≈±⁃―‣•®℠©™µ❛❝❜❞⁅〈⁆〉 ¦‐՚‛‟‚„‘“’”⏎⁋✓·…‹«›» ¿€¢" );
+    E_gui_xcb_Q_object_I_draw_P_color( display, screen, object, E_x_Z_color_M( 0, 0, 0x9f ));
     E_main_I_draw_Z_angle_line_(
       E_main_Q_timer_S_hour
     , 12
@@ -371,7 +376,7 @@ E_main_Q_timer_I_draw(
     , 2
     , E_x_Z_color_M( 0, 0, 0x9f )
     );
-    E_x_Q_object_I_draw_P_color( display, screen, object, E_x_Z_color_M( 0, 0xbf, 0 ));
+    E_gui_xcb_Q_object_I_draw_P_color( display, screen, object, E_x_Z_color_M( 0, 0xbf, 0 ));
     E_main_I_draw_Z_angle_line_(
       E_main_Q_timer_S_minute
     , 60
@@ -379,7 +384,7 @@ E_main_Q_timer_I_draw(
     , 4
     , E_x_Z_color_M( 0, 0xbf, 0 )
     );
-    E_x_Q_object_I_draw_P_color( display, screen, object, E_x_Z_color_M( 0, 0, 0 ));
+    E_gui_xcb_Q_object_I_draw_P_color( display, screen, object, E_x_Z_color_M( 0, 0, 0 ));
     E_main_I_draw_Z_angle_line_(
       E_main_Q_timer_S_second
     , 60

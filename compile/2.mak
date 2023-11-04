@@ -581,7 +581,11 @@ run:
       LD_LIBRARY_PATH="$$libs" \
       $(if $(H_make_C_to_libs_C_replace_c_alloc), LD_PRELOAD=lib$(H_make_S_lib_prefix)$(H_make_S_base_module).so)) \
     ./a.out "$$@"' ;\
-    if [ -n "$$( which ocq 2>/dev/null )" ]; then \
+    if [ -z "$$( set | grep -e ^DISPLAY= )" ]; then \
+		$(if $(H_make_C_to_libs),LD_LIBRARY_PATH="$$libs" \
+		  $(if $(H_make_C_to_libs_C_replace_c_alloc), LD_PRELOAD=lib$(H_make_S_lib_prefix)$(H_make_S_base_module).so)) \
+		./a.out $(call H_make_Z_shell_cmd_arg_I_quote_for,$(S_cmd_arg)) ;\
+	elif [ -n "$$( which ocq 2>/dev/null )" ]; then \
         ocq term-args "$$cmd" "$$SHELL" "$$PWD" $(if $(H_make_C_to_libs),"$$libs") $(call H_make_Z_shell_cmd_arg_I_quote_for,$(S_cmd_arg)) ;\
     elif [ -n "$$( which xterm 2>/dev/null )" ]; then \
         xterm -maximized -e "$$SHELL" -c "$$cmd" "$$SHELL" "$$PWD" $(if $(H_make_C_to_libs),"$$libs") $(call H_make_Z_shell_cmd_arg_I_quote_for,$(S_cmd_arg)) ;\

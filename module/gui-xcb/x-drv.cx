@@ -22,9 +22,9 @@
 _internal
 void
 E_x_window_D_events_I_unblock( P display_id
-){  struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, *( I * )display_id );
-    struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, 0 );
-    struct E_x_Q_window_Z *window = &screen->dnd_window;
+){  struct E_gui_xcb_Q_display_Z *display = E_mem_Q_tab_R( E_gui_xcb_Q_display_S, *( I * )display_id );
+    struct E_gui_xcb_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, 0 );
+    struct E_gui_xcb_Q_window_Z *window = &screen->dnd_window;
     xcb_client_message_event_t x_client =
     { .response_type = XCB_CLIENT_MESSAGE
     , .format = 32
@@ -79,9 +79,9 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
     I_D
     {
             #ifndef E_flow_C_thread_system_unblock_reports
-        for_each( display_id, E_x_Q_display_S, E_mem_Q_tab )
+        for_each( display_id, E_gui_xcb_Q_display_S, E_mem_Q_tab )
             #endif
-        {   struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
+        {   struct E_gui_xcb_Q_display_Z *display = E_mem_Q_tab_R( E_gui_xcb_Q_display_S, display_id );
                 #ifndef E_flow_C_thread_system_unblock_reports
             xcb_generic_event_t *x_event = xcb_poll_for_event( display->x_display );
             int e;
@@ -100,9 +100,9 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
             {   int e = xcb_connection_has_error( display->x_display );
                 GV_(NA); Gd(e); V(); //NDFN Tu powinno być ‹zdarzenie›.
             }
-            display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
+            display = E_mem_Q_tab_R( E_gui_xcb_Q_display_S, display_id );
                 #endif
-            struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, display->drag_S_dnd_window_screen_id );
+            struct E_gui_xcb_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, display->drag_S_dnd_window_screen_id );
             B U_L( pointer, motion );
             B U_L( window, postproc );
             xcb_window_t motion_x_root_window;
@@ -219,7 +219,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                         break;
                 }
                 I window_id = ~0;
-                struct E_x_Q_window_Z *window = 0;
+                struct E_gui_xcb_Q_window_Z *window = 0;
                 if( U_R( display->mode, drag )
                 || U_R( display->mode, drag_stop )
                 )
@@ -273,24 +273,24 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                 shift = yes;
                             modifier++;
                         }
-                        xcb_keysym_t keysym = E_x_Q_display_R_keysym( display, x_key->detail, modifier );
+                        xcb_keysym_t keysym = E_gui_xcb_Q_display_R_keysym( display, x_key->detail, modifier );
                         U u;
                         if(((( x_key->state & XCB_MOD_MASK_SHIFT ) && (( x_key->state & XCB_MOD_MASK_LOCK ) == 0 ))
                           || ((( x_key->state & XCB_MOD_MASK_SHIFT ) == 0 ) && ( x_key->state & XCB_MOD_MASK_LOCK ))
                         ) && !keysym
                         )
-                        {   xcb_keysym_t keysym_ = E_x_Q_display_R_keysym( display, x_key->detail, modifier - 1 );
-                            u = E_x_Q_display_I_keysym_to_unicode( display, keysym_ );
+                        {   xcb_keysym_t keysym_ = E_gui_xcb_Q_display_R_keysym( display, x_key->detail, modifier - 1 );
+                            u = E_gui_xcb_Q_display_I_keysym_to_unicode( display, keysym_ );
                             if( !~u || !iswprint(u) )
                             {   keysym = keysym_;
                                 modifier--;
                             }else
                                 u = ~0;
                         }else
-                            u = E_x_Q_display_I_keysym_to_unicode( display, keysym );
+                            u = E_gui_xcb_Q_display_I_keysym_to_unicode( display, keysym );
                         G_(); Gd( x_key->detail ); Gh( x_key->state ); Gh(keysym); Gd(modifier); Gh(u);
                         for_n( i, display->keyboard_mapping->keysyms_per_keycode )
-                        {   xcb_keysym_t keysym = E_x_Q_display_R_keysym( display, x_key->detail, i );
+                        {   xcb_keysym_t keysym = E_gui_xcb_Q_display_R_keysym( display, x_key->detail, i );
                             G_(); Gd(keysym); Gd(i);
                         }
                         if( display->pointer_button_S_seq_i )
@@ -299,9 +299,9 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                         if( ~display->cursor_window
                         && window_id == display->cursor_window
                         )
-                        {   struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->cursor_object );
-                            if( object->draw == E_x_Q_object_Z_entry_I_draw )
-                            {   struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
+                        {   struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->cursor_object );
+                            if( object->draw == E_gui_xcb_Q_object_Z_entry_I_draw )
+                            {   struct E_gui_xcb_Q_object_Z_data_Z_entry *object_data = object->data;
                                 if( ~u && iswprint(u) )
                                 {   Pc s = object_data->s;
                                     for_n( i, object_data->cursor_pos )
@@ -325,7 +325,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                         {   GV_(bad UTF-8 character); V();
                                         }
                                     }
-                                    struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, object_data->font );
+                                    struct E_gui_xcb_Q_font_Z *font = E_mem_Q_tab_R( E_gui_xcb_Q_font_S, object_data->font );
                                     S16 x = 0;
                                     for_n_( i, object_data->cursor_pos - object_data->text_start )
                                     {   U u = ~0;
@@ -434,7 +434,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                                 {   GV_(bad UTF-8 character); V();
                                                 }
                                             }
-                                            struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, object_data->font );
+                                            struct E_gui_xcb_Q_font_Z *font = E_mem_Q_tab_R( E_gui_xcb_Q_font_S, object_data->font );
                                             S16 x = 0;
                                             for_n_( i, object_data->cursor_pos - object_data->text_start )
                                             {   U u = ~0;
@@ -509,7 +509,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                             if( object_data->text_start == text_start )
                                                 break;
                                             object_data->text_start = text_start;
-                                            struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, object_data->font );
+                                            struct E_gui_xcb_Q_font_Z *font = E_mem_Q_tab_R( E_gui_xcb_Q_font_S, object_data->font );
                                             S16 x = object->width;
                                             Pc s = E_text_Z_s0_R_end( object_data->s );
                                             while( object_data->text_start )
@@ -692,7 +692,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                                 {   GV_(bad UTF-8 character); V();
                                                 }
                                             }
-                                            struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, object_data->font );
+                                            struct E_gui_xcb_Q_font_Z *font = E_mem_Q_tab_R( E_gui_xcb_Q_font_S, object_data->font );
                                             S16 x = 0;
                                             for_n_( i, object_data->cursor_pos - object_data->text_start )
                                             {   U u = ~0;
@@ -766,15 +766,15 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                         }else if( ~display->select_window
                         && window_id == display->select_window
                         )
-                        {   struct E_x_Q_object_Z *select = E_mem_Q_tab_R( window->object, display->select_object );
-                            struct E_x_Q_object_Z_data_Z_select *select_data = select->data;
-                            I parent_id = E_x_Q_object_R_parent( window, display->select_object );
-                            struct E_x_Q_object_Z *object_parent = E_mem_Q_tab_R( window->object, parent_id );
-                            struct E_x_Q_object_Z *entry = E_mem_Q_tab_R( window->object, object_parent->child[1] );
-                            struct E_x_Q_object_Z_data_Z_entry *entry_data = entry->data;
-                            struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, entry_data->font );
-                            struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->select_list_object );
-                            struct E_x_Q_object_Z_data_Z_select_list *object_data = object->data;
+                        {   struct E_gui_xcb_Q_object_Z *select = E_mem_Q_tab_R( window->object, display->select_object );
+                            struct E_gui_xcb_Q_object_Z_data_Z_select *select_data = select->data;
+                            I parent_id = E_gui_xcb_Q_object_R_parent( window, display->select_object );
+                            struct E_gui_xcb_Q_object_Z *object_parent = E_mem_Q_tab_R( window->object, parent_id );
+                            struct E_gui_xcb_Q_object_Z *entry = E_mem_Q_tab_R( window->object, object_parent->child[1] );
+                            struct E_gui_xcb_Q_object_Z_data_Z_entry *entry_data = entry->data;
+                            struct E_gui_xcb_Q_font_Z *font = E_mem_Q_tab_R( E_gui_xcb_Q_font_S, entry_data->font );
+                            struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->select_list_object );
+                            struct E_gui_xcb_Q_object_Z_data_Z_select_list *object_data = object->data;
                             if( !alt && !alt_r && !ctrl && !logo && !shift )
                                 switch(keysym)
                                 { case XK_Return:
@@ -792,7 +792,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                             }
                                         }
                                   case XK_Escape:
-                                        E_x_Q_object_W( window, display->select_list_object );
+                                        E_gui_xcb_Q_object_W( window, display->select_list_object );
                                         display->select_window = ~0;
                                         U_F( req, draw );
                                         break;
@@ -1177,7 +1177,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                 ))
                                 {   window->x = x_configure->x;
                                     window->y = x_configure->y;
-                                    if( window_id == display->pointer_button_S_window_id )
+                                    if( window_id == display->pointer_button_S_window_id ) // Albo “widnow_id” jest ustawiony dla okna, albo jest “empty” dla okna ‘dnd’.
                                         display->pointer_button_S_seq_i = 0;
                                 }
                                 break;
@@ -1195,7 +1195,7 @@ po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                 }
                                 xcb_atom_t name = x_client->data.data32[0];
                                 if( name == E_x_Z_atom_R( display, _NET_WM_PING ))
-                                {   struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, window->screen_id );
+                                {   struct E_gui_xcb_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, window->screen_id );
                                     x_client->window = screen->x_root_window;
                                     xcb_send_event( display->x_display
                                     , no
@@ -1231,29 +1231,29 @@ Loop:           free( x_event );
                 {   //TODO Sprawdź miejsce ‘drop’.
                     if( U_R( display->mode_ex, drag_S_copy ))
                     {   for_n( i, display->drag_S_object_src_n )
-                        {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->drag_S_object_src[i].window_id );
+                        {   struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->drag_S_object_src[i].window_id );
                             U_F( window->req, draw );
-                            if( !~E_x_Q_object_I_remove_drag_src_descendants( window, display->drag_S_object_src[i].object_id ))
+                            if( !~E_gui_xcb_Q_object_I_remove_drag_src_descendants( window, display->drag_S_object_src[i].object_id ))
                                 U_F( display->req, restart );
-                            struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->drag_S_object_src[i].object_id );
+                            struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->drag_S_object_src[i].object_id );
                             U_L( object->mode, drag_src );
                             //TODO Join object into destination window.
                         }
                     }else
                     {   for_n( i, display->drag_S_object_src_n )
-                        {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->drag_S_object_src[i].window_id );
+                        {   struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->drag_S_object_src[i].window_id );
                             U_F( window->req, draw );
                             //TODO join object into destination window.
-                            if( !~E_x_Q_object_I_remove_descendants( window, display->drag_S_object_src[i].object_id ))
+                            if( !~E_gui_xcb_Q_object_I_remove_descendants( window, display->drag_S_object_src[i].object_id ))
                                 U_F( display->req, restart );
-                            if( !~E_x_Q_object_I_remove( window, display->drag_S_object_src[i].object_id ))
+                            if( !~E_gui_xcb_Q_object_I_remove( window, display->drag_S_object_src[i].object_id ))
                                 U_F( display->req, restart );
-                            E_x_Q_object_I_lay( display, window );
+                            E_gui_xcb_Q_object_I_lay( display, window );
                         }
                     }
                 }
                 W( display->drag_S_object_src );
-                struct E_x_Q_window_Z *dnd_window = &screen->dnd_window;
+                struct E_gui_xcb_Q_window_Z *dnd_window = &screen->dnd_window;
                 E_mem_Q_tab_W( dnd_window->object );
                     #ifdef C_xcb_shape
                 xcb_free_pixmap( display->x_display, screen->dnd_window_shape_pixmap );
@@ -1262,8 +1262,8 @@ Loop:           free( x_event );
                 , dnd_window->x_window
                 , XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT
                 , ( N32[] )
-                  { E_x_Q_window_S_hidden_x
-                  , E_x_Q_window_S_hidden_y
+                  { E_gui_xcb_Q_window_S_hidden_x
+                  , E_gui_xcb_Q_window_S_hidden_y
                   , 1
                   , 1
                   }
@@ -1285,17 +1285,17 @@ Loop:           free( x_event );
             {   if( ~display->select_window
                 && motion_window == display->select_window
                 )
-                {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, motion_window );
+                {   struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, motion_window );
                     I object_id = window->object_mask[ motion_y * window->width + motion_x ];
                     if( ~object_id )
-                    {   struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
-                        if( object->draw == E_x_Q_object_Z_select_list_I_draw )
-                        {   I parent_id = E_x_Q_object_R_parent( window, display->select_object );
-                            struct E_x_Q_object_Z *object_parent = E_mem_Q_tab_R( window->object, parent_id );
-                            struct E_x_Q_object_Z *entry = E_mem_Q_tab_R( window->object, object_parent->child[1] );
-                            struct E_x_Q_object_Z_data_Z_entry *entry_data = entry->data;
-                            struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, entry_data->font );
-                            struct E_x_Q_object_Z_data_Z_select_list *object_data = object->data;
+                    {   struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
+                        if( object->draw == E_gui_xcb_Q_object_Z_select_list_I_draw )
+                        {   I parent_id = E_gui_xcb_Q_object_R_parent( window, display->select_object );
+                            struct E_gui_xcb_Q_object_Z *object_parent = E_mem_Q_tab_R( window->object, parent_id );
+                            struct E_gui_xcb_Q_object_Z *entry = E_mem_Q_tab_R( window->object, object_parent->child[1] );
+                            struct E_gui_xcb_Q_object_Z_data_Z_entry *entry_data = entry->data;
+                            struct E_gui_xcb_Q_font_Z *font = E_mem_Q_tab_R( E_gui_xcb_Q_font_S, entry_data->font );
+                            struct E_gui_xcb_Q_object_Z_data_Z_select_list *object_data = object->data;
                             object_data->selected = ( motion_y - ( object->y + 1 )) / font->height + object_data->scroll;
                             U_F( window->req, draw );
                             U_F( display->req, draw );
@@ -1304,7 +1304,7 @@ Loop:           free( x_event );
                     }
                 }
                 if( display->pointer_button_S_seq_i )
-                {   struct E_x_Q_window_Z *window;
+                {   struct E_gui_xcb_Q_window_Z *window;
                     if( U_R( display->mode, drag ))
                         window = &screen->dnd_window;
                     else
@@ -1339,18 +1339,18 @@ Loop:           free( x_event );
                             )
                             {   xbutton_object_id = window->object_mask[ display->pointer_button_S_y * window->width + display->pointer_button_S_x ];
                                 if( ~xbutton_object_id )
-                                {   struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, xbutton_object_id );
-                                    if( object->draw == E_x_Q_object_Z_font_I_draw )
-                                    {   I object_id = E_x_Q_object_R_parent( window, xbutton_object_id );
+                                {   struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, xbutton_object_id );
+                                    if( object->draw == E_gui_xcb_Q_object_Z_font_I_draw )
+                                    {   I object_id = E_gui_xcb_Q_object_R_parent( window, xbutton_object_id );
                                         if( ~object_id )
-                                        {   struct E_x_Q_object_Z *object_parent = E_mem_Q_tab_R( window->object, object_id );
-                                            if( object_parent->draw == E_x_Q_object_Z_button_I_draw )
+                                        {   struct E_gui_xcb_Q_object_Z *object_parent = E_mem_Q_tab_R( window->object, object_id );
+                                            if( object_parent->draw == E_gui_xcb_Q_object_Z_button_I_draw )
                                                 xbutton_object_id = object_id;
                                         }
-                                    }else if( object->draw == E_x_Q_object_Z_frame_I_draw )
+                                    }else if( object->draw == E_gui_xcb_Q_object_Z_frame_I_draw )
                                     {   for_n( child_i, object->child_n )
-                                        {   struct E_x_Q_object_Z *object_child = E_mem_Q_tab_R( window->object, object->child[ child_i ] );
-                                            if( object_child->draw == E_x_Q_object_Z_entry_I_draw )
+                                        {   struct E_gui_xcb_Q_object_Z *object_child = E_mem_Q_tab_R( window->object, object->child[ child_i ] );
+                                            if( object_child->draw == E_gui_xcb_Q_object_Z_entry_I_draw )
                                             {   xbutton_object_id = object->child[ child_i ];
                                                 break;
                                             }
@@ -1384,23 +1384,23 @@ Loop:           free( x_event );
                                 G(); Gs0_( "click" ); Gd( display->pointer_button ); Gd( display->pointer_button_S_seq_i );
                                 if( !U_R( display->mode, drag ))
                                 {   if( ~display->cursor_window ) // Wyczyszczenie widocznego kursora.
-                                    {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->cursor_window );
-                                        struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->cursor_object );
-                                        struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
+                                    {   struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->cursor_window );
+                                        struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->cursor_object );
+                                        struct E_gui_xcb_Q_object_Z_data_Z_entry *object_data = object->data;
                                         U_L( object_data->state, cursor_visible_ );
                                         U_F( window->req, draw );
                                         U_F( display->req, draw );
                                         U_F( display->req, flush );
                                     }
-                                    struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->pointer_button_S_object_id );
+                                    struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->pointer_button_S_object_id );
                                     if( U_R( object->mode, draggable )
                                     && display->pointer_button == 1
                                     && display->pointer_button_S_seq_i == 1
                                     )
                                     {   display->cursor_window = ~0;
                                         if( ~display->select_window )
-                                        {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->select_window );
-                                            E_x_Q_object_W( window, display->select_list_object );
+                                        {   struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->select_window );
+                                            E_gui_xcb_Q_object_W( window, display->select_list_object );
                                             display->select_window = ~0;
                                             U_F( window->req, draw );
                                             U_F( display->req, draw );
@@ -1408,14 +1408,14 @@ Loop:           free( x_event );
                                         }
                                         Mt_( display->drag_S_object_src, 1 );
                                         if( display->drag_S_object_src )
-                                        {   struct E_x_Q_window_Z *dnd_window = &screen->dnd_window;
+                                        {   struct E_gui_xcb_Q_window_Z *dnd_window = &screen->dnd_window;
                                             dnd_window->width_new = dnd_window->width = object->width;
                                             dnd_window->height_new = dnd_window->height = object->height;
-                                            dnd_window->object = E_mem_Q_tab_M( sizeof( struct E_x_Q_object_Z ), 0 );
+                                            dnd_window->object = E_mem_Q_tab_M( sizeof( struct E_gui_xcb_Q_object_Z ), 0 );
                                             if( !dnd_window->object )
                                                 goto Drag_start_error;
-                                            I dnd_window_object_id = E_x_Q_object_M( display, dnd_window, 0, 0, 0, object->width, object->height, 0, object->draw, 0 );
-                                            struct E_x_Q_object_Z *dnd_window_object = E_mem_Q_tab_R( dnd_window->object, dnd_window_object_id );
+                                            I dnd_window_object_id = E_gui_xcb_Q_object_M( display, dnd_window, 0, 0, 0, object->width, object->height, 0, object->draw, 0 );
+                                            struct E_gui_xcb_Q_object_Z *dnd_window_object = E_mem_Q_tab_R( dnd_window->object, dnd_window_object_id );
                                             dnd_window_object->data = object->data;
                                             U_F( object->mode, drag_src );
                                             display->drag_S_object_src[0].window_id = display->pointer_button_S_window_id;
@@ -1429,11 +1429,11 @@ Loop:           free( x_event );
                                             }
                                             ids[0] = display->pointer_button_S_object_id;
                                             while( ids_n )
-                                            {   struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, ids[0] );
+                                            {   struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, ids[0] );
                                                 if( !E_mem_Q_blk_I_remove( &ids, 0, 1 ))
                                                 {   W( display->drag_S_object_src );
                                                     for_each( object_id, dnd_window->object, E_mem_Q_tab )
-                                                        E_x_Q_object_W( dnd_window, object_id );
+                                                        E_gui_xcb_Q_object_W( dnd_window, object_id );
                                                     goto Drag_start_error;
                                                 }
                                                 ids_n--;
@@ -1442,24 +1442,24 @@ Loop:           free( x_event );
                                                 if( !E_mem_Q_blk_I_append( &ids, object->child_n ))
                                                 {   W( display->drag_S_object_src );
                                                     for_each( object_id, dnd_window->object, E_mem_Q_tab )
-                                                        E_x_Q_object_W( dnd_window, object_id );
+                                                        E_gui_xcb_Q_object_W( dnd_window, object_id );
                                                     goto Drag_start_error;
                                                 }
                                                 I parent_id = dnd_window->object->index_n - 1;
                                                 for_n( i, object->child_n )
                                                 {   ids[ ids_n + i ] = object->child[i];
-                                                    struct E_x_Q_object_Z *object_src = E_mem_Q_tab_R( window->object, object->child[i] );
+                                                    struct E_gui_xcb_Q_object_Z *object_src = E_mem_Q_tab_R( window->object, object->child[i] );
                                                     U_F( object_src->mode, drag_src );
-                                                    I dnd_window_object_id = E_x_Q_object_M( display, dnd_window, 0, object_src->x - object->x, object_src->y - object->y, object_src->width, object_src->height, 0, object_src->draw, 0 );
+                                                    I dnd_window_object_id = E_gui_xcb_Q_object_M( display, dnd_window, 0, object_src->x - object->x, object_src->y - object->y, object_src->width, object_src->height, 0, object_src->draw, 0 );
                                                     if( !~dnd_window_object_id )
                                                     {   W( display->drag_S_object_src );
                                                         for_each( object_id, dnd_window->object, E_mem_Q_tab )
-                                                            E_x_Q_object_W( dnd_window, object_id );
+                                                            E_gui_xcb_Q_object_W( dnd_window, object_id );
                                                         goto Drag_start_error;
                                                     }
-                                                    struct E_x_Q_object_Z *dnd_window_object = E_mem_Q_tab_R( dnd_window->object, dnd_window_object_id );
+                                                    struct E_gui_xcb_Q_object_Z *dnd_window_object = E_mem_Q_tab_R( dnd_window->object, dnd_window_object_id );
                                                     dnd_window_object->data = object_src->data;
-                                                    E_x_Q_object_I_add( dnd_window, parent_id, dnd_window_object_id );
+                                                    E_gui_xcb_Q_object_I_add( dnd_window, parent_id, dnd_window_object_id );
                                                 }
                                                 ids_n += object->child_n;
                                             }
@@ -1522,23 +1522,23 @@ Loop:           free( x_event );
                                         }else
 Drag_start_error:                       {   GV_(NA);
                                         }
-                                    }else if( object->draw == E_x_Q_object_Z_entry_I_draw
+                                    }else if( object->draw == E_gui_xcb_Q_object_Z_entry_I_draw
                                     && display->pointer_button == 1
                                     && display->pointer_button_S_seq_i == 2
                                     )
                                     {   if( ~display->select_window )
-                                        {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->select_window );
-                                            E_x_Q_object_W( window, display->select_list_object );
+                                        {   struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->select_window );
+                                            E_gui_xcb_Q_object_W( window, display->select_list_object );
                                             display->select_window = ~0;
                                         }
                                         display->cursor_window = display->pointer_button_S_window_id;
                                         display->cursor_object = display->pointer_button_S_object_id;
-                                        struct E_x_Q_object_Z_data_Z_entry *object_data = object->data;
+                                        struct E_gui_xcb_Q_object_Z_data_Z_entry *object_data = object->data;
                                         S16 click_x = display->pointer_button_S_x - object->x;
                                         if( click_x >= object->width ) // Jeśli kliknięto nadrzędny obiekt “frame”, to ogranicza długość.
                                             click_x = object->width - 1;
                                         object_data->cursor_pos = 0;
-                                        struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, object_data->font );
+                                        struct E_gui_xcb_Q_font_Z *font = E_mem_Q_tab_R( E_gui_xcb_Q_font_S, object_data->font );
                                         S16 x = 0;
                                         Pc s = object_data->s + object_data->text_start;
                                         while( *s )
@@ -1577,19 +1577,19 @@ Drag_start_error:                       {   GV_(NA);
                                         U_F( window->req, draw );
                                         U_F( display->req, draw );
                                         U_F( display->req, flush );
-                                    }else if( object->draw == E_x_Q_object_Z_select_I_draw
+                                    }else if( object->draw == E_gui_xcb_Q_object_Z_select_I_draw
                                     && display->pointer_button == 1
                                     && display->pointer_button_S_seq_i == 2
                                     )
                                     {   if( !~display->select_window )
                                         {   display->cursor_window = ~0;
-                                            struct E_x_Q_object_Z_data_Z_select *object_data = object->data;
+                                            struct E_gui_xcb_Q_object_Z_data_Z_select *object_data = object->data;
                                             if( object_data->select_n )
-                                            {   I parent_id = E_x_Q_object_R_parent( window, display->pointer_button_S_object_id );
-                                                struct E_x_Q_object_Z *object_parent = E_mem_Q_tab_R( window->object, parent_id );
-                                                struct E_x_Q_object_Z *entry = E_mem_Q_tab_R( window->object, object_parent->child[1] );
-                                                struct E_x_Q_object_Z_data_Z_entry *entry_data = entry->data;
-                                                struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, entry_data->font );
+                                            {   I parent_id = E_gui_xcb_Q_object_R_parent( window, display->pointer_button_S_object_id );
+                                                struct E_gui_xcb_Q_object_Z *object_parent = E_mem_Q_tab_R( window->object, parent_id );
+                                                struct E_gui_xcb_Q_object_Z *entry = E_mem_Q_tab_R( window->object, object_parent->child[1] );
+                                                struct E_gui_xcb_Q_object_Z_data_Z_entry *entry_data = entry->data;
+                                                struct E_gui_xcb_Q_font_Z *font = E_mem_Q_tab_R( E_gui_xcb_Q_font_S, entry_data->font );
                                                 N16 width = 0;
                                                 for_n( select_i, object_data->select_n )
                                                 {   N16 width_ = 0;
@@ -1642,7 +1642,7 @@ Drag_start_error:                       {   GV_(NA);
                                                 {   y = 0;
                                                     height = object->y / font->height * font->height + 2;
                                                 }
-                                                I select_list_id = E_x_Q_object_Z_select_list_M( display, window
+                                                I select_list_id = E_gui_xcb_Q_object_Z_select_list_M( display, window
                                                 , x, y
                                                 , width, height
                                                 );
@@ -1656,24 +1656,24 @@ Drag_start_error:                       {   GV_(NA);
                                                 }
                                             }
                                         }else
-                                        {   E_x_Q_object_W( window, display->select_list_object );
+                                        {   E_gui_xcb_Q_object_W( window, display->select_list_object );
                                             display->select_window = ~0;
                                             U_F( window->req, draw );
                                             U_F( display->req, draw );
                                             U_F( display->req, flush );
                                         }
-                                    }else if( object->draw == E_x_Q_object_Z_select_list_I_draw )
+                                    }else if( object->draw == E_gui_xcb_Q_object_Z_select_list_I_draw )
                                     {   if( display->pointer_button == 1
                                         && display->pointer_button_S_seq_i == 2
                                         )
-                                        {   struct E_x_Q_object_Z *select = E_mem_Q_tab_R( window->object, display->select_object );
-                                            struct E_x_Q_object_Z_data_Z_select *select_data = select->data;
-                                            I parent_id = E_x_Q_object_R_parent( window, display->select_object );
-                                            struct E_x_Q_object_Z *object_parent = E_mem_Q_tab_R( window->object, parent_id );
-                                            struct E_x_Q_object_Z *entry = E_mem_Q_tab_R( window->object, object_parent->child[1] );
-                                            struct E_x_Q_object_Z_data_Z_entry *entry_data = entry->data;
-                                            struct E_x_Q_font_Z *font = E_mem_Q_tab_R( E_x_Q_font_S, entry_data->font );
-                                            struct E_x_Q_object_Z_data_Z_select_list *object_data = object->data;
+                                        {   struct E_gui_xcb_Q_object_Z *select = E_mem_Q_tab_R( window->object, display->select_object );
+                                            struct E_gui_xcb_Q_object_Z_data_Z_select *select_data = select->data;
+                                            I parent_id = E_gui_xcb_Q_object_R_parent( window, display->select_object );
+                                            struct E_gui_xcb_Q_object_Z *object_parent = E_mem_Q_tab_R( window->object, parent_id );
+                                            struct E_gui_xcb_Q_object_Z *entry = E_mem_Q_tab_R( window->object, object_parent->child[1] );
+                                            struct E_gui_xcb_Q_object_Z_data_Z_entry *entry_data = entry->data;
+                                            struct E_gui_xcb_Q_font_Z *font = E_mem_Q_tab_R( E_gui_xcb_Q_font_S, entry_data->font );
+                                            struct E_gui_xcb_Q_object_Z_data_Z_select_list *object_data = object->data;
                                             N i = ( display->pointer_button_S_y - ( object->y + 1 )) / font->height + object_data->scroll;
                                             N l_old = E_text_Z_s0_R_l_0( entry_data->s );
                                             N l_new = E_text_Z_s0_R_l_0( select_data->select[i] );
@@ -1685,7 +1685,7 @@ Drag_start_error:                       {   GV_(NA);
                                             {   E_text_Z_s_P_copy_s0_0( entry_data->s, select_data->select[i] );
                                                 entry_data->text_start = 0;
                                             }
-                                            E_x_Q_object_W( window, display->select_list_object );
+                                            E_gui_xcb_Q_object_W( window, display->select_list_object );
                                             display->select_window = ~0;
                                             U_F( window->req, draw );
                                             U_F( display->req, draw );
@@ -1694,8 +1694,8 @@ Drag_start_error:                       {   GV_(NA);
                                     }else
                                     {   display->cursor_window = ~0;
                                         if( ~display->select_window )
-                                        {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->select_window );
-                                            E_x_Q_object_W( window, display->select_list_object );
+                                        {   struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->select_window );
+                                            E_gui_xcb_Q_object_W( window, display->select_list_object );
                                             display->select_window = ~0;
                                             U_F( window->req, draw );
                                             U_F( display->req, draw );
@@ -1706,7 +1706,7 @@ Drag_start_error:                       {   GV_(NA);
                                             {   object->click( window, object, display->pointer_button, display->pointer_button_S_seq_i );
                                                 break;
                                             }
-                                            object_id = E_x_Q_object_R_parent( window, object_id );
+                                            object_id = E_gui_xcb_Q_object_R_parent( window, object_id );
                                             if( !~object_id )
                                                 break;
                                             object = E_mem_Q_tab_R( window->object, object_id );
@@ -1777,21 +1777,21 @@ Drag_start_error:                       {   GV_(NA);
                     );
                     U_F( display->req, flush );
                 }else
-                {   struct E_x_Q_screen_Z *screen_last = screen;
+                {   struct E_gui_xcb_Q_screen_Z *screen_last = screen;
                     for_each( screen_id, display->screen, E_mem_Q_tab )
                     {   screen = E_mem_Q_tab_R( display->screen, screen_id );
                         if( motion_x_root_window == screen->x_root_window )
                             break;
                     }
                     display->drag_S_dnd_window_screen_id = screen_id;
-                    struct E_x_Q_window_Z *dnd_window = &screen_last->dnd_window;
+                    struct E_gui_xcb_Q_window_Z *dnd_window = &screen_last->dnd_window;
                     // Zmienić tak, by okna ‘dnd’ były jednocześnie widoczne do czasu utraty widoczności na jednym z wyświetlaczy. (Nie można teraz, ponieważ nie mam konfiguracji bez ‟Xineramy”.)
                     xcb_configure_window( display->x_display
                     , dnd_window->x_window
                     , XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT
                     , ( N32[] )
-                      { E_x_Q_window_S_hidden_x
-                      , E_x_Q_window_S_hidden_y
+                      { E_gui_xcb_Q_window_S_hidden_x
+                      , E_gui_xcb_Q_window_S_hidden_y
                       , 1
                       , 1
                       }
@@ -1830,7 +1830,7 @@ Drag_start_error:                       {   GV_(NA);
             }
             if( U_R( window, postproc ))
             {   if( U_R( display->mode, drag ))
-                {   struct E_x_Q_window_Z *window = &screen->dnd_window;
+                {   struct E_gui_xcb_Q_window_Z *window = &screen->dnd_window;
                     if( U_E( window->req, resize )
                     && ( window->width != window->width_new
                       || window->height != window->height_new
@@ -1853,7 +1853,7 @@ Drag_start_error:                       {   GV_(NA);
                     }
                 }
                 for_each( window_id, display->window, E_mem_Q_tab )
-                {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
+                {   struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
                     if( U_R( window->state, visible )
                     && U_E( window->req, resize )
                     )
@@ -1872,7 +1872,7 @@ Drag_start_error:                       {   GV_(NA);
                                 window->object_mask[i] = ~0;
                             U_F( window->req, draw );
                             U_F( display->req, draw );
-                            E_x_Q_object_I_lay( display, window );
+                            E_gui_xcb_Q_object_I_lay( display, window );
                         }else if( U_R( window->req, draw ))
                             U_F( display->req, draw );
                     if( window->user_activity_time > window->last_user_activity_time )
@@ -1910,25 +1910,25 @@ D( x_window, draw )
     I_D
     {   X_B( x_window, draw, 0 )
             break;
-        for_each( display_id, E_x_Q_display_S, E_mem_Q_tab )
-        {   struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
+        for_each( display_id, E_gui_xcb_Q_display_S, E_mem_Q_tab )
+        {   struct E_gui_xcb_Q_display_Z *display = E_mem_Q_tab_R( E_gui_xcb_Q_display_S, display_id );
             if( U_E( display->req, draw ))
             {   for_each( window_id, display->window, E_mem_Q_tab )
-                {   struct E_x_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
+                {   struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
                     if( U_R( window->state, visible )
                     && !U_R( window->mode, resize )
                     && U_E( window->req, draw )
                     )
-                    {   struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, window->screen_id );
+                    {   struct E_gui_xcb_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, window->screen_id );
                         for_n( i, window->width * window->height )
-                            window->drawable[i] = E_x_Q_theme.window_bg;
+                            window->drawable[i] = E_gui_xcb_Q_theme.window_bg;
                         for_n_( i, window->width * window->height )
                             window->object_mask[i] = ~0;
                         for_each( object_id, window->object, E_mem_Q_tab ) //NDFN zakładana kolejność od na spodzie do na wierzchu. nie wiadomo, czy “_q” jest konieczne.
                         {   display->current_object = object_id;
-                            struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
+                            struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
                             if( U_R( object->mode, drag_src ))
-                                screen->draw_color = E_x_Q_theme.current_brace;
+                                screen->draw_color = E_gui_xcb_Q_theme.current_brace;
                             object->draw( display, screen, window, object ); //NDFN nieprzerysowywanie wszystkich obiektów dla każdej klatki animacji.
                         }
                         xcb_put_image( display->x_display
@@ -1946,13 +1946,13 @@ D( x_window, draw )
                     }
                 }
                 if( U_R( display->mode, drag ))
-                {   struct E_x_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, display->drag_S_dnd_window_screen_id );
-                    struct E_x_Q_window_Z *window = &screen->dnd_window;
+                {   struct E_gui_xcb_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, display->drag_S_dnd_window_screen_id );
+                    struct E_gui_xcb_Q_window_Z *window = &screen->dnd_window;
                     if( !U_R( window->mode, resize )
                     && U_E( window->req, draw )
                     )
                     {   for_n( i, window->width * window->height )
-                            window->drawable[i] = E_x_Q_theme.window_bg;
+                            window->drawable[i] = E_gui_xcb_Q_theme.window_bg;
                             #ifdef C_xcb_shape
                         xcb_poly_fill_rectangle( display->x_display
                         , screen->dnd_window_shape_pixmap
@@ -1966,7 +1966,7 @@ D( x_window, draw )
                             #endif
                         U_F( screen->state, draw_object_drag_move );
                         for_each( object_id, window->object, E_mem_Q_tab )
-                        {   struct E_x_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
+                        {   struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
                             object->draw( display, screen, window, object );
                         }
                         U_L( screen->state, draw_object_drag_move );
@@ -2007,8 +2007,8 @@ D( x_window, flush )
     I_D
     {   X_B( x_window, flush, 0 )
             break;
-        for_each( display_id, E_x_Q_display_S, E_mem_Q_tab )
-        {   struct E_x_Q_display_Z *display = E_mem_Q_tab_R( E_x_Q_display_S, display_id );
+        for_each( display_id, E_gui_xcb_Q_display_S, E_mem_Q_tab )
+        {   struct E_gui_xcb_Q_display_Z *display = E_mem_Q_tab_R( E_gui_xcb_Q_display_S, display_id );
             if( U_E( display->req, flush ))
                 xcb_flush( display->x_display );
         }
