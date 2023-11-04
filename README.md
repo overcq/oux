@@ -8,13 +8,13 @@
 
 Manufacturer: overcq
 
-Contact the manufacturer: ocq@tutanota.com
+Contact the manufacturer: overcq@int.pl
 
 Source code: https://github.com/overcq/oux
 
 ## 2. Vulnerabilities
 
-Report vulnerabilities: https://github.com/overcq/oux/security/advisories or via e‐mail: ocq@tutanota.com
+Report vulnerabilities: https://github.com/overcq/oux/security/advisories or via e‐mail: overcq@int.pl
 
 ## 3. Version
 
@@ -78,7 +78,7 @@ No the EU declaration of conformity.
 
 ## 8. Support
 
-Technical security support at: https://overcq.ct8.pl/oux-c-plus.html and via e‐mail: ocq@tutanota.com
+Technical security support at: https://overcq.ct8.pl/oux-c-plus.html and via e‐mail: overcq@int.pl
 
 Issues at: https://github.com/overcq/oux/issues
 
