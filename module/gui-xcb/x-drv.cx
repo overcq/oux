@@ -1236,7 +1236,7 @@ Loop:           free( x_event );
                             if( !~E_gui_xcb_Q_object_I_remove_drag_src_descendants( window, display->drag_S_object_src[i].object_id ))
                                 U_F( display->req, restart );
                             struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->drag_S_object_src[i].object_id );
-                            U_L( object->mode, drag_src );
+                            U_L( object->state, drag_src );
                             //TODO Join object into destination window.
                         }
                     }else
@@ -1417,7 +1417,7 @@ Loop:           free( x_event );
                                             I dnd_window_object_id = E_gui_xcb_Q_object_M( display, dnd_window, 0, 0, 0, object->width, object->height, 0, object->draw, 0 );
                                             struct E_gui_xcb_Q_object_Z *dnd_window_object = E_mem_Q_tab_R( dnd_window->object, dnd_window_object_id );
                                             dnd_window_object->data = object->data;
-                                            U_F( object->mode, drag_src );
+                                            U_F( object->state, drag_src );
                                             display->drag_S_object_src[0].window_id = display->pointer_button_S_window_id;
                                             display->drag_S_object_src[0].object_id = display->pointer_button_S_object_id;
                                             display->drag_S_object_src_n = 1;
@@ -1449,7 +1449,7 @@ Loop:           free( x_event );
                                                 for_n( i, object->child_n )
                                                 {   ids[ ids_n + i ] = object->child[i];
                                                     struct E_gui_xcb_Q_object_Z *object_src = E_mem_Q_tab_R( window->object, object->child[i] );
-                                                    U_F( object_src->mode, drag_src );
+                                                    U_F( object_src->state, drag_src );
                                                     I dnd_window_object_id = E_gui_xcb_Q_object_M( display, dnd_window, 0, object_src->x - object->x, object_src->y - object->y, object_src->width, object_src->height, 0, object_src->draw, 0 );
                                                     if( !~dnd_window_object_id )
                                                     {   W( display->drag_S_object_src );
@@ -1927,7 +1927,7 @@ D( x_window, draw )
                         for_each( object_id, window->object, E_mem_Q_tab ) //NDFN zakładana kolejność od na spodzie do na wierzchu. nie wiadomo, czy “_q” jest konieczne.
                         {   display->current_object = object_id;
                             struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
-                            if( U_R( object->mode, drag_src ))
+                            if( U_R( object->state, drag_src ))
                                 screen->draw_color = E_gui_xcb_Q_theme.current_brace;
                             object->draw( display, screen, window, object ); //NDFN nieprzerysowywanie wszystkich obiektów dla każdej klatki animacji.
                         }
