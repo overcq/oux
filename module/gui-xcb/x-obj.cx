@@ -303,7 +303,9 @@ E_gui_xcb_Q_object_Z_button_I_click(
 //------------------------------------------------------------------------------
 void
 E_gui_xcb_Q_object_Z_entry_I_clear_data( P data
-){  struct E_gui_xcb_Q_object_Z_data_Z_entry *object_data = data;
+){  if( !data )
+        return;
+    struct E_gui_xcb_Q_object_Z_data_Z_entry *object_data = data;
     W( object_data->s );
 }
 I
@@ -451,7 +453,9 @@ E_gui_xcb_Q_object_Z_entry_I_draw(
 //------------------------------------------------------------------------------
 void
 E_gui_xcb_Q_object_Z_font_I_clear_data( P data
-){  struct E_gui_xcb_Q_object_Z_data_Z_font *object_data = data;
+){  if( !data )
+        return;
+    struct E_gui_xcb_Q_object_Z_data_Z_font *object_data = data;
     W( object_data->label );
 }
 I
@@ -582,7 +586,9 @@ E_gui_xcb_Q_object_Z_frame_I_draw(
 }
 void
 E_gui_xcb_Q_object_Z_select_I_clear_data( P data
-){  struct E_gui_xcb_Q_object_Z_data_Z_select *object_data = data;
+){  if( !data )
+        return;
+    struct E_gui_xcb_Q_object_Z_data_Z_select *object_data = data;
     W( object_data->select );
 }
 I
@@ -769,7 +775,9 @@ E_gui_xcb_Q_object_Z_button_font_M(
         return ~0;
     I font_id_ = E_gui_xcb_Q_object_Z_font_M( display, window, font_id, s );
     if( !~font_id_ )
+    {   E_gui_xcb_Q_object_W( window, button_id );
         return ~0;
+    }
     E_gui_xcb_Q_object_I_add( window, button_id, font_id_ );
     return button_id;
 }
@@ -784,7 +792,9 @@ E_gui_xcb_Q_object_Z_frame_entry_M(
         return ~0;
     I entry_id = E_gui_xcb_Q_object_Z_entry_M( display, window, font_id, s );
     if( !~entry_id )
+    {   E_gui_xcb_Q_object_W( window, frame_id );
         return ~0;
+    }
     E_gui_xcb_Q_object_I_add( window, frame_id, entry_id );
     return frame_id;
 }
@@ -799,10 +809,15 @@ E_gui_xcb_Q_object_Z_frame_select_M(
         return ~0;
     I select_id = E_gui_xcb_Q_object_Z_select_M( display, window );
     if( !~select_id )
+    {   E_gui_xcb_Q_object_W( window, frame_id );
         return ~0;
+    }
     I entry_id = E_gui_xcb_Q_object_Z_entry_M( display, window, font_id, s );
     if( !~entry_id )
+    {   E_gui_xcb_Q_object_W( window, select_id );
+        E_gui_xcb_Q_object_W( window, frame_id );
         return ~0;
+    }
     E_gui_xcb_Q_object_I_add( window, frame_id, select_id );
     E_gui_xcb_Q_object_I_add( window, frame_id, entry_id );
     return frame_id;
