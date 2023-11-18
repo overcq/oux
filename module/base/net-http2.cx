@@ -684,7 +684,7 @@ E_net_http2_Q_buffer_I_read_headers( Pc *buffer
             {   if( !E_mem_Q_blk_I_append( headers, 1 ))
                     return ~0;
                 (*headers_n)++;
-                (*headers)[ *headers_n - 1 ] = M(31);
+                (*headers)[ *headers_n - 1 ] = M( J_s0_R_l( "accept-encoding: gzip, deflate" ) + 1 );
                 if( !(*headers)[ *headers_n - 1 ] )
                 {   E_mem_Q_blk_I_remove( headers, --*headers_n, 1 );
                     return ~0;
@@ -739,28 +739,28 @@ E_net_http2_Q_buffer_I_read_headers( Pc *buffer
             {   if( v < E_net_http2_S_static_table_first_index )
                 {   switch(v)
                     { case 1:
-                            name = M(11);
+                            name = M( J_s0_R_l( ":authority" ) + 1 );
                             if( !name )
                                 return ~0;
                             E_text_Z_s_P_copy_s0_0( name, ":authority" );
                             break;
                       case 2:
                       case 3:
-                            name = M(8);
+                            name = M( J_s0_R_l( ":method" ) + 1 );
                             if( !name )
                                 return ~0;
                             E_text_Z_s_P_copy_s0_0( name, ":method" );
                             break;
                       case 4:
                       case 5:
-                            name = M(6);
+                            name = M( J_s0_R_l( ":path" ) + 1 );
                             if( !name )
                                 return ~0;
                             E_text_Z_s_P_copy_s0_0( name, ":path" );
                             break;
                       case 6:
                       case 7:
-                            name = M(8);
+                            name = M( J_s0_R_l( ":scheme" ) + 1 );
                             if( !name )
                                 return ~0;
                             E_text_Z_s_P_copy_s0_0( name, ":scheme" );
@@ -772,7 +772,7 @@ E_net_http2_Q_buffer_I_read_headers( Pc *buffer
                       case 12:
                       case 13:
                       case 14:
-                            name = M(8);
+                            name = M( J_s0_R_l( ":status" ) + 1 );
                             if( !name )
                                 return ~0;
                             E_text_Z_s_P_copy_s0_0( name, ":status" );
@@ -964,28 +964,28 @@ E_net_http2_Q_buffer_I_read_headers( Pc *buffer
                 if( v < E_net_http2_S_static_table_first_index )
                     switch(v)
                     { case 1:
-                            name = M(11);
+                            name = M( J_s0_R_l( ":authority" ) + 1 );
                             if( !name )
                                 return ~0;
                             E_text_Z_s_P_copy_s0_0( name, ":authority" );
                             break;
                       case 2:
                       case 3:
-                            name = M(8);
+                            name = M( J_s0_R_l( ":method" ) + 1 );
                             if( !name )
                                 return ~0;
                             E_text_Z_s_P_copy_s0_0( name, ":method" );
                             break;
                       case 4:
                       case 5:
-                            name = M(6);
+                            name = M( J_s0_R_l( ":path" ) + 1 );
                             if( !name )
                                 return ~0;
                             E_text_Z_s_P_copy_s0_0( name, ":path" );
                             break;
                       case 6:
                       case 7:
-                            name = M(8);
+                            name = M( J_s0_R_l( ":scheme" ) + 1 );
                             if( !name )
                                 return ~0;
                             E_text_Z_s_P_copy_s0_0( name, ":scheme" );
@@ -997,7 +997,7 @@ E_net_http2_Q_buffer_I_read_headers( Pc *buffer
                       case 12:
                       case 13:
                       case 14:
-                            name = M(8);
+                            name = M( J_s0_R_l( ":status" ) + 1 );
                             if( !name )
                                 return ~0;
                             E_text_Z_s_P_copy_s0_0( name, ":status" );
@@ -1467,7 +1467,7 @@ E_net_http2_I_request( N i
         return ~0;
     }
     N headers_n = 0;
-    headers[ headers_n ] = M( 12 + E_text_Z_s0_R_l( E_net_http2_S_connect[i].hostname ) + 1 );
+    headers[ headers_n ] = M( J_s0_R_l( ":authority: " ) + E_text_Z_s0_R_l( E_net_http2_S_connect[i].hostname ) + 1 );
     if( !headers[ headers_n ] )
     {   W( stream->headers );
         E_mem_Q_tab_I_remove( E_net_http2_S_connect[i].stream, stream_id );
@@ -1476,7 +1476,7 @@ E_net_http2_I_request( N i
     }
     E_text_Z_s_P_copy_s0_0( E_text_Z_s_P_copy_s0( headers[ headers_n ], ":authority: " ), E_net_http2_S_connect[i].hostname );
     headers_n++;
-    headers[ headers_n ] = M( 12 + 1 );
+    headers[ headers_n ] = M( J_s0_R_l( ":method: GET" ) + 1 );
     if( !headers[ headers_n ] )
     {   W( stream->headers );
         E_mem_Q_tab_I_remove( E_net_http2_S_connect[i].stream, stream_id );
@@ -1487,7 +1487,7 @@ E_net_http2_I_request( N i
     }
     E_text_Z_s_P_copy_s0_0( headers[ headers_n ], ":method: GET" );
     headers_n++;
-    headers[ headers_n ] = M( 14 + 1 );
+    headers[ headers_n ] = M( J_s0_R_l( ":scheme: https" ) + 1 );
     if( !headers[ headers_n ] )
     {   W( stream->headers );
         E_mem_Q_tab_I_remove( E_net_http2_S_connect[i].stream, stream_id );
@@ -1498,7 +1498,7 @@ E_net_http2_I_request( N i
     }
     E_text_Z_s_P_copy_s0_0( headers[ headers_n ], ":scheme: https" );
     headers_n++;
-    headers[ headers_n ] = M( 7 + E_text_Z_s0_R_l(path) + 1 );
+    headers[ headers_n ] = M( J_s0_R_l( ":path: " ) + E_text_Z_s0_R_l(path) + 1 );
     if( !headers[ headers_n ] )
     {   W( stream->headers );
         E_mem_Q_tab_I_remove( E_net_http2_S_connect[i].stream, stream_id );
@@ -1509,7 +1509,7 @@ E_net_http2_I_request( N i
     }
     E_text_Z_s_P_copy_s0_0( E_text_Z_s_P_copy_s0( headers[ headers_n ], ":path: " ), path );
     headers_n++;
-    headers[ headers_n ] = M( 12 + E_text_Z_s0_R_l( E_net_cli_S_client_name ) + 1 );
+    headers[ headers_n ] = M( J_s0_R_l( "user-agent: " ) + E_text_Z_s0_R_l( E_net_cli_S_client_name ) + 1 );
     if( !headers[ headers_n ] )
     {   W( stream->headers );
         E_mem_Q_tab_I_remove( E_net_http2_S_connect[i].stream, stream_id );
@@ -1520,7 +1520,7 @@ E_net_http2_I_request( N i
     }
     E_text_Z_s_P_copy_s0_0( E_text_Z_s_P_copy_s0( headers[ headers_n ], "user-agent: " ), E_net_cli_S_client_name );
     headers_n++;
-    headers[ headers_n ] = M( 21 + 1 );
+    headers[ headers_n ] = M( J_s0_R_l( "accept-encoding: gzip" ) + 1 );
     if( !headers[ headers_n ] )
     {   W( stream->headers );
         E_mem_Q_tab_I_remove( E_net_http2_S_connect[i].stream, stream_id );
