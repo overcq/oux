@@ -44,7 +44,7 @@ Developing software using this product requires developer experience. Good progr
 
 ## 6. Component materials
 
-This product uses external libraries (source code available through the operating system's package system):
+This product uses external libraries (source code available through the operating systemʼs package system):
 
 * “libc” and related libraries
 * “ncurses” unicode
@@ -92,7 +92,7 @@ To build the project, it is required to have the “man” documentation install
 The user should make regular updates, e.g. with a command `git pull && make`, then as “root”: `make install`. Then follow the appropriate update and installation instructions for the products that depend on the current one.
 Before using this commands can be executed as “root”: `make uninstall` and/or as the user: `make clean`, to remove any remaining intermediate files that depend on source files that have been removed in the new product version.
 
-To completely remove the product from the user's device, execute, for example, as “root”: `make uninstall`, then as the user: `rm -fr oux`.
+To completely remove the product from the userʼs device, execute, for example, as “root”: `make uninstall`, then as the user: `rm -fr oux`.
 
 # Other Licenses
 
