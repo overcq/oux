@@ -7,6 +7,8 @@
 #         generator bazy danych plików nagłówkowych ‟C”
 # ©overcq                on ‟Gentoo Linux 17.0” “x86_64”            2018‒11‒12 Q
 ################################################################################
+LANG=C
+#===============================================================================
 exc_man_re=''
 exc_func_re='for|main|sizeof|while'
 #===============================================================================
@@ -21,7 +23,7 @@ done \
         match( $0, "\\([23]([A-Za-z][0-9A-Za-z]*)?(/[0-9A-Za-z]*)?( *, *[23]([A-Za-z][0-9A-Za-z]*)?(/[0-9A-Za-z]*)?)*?\\)" )
         sects = substr( $0, RSTART, RLENGTH )
         match( sects, "^\\([23]([A-Za-z][0-9A-Za-z]*)?" )
-        sect = substr( sects, RSTART + 1, RLENGTH - 1 )
+        sect = substr( sects, RSTART + 1, 1 )
         match( $0, "^[A-Za-z_][0-9A-Za-z_]*( *, *[A-Za-z_][0-9A-Za-z_]*)*?" )
         split( substr( $0, RSTART, RLENGTH ), a, " *, *" )
         for ( i in a )
