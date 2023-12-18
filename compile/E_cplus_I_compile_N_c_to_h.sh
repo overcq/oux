@@ -21,8 +21,8 @@ perl -e '
     local $/ = "\n";
     while(<>)
     {   chomp;
-        @line = split;
-        $func = shift @line;
+        my @line = split;
+        my $func = shift @line;
         if( $src =~ /(?:^|[^0-9A-Za-z_])${func}\(/m )
         {   foreach ( @line )
             {   print "#include <$_>\n";
