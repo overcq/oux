@@ -12,8 +12,8 @@ cx_source="$2"
 #===============================================================================
 trap 'rm -f "$tmp_file"' EXIT
 tmp_file="$( mktemp )"
-perl -we '
-    use warnings;
+perl -e '
+    use v5.35;
     local $/;
     open my $src_file, "'"$cx_source"'";
     my $src = <$src_file>;

@@ -11,6 +11,7 @@ case "$1" in
 -f)
     echo enum
     perl -e '
+        use v5.35;
         sub enc
         {   my $file_identifier = shift;
             $file_identifier =~ s`_`_5f`g;
@@ -37,6 +38,7 @@ case "$1" in
             { print }
         ' <"$2" \
         | perl -ne '
+            use v5.35;
             local $\ = $/;
             chomp;
             /\bX_A\(\s*(\w+)\s*,\s*(\w+)\s*\)/ and print "$1,X_$2";
@@ -52,6 +54,7 @@ case "$1" in
             { print }
         ' <"$2" \
         | perl -ne '
+            use v5.35;
             local $\ = $/;
             chomp;
             /\bX_B\(\s*(\w+)\s*,\s*(\w+)\s*,/ and print "$1,X_$2";
@@ -71,6 +74,7 @@ case "$1" in
         echo 'enum'
         echo -n '{'
         perl -e '
+            use v5.35;
             local $\ = $/;
             $_ = <>;
             chomp;
@@ -94,6 +98,7 @@ case "$1" in
         { print }
     ' <"$2" \
     | perl -ne '
+        use v5.35;
         local $\ = $/;
         chomp;
         /\bX_B\(\s*(\w+)\s*,\s*(\w+)\s*,/ and print "$1,X_$2";
@@ -111,6 +116,7 @@ case "$1" in
                 { print }
             ' <"$3" \
             | perl -ne '
+                use v5.35;
                 local $\ = $/;
                 chomp;
                 /^[,{] _XhYi_uid\((\w+),(\w+)\)/ and print "$1,$2";
@@ -129,6 +135,7 @@ case "$1" in
         if [ -z "$3" -o -s "$tmp_file_1" ]; then
             echo 'enum'
             perl -e '
+                use v5.35;
                 binmode STDIN, ":bytes";
                 my $file_identifier = $ARGV[0];
                 if( $file_identifier =~ m`/module(?:/[^/]+){2}$` )
@@ -154,6 +161,7 @@ case "$1" in
     ;;
 -h2) # Type forward declarations.
     perl -e '
+        use v5.35;
         local $\ = $/;
         while(<>)
         {   chomp;
@@ -168,6 +176,7 @@ case "$1" in
     ;;
 -h3) # Type definitions. Variable and procedure forward declarations.
     perl -e '
+        use v5.35;
         my $inside_braces = 0;
         my $last_line;
         local $\ = $/;
@@ -231,6 +240,7 @@ case "$1" in
     ;;
 -c)
     perl -e '
+        use v5.35;
         my $inside_comment = 0;
         my $inside_braces = 0;
         my $inside_enum;
