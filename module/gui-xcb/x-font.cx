@@ -146,7 +146,8 @@ E_gui_xcb_Q_window_I_draw_Z_font_Z_s(
     U u;
     S16 x_ = x, y_ = y;
     while( *s )
-    {   u = ~0;
+    {
+Cont:   u = ~0;
         Pc s_ = E_text_Z_su_R_u( s, &u );
         if( !~u )
         {   GV( "bad UTF-8 character" );
@@ -167,7 +168,11 @@ E_gui_xcb_Q_window_I_draw_Z_font_Z_s(
         O{  if( font->bitmap[i].u == u )
             {   x_next += font->bitmap[i].width + font->bitmap[63].width / 2;
                 if( x_next - font->bitmap[63].width / 2 > x + width )
-                    return 1;
+                {   Pc s_ = E_text_Z_s0_R_search_c( s, '\n' );
+                    if( !*s_ )
+                        return 1;
+                    goto Cont;
+                }
                 break;
             }
             if( font->bitmap[i].u > u )
