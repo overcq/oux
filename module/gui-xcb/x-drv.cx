@@ -1927,8 +1927,10 @@ D( x_window, draw )
                         for_each( object_id, window->object, E_mem_Q_tab ) //NDFN zakładana kolejność od na spodzie do na wierzchu. nie wiadomo, czy “_q” jest konieczne.
                         {   display->current_object = object_id;
                             struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
-                            if( U_R( object->state, drag_src ))
-                                screen->draw_color = E_gui_xcb_Q_theme.current_brace;
+                            if( !U_R( object->state, drag_src ))
+                                screen->draw_color &= 0xffffff;
+                            else
+                                screen->draw_color = 0xff000000 | E_gui_xcb_Q_theme.current_brace;
                             object->draw( display, screen, window, object ); //NDFN nieprzerysowywanie wszystkich obiektów dla każdej klatki animacji.
                         }
                         xcb_put_image( display->x_display

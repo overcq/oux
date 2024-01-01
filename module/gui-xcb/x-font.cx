@@ -58,31 +58,33 @@ E_gui_xcb_Q_window_I_draw_Z_font_(
                         brightness = 1;
                         break;
                 }
-                N32 color_;
-                if( brightness == 1 )
-                    color_ = color;
-                else
-                {   N8 red = E_x_Z_color_R_red(color);
-                    N8 green = E_x_Z_color_R_green(color);
-                    N8 blue = E_x_Z_color_R_blue(color);
-                    N8 background_red = E_x_Z_color_R_red( E_gui_xcb_Q_theme.window_bg );
-                    N8 background_green = E_x_Z_color_R_green( E_gui_xcb_Q_theme.window_bg );
-                    N8 background_blue = E_x_Z_color_R_blue( E_gui_xcb_Q_theme.window_bg );
-                    if( red > background_red )
-                        red = background_red + ( red - background_red ) * brightness;
+                if( !( screen->draw_color & 0xff000000 ))
+                {   N32 color_;
+                    if( brightness == 1 )
+                        color_ = color;
                     else
-                        red = background_red - ( background_red - red ) * brightness;
-                    if( green > background_green )
-                        green = background_green + ( green - background_green ) * brightness;
-                    else
-                        green = background_green - ( background_green - green ) * brightness;
-                    if( blue > background_blue )
-                        blue = background_blue + ( blue - background_blue ) * brightness;
-                    else
-                        blue = background_blue - ( background_blue - blue ) * brightness;
-                    color_ = E_x_Z_color_M( red, green, blue );
+                    {   N8 red = E_x_Z_color_R_red(color);
+                        N8 green = E_x_Z_color_R_green(color);
+                        N8 blue = E_x_Z_color_R_blue(color);
+                        N8 background_red = E_x_Z_color_R_red( E_gui_xcb_Q_theme.window_bg );
+                        N8 background_green = E_x_Z_color_R_green( E_gui_xcb_Q_theme.window_bg );
+                        N8 background_blue = E_x_Z_color_R_blue( E_gui_xcb_Q_theme.window_bg );
+                        if( red > background_red )
+                            red = background_red + ( red - background_red ) * brightness;
+                        else
+                            red = background_red - ( background_red - red ) * brightness;
+                        if( green > background_green )
+                            green = background_green + ( green - background_green ) * brightness;
+                        else
+                            green = background_green - ( background_green - green ) * brightness;
+                        if( blue > background_blue )
+                            blue = background_blue + ( blue - background_blue ) * brightness;
+                        else
+                            blue = background_blue - ( background_blue - blue ) * brightness;
+                        color_ = E_x_Z_color_M( red, green, blue );
+                    }
+                    E_gui_xcb_Q_window_I_draw_P_color( display, screen, color_ );
                 }
-                E_gui_xcb_Q_window_I_draw_P_color( display, screen, color_ );
                 E_gui_xcb_Q_window_I_draw_Z_points( display, screen, window
                 , 1
                 , &( xcb_point_t ){ x_, y_ }
@@ -211,7 +213,7 @@ E_gui_xcb_Q_object_I_draw_Z_font(
 ){  return E_gui_xcb_Q_window_I_draw_Z_font( display, screen, window
     , object->x + x
     , object->y + y
-    , !U_R( object->state, drag_src ) ? color : E_gui_xcb_Q_theme.inactive_text
+    , color
     , font_id, u
     );
 }
@@ -231,7 +233,7 @@ E_gui_xcb_Q_object_I_draw_Z_font_Z_s(
     , object->y + y
     , object->width
     , object->height
-    , !U_R( object->state, drag_src ) ? color : E_gui_xcb_Q_theme.inactive_text
+    , color
     , font_id, s
     );
 }

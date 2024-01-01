@@ -80,8 +80,8 @@ E_gui_xcb_Q_window_I_draw_P_color(
   struct E_gui_xcb_Q_display_Z *display
 , struct E_gui_xcb_Q_screen_Z *screen
 , N32 color
-){  J_assert( !( color & ~0xffffff ));
-    screen->draw_color = color;
+){  if( !( screen->draw_color & 0xff000000 ))
+        screen->draw_color = color;
 }
 //------------------------------------------------------------------------------
 void
@@ -94,7 +94,7 @@ E_gui_xcb_Q_window_I_draw_Z_points(
 ){  J_assert(n);
     for_n( i, n )
         if( points[i].x < window->width && points[i].y < window->height )
-        {   window->drawable[ points[i].y * window->width + points[i].x ] = screen->draw_color;
+        {   window->drawable[ points[i].y * window->width + points[i].x ] = screen->draw_color & 0xffffff;
             if( !U_R( screen->state, draw_object_drag_move ))
                 window->object_mask[ points[i].y * window->width + points[i].x ] = display->current_object;
             //else
@@ -120,59 +120,54 @@ E_gui_xcb_Q_window_I_draw_aa_Z_points(
 , F brightness
 ){  J_assert(n);
     J_assert( brightness >= 0 && brightness <= 1 );
-    N32 *Mt_( colors, n );
-    if( !colors )
-        return ~0;
     for_n( i, n )
-    {   N p[8];
-        p[0] = points[i].x + 1 < window->width ? E_gui_xcb_Q_image_R_pixel( window, window->drawable, points[i].x + 1, points[i].y ) : screen->draw_color;
-        p[1] = points[i].x + 1 < window->width && points[i].y + 1 < window->height ? E_gui_xcb_Q_image_R_pixel( window, window->drawable, points[i].x + 1, points[i].y + 1 ) : screen->draw_color;
-        p[2] = points[i].y + 1 < window->height ? E_gui_xcb_Q_image_R_pixel( window, window->drawable, points[i].x, points[i].y + 1 ) : screen->draw_color;
-        p[3] = points[i].x > 0 && points[i].y + 1 < window->height ? E_gui_xcb_Q_image_R_pixel( window, window->drawable, points[i].x - 1, points[i].y + 1 ) : screen->draw_color;
-        p[4] = points[i].x > 0 ? E_gui_xcb_Q_image_R_pixel( window, window->drawable, points[i].x - 1, points[i].y ) : screen->draw_color;
-        p[5] = points[i].x > 0 && points[i].y > 0 ? E_gui_xcb_Q_image_R_pixel( window, window->drawable, points[i].x - 1, points[i].y - 1 ) : screen->draw_color;
-        p[6] = points[i].y > 0 ? E_gui_xcb_Q_image_R_pixel( window, window->drawable, points[i].x, points[i].y - 1 ) : screen->draw_color;
-        p[7] = points[i].x + 1 < window->width && points[i].y > 0 ? E_gui_xcb_Q_image_R_pixel( window, window->drawable, points[i].x + 1, points[i].y - 1 ) : screen->draw_color;
-        N n_ = 0;
-        N background_red = 0, background_green = 0, background_blue = 0;
-        for_n( j, 8 )
-            if( p[j] != screen->draw_color )
-            {   background_red += E_x_Z_color_R_red( p[j] );
-                background_green += E_x_Z_color_R_green( p[j] );
-                background_blue += E_x_Z_color_R_blue( p[j] );
-                n_++;
+    {   if( !( screen->draw_color & 0xff000000 ))
+        {   N p[8];
+            p[0] = points[i].x + 1 < window->width ? E_gui_xcb_Q_image_R_pixel( window, window->drawable, points[i].x + 1, points[i].y ) : screen->draw_color;
+            p[1] = points[i].x + 1 < window->width && points[i].y + 1 < window->height ? E_gui_xcb_Q_image_R_pixel( window, window->drawable, points[i].x + 1, points[i].y + 1 ) : screen->draw_color;
+            p[2] = points[i].y + 1 < window->height ? E_gui_xcb_Q_image_R_pixel( window, window->drawable, points[i].x, points[i].y + 1 ) : screen->draw_color;
+            p[3] = points[i].x > 0 && points[i].y + 1 < window->height ? E_gui_xcb_Q_image_R_pixel( window, window->drawable, points[i].x - 1, points[i].y + 1 ) : screen->draw_color;
+            p[4] = points[i].x > 0 ? E_gui_xcb_Q_image_R_pixel( window, window->drawable, points[i].x - 1, points[i].y ) : screen->draw_color;
+            p[5] = points[i].x > 0 && points[i].y > 0 ? E_gui_xcb_Q_image_R_pixel( window, window->drawable, points[i].x - 1, points[i].y - 1 ) : screen->draw_color;
+            p[6] = points[i].y > 0 ? E_gui_xcb_Q_image_R_pixel( window, window->drawable, points[i].x, points[i].y - 1 ) : screen->draw_color;
+            p[7] = points[i].x + 1 < window->width && points[i].y > 0 ? E_gui_xcb_Q_image_R_pixel( window, window->drawable, points[i].x + 1, points[i].y - 1 ) : screen->draw_color;
+            N n_ = 0;
+            N background_red = 0, background_green = 0, background_blue = 0;
+            for_n( j, 8 )
+                if( p[j] != screen->draw_color )
+                {   background_red += E_x_Z_color_R_red( p[j] );
+                    background_green += E_x_Z_color_R_green( p[j] );
+                    background_blue += E_x_Z_color_R_blue( p[j] );
+                    n_++;
+                }
+            if( n_ )
+            {   background_red /= n_;
+                background_green /= n_;
+                background_blue /= n_;
+            }else
+            {   background_red = E_x_Z_color_R_red( E_gui_xcb_Q_theme.window_bg );
+                background_green = E_x_Z_color_R_green( E_gui_xcb_Q_theme.window_bg );
+                background_blue = E_x_Z_color_R_blue( E_gui_xcb_Q_theme.window_bg );
             }
-        if( n_ )
-        {   background_red /= n_;
-            background_green /= n_;
-            background_blue /= n_;
-        }else
-        {   background_red = E_x_Z_color_R_red( E_gui_xcb_Q_theme.window_bg );
-            background_green = E_x_Z_color_R_green( E_gui_xcb_Q_theme.window_bg );
-            background_blue = E_x_Z_color_R_blue( E_gui_xcb_Q_theme.window_bg );
+            N red = E_x_Z_color_R_red( screen->draw_color );
+            N green = E_x_Z_color_R_green( screen->draw_color );
+            N blue = E_x_Z_color_R_blue( screen->draw_color );
+            if( red > background_red )
+                red = background_red + ( red - background_red ) * brightness;
+            else
+                red = background_red - ( background_red - red ) * brightness;
+            if( green > background_green )
+                green = background_green + ( green - background_green ) * brightness;
+            else
+                green = background_green - ( background_green - green ) * brightness;
+            if( blue > background_blue )
+                blue = background_blue + ( blue - background_blue ) * brightness;
+            else
+                blue = background_blue - ( background_blue - blue ) * brightness;
+            E_gui_xcb_Q_window_I_draw_P_color( display, screen, E_x_Z_color_M( red, green, blue ));
         }
-        N red = E_x_Z_color_R_red( screen->draw_color );
-        N green = E_x_Z_color_R_green( screen->draw_color );
-        N blue = E_x_Z_color_R_blue( screen->draw_color );
-        if( red > background_red )
-            red = background_red + ( red - background_red ) * brightness;
-        else
-            red = background_red - ( background_red - red ) * brightness;
-        if( green > background_green )
-            green = background_green + ( green - background_green ) * brightness;
-        else
-            green = background_green - ( background_green - green ) * brightness;
-        if( blue > background_blue )
-            blue = background_blue + ( blue - background_blue ) * brightness;
-        else
-            blue = background_blue - ( background_blue - blue ) * brightness;
-        colors[i] = E_x_Z_color_M( red, green, blue );
-    }
-    for_n_( i, n )
-    {   E_gui_xcb_Q_window_I_draw_P_color( display, screen, colors[i] );
         E_gui_xcb_Q_window_I_draw_Z_points( display, screen, window, 1, &points[i] );
     }
-    W(colors);
     return 0;
 }
 //------------------------------------------------------------------------------
