@@ -57,6 +57,7 @@ This product has been built using unix-like tools, in particular:
 * “awk”
 * “clang” or “gcc”
 * “grep”
+* “install”
 * “libtool”
 * GNU “make”
 * “man”
