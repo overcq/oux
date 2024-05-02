@@ -306,9 +306,6 @@ E_base_M(
     V0_( fcntl( STDERR_FILENO, F_SETFL, fd_flags ));
     // Procedury wymagane lub zalecane w środowisku uruchamiania programu.
     Vp_( setlocale( LC_ALL, "" ));
-        #ifdef C_pthreads
-    Vr_( pthread_setconcurrency(1) );
-        #endif
     // Odblokowanie dostępu do tablicy ‹zadań›.
     E_base_S->E_flow_Q_task_S = E_mem_Q_tab_M( sizeof( struct E_flow_Q_task_Z ), 1 );
     if( !E_base_S->E_flow_Q_task_S )
@@ -324,6 +321,8 @@ E_base_M(
     };
         #ifdef E_flow_C_thread_system_unblock_reports
     task->thread = pthread_self();
+    U_L( task->type, system_unblock_report );
+    U_L( task->type, async );
     E_base_S->switch_back_try = yes;
     E_base_S->switch_back_suspend = no;
         #endif
@@ -338,8 +337,7 @@ E_base_M(
     _sigaction_M( SIGTTIN, &sa );
     _sigaction_M( SIGTTOU, &sa );
     V0_( sigemptyset( &E_base_S->E_flow_Z_sigset_S_empty ));
-    sigset_t sigset;
-    sigset = E_base_S->E_flow_Z_sigset_S_empty;
+    sigset_t sigset = E_base_S->E_flow_Z_sigset_S_empty;
     V0_( sigaddset( &sigset, SIGHUP ));
     V0_( sigaddset( &sigset, SIGINT ));
     V0_( sigaddset( &sigset, SIGQUIT ));

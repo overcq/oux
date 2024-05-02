@@ -53,19 +53,28 @@ struct E_flow_Q_task_Z
     #ifdef E_flow_C_thread_system_unblock_reports
   pthread_mutex_t *thread_flow_mutex;
   volatile B *thread_switch_back;
-  P thread_proc_arg;
   void ( *thread_unblock_proc )(P);
   pthread_t thread;
-    #endif
+  P task_proc_arg;
+      #endif
   enum E_flow_Z_run_state run_state;
     #ifdef E_flow_C_thread_system_unblock_reports
   unsigned U_R( type, system_unblock_report )   :1;
     #endif
+    #ifdef C_pthreads
+  unsigned U_R( type, async )                   :1;
+    #endif
 };
-    #ifdef E_flow_C_thread_system_unblock_reports
-struct E_flow_Q_task_in_thread_I_thread_proc_Z_args
+    #if defined( E_flow_C_thread_system_unblock_reports ) || defined( C_pthreads )
+struct E_flow_Q_task_async_Z_proc_args
+{ P p;
+  pthread_mutex_t *thread_flow_mutex;
+  B *thread_switch_back;
+};
+struct E_flow_Q_task_async_I_thread_proc_Z_args
 { stack_t alt_stack;
-  void (*proc)(P);
+  void (* task_proc )(P);
+  struct E_flow_Q_task_async_Z_proc_args task_proc_arg;
 };
     #endif
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -109,7 +118,9 @@ E_flow_Q_task_I_granulation( void
     for_each_out( 0, task_id_, E_base_S->E_flow_Q_task_S, E_mem_Q_tab )
     {   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id_ );
             #ifdef E_flow_C_thread_system_unblock_reports
-        if( U_R( task->type, system_unblock_report ))
+        if( U_R( task->type, system_unblock_report )
+        || U_R( task->type, async )
+        )
         {
                 #if defined( __gnu_linux__ )
             N ss_size = 2 * E_base_S->E_mem_S_page_size; //CONF
@@ -158,7 +169,7 @@ I
 E_flow_Q_task_M( I *uid
 , void (*task_proc)(P)
     #ifdef E_flow_C_thread_system_unblock_reports
-, P thread_proc_arg
+, P task_proc_arg
 , B task_in_thread_kind
     #endif
     #ifdef C_line_report
@@ -171,9 +182,15 @@ E_flow_Q_task_M( I *uid
     granulation_u /= E_mem_Q_tab_R_n( E_base_S->E_flow_Q_task_S );
     granulation_u = E_simple_Z_n_I_align_down_to_v2( granulation_u, E_base_S->E_mem_S_page_size );
         #ifdef E_flow_C_thread_system_unblock_reports
-    struct E_flow_Q_task_in_thread_I_thread_proc_Z_args task_proc_args;
+    struct E_flow_Q_task_async_I_thread_proc_Z_args *task_proc_args;
     if( task_in_thread_kind )
-    {   task_proc_args = ( struct E_flow_Q_task_in_thread_I_thread_proc_Z_args )
+    {   M_( task_proc_args );
+        if( !task_proc_args )
+        {   if( task_proc_arg )
+                W( task_proc_arg );
+            return ~0;
+        }
+        *task_proc_args = ( struct E_flow_Q_task_async_I_thread_proc_Z_args )
         { .alt_stack = ( stack_t )
           { .ss_flags = 0
               #if defined( __gnu_linux__ ) || defined( __FreeBSD__ )
@@ -184,22 +201,22 @@ E_flow_Q_task_M( I *uid
 #error not implemented
               #endif
           }
-        , .proc = task_proc
+        , .task_proc = task_proc
         };
-        if( granulation_u < task_proc_args.alt_stack.ss_size )
-        {   if( thread_proc_arg )
-                W( thread_proc_arg );
+        if( granulation_u < task_proc_args->alt_stack.ss_size )
+        {   if( task_proc_arg )
+                W( task_proc_arg );
             GV_(NA); // Late instrumentation error: granulation unit too small because too many tasks in available memory.
             return ~0;
         }
-        granulation_u -= task_proc_args.alt_stack.ss_size;
+        granulation_u -= task_proc_args->alt_stack.ss_size;
     }
     N pthread_stack_min = E_simple_Z_n_I_align_up_to_v2( PTHREAD_STACK_MIN, E_base_S->E_mem_S_page_size );
     if( task_in_thread_kind
     && granulation_u < pthread_stack_min
     )
-    {   if( thread_proc_arg )
-            W( thread_proc_arg );
+    {   if( task_proc_arg )
+            W( task_proc_arg );
         GV_(NA); // Late instrumentation error: granulation unit too small because too many tasks in available memory.
         return ~0;
     }
@@ -207,8 +224,8 @@ E_flow_Q_task_M( I *uid
     if( granulation_u < E_base_S->E_mem_S_page_size )
     {
             #ifdef E_flow_C_thread_system_unblock_reports
-        if( thread_proc_arg )
-            W( thread_proc_arg );
+        if( task_proc_arg )
+            W( task_proc_arg );
             #endif
         GV_(NA); // Late instrumentation error: granulation unit too small because too many tasks in available memory.
         return ~0;
@@ -258,8 +275,8 @@ E_flow_Q_task_M( I *uid
         #endif
     {
             #ifdef E_flow_C_thread_system_unblock_reports
-        if( thread_proc_arg )
-            W( thread_proc_arg );
+        if( task_proc_arg )
+            W( task_proc_arg );
             #endif
         return ~0;
     }
@@ -285,8 +302,8 @@ E_flow_Q_task_M( I *uid
         #endif
     {   V0_( munmap( stack, stack_size ));
             #ifdef E_flow_C_thread_system_unblock_reports
-        if( thread_proc_arg )
-            W( thread_proc_arg );
+        if( task_proc_arg )
+            W( task_proc_arg );
             #endif
         return ~0;
     }
@@ -300,18 +317,20 @@ E_flow_Q_task_M( I *uid
     E_mem_Q_tab_I_segv_add_end( E_base_S->E_flow_Q_task_S, task_id, task );
     task->run_state = E_flow_Z_run_state_S_starting_by_task;
     task->stack_size = stack_size;
+        #ifdef C_pthreads
+    U_L( task->type, async );
+        #endif
         #ifdef E_flow_C_thread_system_unblock_reports
     U_R( task->type, system_unblock_report ) = task_in_thread_kind;
     if( task_in_thread_kind )
-    {   task->thread_proc_arg = thread_proc_arg;
-        pthread_mutex_t *thread_flow_mutex = E_mem_Q_blk_M_align( sizeof( *thread_flow_mutex ), sizeof(N32) );
+    {   pthread_mutex_t *thread_flow_mutex = E_mem_Q_blk_M_align( sizeof( *thread_flow_mutex ), sizeof(N32) );
         if( !thread_flow_mutex )
         {   _tasks_table_begin;
             E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
             _tasks_table_end;
             V0_( munmap( stack, stack_size ));
-            if( thread_proc_arg )
-                W( thread_proc_arg );
+            if( task_proc_arg )
+                W( task_proc_arg );
             return ~0;
         }
         Vr( pthread_mutex_init( thread_flow_mutex, 0 ))
@@ -320,8 +339,8 @@ E_flow_Q_task_M( I *uid
             E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
             _tasks_table_end;
             V0_( munmap( stack, stack_size ));
-            if( thread_proc_arg )
-                W( thread_proc_arg );
+            if( task_proc_arg )
+                W( task_proc_arg );
             return ~0;
         }
         volatile B *M_( thread_switch_back );
@@ -332,17 +351,18 @@ E_flow_Q_task_M( I *uid
             E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
             _tasks_table_end;
             V0_( munmap( stack, stack_size ));
-            if( thread_proc_arg )
-                W( thread_proc_arg );
+            if( task_proc_arg )
+                W( task_proc_arg );
             return ~0;
         }
-        task->thread_flow_mutex = thread_flow_mutex;
-        task->thread_switch_back = thread_switch_back;
+        task->thread_flow_mutex = task_proc_args->task_proc_arg.thread_flow_mutex = thread_flow_mutex;
+        task->thread_switch_back = task_proc_args->task_proc_arg.thread_switch_back = thread_switch_back;
+        task->task_proc_arg = task_proc_args->task_proc_arg.p = task_proc_arg;
         *thread_switch_back = no;
-        task_proc_args.alt_stack.ss_size += E_base_S->E_mem_S_page_size;
+        task_proc_args->alt_stack.ss_size += E_base_S->E_mem_S_page_size;
             #if defined( __gnu_linux__ )
-        V1p( task_proc_args.alt_stack.ss_sp = mmap( 0
-        , task_proc_args.alt_stack.ss_size
+        V1p( task_proc_args->alt_stack.ss_sp = mmap( 0
+        , task_proc_args->alt_stack.ss_size
         , PROT_READ | PROT_WRITE
         , MAP_PRIVATE
         | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_UNINITIALIZED
@@ -350,8 +370,8 @@ E_flow_Q_task_M( I *uid
         , 0
         ))
             #elif defined( __FreeBSD__ ) || defined( __OpenBSD__ )
-        V1p( task_proc_args.alt_stack.ss_sp = mmap( 0
-        , task_proc_args.alt_stack.ss_size
+        V1p( task_proc_args->alt_stack.ss_sp = mmap( 0
+        , task_proc_args->alt_stack.ss_size
         , PROT_READ | PROT_WRITE
         , MAP_PRIVATE
         | MAP_ANON | MAP_STACK
@@ -368,15 +388,15 @@ E_flow_Q_task_M( I *uid
             E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
             _tasks_table_end;
             V0_( munmap( stack, stack_size ));
-            if( thread_proc_arg )
-                W( thread_proc_arg );
+            if( task_proc_arg )
+                W( task_proc_arg );
             return ~0;
         }
-        V0( mprotect( task_proc_args.alt_stack.ss_sp
+        V0( mprotect( task_proc_args->alt_stack.ss_sp
         , E_base_S->E_mem_S_page_size
         , PROT_NONE
         ))
-        {   V0_( munmap( task_proc_args.alt_stack.ss_sp, task_proc_args.alt_stack.ss_size ));
+        {   V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
             W( thread_switch_back );
             Vr_( pthread_mutex_destroy( thread_flow_mutex ));
             W( thread_flow_mutex );
@@ -384,13 +404,13 @@ E_flow_Q_task_M( I *uid
             E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
             _tasks_table_end;
             V0_( munmap( stack, stack_size ));
-            if( thread_proc_arg )
-                W( thread_proc_arg );
+            if( task_proc_arg )
+                W( task_proc_arg );
             return ~0;
         }
         pthread_attr_t thread_attr;
         Vr( pthread_attr_init( &thread_attr ))
-        {   V0_( munmap( task_proc_args.alt_stack.ss_sp, task_proc_args.alt_stack.ss_size ));
+        {   V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
             W( thread_switch_back );
             Vr_( pthread_mutex_destroy( thread_flow_mutex ));
             W( thread_flow_mutex );
@@ -398,13 +418,13 @@ E_flow_Q_task_M( I *uid
             E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
             _tasks_table_end;
             V0_( munmap( stack, stack_size ));
-            if( thread_proc_arg )
-                W( thread_proc_arg );
+            if( task_proc_arg )
+                W( task_proc_arg );
             return ~0;
         }
         Vr( pthread_attr_setstack( &thread_attr, touched_stack, touched_size ))
         {   Vr_( pthread_attr_destroy( &thread_attr ));
-            V0_( munmap( task_proc_args.alt_stack.ss_sp, task_proc_args.alt_stack.ss_size ));
+            V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
             W( thread_switch_back );
             Vr_( pthread_mutex_destroy( thread_flow_mutex ));
             W( thread_flow_mutex );
@@ -412,13 +432,13 @@ E_flow_Q_task_M( I *uid
             E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
             _tasks_table_end;
             V0_( munmap( stack, stack_size ));
-            if( thread_proc_arg )
-                W( thread_proc_arg );
+            if( task_proc_arg )
+                W( task_proc_arg );
             return ~0;
         }
         Vr( pthread_sigmask( SIG_SETMASK, &E_base_S->E_flow_Z_sigset_S_process_exec, 0 ))
         {   Vr_( pthread_attr_destroy( &thread_attr ));
-            V0_( munmap( task_proc_args.alt_stack.ss_sp, task_proc_args.alt_stack.ss_size ));
+            V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
             W( thread_switch_back );
             Vr_( pthread_mutex_destroy( thread_flow_mutex ));
             W( thread_flow_mutex );
@@ -426,17 +446,17 @@ E_flow_Q_task_M( I *uid
             E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
             _tasks_table_end;
             V0_( munmap( stack, stack_size ));
-            if( thread_proc_arg )
-                W( thread_proc_arg );
+            if( task_proc_arg )
+                W( task_proc_arg );
             return ~0;
         }
         I task_id_ = E_base_S->E_flow_Q_task_S_current;
         E_base_S->E_flow_Q_task_S_current = task_id;
-        Vr( pthread_create( &task->thread, &thread_attr, E_flow_Q_task_in_thread_I_thread_proc, &task_proc_args ))
+        Vr( pthread_create( &task->thread, &thread_attr, E_flow_Q_task_in_thread_I_thread_proc, task_proc_args ))
         {   E_base_S->E_flow_Q_task_S_current = task_id_;
             Vr_( pthread_sigmask( SIG_SETMASK, &E_base_S->E_flow_Z_sigset_S_empty, 0 ));
             Vr_( pthread_attr_destroy( &thread_attr ));
-            V0_( munmap( task_proc_args.alt_stack.ss_sp, task_proc_args.alt_stack.ss_size ));
+            V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
             W( thread_switch_back );
             Vr_( pthread_mutex_destroy( thread_flow_mutex ));
             W( thread_flow_mutex );
@@ -444,8 +464,8 @@ E_flow_Q_task_M( I *uid
             E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
             _tasks_table_end;
             V0_( munmap( stack, stack_size ));
-            if( thread_proc_arg )
-                W( thread_proc_arg );
+            if( task_proc_arg )
+                W( task_proc_arg );
             return ~0;
         }
         Vr_( pthread_sigmask( SIG_SETMASK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ));
@@ -489,7 +509,7 @@ E_flow_Q_task_M( I *uid
             Vr_( pthread_mutex_unlock( thread_flow_mutex ));
             Vr_( pthread_join( task->thread, 0 ));
             E_base_S->E_flow_Q_task_S_current = task_id_;
-            V0_( munmap( task_proc_args.alt_stack.ss_sp, task_proc_args.alt_stack.ss_size ));
+            V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
             W( thread_switch_back );
             Vr_( pthread_mutex_destroy( thread_flow_mutex ));
             W( thread_flow_mutex );
@@ -497,8 +517,8 @@ E_flow_Q_task_M( I *uid
             E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
             _tasks_table_end;
             V0_( munmap( stack, stack_size ));
-            if( thread_proc_arg )
-                W( thread_proc_arg );
+            if( task_proc_arg )
+                W( task_proc_arg );
             return ~0;
         }
         *thread_switch_back = no;
@@ -512,8 +532,8 @@ E_flow_Q_task_M( I *uid
     task->thread = pthread_self();
         #endif
     P *p = ( P * )exe_stack - 1;
-        #if defined( __i386__ )
-    p--;
+        #ifdef __i386__
+    p--; // Przesunięcie o argument “task_proc” odłożony na stosie.
         #endif
     *p = (P)&E_flow_Q_task_I_stop;
     E_flow_Q_task_I_switch( task_id );
@@ -526,7 +546,6 @@ E_flow_Q_task_M( I *uid
         "\n" "mov   %0,%%rsp"
             #endif
         "\n" "jmp   *%1"
-        //NKN Pozostaje zagwarantowanie, że procedura ‹zadania› nie będzie nigdy oczekiwać (ze względu na ‘abi’) niczego tutaj nie zapewnianego przez ‘callera’ (m.in. rezerwacji obszaru na stosie, gdy argumentów i tak nie ma przekazywanych).
         :
         : "r" (p), "r" ( task_proc )
         #else
@@ -544,13 +563,13 @@ I
 E_flow_Q_task_M_thread( I *uid
 , I subid
 , void (*task_proc)(P)
-, P thread_proc_arg
-    #ifdef C_line_report
+, P task_proc_arg
+        #ifdef C_line_report
 , Pc task_proc_name
-    #endif
+        #endif
 ){  I uid_start = *uid;
     I id;
-    if( !~( id = E_flow_Q_task_M( uid, task_proc, thread_proc_arg, yes
+    if( !~( id = E_flow_Q_task_M( uid, task_proc, task_proc_arg, yes
         #ifdef C_line_report
     , task_proc_name
         #endif
@@ -578,27 +597,24 @@ _internal
 P
 E_flow_Q_task_in_thread_I_thread_proc( P args_
 ){  Dh_();
-    struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+    struct E_flow_Q_task_async_I_thread_proc_Z_args *args = args_;
     Vr( pthread_sigmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, 0 ))
-    {   *task->thread_switch_back = yes;
+    {   *args->task_proc_arg.thread_switch_back = yes;
         return 0;
     }
-    Vr( pthread_mutex_lock( task->thread_flow_mutex ))
-    {   *task->thread_switch_back = yes;
+    Vr( pthread_mutex_lock( args->task_proc_arg.thread_flow_mutex ))
+    {   *args->task_proc_arg.thread_switch_back = yes;
         return 0;
     }
-    struct E_flow_Q_task_in_thread_I_thread_proc_Z_args *args = args_;
     V0( sigaltstack( &args->alt_stack, 0 ))
-    {   *task->thread_switch_back = yes;
-        Vr_( pthread_mutex_unlock( task->thread_flow_mutex ));
+    {   *args->task_proc_arg.thread_switch_back = yes;
+        Vr_( pthread_mutex_unlock( args->task_proc_arg.thread_flow_mutex ));
         return 0;
     }
-    args->proc( task->thread_proc_arg );
-    task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
-    Vr_( pthread_mutex_unlock( task->thread_flow_mutex ));
-    stack_t alt_stack;
-    V0_( sigaltstack( 0, &alt_stack ));
-    V0_( munmap( alt_stack.ss_sp, alt_stack.ss_size ));
+    args->task_proc( &args->task_proc_arg );
+    Vr_( pthread_mutex_unlock( args->task_proc_arg.thread_flow_mutex ));
+    V0_( sigaltstack( 0, 0 ));
+    V0_( munmap( args->alt_stack.ss_sp, args->alt_stack.ss_size ));
     return 0;
 }
     #endif
@@ -637,7 +653,7 @@ E_flow_Q_task_W( I *uid
         #ifdef E_flow_C_thread_system_unblock_reports
     if( U_R( task->type, system_unblock_report ))
     {   if( *task->thread_switch_back )
-            task->thread_unblock_proc( task->thread_proc_arg );
+            task->thread_unblock_proc( task->task_proc_arg );
         E_base_S->switch_back_try = no;
         pthread_t thread = task->thread;
         E_base_S->E_flow_Q_task_S_current = id;
@@ -650,8 +666,8 @@ E_flow_Q_task_W( I *uid
         Vr_( pthread_mutex_destroy( task->thread_flow_mutex ));
         W( task->thread_flow_mutex );
         W( task->thread_switch_back );
-        if( task->thread_proc_arg )
-            W( task->thread_proc_arg );
+        if( task->task_proc_arg )
+            W( task->task_proc_arg );
     }else
         #endif
     {   E_flow_Q_task_I_switch(id); // Przełącz tylko po to, by ‹zadanie› zwalniane zwolniło zasoby; również stosowo, hierarchicznie z powrotem przełączając przy zwalnianiu ‹zadań› przez siebie uruchomionych.
@@ -716,6 +732,301 @@ E_flow_Q_task_I_touch_stack( void
         *sp = 0;
     }
 }
+//------------------------------------------------------------------------------
+    #ifdef C_pthreads
+I
+E_flow_Q_task_async_M( I *uid
+, void (*task_proc)(P)
+        #ifdef C_line_report
+, Pc task_proc_name
+        #endif
+){  N granulation_u = E_simple_T_multiply_overflow( E_base_S->E_flow_Z_task_stacks_S_n_pages, E_base_S->E_mem_S_page_size )
+    || E_base_S->E_flow_Z_task_stacks_S_n_pages * E_base_S->E_mem_S_page_size > E_simple_Z_n_I_mod_i2( ~0, sizeof(N) * 8 - 3 ) + 1
+    ? E_simple_Z_n_I_mod_i2( ~0, sizeof(N) * 8 - 3 ) + 1 //CONF
+    : E_base_S->E_flow_Z_task_stacks_S_n_pages * E_base_S->E_mem_S_page_size;
+    granulation_u /= E_mem_Q_tab_R_n( E_base_S->E_flow_Q_task_S );
+    granulation_u = E_simple_Z_n_I_align_down_to_v2( granulation_u, E_base_S->E_mem_S_page_size );
+    struct E_flow_Q_task_async_I_thread_proc_Z_args *M_( task_proc_args );
+    if( !task_proc_args )
+        return ~0;
+    *task_proc_args = ( struct E_flow_Q_task_async_I_thread_proc_Z_args )
+    { .alt_stack = ( stack_t )
+      { .ss_flags = 0
+          #if defined( __gnu_linux__ ) || defined( __FreeBSD__ )
+      , .ss_size = 2 * E_base_S->E_mem_S_page_size //CONF
+          #elif  defined( __OpenBSD__ )
+      , .ss_size = 3 * E_base_S->E_mem_S_page_size //CONF
+          #else
+#error not implemented
+          #endif
+      }
+    , .task_proc = task_proc
+    };
+    if( granulation_u < task_proc_args->alt_stack.ss_size )
+    {   GV_(NA); // Late instrumentation error: granulation unit too small because too many tasks in available memory.
+        return ~0;
+    }
+    granulation_u -= task_proc_args->alt_stack.ss_size;
+    N pthread_stack_min = E_simple_Z_n_I_align_up_to_v2( PTHREAD_STACK_MIN, E_base_S->E_mem_S_page_size );
+    if( granulation_u < pthread_stack_min )
+    {   GV_(NA); // Late instrumentation error: granulation unit too small because too many tasks in available memory.
+        return ~0;
+    }
+    if( granulation_u < E_base_S->E_mem_S_page_size )
+    {   GV_(NA); // Late instrumentation error: granulation unit too small because too many tasks in available memory.
+        return ~0;
+    }
+    for_each_out( 0, task_id_, E_base_S->E_flow_Q_task_S, E_mem_Q_tab )
+    {   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id_ );
+        if( task->stack_size > granulation_u )
+            if( task->stack + task->stack_size - granulation_u <= task->touched_stack )
+            {   N subtract = task->stack_size - granulation_u - E_base_S->E_mem_S_page_size;
+                if(subtract)
+                {   V0_( munmap( task->stack, subtract ));
+                    task->stack += subtract;
+                    task->stack_size -= subtract;
+                }
+            }else
+            {   GV_(NDFN); // Late instrumentation error: task stack larger than granulation unit.
+                N subtract = task->touched_stack - E_base_S->E_mem_S_page_size - task->stack;
+                if(subtract)
+                {   V0_( munmap( task->stack, subtract ));
+                    task->stack += subtract;
+                    task->stack_size -= subtract;
+                }
+            }
+    }
+    N stack_size = E_base_S->E_mem_S_page_size + granulation_u; // Jedna strona pamięci “PROT_NONE” na początku stosu.
+    Pc stack;
+        #if defined( __gnu_linux__ )
+    V1p( stack = mmap( 0
+    , stack_size
+    , PROT_NONE
+    , MAP_PRIVATE
+    | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_UNINITIALIZED
+    , -1
+    , 0
+    ))
+        #elif defined( __FreeBSD__ ) || defined( __OpenBSD__ )
+    V1p( stack = mmap( 0
+    , stack_size
+    , PROT_READ | PROT_WRITE
+    , MAP_PRIVATE
+    | MAP_ANON | MAP_STACK
+    , -1
+    , 0
+    ))
+        #else
+#error not implemented
+        #endif
+        return ~0;
+    Pc exe_stack = stack + stack_size;
+    Pc touched_stack = exe_stack - pthread_stack_min;
+        #if defined( __gnu_linux__ )
+    V0( mprotect( touched_stack
+    , pthread_stack_min
+    , PROT_READ | PROT_WRITE
+    ))
+        #elif defined( __FreeBSD__ ) || defined( __OpenBSD__ )
+    V0( mprotect( stack
+    , stack_size - pthread_stack_min
+    , PROT_NONE
+    ))
+        #else
+#error not implemented
+        #endif
+    {   V0_( munmap( stack, stack_size ));
+        return ~0;
+    }
+    struct E_flow_Q_task_Z *task;
+    I task_id = E_mem_Q_tab_I_segv_add_begin( E_base_S->E_flow_Q_task_S, &task );
+    task->stack = stack;
+    task->touched_stack = touched_stack;
+        #ifdef C_line_report
+    task->proc_name = task_proc_name;
+        #endif
+    E_mem_Q_tab_I_segv_add_end( E_base_S->E_flow_Q_task_S, task_id, task );
+    task->run_state = E_flow_Z_run_state_S_starting_by_task;
+    task->stack_size = stack_size;
+        #ifdef E_flow_C_thread_system_unblock_reports
+    U_L( task->type, system_unblock_report );
+        #endif
+    U_F( task->type, async );
+    pthread_mutex_t *thread_flow_mutex = E_mem_Q_blk_M_align( sizeof( *thread_flow_mutex ), sizeof(N32) );
+    if( !thread_flow_mutex )
+    {   _tasks_table_begin;
+        E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
+        _tasks_table_end;
+        V0_( munmap( stack, stack_size ));
+        return ~0;
+    }
+    Vr( pthread_mutex_init( thread_flow_mutex, 0 ))
+    {   W( thread_flow_mutex );
+        _tasks_table_begin;
+        E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
+        _tasks_table_end;
+        V0_( munmap( stack, stack_size ));
+        return ~0;
+    }
+    Vr( pthread_mutex_lock( thread_flow_mutex ))
+    {   W( thread_flow_mutex );
+        _tasks_table_begin;
+        E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
+        _tasks_table_end;
+        V0_( munmap( stack, stack_size ));
+        return ~0;
+    }
+    volatile B *M_( thread_switch_back );
+    if( !thread_switch_back )
+    {   Vr_( pthread_mutex_destroy( thread_flow_mutex ));
+        W( thread_flow_mutex );
+        _tasks_table_begin;
+        E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
+        _tasks_table_end;
+        V0_( munmap( stack, stack_size ));
+        return ~0;
+    }
+    task->thread_flow_mutex = thread_flow_mutex;
+    task->thread_switch_back = thread_switch_back;
+    task_proc_args->task_proc_arg.thread_flow_mutex = thread_flow_mutex;
+    task_proc_args->task_proc_arg.thread_switch_back = thread_switch_back;
+    *thread_switch_back = no;
+    task_proc_args->alt_stack.ss_size += E_base_S->E_mem_S_page_size;
+        #if defined( __gnu_linux__ )
+    V1p( task_proc_args->alt_stack.ss_sp = mmap( 0
+    , task_proc_args->alt_stack.ss_size
+    , PROT_READ | PROT_WRITE
+    , MAP_PRIVATE
+    | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_UNINITIALIZED
+    , -1
+    , 0
+    ))
+        #elif defined( __FreeBSD__ ) || defined( __OpenBSD__ )
+    V1p( task_proc_args->alt_stack.ss_sp = mmap( 0
+    , task_proc_args->alt_stack.ss_size
+    , PROT_READ | PROT_WRITE
+    , MAP_PRIVATE
+    | MAP_ANON | MAP_STACK
+    , -1
+    , 0
+    ))
+        #else
+#error not implemented
+        #endif
+    {   W( thread_switch_back );
+        Vr_( pthread_mutex_destroy( thread_flow_mutex ));
+        W( thread_flow_mutex );
+        _tasks_table_begin;
+        E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
+        _tasks_table_end;
+        V0_( munmap( stack, stack_size ));
+        return ~0;
+    }
+    V0( mprotect( task_proc_args->alt_stack.ss_sp
+    , E_base_S->E_mem_S_page_size
+    , PROT_NONE
+    ))
+    {   V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
+        W( thread_switch_back );
+        Vr_( pthread_mutex_destroy( thread_flow_mutex ));
+        W( thread_flow_mutex );
+        _tasks_table_begin;
+        E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
+        _tasks_table_end;
+        V0_( munmap( stack, stack_size ));
+        return ~0;
+    }
+    pthread_attr_t thread_attr;
+    Vr( pthread_attr_init( &thread_attr ))
+    {   V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
+        W( thread_switch_back );
+        Vr_( pthread_mutex_destroy( thread_flow_mutex ));
+        W( thread_flow_mutex );
+        _tasks_table_begin;
+        E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
+        _tasks_table_end;
+        V0_( munmap( stack, stack_size ));
+        return ~0;
+    }
+    Vr( pthread_attr_setstack( &thread_attr, touched_stack, pthread_stack_min ))
+    {   Vr_( pthread_attr_destroy( &thread_attr ));
+        V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
+        W( thread_switch_back );
+        Vr_( pthread_mutex_destroy( thread_flow_mutex ));
+        W( thread_flow_mutex );
+        _tasks_table_begin;
+        E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
+        _tasks_table_end;
+        V0_( munmap( stack, stack_size ));
+        return ~0;
+    }
+    Vr( pthread_sigmask( SIG_SETMASK, &E_base_S->E_flow_Z_sigset_S_empty, 0 ))
+    {   Vr_( pthread_attr_destroy( &thread_attr ));
+        V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
+        W( thread_switch_back );
+        Vr_( pthread_mutex_destroy( thread_flow_mutex ));
+        W( thread_flow_mutex );
+        _tasks_table_begin;
+        E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
+        _tasks_table_end;
+        V0_( munmap( stack, stack_size ));
+        return ~0;
+    }
+    Vr( pthread_create( &task->thread, &thread_attr, E_flow_Q_task_async_I_thread_proc, task_proc_args ))
+    {   Vr_( pthread_attr_destroy( &thread_attr ));
+        V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
+        W( thread_switch_back );
+        Vr_( pthread_mutex_destroy( thread_flow_mutex ));
+        W( thread_flow_mutex );
+        _tasks_table_begin;
+        E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
+        _tasks_table_end;
+        V0_( munmap( stack, stack_size ));
+        return ~0;
+    }
+    Vr_( pthread_attr_destroy( &thread_attr ));
+        #if defined( C_line_report ) && defined( __gnu_linux__ )
+    task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id );
+    Pc s = E_text_Z_s_R_search_c_( task->proc_name, 'E' ) + 2;
+    Pc s_end = E_text_Z_s0_R_end_le( s, 16 );
+    if( *s_end )
+    {   s = E_text_Z_s_R_search_c_( task->proc_name, 'D' ) + 2;
+        s_end = E_text_Z_s0_R_end_le( s, 16 );
+    }
+    B b = no;
+    if( *s_end )
+    {   Pc s_ = M( s_end + 1 - s + 1 );
+        if( s_ )
+        {   E_text_Z_s_P_copy_s_0( s_, s, s_end + 1 );
+            s = s_;
+        }else
+        {   GV_(NA);
+            b = yes;
+        }
+    }
+    if( !b )
+    {   Vr( pthread_setname_np( task->thread, s )){}
+        if( *s_end )
+            W(s);
+    }
+        #endif
+    *uid = task_id;
+    return task_id;
+}
+// Procedura ‹zadań› asynchronicznych.
+_internal
+P
+E_flow_Q_task_async_I_thread_proc( P args_
+){  Dh_();
+    struct E_flow_Q_task_async_I_thread_proc_Z_args *args = args_;
+    V0( sigaltstack( &args->alt_stack, 0 ))
+        return 0;
+    args->task_proc( &args->task_proc_arg );
+    V0_( sigaltstack( 0, 0 ));
+    V0_( munmap( args->alt_stack.ss_sp, args->alt_stack.ss_size ));
+    return 0;
+}
+    #endif
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 I
 E_flow_Q_report_M( N uid
@@ -745,6 +1056,10 @@ E_flow_Q_report_I_signal( I id
         report->reported_count++;
     for_each( task_id, E_base_S->E_flow_Q_task_S, E_mem_Q_tab )
     {   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id );
+            #ifdef C_pthreads
+        if( U_R( task->type, async ))
+            continue;
+            #endif
         if( task->run_state == E_flow_Z_run_state_S_waiting_for_report
         && task->run_state_object == id
         )
@@ -761,6 +1076,10 @@ E_flow_Q_report_I_wait( I id
     if( report->reported_count )
     {   //for_each( task_id, E_base_S->E_flow_Q_task_S, E_mem_Q_tab )
         //{   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id );
+                //#ifdef C_pthreads
+            //if( U_R( task->type, async ))
+                //continue;
+                //#endif
             //if( task->run_state == E_flow_Z_run_state_S_emiting_report
             //&& task->run_state_object == id
             //)
@@ -972,7 +1291,7 @@ E_flow_Q_thread_system_unblock_report_I_unblock( I task_uid
 , I task_subid
 ){  struct E_mem_Q_tab_Z **tab_subid = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S_uid_subid, task_uid );
     struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, *( I * )E_mem_Q_tab_R( *tab_subid, task_subid ));
-    task->thread_unblock_proc( task->thread_proc_arg );
+    task->thread_unblock_proc( task->task_proc_arg );
 }
     #endif
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1161,6 +1480,21 @@ Loop:
                 }
             }else
                 #endif
+                #ifdef C_pthreads
+            if( U_R( task->type, async ))
+            {   volatile B *thread_switch_back = task->thread_switch_back;
+                pthread_mutex_t *thread_flow_mutex = task->thread_flow_mutex;
+                if( *thread_switch_back )
+                {   E_base_S->E_flow_Q_task_S_current = task_id;
+                    Vr_( pthread_mutex_unlock( thread_flow_mutex ));
+                    O{  V0_( sched_yield() );
+                        Vr_( pthread_mutex_lock( thread_flow_mutex ));
+                        if( !*thread_switch_back )
+                            break;
+                    }
+                }
+            }else
+                #endif
             {   if( task->run_state == E_flow_Z_run_state_S_ready )
                 {
                         #ifdef E_flow_C_thread_system_unblock_reports
@@ -1234,7 +1568,7 @@ Loop:
             && !U_R( E_base_S->E_flow_S_signal, call_req )
             && !U_R( E_base_S->E_flow_S_signal, io_ready )
             )
-                U_E( E_base_S->E_flow_S_signal, wake );
+                U_L( E_base_S->E_flow_S_signal, wake );
                 #ifdef E_flow_C_itimer_system_unblock_report
             if( E_base_S->E_flow_Z_itimer_system_unblock_report_I_sigsuspend )
             {   B system_unblock_report = no;
@@ -1294,10 +1628,7 @@ _internal
 void
 E_flow_Q_task_I_switch( I task_to_id
 ){
-//CONF Jest ‘fpu’?
-        #if 1
     feclearexcept( FE_ALL_EXCEPT );
-        #endif
     struct E_flow_Q_task_Z *task_from = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
     struct E_flow_Q_task_Z *task_to = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_to_id );
     E_base_S->E_flow_Q_task_S_current = task_to_id;
@@ -1323,13 +1654,11 @@ E_flow_Q_task_I_switch( I task_to_id
     : "r" ( task_to->exe_stack )
     : "cc", "memory"
 //CONF Jest ‘fpu’?
-        #if 1
     , "st", "st(1)", "st(2)", "st(3)", "st(4)", "st(5)", "st(6)", "st(7)"
-            #ifdef __MMX__
+        #ifdef __MMX__
     , "mm0", "mm1", "mm2", "mm3", "mm4", "mm5", "mm6", "mm7"
-                #ifdef __SSE__
+            #ifdef __SSE__
     , "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7"
-                #endif
             #endif
         #endif
         #if defined( __i386__ )
@@ -1389,7 +1718,7 @@ E_flow_Z_signal_V_segv( int uid
         #endif
     ){  struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
         if( (Pc)siginfo->si_addr < task->touched_stack )
-            if( (Pc)siginfo->si_addr >= task->stack + E_base_S->E_mem_S_page_size )
+        {   if( (Pc)siginfo->si_addr >= task->stack + E_base_S->E_mem_S_page_size )
             {   Pc new_base = E_simple_Z_p_I_align_down_to_v2( siginfo->si_addr, E_base_S->E_mem_S_page_size );
                 V0_( mprotect( new_base
                 , task->touched_stack - new_base
@@ -1398,9 +1727,11 @@ E_flow_Z_signal_V_segv( int uid
                 task->touched_stack = new_base;
                 _errno = errno_;
                 return;
-            }else if( (Pc)siginfo->si_addr >= task->stack )
+            }
+            if( (Pc)siginfo->si_addr >= task->stack )
             {   GV_(NA); // Late instrumentation error: task stack too small.
             }
+        }
     }
     GV_(NDFN); Gd( siginfo->si_code ); Gh( siginfo->si_addr ); // Other fault.
     struct sigaction sa =
