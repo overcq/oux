@@ -114,8 +114,8 @@ struct E_base_Z
     #ifdef C_line_report
   C E_flow_Z_line_report_N_n_S[ J_n_10_max_digits( sizeof(N) ) + 1 ];
     #endif
-    #ifdef E_flow_C_thread_system_unblock_reports
-  volatile B switch_back_try, switch_back_suspend;
+    #if defined( E_flow_C_thread_system_unblock_reports ) || defined( C_pthreads ) || defined( E_flow_C_itimer_system_unblock_report )
+  volatile B switch_back_suspend;
     #endif
 } *E_base_S;
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -323,7 +323,6 @@ E_base_M(
     task->thread = pthread_self();
     U_L( task->type, system_unblock_report );
     U_L( task->type, async );
-    E_base_S->switch_back_try = yes;
     E_base_S->switch_back_suspend = no;
         #endif
     // Wyłączenie niedozwolonych “sygnałów” ‘uniksowych’, przyblokowanie, ustawienie “masek”.

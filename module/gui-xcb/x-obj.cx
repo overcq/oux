@@ -1056,7 +1056,8 @@ Cont:           do
 void
 E_gui_xcb_Q_object_I_draw_Z_draw_proc( void (*draw_object_proc)( struct E_gui_xcb_Q_display_Z *, struct E_gui_xcb_Q_screen_Z *, struct E_gui_xcb_Q_window_Z *, struct E_gui_xcb_Q_object_Z * )
 , B draw_simple
-){  X_A( x_window, draw );
+){  //X_A( x_window, draw );
+    B U_L( x_window, draw );
     for_each( display_id, E_gui_xcb_Q_display_S, E_mem_Q_tab )
     {   struct E_gui_xcb_Q_display_Z *display = E_mem_Q_tab_R( E_gui_xcb_Q_display_S, display_id );
         if( draw_simple )
@@ -1089,6 +1090,13 @@ E_gui_xcb_Q_object_I_draw_Z_draw_proc( void (*draw_object_proc)( struct E_gui_xc
         if( U_R( display->req, draw ))
             U_F( x_window, draw );
     }
-    X_U( x_window, draw );
+    //X_U( x_window, draw );
+    if( U_E( x_window, draw ))
+    {   Vr_( pthread_mutex_lock( &E_x_window_D_draw_S_mutex ));
+        E_x_window_D_draw_S_b = yes;
+        Vr_( pthread_cond_signal( &E_x_window_D_draw_S_cond ));
+        Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex ));
+    }
+    //X_U( x_window, draw );
 }
 /******************************************************************************/

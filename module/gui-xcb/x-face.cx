@@ -377,9 +377,32 @@ E_gui_xcb_Q_display_M( void
             E_mem_Q_tab_I_remove( E_gui_xcb_Q_display_S, display_id );
             return ~0;
         }
-        D_M( x_window, draw )
-        {   if( E_mem_Q_tab_R_n( E_gui_xcb_Q_display_S ) == 1 )
-                D_W( x_window, flush );
+        Vr( pthread_mutex_init( &E_x_window_D_draw_S_mutex, 0 ))
+        {   D_W( x_window, flush );
+            E_mem_Q_tab_W( display->window );
+            E_mem_Q_tab_W( display->screen );
+            W( display->class_name );
+            W( display->atom );
+            xcb_disconnect( display->x_display );
+            E_mem_Q_tab_I_remove( E_gui_xcb_Q_display_S, display_id );
+            return ~0;
+        }
+        Vr( pthread_cond_init( &E_x_window_D_draw_S_cond, 0 ))
+        {   Vr_( pthread_mutex_destroy( &E_x_window_D_draw_S_mutex ));
+            D_W( x_window, flush );
+            E_mem_Q_tab_W( display->window );
+            E_mem_Q_tab_W( display->screen );
+            W( display->class_name );
+            W( display->atom );
+            xcb_disconnect( display->x_display );
+            E_mem_Q_tab_I_remove( E_gui_xcb_Q_display_S, display_id );
+            return ~0;
+        }
+        E_x_window_D_draw_S_b = no;
+        Da_M( x_window, draw )
+        {   Vr_( pthread_cond_destroy( &E_x_window_D_draw_S_cond));
+            Vr_( pthread_mutex_destroy( &E_x_window_D_draw_S_mutex ));
+            D_W( x_window, flush );
             E_mem_Q_tab_W( display->window );
             E_mem_Q_tab_W( display->screen );
             W( display->class_name );
@@ -390,10 +413,10 @@ E_gui_xcb_Q_display_M( void
         }
             #ifndef E_flow_C_thread_system_unblock_reports
         D_M( x_window, events )
-        {   if( E_mem_Q_tab_R_n( E_gui_xcb_Q_display_S ) == 1 )
-            {   D_W( x_window, draw );
-                D_W( x_window, flush );
-            }
+        {   Da_W( x_window, draw );
+            Vr_( pthread_cond_destroy( &E_x_window_D_draw_S_cond));
+            Vr_( pthread_mutex_destroy( &E_x_window_D_draw_S_mutex ));
+            D_W( x_window, flush );
             E_mem_Q_tab_W( display->window );
             E_mem_Q_tab_W( display->screen );
             W( display->class_name );
@@ -408,7 +431,9 @@ E_gui_xcb_Q_display_M( void
     I *M_( thread_proc_arg );
     if( !thread_proc_arg )
     {   if( E_mem_Q_tab_R_n( E_gui_xcb_Q_display_S ) == 1 )
-        {   D_W( x_window, draw );
+        {   Da_W( x_window, draw );
+            Vr_( pthread_cond_destroy( &E_x_window_D_draw_S_cond));
+            Vr_( pthread_mutex_destroy( &E_x_window_D_draw_S_mutex ));
             D_W( x_window, flush );
         }
         E_mem_Q_tab_W( display->window );
@@ -422,7 +447,9 @@ E_gui_xcb_Q_display_M( void
     *thread_proc_arg = display_id;
     Dh_M( x_window, events, display_id, thread_proc_arg )
     {   if( E_mem_Q_tab_R_n( E_gui_xcb_Q_display_S ) == 1 )
-        {   D_W( x_window, draw );
+        {   Da_W( x_window, draw );
+            Vr_( pthread_cond_destroy( &E_x_window_D_draw_S_cond));
+            Vr_( pthread_mutex_destroy( &E_x_window_D_draw_S_mutex ));
             D_W( x_window, flush );
         }
         E_mem_Q_tab_W( display->window );
@@ -459,7 +486,9 @@ E_gui_xcb_Q_display_W( I id
             #ifndef E_flow_C_thread_system_unblock_reports
         D_W( x_window, events );
             #endif
-        D_W( x_window, draw );
+        Da_W( x_window, draw );
+        Vr_( pthread_cond_destroy( &E_x_window_D_draw_S_cond));
+        Vr_( pthread_mutex_destroy( &E_x_window_D_draw_S_mutex ));
         D_W( x_window, flush );
     }
     xcb_disconnect( display->x_display );

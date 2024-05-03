@@ -107,37 +107,43 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
 #define I_D                                 if( E_flow_Q_task_I_begin() ){} else O
 //------------------------------------------------------------------------------
 // Utworzenie i wyrzucenie ‹zadania› lub ‹zadania› “wątkowanego” czekającego na ‹systemowy raport odblokowujący›.
+    #if defined( E_flow_C_thread_system_unblock_reports ) || defined( C_pthreads )
+        #if defined( __gnu_linux__ )
+#define Da_()                               _unused int *E_flow_S_errno = __errno_location()
+        #elif defined( __FreeBSD__ )
+#define Da_()                               _unused int *E_flow_S_errno = __error()
+        #elif defined( __OpenBSD__ )
+#define Da_()                               _unused int *E_flow_S_errno = __errno()
+        #else
+#error not implemented
+        #endif
+    #endif
     #ifndef E_flow_C_thread_system_unblock_reports
-#define Dh_()
         #ifdef C_line_report
 #define D_M(module,task)                    if( ~E_flow_Q_task_M( &(D_id(module,task)), _D_proc(module,task), J_s( _D_proc(module,task) ))){} else
         #else
 #define D_M(module,task)                    if( ~E_flow_Q_task_M( &(D_id(module,task)), _D_proc(module,task) )){} else
         #endif
     #else
-        #if defined( __gnu_linux__ )
-#define Dh_()                               _unused int *E_flow_S_errno = __errno_location()
-        #elif defined( __FreeBSD__ )
-#define Dh_()                               _unused int *E_flow_S_errno = __error()
-        #elif defined( __OpenBSD__ )
-#define Dh_()                               _unused int *E_flow_S_errno = __errno()
-        #else
-#error not implemented
-        #endif
-//TODO Rozdzielić dla “Dh”— na ‹zadania› takie jak “D” (bez “subid”) oraz takie jak obecnie “Dh” (“Dhi”).
+//TODO Rozdzielić dla “Dh” — na ‹zadania› takie jak “D” (bez “subid”) oraz takie jak obecnie “Dh” (“Dhi”).
         #ifdef C_line_report
 #define D_M(module,task)                    if( ~E_flow_Q_task_M( &(D_id(module,task)), _D_proc(module,task), 0, no, J_s( _D_proc(module,task) ))){} else
 #define Dh_M(module,task,subid,arg)         if( ~E_flow_Q_task_M_thread( &(D_id(module,task)), (subid), _D_proc(module,task), (arg), J_s( _D_proc(module,task) ))){} else
-#define Da_M(module,task)                   if( ~E_flow_Q_task_async_M( &(D_id(module,task)), _D_proc(module,task), J_s( _D_proc(module,task) ))){} else
         #else
 #define D_M(module,task)                    if( ~E_flow_Q_task_M( &(D_id(module,task)), _D_proc(module,task), 0, no )){} else
 #define Dh_M(module,task,subid,arg)         if( ~E_flow_Q_task_M_thread( &(D_id(module,task)), (subid), _D_proc(module,task), (arg) )){} else
-#define Da_M(module,task)                   if( ~E_flow_Q_task_async_M( &(D_id(module,task)), _D_proc(module,task))){} else
         #endif
 #define Dh_W(module,task,subid)             E_flow_Q_task_W_thread( &(D_id(module,task)), (subid) )
-#define Da_W(module,task)
     #endif
 #define D_W(module,task)                    E_flow_Q_task_W( &(D_id(module,task)) )
+    #ifdef C_pthreads
+        #ifdef C_line_report
+#define Da_M(module,task)                   if( ~E_flow_Q_task_async_M( &(D_id(module,task)), _D_proc(module,task), J_s( _D_proc(module,task) ))){} else
+        #else
+#define Da_M(module,task)                   if( ~E_flow_Q_task_async_M( &(D_id(module,task)), _D_proc(module,task))){} else
+        #endif
+#define Da_W(module,task)
+    #endif
 //------------------------------------------------------------------------------
 // Znacznik stanu —zwykle stanu pojedynczego obiektu sygnalizującego później kolekcję— umieszczony w strukturze tego ‹obiektu› dostępnej przez wyrażenie.
 #define U_R(start_expr,state_name)          J_a_b(start_expr,J_autogen(J_a_b(U,state_name)))
@@ -172,32 +178,33 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
     #ifdef E_flow_C_thread_system_unblock_reports
 // Deklaracja ‹procedury› generującej ‹systemowy raport odblokowujący› dla ‹zadania›; odblokowującej to ‹zadanie›.
 #define Xh_A( thread_unblock_proc_ ) \
+  B *J_autogen( thread_switch_in ), *J_autogen( thread_switch_out ); \
+  pthread_cond_t *J_autogen( thread_switch ); \
   pthread_mutex_t *J_autogen( thread_flow_mutex ); \
-  volatile B *J_autogen( thread_switch_back ); \
-  E_flow_Q_thread_system_unblock_report_M(( thread_unblock_proc_ ), &J_autogen( thread_flow_mutex ), &J_autogen( thread_switch_back ))
+  E_flow_Q_thread_system_unblock_report_M(( thread_unblock_proc_ ), &J_autogen( thread_flow_mutex ), &J_autogen( thread_switch ), &J_autogen( thread_switch_in ), &J_autogen( thread_switch_out ))
 // Tuż przed wywołaniem procedury blokującej w oczekiwaniu na ‹systemowy raport odblokowujący›.
 #define Xh_B_() \
-  *J_autogen( thread_switch_back ) = yes; \
-  E_flow_Q_thread_system_unblock_report_I_before_block( J_autogen( thread_flow_mutex ))
+  E_flow_Q_thread_system_unblock_report_I_before_block( J_autogen( thread_switch_out ), J_autogen( thread_switch ), J_autogen( thread_flow_mutex ))
 // Czekanie na ‹systemowy raport odblokowujący›; tuż po wywołaniu procedury blokującej.
 #define Xh_B() \
-  *J_autogen( thread_switch_back ) = no; \
-  if( !E_flow_Q_thread_system_unblock_report_I_after_block( J_autogen( thread_flow_mutex ))){} else
+  if( !E_flow_Q_thread_system_unblock_report_I_after_block( J_autogen( thread_switch_in ), J_autogen( thread_switch ), J_autogen( thread_flow_mutex ))){} else
+    #else
+#define Xh_A( thread_unblock_proc_ )
     #endif
     #ifdef C_pthreads
 // Deklaracja ‹procedury› tworzącej dla ‹zadania› asynchronicznego.
 #define Da_A() \
   struct E_flow_Q_task_async_Z_proc_args *proc_args = thread_proc_arg; \
   pthread_mutex_t *J_autogen( thread_flow_mutex ) = proc_args->thread_flow_mutex; \
-  volatile B *J_autogen( thread_switch_back ) = proc_args->thread_switch_back
-// Tuż przed oknem synchronizacji z wątkami nieasynchronicznymi.
+  pthread_cond_t *J_autogen( thread_switch ) = proc_args->thread_switch; \
+  volatile B *J_autogen( thread_switch_in ) = proc_args->thread_switch_in; \
+  volatile B *J_autogen( thread_switch_out ) = proc_args->thread_switch_out
+// Tuż przed oknem synchronizacji z ‹zadaniami› nieasynchronicznymi.
 #define Da_B_() \
-  *J_autogen( thread_switch_back ) = yes; \
-  Vr_( pthread_mutex_lock( J_autogen( thread_flow_mutex ))); \
-  *J_autogen( thread_switch_back ) = no; \
-// Czekanie na ‹systemowy raport odblokowujący›; tuż po wywołaniu procedury blokującej.
+  E_flow_Q_thread_async_I_before_sync( J_autogen( thread_switch_in ), J_autogen( thread_switch ), J_autogen( thread_flow_mutex ))
+// Tuż po oknie synchronizacji z ‹zadaniami› nieasynchronicznymi.
 #define Da_B() \
-  Vr_( pthread_mutex_unlock( J_autogen( thread_flow_mutex )))
+  E_flow_Q_thread_async_I_after_sync( J_autogen( thread_switch_out ), J_autogen( thread_switch ), J_autogen( thread_flow_mutex ))
     #endif
 //------------------------------------------------------------------------------
     #ifdef E_flow_C_itimer_system_unblock_report

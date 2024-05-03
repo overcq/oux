@@ -50,12 +50,13 @@ D( x_window, events_pointer_button_check )
 }
     #endif
 D( x_window, events )
-{   Dh_();
+{
         #ifdef E_flow_C_thread_system_unblock_reports
     I display_id = *( I * )(( struct E_flow_Q_task_async_Z_proc_args * )thread_proc_arg )->p;
         #endif
     Xh_A( E_x_window_D_events_I_unblock );
-    X_A( x_window, draw );
+    //X_A( x_window, draw );
+    B U_L( x_window, draw );
     X_A( x_window, close_window );
     X_A( x_window, flush );
 /*
@@ -1891,7 +1892,13 @@ Drag_start_error:                       ;
                 U_F( x_window, flush );
         }
         X_U( x_window, close_window );
-        X_U( x_window, draw );
+        //X_U( x_window, draw );
+        if( U_E( x_window, draw ))
+        {   Vr_( pthread_mutex_lock( &E_x_window_D_draw_S_mutex ));
+            E_x_window_D_draw_S_b = yes;
+            Vr_( pthread_cond_signal( &E_x_window_D_draw_S_cond ));
+            Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex ));
+        }
         X_U( x_window, flush );
             #ifndef E_flow_C_thread_system_unblock_reports
         Y_B( timer, 0 )
@@ -1904,12 +1911,25 @@ Drag_start_error:                       ;
     D_W( x_window, events_pointer_button_check );
 #endif
 }
+pthread_mutex_t E_x_window_D_draw_S_mutex;
+pthread_cond_t E_x_window_D_draw_S_cond;
+B E_x_window_D_draw_S_b;
 D( x_window, draw )
-{   X_M( x_window, draw );
+{   Da_A();
+    //X_M( x_window, draw );
+    Da_B_();
     X_A( x_window, flush );
-    I_D
-    {   X_B( x_window, draw, 0 )
-            break;
+    Da_B();
+    //I_D
+    O{  Vr_( pthread_mutex_lock( &E_x_window_D_draw_S_mutex ));
+        while( !E_x_window_D_draw_S_b )
+        {   Vr_( pthread_cond_wait( &E_x_window_D_draw_S_cond, &E_x_window_D_draw_S_mutex ));
+        }
+        E_x_window_D_draw_S_b = no;
+        Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex ));
+        //X_B( x_window, draw, 0 )
+            //break;
+        Da_B_();
         for_each( display_id, E_gui_xcb_Q_display_S, E_mem_Q_tab )
         {   struct E_gui_xcb_Q_display_Z *display = E_mem_Q_tab_R( E_gui_xcb_Q_display_S, display_id );
             if( U_E( display->req, draw ))
@@ -1924,14 +1944,14 @@ D( x_window, draw )
                             window->drawable[i] = E_gui_xcb_Q_theme.window_bg;
                         for_n_( i, window->width * window->height )
                             window->object_mask[i] = ~0;
-                        for_each( object_id, window->object, E_mem_Q_tab ) //NDFN zakładana kolejność od na spodzie do na wierzchu. nie wiadomo, czy “_q” jest konieczne.
+                        for_each( object_id, window->object, E_mem_Q_tab ) //NDFN Zakładana kolejność od na spodzie do na wierzchu. Nie wiadomo, czy “_q” jest konieczne.
                         {   display->current_object = object_id;
                             struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
                             if( !U_R( object->state, drag_src ))
                                 screen->draw_color &= 0xffffff;
                             else
                                 screen->draw_color = 0xff000000 | E_gui_xcb_Q_theme.current_brace;
-                            object->draw( display, screen, window, object ); //NDFN nieprzerysowywanie wszystkich obiektów dla każdej klatki animacji.
+                            object->draw( display, screen, window, object ); //NDFN Nieprzerysowywanie wszystkich obiektów dla każdej klatki animacji.
                         }
                         xcb_put_image( display->x_display
                         , XCB_IMAGE_FORMAT_Z_PIXMAP
@@ -2001,8 +2021,9 @@ D( x_window, draw )
             U_L( display->mode, draw_simple );
         }
         X_U( x_window, flush );
+        Da_B();
     }
-    X_W( x_window, draw );
+    //X_W( x_window, draw );
 }
 D( x_window, flush )
 {   X_M( x_window, flush );
