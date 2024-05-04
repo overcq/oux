@@ -67,11 +67,10 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
 #define for_each_pop_(id_var,p,q)           for_each_pop_out_(~0,id_var,(p),q)
 #define for_each_pop(id_var,p,q)            I id_var; for_each_pop_(id_var,(p),q)
 //------------------------------------------------------------------------------
-#define for_each_q_out(out,id_var,p,iter,q) \
+#define for_each_q(id_var,p,iter,q) \
   I id_var; \
-  I J_autogen_line(id_var) = (out); \
-  while(( id_var = J_a_b(q,Q_iter_R_next)( (p), (iter), ++J_autogen_line(id_var) )) != (out) )
-#define for_each_q(id_var,p,iter,q)         for_each_q_out(~0,id_var,(p),(iter),q)
+  I J_autogen_line(id_var) = ~0; \
+  while( ~( id_var = J_a_b(q,Q_iter_R_next)( (p), (iter), ++J_autogen_line(id_var) )))
 //==============================================================================
 #define _F_uid_v(v)                         ( (v) << ( sizeof(int) * 8 / 2 ))
 #define _F_uid(file_identifier)             J_autogen(J_a_b(F,file_identifier))
@@ -138,11 +137,11 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
 #define D_W(module,task)                    E_flow_Q_task_W( &(D_id(module,task)) )
     #ifdef C_pthreads
         #ifdef C_line_report
-#define Da_M(module,task)                   if( ~E_flow_Q_task_async_M( &(D_id(module,task)), _D_proc(module,task), J_s( _D_proc(module,task) ))){} else
+#define Da_M(module,task,thread_unblock_proc)   if( ~E_flow_Q_task_async_M( &(D_id(module,task)), _D_proc(module,task), &( thread_unblock_proc ), J_s( _D_proc(module,task) ))){} else
         #else
-#define Da_M(module,task)                   if( ~E_flow_Q_task_async_M( &(D_id(module,task)), _D_proc(module,task))){} else
+#define Da_M(module,task,thread_unblock_proc)   if( ~E_flow_Q_task_async_M( &(D_id(module,task)), _D_proc(module,task), &( thread_unblock_proc ))){} else
         #endif
-#define Da_W(module,task)
+#define Da_W(module,task)                   E_flow_Q_task_async_W( &(D_id(module,task)) )
     #endif
 //------------------------------------------------------------------------------
 // Znacznik stanu —zwykle stanu pojedynczego obiektu sygnalizującego później kolekcję— umieszczony w strukturze tego ‹obiektu› dostępnej przez wyrażenie.
@@ -184,7 +183,7 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
   E_flow_Q_thread_system_unblock_report_M(( thread_unblock_proc_ ), &J_autogen( thread_flow_mutex ), &J_autogen( thread_switch ), &J_autogen( thread_switch_in ), &J_autogen( thread_switch_out ))
 // Tuż przed wywołaniem procedury blokującej w oczekiwaniu na ‹systemowy raport odblokowujący›.
 #define Xh_B_() \
-  E_flow_Q_thread_system_unblock_report_I_before_block( J_autogen( thread_switch_out ), J_autogen( thread_switch ), J_autogen( thread_flow_mutex ))
+  E_flow_Q_thread_system_unblock_report_I_before_block( J_autogen( thread_switch_out ), J_autogen( thread_switch ), J_autogen( thread_flow_mutex )) 
 // Czekanie na ‹systemowy raport odblokowujący›; tuż po wywołaniu procedury blokującej.
 #define Xh_B() \
   if( !E_flow_Q_thread_system_unblock_report_I_after_block( J_autogen( thread_switch_in ), J_autogen( thread_switch ), J_autogen( thread_flow_mutex ))){} else
@@ -201,7 +200,7 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
   volatile B *J_autogen( thread_switch_out ) = proc_args->thread_switch_out
 // Tuż przed oknem synchronizacji z ‹zadaniami› nieasynchronicznymi.
 #define Da_B_() \
-  E_flow_Q_thread_async_I_before_sync( J_autogen( thread_switch_in ), J_autogen( thread_switch ), J_autogen( thread_flow_mutex ))
+  if( !E_flow_Q_thread_async_I_before_sync( J_autogen( thread_switch_in ), J_autogen( thread_switch ), J_autogen( thread_flow_mutex ))){} else
 // Tuż po oknie synchronizacji z ‹zadaniami› nieasynchronicznymi.
 #define Da_B() \
   E_flow_Q_thread_async_I_after_sync( J_autogen( thread_switch_out ), J_autogen( thread_switch ), J_autogen( thread_flow_mutex ))
