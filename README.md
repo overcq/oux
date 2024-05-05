@@ -18,9 +18,11 @@ Description: https://overcq.ct8.pl/oux-c-plus.html
 
 Report vulnerabilities: https://github.com/overcq/oux/security/advisories or via e‐mail: overcq@int.pl
 
-## 3. Version
+## 3. Version and development environments
 
 OUX/C+ 2. Detailed version in git log.
+
+The product is developed in Gentoo Linux and tested in FreeBSD and OpenBSD.
 
 ## 4. Purpose
 
