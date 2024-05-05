@@ -203,7 +203,7 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
   if( !E_flow_Q_thread_async_I_before_sync( J_autogen( thread_switch_in ), J_autogen( thread_switch ), J_autogen( thread_flow_mutex ))){} else
 // Tuż po oknie synchronizacji z ‹zadaniami› nieasynchronicznymi.
 #define Da_B() \
-  E_flow_Q_thread_async_I_after_sync( J_autogen( thread_switch_out ), J_autogen( thread_switch ), J_autogen( thread_flow_mutex ))
+  E_flow_Q_thread_async_I_after_sync( J_autogen( thread_switch_in ), J_autogen( thread_switch_out ), J_autogen( thread_switch ), J_autogen( thread_flow_mutex ))
     #endif
 //------------------------------------------------------------------------------
     #ifdef E_flow_C_itimer_system_unblock_report

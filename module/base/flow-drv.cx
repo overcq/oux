@@ -374,23 +374,9 @@ E_flow_Q_task_M( I *uid
                 W( task_proc_arg );
             return ~0;
         }
-        Vr( pthread_mutex_lock( thread_flow_mutex ))
-        {   Vr_( pthread_mutex_destroy( thread_flow_mutex ));
-            W( thread_flow_mutex );
-            W( thread_switch_out );
-            W( thread_switch_in );
-            _tasks_table_begin;
-            E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
-            _tasks_table_end;
-            V0_( munmap( stack, stack_size ));
-            if( task_proc_arg )
-                W( task_proc_arg );
-            return ~0;
-        }
         pthread_cond_t *thread_switch = E_mem_Q_blk_M_align( sizeof( *thread_switch ), sizeof(N32) );
         if( !thread_switch )
-        {   Vr_( pthread_mutex_unlock( thread_flow_mutex ));
-            Vr_( pthread_mutex_destroy( thread_flow_mutex ));
+        {   Vr_( pthread_mutex_destroy( thread_flow_mutex ));
             W( thread_flow_mutex );
             W( thread_switch_out );
             W( thread_switch_in );
@@ -405,7 +391,6 @@ E_flow_Q_task_M( I *uid
         task->thread_switch = task_proc_args->task_proc_arg.thread_switch = thread_switch;
         Vr( pthread_cond_init( thread_switch, 0 ))
         {   W( thread_switch );
-            Vr_( pthread_mutex_unlock( thread_flow_mutex ));
             Vr_( pthread_mutex_destroy( thread_flow_mutex ));
             W( thread_flow_mutex );
             W( thread_switch_out );
@@ -419,8 +404,7 @@ E_flow_Q_task_M( I *uid
             return ~0;
         }
         task->task_proc_arg = task_proc_args->task_proc_arg.p = task_proc_arg;
-        *task->thread_switch_in = no;
-        *task->thread_switch_out = no;
+        *thread_switch_in = *thread_switch_out = no;
         task_proc_args->alt_stack.ss_size += E_base_S->E_mem_S_page_size;
             #if defined( __gnu_linux__ )
         V1p( task_proc_args->alt_stack.ss_sp = mmap( 0
@@ -445,7 +429,6 @@ E_flow_Q_task_M( I *uid
             #endif
         {   Vr_( pthread_cond_destroy( thread_switch ));
             W( thread_switch );
-            Vr_( pthread_mutex_unlock( thread_flow_mutex ));
             Vr_( pthread_mutex_destroy( thread_flow_mutex ));
             W( thread_flow_mutex );
             W( thread_switch_out );
@@ -465,7 +448,6 @@ E_flow_Q_task_M( I *uid
         {   V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
             Vr_( pthread_cond_destroy( thread_switch ));
             W( thread_switch );
-            Vr_( pthread_mutex_unlock( thread_flow_mutex ));
             Vr_( pthread_mutex_destroy( thread_flow_mutex ));
             W( thread_flow_mutex );
             W( thread_switch_out );
@@ -483,7 +465,6 @@ E_flow_Q_task_M( I *uid
         {   V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
             Vr_( pthread_cond_destroy( thread_switch ));
             W( thread_switch );
-            Vr_( pthread_mutex_unlock( thread_flow_mutex ));
             Vr_( pthread_mutex_destroy( thread_flow_mutex ));
             W( thread_flow_mutex );
             W( thread_switch_out );
@@ -501,7 +482,6 @@ E_flow_Q_task_M( I *uid
             V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
             Vr_( pthread_cond_destroy( thread_switch ));
             W( thread_switch );
-            Vr_( pthread_mutex_unlock( thread_flow_mutex ));
             Vr_( pthread_mutex_destroy( thread_flow_mutex ));
             W( thread_flow_mutex );
             W( thread_switch_out );
@@ -519,7 +499,6 @@ E_flow_Q_task_M( I *uid
             V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
             Vr_( pthread_cond_destroy( thread_switch ));
             W( thread_switch );
-            Vr_( pthread_mutex_unlock( thread_flow_mutex ));
             Vr_( pthread_mutex_destroy( thread_flow_mutex ));
             W( thread_flow_mutex );
             W( thread_switch_out );
@@ -540,7 +519,6 @@ E_flow_Q_task_M( I *uid
             V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
             Vr_( pthread_cond_destroy( thread_switch ));
             W( thread_switch );
-            Vr_( pthread_mutex_unlock( thread_flow_mutex ));
             Vr_( pthread_mutex_destroy( thread_flow_mutex ));
             W( thread_flow_mutex );
             W( thread_switch_out );
@@ -579,6 +557,7 @@ E_flow_Q_task_M( I *uid
                 W(s);
         }
             #endif
+        Vr_( pthread_mutex_lock( thread_flow_mutex ));
         while( !*thread_switch_out )
         {   Vr_( pthread_cond_wait( thread_switch, thread_flow_mutex ));
         }
@@ -686,6 +665,7 @@ E_flow_Q_task_in_thread_I_thread_proc( P args_
     V0( sigaltstack( &args->alt_stack, 0 ))
         return 0;
     args->task_proc( &args->task_proc_arg );
+    Vr_( pthread_mutex_unlock( args->task_proc_arg.thread_flow_mutex ));
     V0_( sigaltstack( 0, 0 ));
     V0_( munmap( args->alt_stack.ss_sp, args->alt_stack.ss_size ));
     return 0;
@@ -731,7 +711,6 @@ E_flow_Q_task_W( I *uid
         Vr_( pthread_join( thread, 0 ));
         task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, id );
         E_base_S->E_flow_Q_task_S_current = task->run_state_object;
-        Vr_( pthread_mutex_unlock( task->thread_flow_mutex ));
         Vr_( pthread_mutex_destroy( task->thread_flow_mutex ));
         W( task->thread_flow_mutex );
         Vr_( pthread_cond_destroy( task->thread_switch ));
@@ -966,21 +945,9 @@ E_flow_Q_task_async_M( I *uid
         V0_( munmap( stack, stack_size ));
         return ~0;
     }
-    Vr( pthread_mutex_lock( thread_flow_mutex ))
-    {   Vr_( pthread_mutex_destroy( thread_flow_mutex ));
-        W( thread_flow_mutex );
-        W( thread_switch_out );
-        W( thread_switch_in );
-        _tasks_table_begin;
-        E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
-        _tasks_table_end;
-        V0_( munmap( stack, stack_size ));
-        return ~0;
-    }
     pthread_cond_t *M_( thread_switch );
     if( !thread_switch )
-    {   Vr_( pthread_mutex_unlock( thread_flow_mutex ));
-        Vr_( pthread_mutex_destroy( thread_flow_mutex ));
+    {   Vr_( pthread_mutex_destroy( thread_flow_mutex ));
         W( thread_flow_mutex );
         W( thread_switch_out );
         W( thread_switch_in );
@@ -993,7 +960,6 @@ E_flow_Q_task_async_M( I *uid
     task->thread_switch = task_proc_args->task_proc_arg.thread_switch = thread_switch;
     Vr( pthread_cond_init( thread_switch, 0 ))
     {   W( thread_switch );
-        Vr_( pthread_mutex_unlock( thread_flow_mutex ));
         Vr_( pthread_mutex_destroy( thread_flow_mutex ));
         W( thread_flow_mutex );
         W( thread_switch_out );
@@ -1004,8 +970,7 @@ E_flow_Q_task_async_M( I *uid
         V0_( munmap( stack, stack_size ));
         return ~0;
     }
-    *task->thread_switch_in = no;
-    *task->thread_switch_out = no;
+    *thread_switch_in = *thread_switch_out = no;
     task_proc_args->alt_stack.ss_size += E_base_S->E_mem_S_page_size;
         #if defined( __gnu_linux__ )
     V1p( task_proc_args->alt_stack.ss_sp = mmap( 0
@@ -1030,7 +995,6 @@ E_flow_Q_task_async_M( I *uid
         #endif
     {   Vr_( pthread_cond_destroy( thread_switch ));
         W( thread_switch );
-        Vr_( pthread_mutex_unlock( thread_flow_mutex ));
         Vr_( pthread_mutex_destroy( thread_flow_mutex ));
         W( thread_flow_mutex );
         W( thread_switch_out );
@@ -1048,7 +1012,6 @@ E_flow_Q_task_async_M( I *uid
     {   V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
         Vr_( pthread_cond_destroy( thread_switch ));
         W( thread_switch );
-        Vr_( pthread_mutex_unlock( thread_flow_mutex ));
         Vr_( pthread_mutex_destroy( thread_flow_mutex ));
         W( thread_flow_mutex );
         W( thread_switch_out );
@@ -1064,7 +1027,6 @@ E_flow_Q_task_async_M( I *uid
     {   V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
         Vr_( pthread_cond_destroy( thread_switch ));
         W( thread_switch );
-        Vr_( pthread_mutex_unlock( thread_flow_mutex ));
         Vr_( pthread_mutex_destroy( thread_flow_mutex ));
         W( thread_flow_mutex );
         W( thread_switch_out );
@@ -1080,7 +1042,6 @@ E_flow_Q_task_async_M( I *uid
         V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
         Vr_( pthread_cond_destroy( thread_switch ));
         W( thread_switch );
-        Vr_( pthread_mutex_unlock( thread_flow_mutex ));
         Vr_( pthread_mutex_destroy( thread_flow_mutex ));
         W( thread_flow_mutex );
         W( thread_switch_out );
@@ -1096,7 +1057,6 @@ E_flow_Q_task_async_M( I *uid
         V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
         Vr_( pthread_cond_destroy( thread_switch ));
         W( thread_switch );
-        Vr_( pthread_mutex_unlock( thread_flow_mutex ));
         Vr_( pthread_mutex_destroy( thread_flow_mutex ));
         W( thread_flow_mutex );
         W( thread_switch_out );
@@ -1113,7 +1073,6 @@ E_flow_Q_task_async_M( I *uid
         V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
         Vr_( pthread_cond_destroy( thread_switch ));
         W( thread_switch );
-        Vr_( pthread_mutex_unlock( thread_flow_mutex ));
         Vr_( pthread_mutex_destroy( thread_flow_mutex ));
         W( thread_flow_mutex );
         W( thread_switch_out );
@@ -1150,6 +1109,13 @@ E_flow_Q_task_async_M( I *uid
             W(s);
     }
         #endif
+    Vr_( pthread_mutex_lock( thread_flow_mutex ));
+    while( !*thread_switch_out )
+    {   Vr_( pthread_cond_wait( thread_switch, thread_flow_mutex ));
+    }
+    *thread_switch_in = yes;
+    Vr_( pthread_cond_signal( thread_switch ));
+    Vr_( pthread_mutex_unlock( thread_flow_mutex ));
     *uid = task_id;
     return task_id;
 }
@@ -1161,12 +1127,19 @@ E_flow_Q_task_async_I_thread_proc( P args_
     struct E_flow_Q_task_async_I_thread_proc_Z_args *args = args_;
     V0( sigaltstack( &args->alt_stack, 0 ))
         return 0;
+    Vr_( pthread_mutex_lock( args->task_proc_arg.thread_flow_mutex ));
+    *args->task_proc_arg.thread_switch_out = yes;
+    Vr_( pthread_cond_signal( args->task_proc_arg.thread_switch ));
+    while( !*args->task_proc_arg.thread_switch_in )
+    {   Vr_( pthread_cond_wait( args->task_proc_arg.thread_switch, args->task_proc_arg.thread_flow_mutex ));
+    }
+    *args->task_proc_arg.thread_switch_in = no;
     args->task_proc( &args->task_proc_arg );
     struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
     task->run_state = E_flow_Z_run_state_S_stopping;
-    *task->thread_switch_out = yes;
-    Vr_( pthread_cond_signal( task->thread_switch ));
-    Vr_( pthread_mutex_unlock( task->thread_flow_mutex ));
+    *args->task_proc_arg.thread_switch_out = yes;
+    Vr_( pthread_cond_signal( args->task_proc_arg.thread_switch ));
+    Vr_( pthread_mutex_unlock( args->task_proc_arg.thread_flow_mutex ));
     V0_( sigaltstack( 0, 0 ));
     V0_( munmap( args->alt_stack.ss_sp, args->alt_stack.ss_size ));
     return 0;
@@ -1515,12 +1488,17 @@ E_flow_Q_thread_async_I_before_sync(
 }
 void
 E_flow_Q_thread_async_I_after_sync(
-  B *thread_switch_out
+  B *thread_switch_in
+, B *thread_switch_out
 , pthread_cond_t *thread_switch
 , pthread_mutex_t *thread_flow_mutex
 ){  *thread_switch_out = yes;
     Vr_( pthread_cond_signal( thread_switch ));
-    Vr_( pthread_cond_wait( thread_switch, thread_flow_mutex ));
+    while( !*thread_switch_in )
+    {   Vr_( pthread_cond_wait( thread_switch, thread_flow_mutex ));
+    }
+    *thread_switch_in = no;
+    *thread_switch_out = yes;
 }
     #endif
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1707,7 +1685,9 @@ Loop:
                     #endif
                     #ifdef C_pthreads
                 if( U_R( task->type, async ))
-                {   if( task->run_state != E_flow_Z_run_state_S_stopping )
+                {   if( task->run_state != E_flow_Z_run_state_S_stopping
+                    && *task->thread_switch_out
+                    )
                     {   pthread_mutex_t *thread_flow_mutex = task->thread_flow_mutex;
                         int error;
                         Vr( error = pthread_mutex_trylock( thread_flow_mutex ))
@@ -1715,14 +1695,17 @@ Loop:
                                 V();
                         if( !error )
                         {   E_base_S->E_flow_Q_task_S_current = task_id;
+                            volatile B *thread_switch_in = task->thread_switch_in;
                             volatile B *thread_switch_out = task->thread_switch_out;
                             pthread_cond_t *thread_switch = task->thread_switch;
-                            *task->thread_switch_in = yes;
+                            *thread_switch_out = no;
+                            *thread_switch_in = yes;
                             Vr_( pthread_cond_signal( thread_switch ));
                             while( !*thread_switch_out )
                             {   Vr_( pthread_cond_wait( thread_switch, thread_flow_mutex ));
                             }
                             *thread_switch_out = no;
+                            *thread_switch_in = yes;
                             Vr_( pthread_cond_signal( thread_switch ));
                             Vr_( pthread_mutex_unlock( thread_flow_mutex ));
                             U_L( E_base_S->E_flow_S_signal, time );
@@ -1782,21 +1765,26 @@ Loop:
                 #endif
                 #ifdef C_pthreads
             if( U_R( task->type, async ))
-            {   if( task->run_state != E_flow_Z_run_state_S_stopping )
+            {   if( task->run_state != E_flow_Z_run_state_S_stopping
+                && *task->thread_switch_out
+                )
                 {   pthread_mutex_t *thread_flow_mutex = task->thread_flow_mutex;
                     int error;
                     Vr( error = pthread_mutex_trylock( thread_flow_mutex ))
                         if( error != EBUSY )
                             V();
                     if( !error )
-                    {   volatile B *thread_switch_out = task->thread_switch_out;
+                    {   volatile B *thread_switch_in = task->thread_switch_in;
+                        volatile B *thread_switch_out = task->thread_switch_out;
                         pthread_cond_t *thread_switch = task->thread_switch;
-                        *task->thread_switch_in = yes;
+                        *thread_switch_out = no;
+                        *thread_switch_in = yes;
                         Vr_( pthread_cond_signal( thread_switch ));
                         while( !*thread_switch_out )
                         {   Vr_( pthread_cond_wait( thread_switch, thread_flow_mutex ));
                         }
                         *thread_switch_out = no;
+                        *thread_switch_in = yes;
                         Vr_( pthread_cond_signal( thread_switch ));
                         Vr_( pthread_mutex_unlock( thread_flow_mutex ));
                         U_L( E_base_S->E_flow_S_signal, time );
