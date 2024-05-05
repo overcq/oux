@@ -17,6 +17,8 @@
 # Linux fv-az202-994 5.13.0-1022-azure #26~20.04.1-Ubuntu SMP Thu Apr 7 19:42:45 UTC 2022 x86_64 x86_64 x86_64 GNU/Linux
     ifeq (-azure,$(findstring -azure,$(shell uname -a)))
 H_make_S_reports_consent := 1
+    else ifneq (,$(H_ocq_C_consent))
+H_make_S_reports_consent := 1
     endif
 H_make_S_compile_path := $(H_make_S_root_path)/compile
 H_make_S_module_path := $(H_make_S_root_path)/module
