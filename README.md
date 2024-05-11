@@ -1,6 +1,6 @@
 # OUX/C+ programming language: modules and build environment
 
-[Polish] Kró­t­ko o ‹za­da­niach› OUX/C+: https://youtu.be/mq_qVWsWZ0I
+[Podręcznik OUX/C+](https://overcq.ct8.pl/podrecznik-oux-c.html)
 
 # Information and instructions to the user
 
