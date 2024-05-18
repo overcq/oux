@@ -1836,11 +1836,13 @@ Drag_start_error:                       ;
                     && ( window->width != window->width_new
                       || window->height != window->height_new
                     ))
-                    {   window->width = window->width_new;
+                    {   Vr_( pthread_mutex_lock( &E_x_window_D_draw_S_mutex_display_window ));
+                        window->width = window->width_new;
                         window->height = window->height_new;
                         if( !E_mem_Q_blk_M_replace( &window->drawable, window->width * window->height * sizeof( *window->drawable )))
                         {   GV_(NA); V();
                         }
+                        Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex_display_window ));
                         U_F( window->req, draw );
                         U_F( display->req, draw );
                     }
@@ -1861,7 +1863,8 @@ Drag_start_error:                       ;
                         if( window->width != window->width_new
                         || window->height != window->height_new
                         )
-                        {   window->width = window->width_new;
+                        {   Vr_( pthread_mutex_lock( &E_x_window_D_draw_S_mutex_display_window ));
+                            window->width = window->width_new;
                             window->height = window->height_new;
                             if( !E_mem_Q_blk_M_replace( &window->drawable, window->width * window->height * sizeof( *window->drawable )))
                             {   GV_(NA); V();
@@ -1871,9 +1874,10 @@ Drag_start_error:                       ;
                             }
                             for_n( i, window->width * window->height )
                                 window->object_mask[i] = ~0;
+                            E_gui_xcb_Q_object_I_lay( display, window );
+                            Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex_display_window ));
                             U_F( window->req, draw );
                             U_F( display->req, draw );
-                            E_gui_xcb_Q_object_I_lay( display, window );
                         }else if( U_R( window->req, draw ))
                             U_F( display->req, draw );
                     if( window->user_activity_time > window->last_user_activity_time )
@@ -1920,6 +1924,7 @@ E_x_window_D_draw_I_unblock( P arg
     Vr_( pthread_cond_signal( &E_x_window_D_draw_S_cond ));
     Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex ));
 }
+pthread_mutex_t E_x_window_D_draw_S_mutex_display_window;
 pthread_mutex_t E_x_window_D_draw_S_mutex;
 pthread_cond_t E_x_window_D_draw_S_cond;
 B E_x_window_D_draw_S_b;
@@ -1939,8 +1944,7 @@ D( x_window, draw )
         }
         E_x_window_D_draw_S_b = no;
         Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex ));
-        Da_B_()
-            break;
+        Vr_( pthread_mutex_lock( &E_x_window_D_draw_S_mutex_display_window ));
         for_each( display_id, E_gui_xcb_Q_display_S, E_mem_Q_tab )
         {   struct E_gui_xcb_Q_display_Z *display = E_mem_Q_tab_R( E_gui_xcb_Q_display_S, display_id );
             if( U_E( display->req, draw ))
@@ -2031,6 +2035,9 @@ D( x_window, draw )
                 U_F( x_window, flush );
             U_L( display->mode, draw_simple );
         }
+        Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex_display_window ));
+        Da_B_()
+            break;
         X_U( x_window, flush );
         Da_B();
     }

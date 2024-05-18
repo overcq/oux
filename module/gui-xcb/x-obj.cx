@@ -95,7 +95,8 @@ E_gui_xcb_Q_object_M(
   , N8
   , N8
   )
-){  I object_id = E_mem_Q_tab_I_add( window->object );
+){  Vr_( pthread_mutex_lock( &E_x_window_D_draw_S_mutex_display_window ));
+    I object_id = E_mem_Q_tab_I_add( window->object );
     if( !~object_id )
         return ~0;
     struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
@@ -116,6 +117,7 @@ E_gui_xcb_Q_object_M(
     U_L( object->mode, lay_height );
     U_L( object->mode, draggable );
     U_L( object->state, drag_src );
+    Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex_display_window ));
     return object_id;
 }
 void
