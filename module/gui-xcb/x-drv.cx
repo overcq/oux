@@ -1842,9 +1842,9 @@ Drag_start_error:                       ;
                         if( !E_mem_Q_blk_M_replace( &window->drawable, window->width * window->height * sizeof( *window->drawable )))
                         {   GV_(NA); V();
                         }
-                        Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex_display_window ));
                         U_F( window->req, draw );
                         U_F( display->req, draw );
+                        Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex_display_window ));
                     }
                     if( window->user_activity_time > window->last_user_activity_time )
                     {   E_x_Z_property_P_v( display, window, _NET_WM_USER_TIME
@@ -1875,9 +1875,9 @@ Drag_start_error:                       ;
                             for_n( i, window->width * window->height )
                                 window->object_mask[i] = ~0;
                             E_gui_xcb_Q_object_I_lay( display, window );
-                            Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex_display_window ));
                             U_F( window->req, draw );
                             U_F( display->req, draw );
+                            Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex_display_window ));
                         }else if( U_R( window->req, draw ))
                             U_F( display->req, draw );
                     if( window->user_activity_time > window->last_user_activity_time )
@@ -1930,14 +1930,10 @@ pthread_cond_t E_x_window_D_draw_S_cond;
 B E_x_window_D_draw_S_b;
 D( x_window, draw )
 {   Da_A();
-    //X_M( x_window, draw );
     Da_B_()
         return;
     X_A( x_window, flush );
     Da_B();
-    //I_D
-    //{   X_B( x_window, draw, 0 )
-            //break;
     O{  Vr_( pthread_mutex_lock( &E_x_window_D_draw_S_mutex ));
         while( !E_x_window_D_draw_S_b )
         {   Vr_( pthread_cond_wait( &E_x_window_D_draw_S_cond, &E_x_window_D_draw_S_mutex ));
@@ -2041,7 +2037,6 @@ D( x_window, draw )
         X_U( x_window, flush );
         Da_B();
     }
-    //X_W( x_window, draw );
 }
     #endif
 D( x_window, flush )
