@@ -55,7 +55,6 @@ D( x_window, events )
     I display_id = *( I * )(( struct E_flow_Q_task_async_Z_proc_args * )thread_proc_arg )->p;
         #endif
     Xh_A( E_x_window_D_events_I_unblock );
-    //X_A( x_window, draw );
     B U_L( x_window, draw );
     X_A( x_window, close_window );
     X_A( x_window, flush );
@@ -1895,14 +1894,15 @@ Drag_start_error:                       ;
             if( U_R( display->req, flush ))
                 U_F( x_window, flush );
         }
-        X_U( x_window, close_window );
-        //X_U( x_window, draw );
-        if( U_E( x_window, draw ))
+        if( !U_R( x_window, close_window )
+        && U_E( x_window, draw )
+        )
         {   Vr_( pthread_mutex_lock( &E_x_window_D_draw_S_mutex ));
             E_x_window_D_draw_S_b = yes;
             Vr_( pthread_cond_signal( &E_x_window_D_draw_S_cond ));
             Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex ));
         }
+        X_U( x_window, close_window );
         X_U( x_window, flush );
             #ifndef E_flow_C_thread_system_unblock_reports
         Y_B( timer, 0 )
@@ -1940,6 +1940,12 @@ D( x_window, draw )
         }
         E_x_window_D_draw_S_b = no;
         Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex ));
+        if( !~D_id( x_window, draw ))
+        {   while( !*J_autogen( thread_switch_in ))
+            {   Vr_( pthread_cond_wait( J_autogen( thread_switch ), J_autogen( thread_flow_mutex )));
+            }
+            break;
+        }
         Vr_( pthread_mutex_lock( &E_x_window_D_draw_S_mutex_display_window ));
         for_each( display_id, E_gui_xcb_Q_display_S, E_mem_Q_tab )
         {   struct E_gui_xcb_Q_display_Z *display = E_mem_Q_tab_R( E_gui_xcb_Q_display_S, display_id );

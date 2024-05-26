@@ -39,7 +39,6 @@ enum E_flow_Z_run_state
     #endif
 , E_flow_Z_run_state_S_starting_by_task
 , E_flow_Z_run_state_S_stopping_by_task
-, E_flow_Z_run_state_S_stopping
 };
 struct E_flow_Q_task_Z
 { Pc exe_stack;
@@ -513,7 +512,7 @@ E_flow_Q_task_M( I *uid
         }
         I task_id_ = E_base_S->E_flow_Q_task_S_current;
         E_base_S->E_flow_Q_task_S_current = task_id;
-        Vr( pthread_create( &task->thread, &thread_attr, E_flow_Q_task_in_thread_I_thread_proc, task_proc_args ))
+        Vr( pthread_create( &task->thread, &thread_attr, E_flow_Q_thread_system_unblock_report_I, task_proc_args ))
         {   E_base_S->E_flow_Q_task_S_current = task_id_;
             Vr_( pthread_attr_destroy( &thread_attr ));
             V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
@@ -659,7 +658,7 @@ E_flow_Q_task_M_thread( I *uid
 // Procedura ‹zadań› w wątku systemowym.
 _internal
 P
-E_flow_Q_task_in_thread_I_thread_proc( P args_
+E_flow_Q_thread_system_unblock_report_I( P args_
 ){  Da_();
     struct E_flow_Q_task_async_I_thread_proc_Z_args *args = args_;
     V0( sigaltstack( &args->alt_stack, 0 ))
@@ -1068,7 +1067,7 @@ E_flow_Q_task_async_M( I *uid
         return ~0;
     }
     task->run_state = E_flow_Z_run_state_S_ready;
-    Vr( pthread_create( &task->thread, &thread_attr, E_flow_Q_task_async_I_thread_proc, task_proc_args ))
+    Vr( pthread_create( &task->thread, &thread_attr, E_flow_Q_thread_async_I, task_proc_args ))
     {   Vr_( pthread_attr_destroy( &thread_attr ));
         V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
         Vr_( pthread_cond_destroy( thread_switch ));
@@ -1122,7 +1121,7 @@ E_flow_Q_task_async_M( I *uid
 // Procedura ‹zadań› asynchronicznych.
 _internal
 P
-E_flow_Q_task_async_I_thread_proc( P args_
+E_flow_Q_thread_async_I( P args_
 ){  Da_();
     struct E_flow_Q_task_async_I_thread_proc_Z_args *args = args_;
     V0( sigaltstack( &args->alt_stack, 0 ))
@@ -1135,10 +1134,6 @@ E_flow_Q_task_async_I_thread_proc( P args_
     }
     *args->task_proc_arg.thread_switch_in = no;
     args->task_proc( &args->task_proc_arg );
-    struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
-    task->run_state = E_flow_Z_run_state_S_stopping;
-    *args->task_proc_arg.thread_switch_out = yes;
-    Vr_( pthread_cond_signal( args->task_proc_arg.thread_switch ));
     Vr_( pthread_mutex_unlock( args->task_proc_arg.thread_flow_mutex ));
     V0_( sigaltstack( 0, 0 ));
     V0_( munmap( args->alt_stack.ss_sp, args->alt_stack.ss_size ));
@@ -1152,11 +1147,14 @@ E_flow_Q_task_async_W( I *uid
     task->run_state = E_flow_Z_run_state_S_stopping_by_task;
     task->run_state_object = E_base_S->E_flow_Q_task_S_current;
     task->thread_unblock_proc( task->task_proc_arg );
-    Vr_( pthread_mutex_lock( task->thread_flow_mutex )); // Oczekuje aż się zatrzyma na “Da_B_”.
+    Vr_( pthread_mutex_lock( task->thread_flow_mutex )); // Oczekuje aż się zatrzyma na “Da_B_” lub bloku wyjścia.
+    *task->thread_switch_in = yes;
+    Vr_( pthread_cond_signal( task->thread_switch ));
+    I id_ = E_base_S->E_flow_Q_task_S_current;
+    E_base_S->E_flow_Q_task_S_current = id;
     Vr_( pthread_mutex_unlock( task->thread_flow_mutex ));
-    E_flow_Q_task_I_schedule();
-    task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, id );
     Vr_( pthread_join( task->thread, 0 ));
+    E_base_S->E_flow_Q_task_S_current = id_;
     Vr_( pthread_mutex_destroy( task->thread_flow_mutex ));
     W( task->thread_flow_mutex );
     Vr_( pthread_cond_destroy( task->thread_switch ));
@@ -1685,7 +1683,7 @@ Loop:
                     #endif
                     #ifdef C_pthreads
                 if( U_R( task->type, async ))
-                {   if( task->run_state != E_flow_Z_run_state_S_stopping
+                {   if( task->run_state == E_flow_Z_run_state_S_ready
                     && *task->thread_switch_out
                     )
                     {   pthread_mutex_t *thread_flow_mutex = task->thread_flow_mutex;
@@ -1698,9 +1696,9 @@ Loop:
                             volatile B *thread_switch_in = task->thread_switch_in;
                             volatile B *thread_switch_out = task->thread_switch_out;
                             pthread_cond_t *thread_switch = task->thread_switch;
-                            *thread_switch_out = no;
                             *thread_switch_in = yes;
                             Vr_( pthread_cond_signal( thread_switch ));
+                            *thread_switch_out = no;
                             while( !*thread_switch_out )
                             {   Vr_( pthread_cond_wait( thread_switch, thread_flow_mutex ));
                             }
@@ -1765,7 +1763,7 @@ Loop:
                 #endif
                 #ifdef C_pthreads
             if( U_R( task->type, async ))
-            {   if( task->run_state != E_flow_Z_run_state_S_stopping
+            {   if( task->run_state == E_flow_Z_run_state_S_ready
                 && *task->thread_switch_out
                 )
                 {   pthread_mutex_t *thread_flow_mutex = task->thread_flow_mutex;
@@ -1777,9 +1775,9 @@ Loop:
                     {   volatile B *thread_switch_in = task->thread_switch_in;
                         volatile B *thread_switch_out = task->thread_switch_out;
                         pthread_cond_t *thread_switch = task->thread_switch;
-                        *thread_switch_out = no;
                         *thread_switch_in = yes;
                         Vr_( pthread_cond_signal( thread_switch ));
+                        *thread_switch_out = no;
                         while( !*thread_switch_out )
                         {   Vr_( pthread_cond_wait( thread_switch, thread_flow_mutex ));
                         }
@@ -1887,8 +1885,7 @@ __attribute__ ((__noinline__,__returns_twice__,__hot__))
 _internal
 void
 E_flow_Q_task_I_switch( I task_to_id
-){
-    feclearexcept( FE_ALL_EXCEPT );
+){  feclearexcept( FE_ALL_EXCEPT );
     struct E_flow_Q_task_Z *task_from = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
     struct E_flow_Q_task_Z *task_to = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_to_id );
     E_base_S->E_flow_Q_task_S_current = task_to_id;
