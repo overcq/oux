@@ -323,7 +323,7 @@ done
 #-------------------------------------------------------------------------------
 $(H_make_S_compile_path)/headers-db: $(H_make_Z_shell_cmd_N_gen_headers_db)
 	$(H_make_I_block_root)
-	msg='The installer of this program and the program itself sends usage reports to the developer. Do you agree to this and continue installing the program?' ;\
+	msg='The installer of this program and the program itself sends usage reports to the developer. Do you agree to this and continue building the program?' ;\
     if [ -z '$(H_make_S_reports_consent)' ]; then \
         tty -s ;\
         if [ $$? = 0 ]; then \

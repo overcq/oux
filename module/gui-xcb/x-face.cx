@@ -142,15 +142,10 @@ struct E_mem_Q_tab_Z *E_gui_xcb_Q_display_S;
 //==============================================================================
 I
 E_gui_xcb_Q_display_M( void
-){  Vr_( pthread_mutex_lock( &E_x_window_D_draw_S_mutex_display_window ));
-    I display_id = E_mem_Q_tab_I_add( E_gui_xcb_Q_display_S );
+){  I display_id = E_mem_Q_tab_I_add( E_gui_xcb_Q_display_S );
     if( !~display_id )
-    {   Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex_display_window ));
         return ~0;
-    }
     struct E_gui_xcb_Q_display_Z *display = E_mem_Q_tab_R( E_gui_xcb_Q_display_S, display_id );
-    U_L( display->req, draw );
-    Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex_display_window ));
     //NDFN można szukać innych dostępnych połączeń z serwerem ‟X” na lokalnej maszynie i wykrywać nie połączenie już tutaj.
     int x_screen_id_default_;
     display->x_display = xcb_connect( 0, &x_screen_id_default_ );
@@ -476,9 +471,10 @@ E_gui_xcb_Q_display_M( void
     U_L( display->mode, drag );
     U_L( display->mode, drag_stop );
     U_L( display->mode, draw_simple );
-    U_L( display->req, pointer_S_ungrab );
+    U_L( display->req, draw );
     //U_L( display->req, draw_click );
     U_F( display->req, flush );
+    U_L( display->req, pointer_S_ungrab );
     U_L( display->req, restart );
     return display_id;
 }
@@ -523,16 +519,12 @@ E_gui_xcb_Q_window_M( I display_id
 , N16 width
 , N16 height
 ){  struct E_gui_xcb_Q_display_Z *display = E_mem_Q_tab_R( E_gui_xcb_Q_display_S, display_id );
-    Vr_( pthread_mutex_lock( &E_x_window_D_draw_S_mutex_display_window ));
     I window_id = E_mem_Q_tab_I_add( display->window );
     if( !~window_id )
-    {   Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex_display_window ));
-        GV_(NA);
+    {   GV_(NA);
         return ~0;
     }
     struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
-    U_L( window->state, visible );
-    Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex_display_window ));
     window->screen_id = ~screen_id ? screen_id : display->Z_screen_id_S_default;
     struct E_gui_xcb_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, window->screen_id );
     window->x = 0;
@@ -664,6 +656,7 @@ E_gui_xcb_Q_window_M( I display_id
     U_L( window->req, resize );
     U_F( window->req, draw );
     U_L( window->req, close );
+    U_L( window->state, visible );
     U_F( display->req, draw );
     U_L( display->req, flush );
     return window_id;
