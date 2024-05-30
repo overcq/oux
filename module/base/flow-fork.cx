@@ -168,17 +168,35 @@ E_flow_I_fork_I_wait( pid_t pid
         sched_yield();
     }
     W(path);
-        #elif defined( __OpenBSD__ )
+        #elif defined( __FreeBSD__ )
     char errbuf[ _POSIX2_LINE_MAX ];
-    kvm_t *kernel = kvm_openfiles( NULL, NULL, NULL, KVM_NO_FILES, errbuf );
+    kvm_t *kernel = kvm_openfiles( NULL, NULL, NULL, 0, errbuf );
+    if( !kernel )
+        return ~0;
     O{  int n = 0;
-        struct kinfo_proc *kinfo = kvm_getprocs( kernel, KERN_PROC_PID, pid, sizeof( struct kinfo_proc ), &n );
+        kvm_getprocs( kernel, KERN_PROC_PID, pid, &n );
         if( !n )
             break;
         V1( sched_yield() )
             return ~0;
     }
-       #endif
+    kvm_close(kernel);
+        #elif defined( __OpenBSD__ )
+    char errbuf[ _POSIX2_LINE_MAX ];
+    kvm_t *kernel = kvm_openfiles( NULL, NULL, NULL, KVM_NO_FILES, errbuf );
+    if( !kernel )
+        return ~0;
+    O{  int n = 0;
+        kvm_getprocs( kernel, KERN_PROC_PID, pid, sizeof( struct kinfo_proc ), &n );
+        if( !n )
+            break;
+        V1( sched_yield() )
+            return ~0;
+    }
+    kvm_close(kernel);
+        #else
+#error not implemented
+        #endif
     return 0;
 }
 /******************************************************************************/

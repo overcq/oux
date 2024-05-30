@@ -214,24 +214,25 @@ E_flow_Q_task_M( I *uid
         granulation_u -= task_proc_args->alt_stack.ss_size;
     }
     N pthread_stack_min = E_simple_Z_n_I_align_up_to_v2( PTHREAD_STACK_MIN, E_base_S->E_mem_S_page_size );
-    if( task_in_thread_kind
-    && granulation_u < pthread_stack_min
-    )
+    if( task_in_thread_kind )
+    {   if( granulation_u < pthread_stack_min )
+        {   if( task_proc_arg )
+                W( task_proc_arg );
+            GV_(NA); // Late instrumentation error: granulation unit too small because too many tasks in available memory.
+            return ~0;
+        }
+    }else if( granulation_u < E_base_S->E_mem_S_page_size )
     {   if( task_proc_arg )
             W( task_proc_arg );
         GV_(NA); // Late instrumentation error: granulation unit too small because too many tasks in available memory.
         return ~0;
     }
-        #endif
+        #else
     if( granulation_u < E_base_S->E_mem_S_page_size )
-    {
-            #ifdef E_flow_C_thread_system_unblock_reports
-        if( task_proc_arg )
-            W( task_proc_arg );
-            #endif
-        GV_(NA); // Late instrumentation error: granulation unit too small because too many tasks in available memory.
+    {   GV_(NA); // Late instrumentation error: granulation unit too small because too many tasks in available memory.
         return ~0;
     }
+        #endif
     for_each_out( 0, task_id_, E_base_S->E_flow_Q_task_S, E_mem_Q_tab )
     {   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id_ );
         if( task->stack_size > granulation_u )
@@ -256,34 +257,55 @@ E_flow_Q_task_M( I *uid
     Pc stack;
     do
     {   stack_size = E_base_S->E_mem_S_page_size + granulation_u; // Jedna strona pamięci “PROT_NONE” na początku stosu.
-        #if defined( __gnu_linux__ )
-    V1p( stack = mmap( 0
-    , stack_size
-    , PROT_NONE
-    , MAP_PRIVATE
-    | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_UNINITIALIZED
-    , -1
-    , 0
-    ))
-        #elif defined( __FreeBSD__ ) || defined( __OpenBSD__ )
-    V1p( stack = mmap( 0
-    , stack_size
-    , PROT_READ | PROT_WRITE
-    , MAP_PRIVATE
-    | MAP_ANON | MAP_STACK
-    , -1
-    , 0
-    ))
-        #else
-#error not implemented
-        #endif
-    {
-            #ifdef E_flow_C_thread_system_unblock_reports
-        if( task_proc_arg )
-            W( task_proc_arg );
+        int err = 0;
+            #if defined( __gnu_linux__ )
+        V1pe( stack = mmap( 0
+          , stack_size
+          , PROT_NONE
+          , MAP_PRIVATE
+          | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_UNINITIALIZED
+          , -1
+          , 0
+          )
+        , err
+        )
+            #elif defined( __FreeBSD__ ) || defined( __OpenBSD__ )
+        V1pe( stack = mmap( 0
+          , stack_size
+          , PROT_READ | PROT_WRITE
+          , MAP_PRIVATE
+          | MAP_ANON | MAP_STACK
+          , -1
+          , 0
+          )
+        , err
+        )
+            #else
+    #error not implemented
             #endif
-        return ~0;
-    }
+        {   if( err != ENOMEM )
+            {
+                    #ifdef E_flow_C_thread_system_unblock_reports
+                if( task_proc_arg )
+                    W( task_proc_arg );
+                    #endif
+                return ~0;
+            }
+            granulation_u = E_simple_Z_n_I_align_down_to_v2( granulation_u / 2, E_base_S->E_mem_S_page_size );
+                #ifndef E_flow_C_thread_system_unblock_reports
+            if( granulation_u < E_base_S->E_mem_S_page_size )
+                #else
+            if( granulation_u < ( task_in_thread_kind ? pthread_stack_min : E_base_S->E_mem_S_page_size ))
+                #endif
+            {
+                    #ifdef E_flow_C_thread_system_unblock_reports
+                if( task_proc_arg )
+                    W( task_proc_arg );
+                    #endif
+                return ~0;
+            }
+        }
+    }while( !~(N)stack );
     Pc exe_stack = stack + stack_size;
         #ifndef E_flow_C_thread_system_unblock_reports
     N touched_size = E_base_S->E_mem_S_page_size;
@@ -825,10 +847,6 @@ E_flow_Q_task_async_M( I *uid
     {   GV_(NA); // Late instrumentation error: granulation unit too small because too many tasks in available memory.
         return ~0;
     }
-    if( granulation_u < E_base_S->E_mem_S_page_size )
-    {   GV_(NA); // Late instrumentation error: granulation unit too small because too many tasks in available memory.
-        return ~0;
-    }
     for_each_out( 0, task_id_, E_base_S->E_flow_Q_task_S, E_mem_Q_tab )
     {   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id_ );
         if( task->stack_size > granulation_u )
@@ -849,30 +867,43 @@ E_flow_Q_task_async_M( I *uid
                 }
             }
     }
-    N stack_size = E_base_S->E_mem_S_page_size + granulation_u; // Jedna strona pamięci “PROT_NONE” na początku stosu.
+    N stack_size;
     Pc stack;
-        #if defined( __gnu_linux__ )
-    V1p( stack = mmap( 0
-    , stack_size
-    , PROT_NONE
-    , MAP_PRIVATE
-    | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_UNINITIALIZED
-    , -1
-    , 0
-    ))
-        #elif defined( __FreeBSD__ ) || defined( __OpenBSD__ )
-    V1p( stack = mmap( 0
-    , stack_size
-    , PROT_READ | PROT_WRITE
-    , MAP_PRIVATE
-    | MAP_ANON | MAP_STACK
-    , -1
-    , 0
-    ))
-        #else
-#error not implemented
-        #endif
-        return ~0;
+    do
+    {   stack_size = E_base_S->E_mem_S_page_size + granulation_u; // Jedna strona pamięci “PROT_NONE” na początku stosu.
+        int err = 0;
+            #if defined( __gnu_linux__ )
+        V1pe( stack = mmap( 0
+          , stack_size
+          , PROT_NONE
+          , MAP_PRIVATE
+          | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_UNINITIALIZED
+          , -1
+          , 0
+          )
+        , err
+        )
+            #elif defined( __FreeBSD__ ) || defined( __OpenBSD__ )
+        V1pe( stack = mmap( 0
+          , stack_size
+          , PROT_READ | PROT_WRITE
+          , MAP_PRIVATE
+          | MAP_ANON | MAP_STACK
+          , -1
+          , 0
+          )
+        , err
+        )
+            #else
+    #error not implemented
+            #endif
+        {   if( err != ENOMEM )
+                return ~0;
+            granulation_u = E_simple_Z_n_I_align_down_to_v2( granulation_u / 2, E_base_S->E_mem_S_page_size );
+            if( granulation_u < pthread_stack_min )
+                return ~0;
+        }
+    }while( !~(N)stack );
     Pc exe_stack = stack + stack_size;
     Pc touched_stack = exe_stack - pthread_stack_min;
         #if defined( __gnu_linux__ )
