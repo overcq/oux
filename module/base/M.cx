@@ -24,9 +24,9 @@ struct E_base_Z
   E_mem_Q_blk_I_libc_realloc_Z E_mem_Q_blk_I_libc_realloc;
   E_mem_Q_blk_I_libc_reallocarray_Z E_mem_Q_blk_I_libc_reallocarray;
   E_mem_Q_blk_I_libc_free_Z E_mem_Q_blk_I_libc_free;
-        #ifdef C_pthreads
+    #endif
+    #ifdef C_pthreads
   pthread_mutex_t E_mem_Q_blk_S_threads_sync_mutex;
-        #endif
     #endif
   N E_mem_S_page_size;
   struct E_mem_Q_blk_Z_allocated *E_mem_Q_blk_S_allocated;
@@ -201,13 +201,13 @@ E_mem_M_blk( void
     free_p[0].l = mapped_p[0].p + mapped_p[0].l - free_p[0].p;
     if( !free_p[0].l )
         free_p[0].p = 0;
-        #ifdef C_to_libs_C_replace_c_alloc
-            #ifdef C_pthreads
+        #ifdef C_pthreads
     pthread_mutexattr_t mutexattr;
     Vr_( pthread_mutexattr_init( &mutexattr ));
     Vr_( pthread_mutex_init( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex, &mutexattr ));
     Vr_( pthread_mutexattr_destroy( &mutexattr ));
-            #endif
+        #endif
+        #ifdef C_to_libs_C_replace_c_alloc
     // Jeśli któraś użyta do tego miejsca procedura systemu operacyjnego używałaby menedżera pamięci z “libc”, to trzeba by zrobić specjalny sposób alokowania pamięci początkowej.
     P libc;
     if( !( libc = dlopen( C_to_libs_C_replace_c_alloc_S_libc_filename, RTLD_LAZY | RTLD_GLOBAL )))
