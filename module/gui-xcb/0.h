@@ -11,8 +11,8 @@
     #else
 #define E_gui_xcb_Q_obj_C_id_bits         32
     #endif
-#define E_gui_xcb_Q_window_C_hidden_x     -1000
-#define E_gui_xcb_Q_window_C_hidden_y     -1000
+#define E_gui_xcb_Q_window_C_hidden_x     -10000
+#define E_gui_xcb_Q_window_C_hidden_y     -10000
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #define XCB_ATOM_LAST_PREDEFINED    XCB_ATOM_WM_TRANSIENT_FOR
 #define XCB_ATOM_FIRST_DEFINED_     C_STRING
