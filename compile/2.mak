@@ -275,7 +275,7 @@ build-0: a.out
 install: install-0 install-1
 uninstall: uninstall-1
 recompile: mostlyclean build
-rebuild: distclean build
+rebuild: clean build
 run: build
 rebuild-run: rebuild run
 #-------------------------------------------------------------------------------
