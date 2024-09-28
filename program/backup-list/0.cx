@@ -8,686 +8,248 @@
 * ©overcq                on ‟Gentoo Linux 17.1” “x86_64”              2023‒4‒9 O
 *******************************************************************************/
 #define E_main_S_user "inc"
-Pc E_main_S_attribute_backup = "user.H_ocq_Q_backup_S";
-Pc E_main_S_attribute_backup_exclude_masks = "user.H_ocq_Q_backup_S_exclude"; //TODO
+Pc E_main_S_autobackup = ".autobackup";
 //==============================================================================
 N
-Q_path_I_pop( Pc *path
-, N *path_l
-){  Pc s = E_text_Z_s_R_search_last_c( *path, *path + *path_l - 1, '/' );
-    N i = s - *path;
-    if( !E_mem_Q_blk_I_remove( path, i, *path_l - i - 1 ))
-        return ~0;
-    (*path)[i] = '\0';
-    *path_l = i + 1;
-    return 0;
-}
-N
-Q_path_I_push( Pc *path
-, N *path_l
-, Pc dir_name
-, Pc *argv
-, int argc
-, int argi
-){  N l = 1 + E_text_Z_s0_R_l( dir_name );
-    if( !E_mem_Q_blk_I_append( path, l ))
-        return ~0;
-    (*path)[ *path_l - 1 ] = '/';
-    E_text_Z_s_P_copy_s0_0( *path + *path_l - 1 + 1, dir_name );
-    (*path)[ *path_l - 1 + l ] = '\0';
-    *path_l += l;
-    B U_L( path, in_argv );
-    for( int i = 0; i != argc; i++ )
-    {   if( i == argi )
-            continue;
-        if( E_text_Z_s0_T_eq_s0( *path, argv[i] ))
-        {   U_F( path, in_argv );
-            break;
+E_main_Z_s_N_escape( Pc *s
+){  C c[] = "*?[";
+    for( unsigned i = 0; i != J_s0_R_l(c); i++ )
+    {   Pc s_ = E_text_Z_s0_R_search_c( *s, c[i] );
+        while( *s_ )
+        {   N s_i = s_ - *s;
+            if( !E_mem_Q_blk_I_insert( s, s_i, 2 ))
+                return ~0;
+            s_ = *s + s_i;
+            s_[0] = '[';
+            s_[1] = s_[2];
+            s_[2] = ']';
+            s_ = E_text_Z_s0_R_search_c( s_ + 3, c[i] );
         }
-    }
-    if( U_R( path, in_argv ))
-    {   if( !~Q_path_I_pop( path, path_l ))
-            return ~0;
-        return ~0 - 1;
     }
     return 0;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 N
-E_main_I_top_dirs( Pc **top_dirs
-, N *top_dirs_n
-, Pc root
-, Pc *argv
-, int argc
-, int argi
-){  N dirs_n = 0;
-    DIR **Mt_( dirs, dirs_n );
+E_main_I_top_dirs( void
+){  N dirs_n = 1;
+    Pc *Mt_( dirs, dirs_n );
     if( !dirs )
-    {   GV_(NA);
         return ~0;
-    }
-    struct stat stat;
-    V1( lstat( root, &stat ))
-        return ~0;
-    if( !S_ISDIR( stat.st_mode ))
-    {   GV_(NXP);
-        return ~0;
-    }
-    C attr_value[4];
-    _errno = 0;
-    N attr_value_l = getxattr( root, E_main_S_attribute_backup, &attr_value[0], sizeof( attr_value ) - 1 );
-    if( !~attr_value_l )
-    {   if( _errno == ENODATA )
-        {   DIR *dir;
-            Vp( dir = opendir(root))
-            {   G_(); Gs0(root);
-                return ~0;
-            }
-            N path_l = 1;
-            if( !E_text_Z_s0_T_eq_s0( root, "/" ))
-                path_l += E_text_Z_s0_R_l(root);
-            Pc path = M( path_l );
-            if( !path )
-            {   GV_(NA);
-                return ~0;
-            }
-            if( !E_text_Z_s0_T_eq_s0( root, "/" ))
-                E_text_Z_s_P_copy_sl_0( path, root, path_l - 1 );
-            else
-                path[ path_l - 1 ] = '\0';
-            B U_L( path, in_argv );
-            for( int i = 0; i != argc; i++ )
-            {   if( i == argi )
-                    continue;
-                if( E_text_Z_s0_T_eq_s0( path, argv[i] ))
-                {   U_F( path, in_argv );
-                    break;
-                }
-            }
-            if( !U_R( path, in_argv ))
-                O{  _errno = 0;
-                    struct dirent *dirent = readdir(dir);
-                    if( !dirent )
-                    {   if( _errno )
-                        {   Vp(dirent){}
-                            V1( closedir(dir) ){}
-                            for( N i = 0; i != dirs_n; i++ )
-                            {   V1( closedir( dirs[i] )){}
-                            }
-                            return ~0;
-                        }
-                        V1( closedir(dir) ){}
-                        if( !dirs_n )
-                            break;
-                        dir = dirs[ dirs_n - 1 ];
-                        if( !E_mem_Q_blk_I_remove( &dirs, dirs_n - 1, 1 ))
-                        {   GV_(NA);
-                            V1( closedir(dir) ){}
-                            for( N i = 0; i != dirs_n; i++ )
-                            {   V1( closedir( dirs[i] )){}
-                            }
-                            return ~0;
-                        }
-                        dirs_n--;
-                        if( !~Q_path_I_pop( &path, &path_l ))
-                        {   GV_(NA);
-                            V1( closedir(dir) ){}
-                            for( N i = 0; i != dirs_n; i++ )
-                            {   V1( closedir( dirs[i] )){}
-                            }
-                            return ~0;
-                        }
-                        continue;
-                    }
-                    if( E_text_Z_s0_T_eq_s0( &dirent->d_name[0], "." )
-                    || E_text_Z_s0_T_eq_s0( &dirent->d_name[0], ".." )
-                    )
-                        continue;
-                    B U_L( path, appended );
-                    if( dirent->d_type == DT_UNKNOWN )
-                    {   N ret = Q_path_I_push( &path, &path_l, &dirent->d_name[0], argv, argc, argi );
-                        if( !~ret )
-                        {   GV_(NA);
-                            V1( closedir(dir) ){}
-                            for( N i = 0; i != dirs_n; i++ )
-                            {   V1( closedir( dirs[i] )){}
-                            }
-                            return ~0;
-                        }
-                        if( ret == ~0 - 1 )
-                            continue;
-                        U_F( path, appended );
-                        struct stat stat;
-                        V1( lstat( path, &stat ))
-                        {   V1( closedir(dir) ){}
-                            for( N i = 0; i != dirs_n; i++ )
-                            {   V1( closedir( dirs[i] )){}
-                            }
-                            return ~0;
-                        }
-                        if( S_ISDIR( stat.st_mode ))
-                            dirent->d_type = DT_DIR;
-                        else
-                            if( !~Q_path_I_pop( &path, &path_l ))
-                            {   GV_(NA);
-                                V1( closedir(dir) ){}
-                                for( N i = 0; i != dirs_n; i++ )
-                                {   V1( closedir( dirs[i] )){}
-                                }
-                                return ~0;
-                            }
-                    }
-                    if( dirent->d_type != DT_DIR )
-                        continue;
-                    if( !U_R( path, appended ))
-                    {   N ret = Q_path_I_push( &path, &path_l, &dirent->d_name[0], argv, argc, argi );
-                        if( !~ret )
-                        {   GV_(NA);
-                            V1( closedir(dir) ){}
-                            for( N i = 0; i != dirs_n; i++ )
-                            {   V1( closedir( dirs[i] )){}
-                            }
-                            return ~0;
-                        }
-                        if( ret == ~0 - 1 )
-                            continue;
-                    }
-                    if( E_text_Z_s_T_eq_s0( path, path + path_l - 1, "/dev" )
-                    || E_text_Z_s_T_eq_s0( path, path + path_l - 1, "/lost+found" )
-                    || E_text_Z_s_T_eq_s0( path, path + path_l - 1, "/media" )
-                    || E_text_Z_s_T_eq_s0( path, path + path_l - 1, "/mnt" )
-                    || E_text_Z_s_T_eq_s0( path, path + path_l - 1, "/proc" )
-                    || E_text_Z_s_T_eq_s0( path, path + path_l - 1, "/run" )
-                    || E_text_Z_s_T_eq_s0( path, path + path_l - 1, "/sys" )
-                    || E_text_Z_s_T_eq_s0( path, path + path_l - 1, "/usr/portage" )
-                    || E_text_Z_s_T_eq_s0( path, path + path_l - 1, "/var" )
-                    )
-                    {   if( !~Q_path_I_pop( &path, &path_l ))
-                        {   GV_(NA);
-                            V1( closedir(dir) ){}
-                            for( N i = 0; i != dirs_n; i++ )
-                            {   V1( closedir( dirs[i] )){}
-                            }
-                            return ~0;
-                        }
-                        continue;
-                    }
-                    C attr_value[4];
-                    _errno = 0;
-                    N attr_value_l = getxattr( path, E_main_S_attribute_backup, &attr_value[0], sizeof( attr_value ) - 1 );
-                    if( !~attr_value_l )
-                    {   if( _errno == ENODATA )
-                        {   if( !E_mem_Q_blk_I_append( &dirs, dirs_n + 1 ))
-                            {   GV_(NA);
-                                V1( closedir(dir) ){}
-                                for( N i = 0; i != dirs_n; i++ )
-                                {   V1( closedir( dirs[i] )){}
-                                }
-                                return ~0;
-                            }
-                            dirs[ dirs_n ] = dir;
-                            dirs_n++;
-                            Vp( dir = opendir(path) )
-                            {   G_(); Gs0(path);
-                                for( N i = 0; i != dirs_n; i++ )
-                                {   V1( closedir( dirs[i] )){}
-                                }
-                                return ~0;
-                            }
-                            continue;
-                        }
-                        if( _errno == ENOTSUP )
-                        {   if( !~Q_path_I_pop( &path, &path_l ))
-                            {   GV_(NA);
-                                V1( closedir(dir) ){}
-                                for( N i = 0; i != dirs_n; i++ )
-                                {   V1( closedir( dirs[i] )){}
-                                }
-                                return ~0;
-                            }
-                            continue;
-                        }
-                        Ve();
-                        V1( closedir(dir) ){}
-                        for( N i = 0; i != dirs_n; i++ )
-                        {   V1( closedir( dirs[i] )){}
-                        }
-                        return ~0;
-                    }
-                    attr_value[ attr_value_l ] = '\0';
-                    if( !E_text_Z_s0_T_eq_s0( &attr_value[0], "yes" ))
-                    {   GV_(NXP);
-                        V1( closedir(dir) ){}
-                        for( N i = 0; i != dirs_n; i++ )
-                        {   V1( closedir( dirs[i] )){}
-                        }
-                        return ~0;
-                    }
-                    if( !E_mem_Q_blk_I_append( top_dirs, *top_dirs_n + 1 ))
-                    {   GV_(NA);
-                        V1( closedir(dir) ){}
-                        for( N i = 0; i != dirs_n; i++ )
-                        {   V1( closedir( dirs[i] )){}
-                        }
-                        return ~0;
-                    }
-                    (*top_dirs)[ *top_dirs_n ] = M( E_text_Z_s0_R_l_0(path) );
-                    E_text_Z_s_P_copy_s0_0( (*top_dirs)[ *top_dirs_n ], path );
-                    (*top_dirs_n)++;
-                    if( !~Q_path_I_pop( &path, &path_l ))
-                    {   GV_(NA);
-                        V1( closedir(dir) ){}
-                        for( N i = 0; i != dirs_n; i++ )
-                        {   V1( closedir( dirs[i] )){}
-                        }
-                        return ~0;
-                    }
-                }
-            for( N i = 0; i != dirs_n; i++ )
-            {   V1( closedir( dirs[i] )){}
-            }
-            W(path);
-            return 0;
-        }
-        Ve();
-        return ~0;
-    }
-    if( attr_value_l != sizeof( attr_value ) - 1 )
-    {   GV_(NXP);
-        return ~0;
-    }
-    attr_value[ attr_value_l ] = '\0';
-    if( !E_text_Z_s0_T_eq_s0( &attr_value[0], "yes" ))
-    {   GV_(NXP);
-        return ~0;
-    }
-    if( !E_mem_Q_blk_I_append( top_dirs, *top_dirs_n + 1 ))
-    {   GV_(NA);
-        return ~0;
-    }
-    (*top_dirs)[ *top_dirs_n ] = M( E_text_Z_s0_R_l_0(root));
-    E_text_Z_s_P_copy_s0_0( (*top_dirs)[ *top_dirs_n ], root );
-    (*top_dirs_n)++;
-    return 0;
-}
-N
-E_main_I_exec_make( Pc path
-, N path_l
-, B rebuild
-){  Pc path_makefile = M( path_l + J_s0_R_l( "/Makefile" ));
-    E_text_Z_s_P_copy_s0_0( E_text_Z_s_P_copy_s0( path_makefile, path ), "/Makefile" );
-    struct stat stat_;
-    _errno = 0;
-    if( !~stat( path_makefile, &stat_ ))
-    {   if( _errno != ENOENT )
-        {   Ve();
-            return ~0;
-        }
-    }else if( S_ISREG( stat_.st_mode )
-    && !E_text_Z_s0_T_eq_s0( path, "/home/" E_main_S_user "/moje/programy/oux/program/backup-list" )
-    )
-    {   if( !rebuild )
-        {   pid_t pid = E_flow_I_fork_I_begin();
-            if( !pid )
-            {   E_flow_I_fork_I_start();
-                struct E_flow_Z_args args =
-                { 10
-                , &(( Pc [] )
-                  { "sudo"
-                  , "-u"
-                  , E_main_S_user
-                  , "-g"
-                  , E_main_S_user
-                  , "sh"
-                  , "-c"
-                  , ". ~/.bash_profile; cd \"$1\" && make -s distclean > /dev/null"
-                  , "sh"
-                  , path
-                  })[0]
-                };
-                E_flow_I_fork_I_exec( path, &args, 1 );
-                exit( EXIT_FAILURE );
-            }
-            E_flow_I_fork_I_end(pid);
-            if( !~E_flow_I_fork_I_wait(pid) )
-                return ~0;
-            pid = E_flow_I_fork_I_begin();
-            if( !pid )
-            {   E_flow_I_fork_I_start();
-                struct E_flow_Z_args args =
-                { 10
-                , &(( Pc [] )
-                  { "sudo"
-                  , "-u"
-                  , E_main_S_user
-                  , "-g"
-                  , E_main_S_user
-                  , "sh"
-                  , "-c"
-                  , ". ~/.bash_profile; cd \"$1\" && make -s clean > /dev/null"
-                  , "sh"
-                  , path
-                  })[0]
-                };
-                E_flow_I_fork_I_exec( path, &args, 1 );
-                exit( EXIT_FAILURE );
-            }
-            E_flow_I_fork_I_end(pid);
-            if( !~E_flow_I_fork_I_wait(pid) )
-                return ~0;
-        }else
-        {   pid_t pid = E_flow_I_fork_I_begin();
-            if( !pid )
-            {   E_flow_I_fork_I_start();
-                struct E_flow_Z_args args =
-                { 10
-                , &(( Pc [] )
-                  { "sudo"
-                  , "-u"
-                  , E_main_S_user
-                  , "-g"
-                  , E_main_S_user
-                  , "sh"
-                  , "-c"
-                  , ". ~/.bash_profile; cd \"$1\" && make -s build"
-                  , "sh"
-                  , path
-                  })[0]
-                };
-                E_flow_I_fork_I_exec( path, &args, 1 );
-                exit( EXIT_FAILURE );
-            }
-            E_flow_I_fork_I_end(pid);
-            if( !~E_flow_I_fork_I_wait(pid) )
-                return ~0;
-        }
-    }
-    W( path_makefile );
-    return 0;
-}
-N
-E_main_I_dir( Pc root
-, B rebuild
-){  N dirs_n = 0;
-    DIR **Mt_( dirs, dirs_n );
-    if( !dirs )
-    {   GV_(NA);
-        return ~0;
-    }
-    struct stat stat;
-    V1( lstat( root, &stat ))
-        return ~0;
-    if( !S_ISDIR( stat.st_mode ))
-    {   GV_(NXP);
-        return ~0;
-    }
-    C attr_value[4];
-    N attr_value_l;
-    V1( attr_value_l = getxattr( root, E_main_S_attribute_backup, &attr_value[0], sizeof( attr_value ) - 1 ))
-        return ~0;
-    if( attr_value_l != sizeof( attr_value ) - 1 )
-    {   GV_(NXP);
-        return ~0;
-    }
-    attr_value[ attr_value_l ] = '\0';
-    if( !E_text_Z_s0_T_eq_s0( &attr_value[0], "yes" ))
-    {   GV_(NXP);
-        return ~0;
-    }
-    DIR *dir;
-    Vp( dir = opendir(root))
-    {   G_(); Gs0(root);
-        return ~0;
-    }
-    N path_l = E_text_Z_s0_R_l(root) + 1;
-    Pc path = M( path_l );
-    if( !path )
-    {   GV_(NA);
-        return ~0;
-    }
-    E_text_Z_s_P_copy_sl_0( path, root, path_l - 1 );
-    if( !~E_main_I_exec_make( path, path_l, rebuild ))
-    {   GV_(NA);
-        return ~0;
-    }
-    O{  _errno = 0;
-        struct dirent *dirent = readdir(dir);
-        if( !dirent )
-        {   if( _errno )
-            {   Vp(dirent){}
-                V1( closedir(dir) ){}
-                for( N i = 0; i != dirs_n; i++ )
-                {   V1( closedir( dirs[i] )){}
-                }
-                return ~0;
-            }
-            V1( closedir(dir) ){}
-            if( !dirs_n )
-                break;
-            dir = dirs[ dirs_n - 1 ];
-            if( !E_mem_Q_blk_I_remove( &dirs, dirs_n - 1, 1 ))
-            {   GV_(NA);
-                V1( closedir(dir) ){}
-                for( N i = 0; i != dirs_n; i++ )
-                {   V1( closedir( dirs[i] )){}
-                }
-                return ~0;
-            }
-            dirs_n--;
-            if( !~Q_path_I_pop( &path, &path_l ))
-            {   GV_(NA);
-                V1( closedir(dir) ){}
-                for( N i = 0; i != dirs_n; i++ )
-                {   V1( closedir( dirs[i] )){}
-                }
-                return ~0;
-            }
-            continue;
-        }
-        if( E_text_Z_s0_T_eq_s0( &dirent->d_name[0], "." )
-        || E_text_Z_s0_T_eq_s0( &dirent->d_name[0], ".." )
-        )
-            continue;
-        N ret = Q_path_I_push( &path, &path_l, &dirent->d_name[0], 0, 0, 0 );
-        if( !~ret )
-        {   GV_(NA);
-            V1( closedir(dir) ){}
-            for( N i = 0; i != dirs_n; i++ )
-            {   V1( closedir( dirs[i] )){}
-            }
-            return ~0;
-        }
-        if( dirent->d_type == DT_UNKNOWN )
-        {   struct stat stat;
-            V1( lstat( path, &stat ))
-            {   V1( closedir(dir) ){}
-                for( N i = 0; i != dirs_n; i++ )
-                {   V1( closedir( dirs[i] )){}
-                }
-                return ~0;
-            }
-            if( S_ISDIR( stat.st_mode ))
-                dirent->d_type = DT_DIR;
-            else if( S_ISREG( stat.st_mode ))
-                dirent->d_type = DT_REG;
-            else if( S_ISLNK( stat.st_mode ))
-                dirent->d_type = DT_LNK;
-        }
-        if( !rebuild
-        && dirent->d_type != DT_DIR
-        && !E_text_Z_s0_T_ends_s0( &dirent->d_name[0], "~" )
-        )
-            puts(path);
-        if( dirent->d_type != DT_DIR
-        || E_text_Z_s0_T_starts_s0( &dirent->d_name[0], "." )
-        )
-        {   if( !~Q_path_I_pop( &path, &path_l ))
-            {   GV_(NA);
-                V1( closedir(dir) ){}
-                for( N i = 0; i != dirs_n; i++ )
-                {   V1( closedir( dirs[i] )){}
-                }
-                return ~0;
-            }
-            continue;
-        }
-        C attr_value[4];
-        _errno = 0;
-        N attr_value_l = getxattr( path, E_main_S_attribute_backup, &attr_value[0], sizeof( attr_value ) - 1 );
-        if( !~attr_value_l )
-        {   if( _errno == ENODATA )
-            {   if( !rebuild )
-                    puts(path);
-                if( !~E_main_I_exec_make( path, path_l, rebuild ))
-                {   V1( closedir(dir) ){}
-                    for( N i = 0; i != dirs_n; i++ )
-                    {   V1( closedir( dirs[i] )){}
-                    }
-                    return ~0;
-                }
-                if( !E_mem_Q_blk_I_append( &dirs, dirs_n + 1 ))
+    dirs[0] = M( 1 + 1 );
+    dirs[0][0] = '/';
+    dirs[0][1] = '\0';
+    do
+    {   N dirs_current = dirs_n - 1;
+        G_(); Gs0( dirs[ dirs_current ] );
+        DIR *dir;
+        int errno_;
+        Vpe( dir = opendir( dirs[ dirs_current ] ), errno_ )
+        {   G_(); Gs0( dirs[ dirs_current ] );
+            if( errno_ == EACCES
+            || errno_ == ENOENT
+            || errno_ == ENOTDIR
+            )
+            {   W( dirs[ dirs_current ] );
+                dirs_n--;
+                if( !E_mem_Q_blk_I_remove( &dirs, dirs_current, 1 ))
                 {   GV_(NA);
-                    V1( closedir(dir) ){}
                     for( N i = 0; i != dirs_n; i++ )
-                    {   V1( closedir( dirs[i] )){}
-                    }
+                        W( dirs[i] );
+                    W(dirs);
                     return ~0;
                 }
-                dirs[ dirs_n ] = dir;
-                dirs_n++;
-                Vp( dir = opendir(path) )
-                {   G_(); Gs0(path);
-                    for( N i = 0; i != dirs_n; i++ )
-                    {   V1( closedir( dirs[i] )){}
-                    }
-                    return ~0;
-                }
-                continue;
-            }
-            if( _errno == ENOTSUP )
-            {   V1( closedir(dir) ){}
                 if( !dirs_n )
                     break;
-                dir = dirs[ dirs_n - 1 ];
-                if( !E_mem_Q_blk_I_remove( &dirs, dirs_n - 1, 1 ))
-                {   GV_(NA);
-                    V1( closedir(dir) ){}
-                    for( N i = 0; i != dirs_n; i++ )
-                    {   V1( closedir( dirs[i] )){}
-                    }
-                    return ~0;
-                }
-                dirs_n--;
-                if( !~Q_path_I_pop( &path, &path_l ))
-                {   GV_(NA);
-                    V1( closedir(dir) ){}
-                    for( N i = 0; i != dirs_n; i++ )
-                    {   V1( closedir( dirs[i] )){}
-                    }
-                    return ~0;
-                }
-                if( !~Q_path_I_pop( &path, &path_l ))
-                {   GV_(NA);
-                    V1( closedir(dir) ){}
-                    for( N i = 0; i != dirs_n; i++ )
-                    {   V1( closedir( dirs[i] )){}
-                    }
-                    return ~0;
-                }
                 continue;
             }
-            Ve();
-            V1( closedir(dir) ){}
             for( N i = 0; i != dirs_n; i++ )
-            {   V1( closedir( dirs[i] )){}
-            }
+                W( dirs[i] );
+            W(dirs);
             return ~0;
         }
-        attr_value[ attr_value_l ] = '\0';
-        if( !E_text_Z_s0_T_eq_s0( &attr_value[0], "no" ))
-        {   GV_(NXP);
-            V1( closedir(dir) ){}
-            for( N i = 0; i != dirs_n; i++ )
-            {   V1( closedir( dirs[i] )){}
+        O{  _errno = 0;
+            struct dirent *dirent = readdir(dir);
+            if( !dirent )
+            {   if( _errno )
+                {   Vp(dirent){}
+                    V1( closedir(dir) ){}
+                    for( N i = 0; i != dirs_n; i++ )
+                        W( dirs[i] );
+                    W(dirs);
+                    return ~0;
+                }
+                W( dirs[ dirs_current ] );
+                dirs_n--;
+                if( !E_mem_Q_blk_I_remove( &dirs, dirs_current, 1 ))
+                {   GV_(NA);
+                    V1( closedir(dir) ){}
+                    for( N i = 0; i != dirs_n; i++ )
+                        W( dirs[i] );
+                    W(dirs);
+                    return ~0;
+                }
+                V1( closedir(dir) ){}
+                break;
             }
-            return ~0;
-        }
-        if( !~Q_path_I_pop( &path, &path_l ))
-        {   GV_(NA);
-            V1( closedir(dir) ){}
-            for( N i = 0; i != dirs_n; i++ )
-            {   V1( closedir( dirs[i] )){}
+            if( E_text_Z_s0_T_eq_s0( &dirent->d_name[0], "." )
+            || E_text_Z_s0_T_eq_s0( &dirent->d_name[0], ".." )
+            )
+                continue;
+            Pc pathname = M( E_text_Z_s0_R_l( dirs[ dirs_current ] ) + ( !E_text_Z_s0_T_eq_s0( dirs[ dirs_current ], "/" ) ? 1 : 0 ) + E_text_Z_s0_R_l( &dirent->d_name[0] ) + 1 );
+            if( !pathname )
+            {   GV_(NA);
+                V1( closedir(dir) ){}
+                for( N i = 0; i != dirs_n; i++ )
+                    W( dirs[i] );
+                W(dirs);
+                return ~0;
             }
-            return ~0;
+            Pc s = E_text_Z_s_P_copy_s0( pathname, dirs[ dirs_current ] );
+            if( !E_text_Z_s0_T_eq_s0( dirs[ dirs_current ], "/" ))
+                s = E_text_Z_s_P_copy_s0( s, "/" );
+            E_text_Z_s_P_copy_s0_0( s, &dirent->d_name[0] );
+            if( dirent->d_type == DT_REG
+            && E_text_Z_s0_T_eq_s0( &dirent->d_name[0], E_main_S_autobackup )
+            )
+            {   I file = E_mem_Q_file_M( pathname, yes, 0 );
+                if( !~file )
+                {   W(pathname);
+                    V1( closedir(dir) ){}
+                    for( N i = 0; i != dirs_n; i++ )
+                        W( dirs[i] );
+                    W(dirs);
+                    return ~0;
+                }
+                W(pathname);
+                pathname = M( E_text_Z_s0_R_l_0( dirs[ dirs_current ] ));
+                if( !pathname )
+                {   GV_(NKN);
+                    V1( closedir(dir) ){}
+                    for( N i = 0; i != dirs_n; i++ )
+                        W( dirs[i] );
+                    W(dirs);
+                    return ~0;
+                }
+                E_text_Z_s_P_copy_s0_0( pathname, dirs[ dirs_current ] );
+                if( E_main_Z_s_N_escape( &pathname ))
+                {   GV_(NKN);
+                    W(pathname);
+                    V1( closedir(dir) ){}
+                    for( N i = 0; i != dirs_n; i++ )
+                        W( dirs[i] );
+                    W(dirs);
+                    return ~0;
+                }
+                O{  Pc line = 0;
+                    N ret = E_mem_Q_file_R_u_upto( file, "\n", &line );
+                    if(ret)
+                    {   if( ret == E_mem_Q_file_S_eof )
+                            break;
+                        W(pathname);
+                        V1( closedir(dir) ){}
+                        for( N i = 0; i != dirs_n; i++ )
+                            W( dirs[i] );
+                        W(dirs);
+                        return ~0;
+                    }
+                    N line_l = E_text_Z_s0_R_l(line);
+                    if( line_l < 2 )
+                    {   GV_(NKN);
+                        W(line);
+                        W(pathname);
+                        V1( closedir(dir) ){}
+                        for( N i = 0; i != dirs_n; i++ )
+                            W( dirs[i] );
+                        W(dirs);
+                        return ~0;
+                    }
+                    line[ line_l - 1 ] = '\0';
+                    printf( "- %s/%s\n", pathname, line );
+                    W(line);
+                }
+                if( E_mem_Q_file_W(file) )
+                {   W(pathname);
+                    V1( closedir(dir) ){}
+                    for( N i = 0; i != dirs_n; i++ )
+                        W( dirs[i] );
+                    W(dirs);
+                    return ~0;
+                }
+                printf( "+ %s\n", pathname );
+                W(pathname);
+                continue;
+            }
+            if( dirent->d_type == DT_UNKNOWN )
+            {   struct stat stat;
+                V1( lstat( pathname, &stat ))
+                {   W(pathname);
+                    V1( closedir(dir) ){}
+                    for( N i = 0; i != dirs_n; i++ )
+                        W( dirs[i] );
+                    W(dirs);
+                    return ~0;
+                }
+                W(pathname);
+                if( S_ISDIR( stat.st_mode ))
+                    dirent->d_type = DT_DIR;
+            }
+            if( dirent->d_type != DT_DIR )
+            {   W(pathname);
+                continue;
+            }
+            if( !E_mem_Q_blk_I_append( &dirs, dirs_n + 1 ))
+            {   GV_(NA);
+                W(pathname);
+                V1( closedir(dir) ){}
+                for( N i = 0; i != dirs_n; i++ )
+                    W( dirs[i] );
+                W(dirs);
+                return ~0;
+            }
+            if(( E_text_Z_s0_T_eq_s0( dirs[ dirs_current ], "/" )
+              && ( E_text_Z_s0_T_eq_s0( &dirent->d_name[0], "boot" )
+                || E_text_Z_s0_T_eq_s0( &dirent->d_name[0], "dev" )
+                || E_text_Z_s0_T_eq_s0( &dirent->d_name[0], "etc" )
+                || E_text_Z_s0_T_eq_s0( &dirent->d_name[0], "lost+found" )
+                || E_text_Z_s0_T_eq_s0( &dirent->d_name[0], "media" )
+                || E_text_Z_s0_T_eq_s0( &dirent->d_name[0], "mnt" )
+                || E_text_Z_s0_T_eq_s0( &dirent->d_name[0], "opt" )
+                || E_text_Z_s0_T_eq_s0( &dirent->d_name[0], "proc" )
+                || E_text_Z_s0_T_eq_s0( &dirent->d_name[0], "run" )
+                || E_text_Z_s0_T_eq_s0( &dirent->d_name[0], "sys" )
+                || E_text_Z_s0_T_eq_s0( &dirent->d_name[0], "tmp" )
+                || E_text_Z_s0_T_eq_s0( &dirent->d_name[0], "usr" )
+                || E_text_Z_s0_T_eq_s0( &dirent->d_name[0], "var" )
+              ))
+            || ( E_text_Z_s0_T_eq_s0( dirs[ dirs_current ], "/home/inc" )
+              && E_text_Z_s0_T_eq_s0( &dirent->d_name[0], ".local" )
+              )
+            || ( E_text_Z_s0_T_eq_s0( dirs[ dirs_current ], "/home/inc/moje/programy" )
+              && E_text_Z_s0_T_eq_s0( &dirent->d_name[0], "odgałęzione" )
+              )
+            || E_text_Z_s0_T_eq_s0( &dirent->d_name[0], ".cache" )
+            || E_text_Z_s0_T_eq_s0( &dirent->d_name[0], "caches" )
+            || E_text_Z_s0_T_eq_s0( &dirent->d_name[0], "Sdk" )
+            )
+            {   W(pathname);
+                continue;
+            }
+            dirs[ dirs_n ] = pathname;
+            dirs_n++;
         }
-    }
-    for( N i = 0; i != dirs_n; i++ )
-    {   V1( closedir( dirs[i] )){}
-    }
-    W(path);
+    }while( dirs_n );
+    W(dirs);
     return 0;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-void
-E_main_I_help( Pc exe_name
-){  N s_l = J_s0_R_l( "usage: " ) + E_text_Z_s0_R_l( exe_name ) + J_s0_R_l( " [ -r ] [ root_path ... ]" ) + 1;
-    Pc s = M( s_l );
-    if( !s )
-    {   GV_(NA);
-        return;
-    }
-    E_text_Z_s_P_copy_s0_0( E_text_Z_s_P_copy_s0( E_text_Z_s_P_copy_s0( s, "usage: " ), exe_name ), " [ -r ] [ root_path ... ]" );
-    G_(); Gs0_(s);
-    W(s);
-}
-//------------------------------------------------------------------------------
 int
 main(
   int argc
 , char *argv[]
 ){  E_base_M( argc, argv );
-    if( argc > 1
-    && E_text_Z_s0_T_eq_s0( argv[1], "-h" )
-    )
-    {   E_main_I_help( argv[0] );
-        goto End;
-    }
-    argv++;
-    argc--;
-    B rebuild = argc && E_text_Z_s0_T_eq_s0( argv[0], "-r" );
-    if(rebuild)
-    {   argv++;
-        argc--;
-    }
-    N top_dirs_n = 0;
-    Pc *Mt_( top_dirs, top_dirs_n );
-    if( !top_dirs )
-    {   GV_(NA);
+    if( !~E_main_I_top_dirs() )
         goto Error;
-    }
-    if( !argc )
-    {   if( !~E_main_I_top_dirs( &top_dirs, &top_dirs_n, "/", &argv[0], argc, 0 ))
-            goto Error;
-    }else
-    {   Pc *Mt_( argv_normalized, argc );
-        if( !argv_normalized )
-        {   GV_(NA);
-            goto Error;
-        }
-        for( int i = 0; i != argc; i++ )
-        {   Vp( argv_normalized[i] = realpath( argv[i], 0 ))
-                goto Error;
-        }
-        for( int i = 0; i != argc; i++ )
-            if( !~E_main_I_top_dirs( &top_dirs, &top_dirs_n, argv_normalized[i], &argv_normalized[0], argc, i ))
-                goto Error;
-        for( int i = 0; i != argc; i++ )
-            free( argv_normalized[i] );
-    }
-    for( N i = 0; i != top_dirs_n; i++ )
-        if( !~E_main_I_dir( top_dirs[i], rebuild ))
-            goto Error;
-End:E_base_W();
+    E_base_W();
     return 0;
 Error:
     E_base_W();
