@@ -1692,10 +1692,14 @@ Loop:
                     #ifdef E_flow_C_thread_system_unblock_reports
                 if( U_R( task->type, system_unblock_report ))
                 {   pthread_mutex_t *thread_flow_mutex = task->thread_flow_mutex;
-                    int error;
-                    Vr( error = pthread_mutex_trylock( thread_flow_mutex ))
-                        if( error != EBUSY )
-                            V();
+                    int error = pthread_mutex_trylock( thread_flow_mutex );
+                    if( error
+                    && error != EBUSY
+                    )
+                    {   _errno = error;
+                        Ve();
+                        V();
+                    }
                     if( !error )
                     {   E_base_S->E_flow_Q_task_S_current = task_id;
                         volatile B *thread_switch_out = task->thread_switch_out;
@@ -1720,10 +1724,14 @@ Loop:
                     && *task->thread_switch_out
                     )
                     {   pthread_mutex_t *thread_flow_mutex = task->thread_flow_mutex;
-                        int error;
-                        Vr( error = pthread_mutex_trylock( thread_flow_mutex ))
-                            if( error != EBUSY )
-                                V();
+                        int error = pthread_mutex_trylock( thread_flow_mutex );
+                        if( error
+                        && error != EBUSY
+                        )
+                        {   _errno = error;
+                            Ve();
+                            V();
+                        }
                         if( !error )
                         {   E_base_S->E_flow_Q_task_S_current = task_id;
                             volatile B *thread_switch_in = task->thread_switch_in;
@@ -1774,10 +1782,14 @@ Loop:
                 #ifdef E_flow_C_thread_system_unblock_reports
             if( U_R( task->type, system_unblock_report ))
             {   pthread_mutex_t *thread_flow_mutex = task->thread_flow_mutex;
-                int error;
-                Vr( error = pthread_mutex_trylock( thread_flow_mutex ))
-                    if( error != EBUSY )
-                        V();
+                int error = pthread_mutex_trylock( thread_flow_mutex );
+                if( error
+                && error != EBUSY
+                )
+                {   _errno = error;
+                    Ve();
+                    V();
+                }
                 if( !error )
                 {   volatile B *thread_switch_out = task->thread_switch_out;
                     pthread_cond_t *thread_switch = task->thread_switch;
@@ -1800,10 +1812,14 @@ Loop:
                 && *task->thread_switch_out
                 )
                 {   pthread_mutex_t *thread_flow_mutex = task->thread_flow_mutex;
-                    int error;
-                    Vr( error = pthread_mutex_trylock( thread_flow_mutex ))
-                        if( error != EBUSY )
-                            V();
+                    int error = pthread_mutex_trylock( thread_flow_mutex );
+                    if( error
+                    && error != EBUSY
+                    )
+                    {   _errno = error;
+                        Ve();
+                        V();
+                    }
                     if( !error )
                     {   volatile B *thread_switch_in = task->thread_switch_in;
                         volatile B *thread_switch_out = task->thread_switch_out;
