@@ -26,7 +26,8 @@ struct E_base_Z
   E_mem_Q_blk_I_libc_free_Z E_mem_Q_blk_I_libc_free;
     #endif
     #if defined( C_pthreads )
-  N cpu_affinity_last;
+  P cpu_taken;
+  N cpu_taken_length;
   pthread_mutex_t E_mem_Q_blk_S_threads_sync_mutex;
     #endif
   N E_mem_S_page_size;
@@ -517,7 +518,8 @@ E_base_M(
     V0_( timer_create( CLOCK_MONOTONIC, 0, &E_base_S->E_flow_S_timer )); //NDFN Funkcjonalność na ‟Linuksach”. “CLOCK_REALTIME” przy stosowanym we “flow_drv” ustawianiu wartości względnych (domyślnych) ma zapisane w dokumentacji (“man”), że “adjtime” nie zmienia jego czasu odliczania, co jest oczekiwane przy “E_flow_drv_C_clock_monotonic”, ale nigdzie nie ma napisane, którego typu zegara można używać dla zgodności z “CLOCK_BOOTTIME” od “clock_gettime”, by był zaliczony czas trwania “suspend”: “CLOCK_REALTIME” czy “CLOCK_MONOTONIC”. Z testu wynika, że oba zegary są natychmiast zakańczane po zakończeniu “suspend” komputera…
         #endif
         #if defined( C_pthreads )
-    E_base_S->cpu_affinity_last = 0;
+    V1( E_base_S->cpu_taken_length = sysconf( _SC_NPROCESSORS_ONLN )){}
+    E_base_S->cpu_taken = ~E_base_S->cpu_taken_length && --E_base_S->cpu_taken_length ? E_mem_Q_mask_M( E_base_S->cpu_taken_length ) : 0;
         #endif
     E_mem_M_file();
     E_io_M_stream();

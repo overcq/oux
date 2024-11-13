@@ -517,6 +517,47 @@ E_flow_Q_task_M( I *uid
                 W( task_proc_arg );
             return ~0;
         }
+        Vr( pthread_attr_setguardsize( &thread_attr, 0 ))
+        {   Vr_( pthread_attr_destroy( &thread_attr ));
+            V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
+            Vr_( pthread_cond_destroy( thread_switch ));
+            W( thread_switch );
+            Vr_( pthread_mutex_destroy( thread_flow_mutex ));
+            W( thread_flow_mutex );
+            W( thread_switch_out );
+            W( thread_switch_in );
+            _tasks_table_begin;
+            E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
+            _tasks_table_end;
+            V0_( munmap( stack, stack_size ));
+            if( task_proc_arg )
+                W( task_proc_arg );
+            return ~0;
+        }
+        N cpu_n;
+        V1( cpu_n = sysconf( _SC_NPROCESSORS_ONLN )){}
+        if( ~cpu_n )
+        {   cpu_set_t cpu_set;
+            CPU_ZERO( &cpu_set );
+            CPU_SET( 0, &cpu_set );
+            Vr( pthread_attr_setaffinity_np( &thread_attr, sizeof( cpu_set ), &cpu_set ))
+            {   Vr_( pthread_attr_destroy( &thread_attr ));
+                V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
+                Vr_( pthread_cond_destroy( thread_switch ));
+                W( thread_switch );
+                Vr_( pthread_mutex_destroy( thread_flow_mutex ));
+                W( thread_flow_mutex );
+                W( thread_switch_out );
+                W( thread_switch_in );
+                _tasks_table_begin;
+                E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
+                _tasks_table_end;
+                V0_( munmap( stack, stack_size ));
+                if( task_proc_arg )
+                    W( task_proc_arg );
+                return ~0;
+            }
+        }
         Vr( pthread_sigmask( SIG_SETMASK, &E_base_S->E_flow_Z_sigset_S_empty, 0 ))
         {   Vr_( pthread_attr_destroy( &thread_attr ));
             V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
@@ -555,14 +596,6 @@ E_flow_Q_task_M( I *uid
             return ~0;
         }
         Vr_( pthread_attr_destroy( &thread_attr ));
-        N cpu_n;
-        V1( cpu_n = sysconf( _SC_NPROCESSORS_ONLN )){}
-        if( ~cpu_n )
-        {   cpu_set_t cpu_set;
-            CPU_ZERO( &cpu_set );
-            CPU_SET( 0, &cpu_set );
-            Vr( pthread_setaffinity_np( task->thread, sizeof( cpu_set ), &cpu_set )){}
-        }
             #if defined( C_line_report ) && defined( __gnu_linux__ )
         task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id );
         Pc s = E_text_Z_s_R_search_c_( task->proc_name, 'E' ) + 2;
@@ -1092,6 +1125,64 @@ E_flow_Q_task_async_M( I *uid
         V0_( munmap( stack, stack_size ));
         return ~0;
     }
+    Vr( pthread_attr_setguardsize( &thread_attr, 0 ))
+    {   Vr_( pthread_attr_destroy( &thread_attr ));
+        V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
+        Vr_( pthread_cond_destroy( thread_switch ));
+        W( thread_switch );
+        Vr_( pthread_mutex_destroy( thread_flow_mutex ));
+        W( thread_flow_mutex );
+        W( thread_switch_out );
+        W( thread_switch_in );
+        _tasks_table_begin;
+        E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
+        _tasks_table_end;
+        V0_( munmap( stack, stack_size ));
+        return ~0;
+    }
+    if( E_base_S->cpu_taken )
+    {   N cpu_n;
+        V1( cpu_n = sysconf( _SC_NPROCESSORS_ONLN )){}
+        if( ~cpu_n
+        && cpu_n > 1
+        )
+        {   cpu_n--;
+            B fail = no;
+            if( cpu_n != E_base_S->cpu_taken_length )
+                if( ~E_mem_Q_mask_I_resize( &E_base_S->cpu_taken, E_base_S->cpu_taken_length, cpu_n ))
+                    E_base_S->cpu_taken_length = cpu_n;
+                else
+                    fail = yes;
+            if( !fail )
+            {   cpu_set_t cpu_set;
+                CPU_ZERO( &cpu_set );
+                N cpu_i = E_mem_Q_mask_R_first_clear( E_base_S->cpu_taken, E_base_S->cpu_taken_length ) + 1;
+                G_(); Gd( cpu_i );
+                if( ~cpu_i )
+                {   CPU_SET( cpu_i, &cpu_set );
+                    E_mem_Q_mask_P_set( E_base_S->cpu_taken, cpu_i );
+                }else
+                {   for( N cpu_i = 0; cpu_i != E_base_S->cpu_taken_length; cpu_i++ )
+                        CPU_SET( cpu_i + 1, &cpu_set );
+                }
+                Vr( pthread_attr_setaffinity_np( &thread_attr, sizeof( cpu_set ), &cpu_set ))
+                {   Vr_( pthread_attr_destroy( &thread_attr ));
+                    V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
+                    Vr_( pthread_cond_destroy( thread_switch ));
+                    W( thread_switch );
+                    Vr_( pthread_mutex_destroy( thread_flow_mutex ));
+                    W( thread_flow_mutex );
+                    W( thread_switch_out );
+                    W( thread_switch_in );
+                    _tasks_table_begin;
+                    E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
+                    _tasks_table_end;
+                    V0_( munmap( stack, stack_size ));
+                    return ~0;
+                }
+            }
+        }
+    }
     Vr( pthread_sigmask( SIG_SETMASK, &E_base_S->E_flow_Z_sigset_S_empty, 0 ))
     {   Vr_( pthread_attr_destroy( &thread_attr ));
         V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
@@ -1124,22 +1215,6 @@ E_flow_Q_task_async_M( I *uid
         return ~0;
     }
     Vr_( pthread_attr_destroy( &thread_attr ));
-    N cpu_n;
-    V1( cpu_n = sysconf( _SC_NPROCESSORS_ONLN )){}
-    if( ~cpu_n
-    && cpu_n > 1
-    )
-    {   cpu_set_t cpu_set;
-        CPU_ZERO( &cpu_set );
-        if( E_base_S->cpu_affinity_last + 1 < cpu_n )
-        {   E_base_S->cpu_affinity_last++;
-            CPU_SET( E_base_S->cpu_affinity_last, &cpu_set );
-        }else
-        {   for( N i = 1; i != cpu_n; i++ )
-                CPU_SET( i, &cpu_set );
-        }
-        Vr( pthread_setaffinity_np( task->thread, sizeof( cpu_set ), &cpu_set )){}
-    }
         #if defined( C_line_report ) && defined( __gnu_linux__ )
     task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id );
     Pc s = E_text_Z_s_R_search_c_( task->proc_name, 'E' ) + 2;

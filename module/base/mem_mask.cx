@@ -1,0 +1,82 @@
+//-*-C-*-
+/*******************************************************************************
+*   ___   publicplace
+*  ¦OUX¦  C+
+*  ¦/C+¦  component
+*   ---   base
+*         variable length mask
+* ©overcq                on ‟Gentoo Linux 23.0” “x86_64”            2024‒11‒13 L
+*******************************************************************************/
+Pc
+E_mem_Q_mask_M( N length
+){  J_assert(length);
+    N bytes = length / 8 + ( length % 8 ? 1 : 0 );
+    Pc mask = M(bytes);
+    if( !mask )
+        return mask;
+    _0( mask, bytes );
+    return mask;
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+B
+E_mem_Q_mask_R( Pc mask
+, N bit
+){  N byte = bit / 8;
+    bit %= 8;
+    return mask[byte] & ( 1 << bit );
+}
+N
+E_mem_Q_mask_R_first_clear( Pc mask
+, N length
+){  J_assert(length);
+    N bytes = length / 8 + ( length % 8 ? 1 : 0 );
+    for( N byte_i = 0; byte_i != bytes - 1; byte_i++ )
+        for( N bit_i = 0; bit_i != 8; bit_i++ )
+            if( !( mask[ byte_i ] & ( 1 << bit_i )))
+                return byte_i * 8 + bit_i;
+    for( N bit_i = 0; bit_i != length; bit_i++ )
+        if( !( mask[ bytes - 1 ] & ( 1 << bit_i )))
+            return ( bytes - 1 ) * 8 + bit_i;
+    return ~0;
+}
+//------------------------------------------------------------------------------
+void
+E_mem_Q_mask_P_set( Pc mask
+, N bit
+){  N byte = bit / 8;
+    bit %= 8;
+    mask[byte] |= 1 << bit;
+}
+void
+E_mem_Q_mask_P_clear( Pc mask
+, N bit
+){  N byte = bit / 8;
+    bit %= 8;
+    mask[byte] &= ~( 1 << bit );
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+N
+E_mem_Q_mask_I_resize( Pc *mask
+, N length_old
+, N length_new
+){  N bytes_old = length_old / 8 + ( length_old % 8 ? 1 : 0 );
+    N bytes_new = length_new / 8 + ( length_new % 8 ? 1 : 0 );
+    if( bytes_old == bytes_new )
+    {   N length_new_1 = length_new % 8 ? length_new % 8 : 8;
+        J_assert( length_old % 8 != length_new_1 );
+        if( length_old % 8 < length_new_1 )
+            for( N bit_i = length_old % 8; bit_i != length_new_1; bit_i++ )
+                (*mask)[ bytes_new - 1 ] &= ~( 1 << bit_i );
+        return 0;
+    }
+    if( bytes_old < bytes_new )
+    {   Pc p = E_mem_Q_blk_I_append( mask, bytes_new - bytes_old );
+        if( !p )
+            return ~0;
+        _0( p, bytes_new - bytes_old );
+    }else
+        if( !E_mem_Q_blk_I_remove( mask, bytes_new, bytes_old - bytes_new ))
+            return ~0;
+    return 0;
+}
+/******************************************************************************/
