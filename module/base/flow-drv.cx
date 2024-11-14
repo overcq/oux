@@ -1140,6 +1140,7 @@ E_flow_Q_task_async_M( I *uid
         V0_( munmap( stack, stack_size ));
         return ~0;
     }
+        #if defined( __gnu_linux__ ) || defined( __FreeBSD__ )
     if( E_base_S->cpu_taken )
     {   N cpu_n;
         V1( cpu_n = sysconf( _SC_NPROCESSORS_ONLN )){}
@@ -1179,6 +1180,7 @@ E_flow_Q_task_async_M( I *uid
             }
         }
     }
+        #endif
     Vr( pthread_sigmask( SIG_SETMASK, &E_base_S->E_flow_Z_sigset_S_empty, 0 ))
     {   Vr_( pthread_attr_destroy( &thread_attr ));
         V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
@@ -1276,6 +1278,7 @@ E_flow_Q_task_async_W( I *uid
     task->run_state_object = E_base_S->E_flow_Q_task_S_current;
     task->thread_unblock_proc( task->task_proc_arg );
     Vr_( pthread_mutex_lock( task->thread_flow_mutex )); // Oczekuje aż się zatrzyma na “Da_B_” lub bloku wyjścia.
+        #if defined( __gnu_linux__ ) || defined( __FreeBSD__ )
     int ret;
     cpu_set_t cpu_set;
     Vr( ret = pthread_getaffinity_np( task->thread, sizeof( cpu_set ), &cpu_set )){}
@@ -1287,6 +1290,7 @@ E_flow_Q_task_async_W( I *uid
         if( cpu_i != J_min( CPU_SETSIZE, E_base_S->cpu_taken_length + 1 ))
             E_mem_Q_mask_P_clear( E_base_S->cpu_taken, cpu_i - 1 );
     }
+        #endif
     *task->thread_switch_in = yes;
     Vr_( pthread_cond_signal( task->thread_switch ));
     I id_ = E_base_S->E_flow_Q_task_S_current;
