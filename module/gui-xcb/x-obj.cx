@@ -116,12 +116,19 @@ E_gui_xcb_Q_object_M(
     U_L( object->mode, lay_height );
     U_L( object->mode, draggable );
     U_L( object->state, drag_src );
+    if( object_id
+    && !object->child_n
+    )
+        E_gui_xcb_Q_object_I_set_max_window_dimensions( display, window, object, no );
     return object_id;
 }
 void
-E_gui_xcb_Q_object_W( struct E_gui_xcb_Q_window_Z *window
+E_gui_xcb_Q_object_W(
+  struct E_gui_xcb_Q_display_Z *display
+, struct E_gui_xcb_Q_window_Z *window
 , I object_id
 ){  struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
+    E_gui_xcb_Q_object_I_set_max_window_dimensions( display, window, object, yes );
     if( object->data )
     {   if( object->clear_data )
             object->clear_data( object->data );
@@ -150,8 +157,57 @@ E_gui_xcb_Q_object_R_top( struct E_gui_xcb_Q_window_Z *window
 ){  return !~E_gui_xcb_Q_object_R_parent( window, id );
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+_internal
+void
+E_gui_xcb_Q_object_I_set_max_window_dimensions(
+  struct E_gui_xcb_Q_display_Z *display
+, struct E_gui_xcb_Q_window_Z *window
+, struct E_gui_xcb_Q_object_Z *object
+, B add_remove
+){  G_();
+    if( U_R( display->mode, drag )
+    || U_R( display->mode, drag_stop )
+    )
+    {   for_each( screen_id, display->screen, E_mem_Q_tab )
+        {   struct E_gui_xcb_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, screen_id );
+            if( window == &screen->dnd_window )
+                return;
+        }
+    }
+    G_();
+    S16 x_min = 0, y_min = 0;
+    for_each( object_id, window->object, E_mem_Q_tab )
+    {   if( !object_id )
+            continue;
+        struct E_gui_xcb_Q_object_Z *object_ = E_mem_Q_tab_R( window->object, object_id );
+        if( object_ == object
+        || ~E_gui_xcb_Q_object_R_parent( window, object_id )
+        )
+            continue;
+        S16 object_x_max = object_->x + object_->width, object_y_max = object_->y + object_->height;
+        if( x_min < object_x_max )
+            x_min = object_x_max;
+        if( y_min < object_y_max )
+            y_min = object_y_max;
+    }
+    S16 object_x_max = object->x + object->width, object_y_max = object->y + object->height;
+    if( x_min < object_x_max
+    || y_min < object_y_max
+    )
+        E_x_Z_property_P( display, window, WM_NORMAL_HINTS
+        , WM_SIZE_HINTS
+        , (( xcb_size_hints_t )
+          { .flags = XCB_ICCCM_SIZE_HINT_P_MIN_SIZE
+          , .min_width = add_remove ? x_min : object_x_max
+          , .min_height = add_remove ? y_min : object_y_max
+          })
+        );
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 N
-E_gui_xcb_Q_object_I_add( struct E_gui_xcb_Q_window_Z *window
+E_gui_xcb_Q_object_I_add(
+  struct E_gui_xcb_Q_display_Z *display
+, struct E_gui_xcb_Q_window_Z *window
 , I id
 , I child_id
 ){  J_assert( E_mem_Q_tab_T( window->object, child_id ));
@@ -159,12 +215,16 @@ E_gui_xcb_Q_object_I_add( struct E_gui_xcb_Q_window_Z *window
     if( !E_mem_Q_blk_I_append( &object->child, 1 ))
         return ~0;
     object->child[ object->child_n ] = child_id;
+    if( !object->child )
+        E_gui_xcb_Q_object_I_set_max_window_dimensions( display, window, object, yes );
     object->child_n++;
     return 0;
 }
 //------------------------------------------------------------------------------
 N
-E_gui_xcb_Q_object_I_remove( struct E_gui_xcb_Q_window_Z *window
+E_gui_xcb_Q_object_I_remove(
+  struct E_gui_xcb_Q_display_Z *display
+, struct E_gui_xcb_Q_window_Z *window
 , I id
 ){  for_each( object_id, window->object, E_mem_Q_tab )
     {   struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
@@ -185,11 +245,13 @@ E_gui_xcb_Q_object_I_remove( struct E_gui_xcb_Q_window_Z *window
             }
         }
     }
-End:E_mem_Q_tab_I_remove( window->object, id );
+End:E_gui_xcb_Q_object_W( display, window, id );
     return 0;
 }
 N
-E_gui_xcb_Q_object_I_remove_descendants( struct E_gui_xcb_Q_window_Z *window
+E_gui_xcb_Q_object_I_remove_descendants(
+  struct E_gui_xcb_Q_display_Z *display
+, struct E_gui_xcb_Q_window_Z *window
 , I id
 ){  struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, id );
     N ids_n = object->child_n;
@@ -211,7 +273,7 @@ E_gui_xcb_Q_object_I_remove_descendants( struct E_gui_xcb_Q_window_Z *window
         ids_n += object->child_n;
     }
     for_n_( ids_i, ids_n )
-         E_gui_xcb_Q_object_W( window, ids[ ids_i ] );
+         E_gui_xcb_Q_object_W( display, window, ids[ ids_i ] );
     W(ids);
     return 0;
 }
@@ -328,14 +390,14 @@ E_gui_xcb_Q_object_Z_entry_M(
     );
     struct E_gui_xcb_Q_object_Z_data_Z_entry *M_( object_data );
     if( !object_data )
-    {   E_gui_xcb_Q_object_W( window, object_id );
+    {   E_gui_xcb_Q_object_W( display, window, object_id );
         return ~0;
     }
     object_data->font = font_id;
     object_data->s = M( E_text_Z_s0_R_l_0(s) );
     object_data->text_start = 0;
     if( !object_data->s )
-    {   E_gui_xcb_Q_object_W( window, object_id );
+    {   E_gui_xcb_Q_object_W( display, window, object_id );
         return ~0;
     }
     E_text_Z_s_P_copy_s0_0( object_data->s, s );
@@ -515,13 +577,13 @@ E_gui_xcb_Q_object_Z_font_M(
     );
     struct E_gui_xcb_Q_object_Z_data_Z_font *M_( object_data );
     if( !object_data )
-    {   E_gui_xcb_Q_object_W( window, object_id );
+    {   E_gui_xcb_Q_object_W( display, window, object_id );
         return ~0;
     }
     object_data->font = font_id;
     object_data->label = M( E_text_Z_s0_R_l_0(label) );
     if( !object_data->label )
-    {   E_gui_xcb_Q_object_W( window, object_id );
+    {   E_gui_xcb_Q_object_W( display, window, object_id );
         return ~0;
     }
     E_text_Z_s_P_copy_s0_0( object_data->label, label );
@@ -609,14 +671,14 @@ E_gui_xcb_Q_object_Z_select_M(
         return ~0;
     struct E_gui_xcb_Q_object_Z_data_Z_select *M_( object_data );
     if( !object_data )
-    {   E_gui_xcb_Q_object_W( window, object_id );
+    {   E_gui_xcb_Q_object_W( display, window, object_id );
         return ~0;
     }
     object_data->select_n = 0;
     Mt_( object_data->select, object_data->select_n );
     if( !object_data->select )
     {   W( object_data );
-        E_gui_xcb_Q_object_W( window, object_id );
+        E_gui_xcb_Q_object_W( display, window, object_id );
         return ~0;
     }
     struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
@@ -650,7 +712,7 @@ E_gui_xcb_Q_object_Z_select_I_draw(
         , object->height - 1
         }
       }
-    , 2
+    , object->width / 3
     );
     E_gui_xcb_Q_object_I_draw_Z_lines( display, screen, window, object, 3
     , ( xcb_point_t[] )
@@ -689,7 +751,7 @@ E_gui_xcb_Q_object_Z_select_list_M(
         return ~0;
     struct E_gui_xcb_Q_object_Z_data_Z_select_list *M_( object_data );
     if( !object_data )
-    {   E_gui_xcb_Q_object_W( window, object_id );
+    {   E_gui_xcb_Q_object_W( display, window, object_id );
         return ~0;
     }
     object_data->scroll = 0;
@@ -775,10 +837,10 @@ E_gui_xcb_Q_object_Z_button_font_M(
         return ~0;
     I font_id_ = E_gui_xcb_Q_object_Z_font_M( display, window, font_id, s );
     if( !~font_id_ )
-    {   E_gui_xcb_Q_object_W( window, button_id );
+    {   E_gui_xcb_Q_object_W( display, window, button_id );
         return ~0;
     }
-    E_gui_xcb_Q_object_I_add( window, button_id, font_id_ );
+    E_gui_xcb_Q_object_I_add( display, window, button_id, font_id_ );
     return button_id;
 }
 I
@@ -792,10 +854,10 @@ E_gui_xcb_Q_object_Z_frame_entry_M(
         return ~0;
     I entry_id = E_gui_xcb_Q_object_Z_entry_M( display, window, font_id, s );
     if( !~entry_id )
-    {   E_gui_xcb_Q_object_W( window, frame_id );
+    {   E_gui_xcb_Q_object_W( display, window, frame_id );
         return ~0;
     }
-    E_gui_xcb_Q_object_I_add( window, frame_id, entry_id );
+    E_gui_xcb_Q_object_I_add( display, window, frame_id, entry_id );
     return frame_id;
 }
 I
@@ -809,17 +871,17 @@ E_gui_xcb_Q_object_Z_frame_select_M(
         return ~0;
     I select_id = E_gui_xcb_Q_object_Z_select_M( display, window );
     if( !~select_id )
-    {   E_gui_xcb_Q_object_W( window, frame_id );
+    {   E_gui_xcb_Q_object_W( display, window, frame_id );
         return ~0;
     }
     I entry_id = E_gui_xcb_Q_object_Z_entry_M( display, window, font_id, s );
     if( !~entry_id )
-    {   E_gui_xcb_Q_object_W( window, select_id );
-        E_gui_xcb_Q_object_W( window, frame_id );
+    {   E_gui_xcb_Q_object_W( display, window, select_id );
+        E_gui_xcb_Q_object_W( display, window, frame_id );
         return ~0;
     }
-    E_gui_xcb_Q_object_I_add( window, frame_id, select_id );
-    E_gui_xcb_Q_object_I_add( window, frame_id, entry_id );
+    E_gui_xcb_Q_object_I_add( display, window, frame_id, select_id );
+    E_gui_xcb_Q_object_I_add( display, window, frame_id, entry_id );
     return frame_id;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -880,7 +942,7 @@ E_gui_xcb_Q_object_I_lay(
         return 0;
     if( ~display->select_window )
     {   struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->select_window );
-        E_gui_xcb_Q_object_W( window, display->select_list_object );
+        E_gui_xcb_Q_object_W( display, window, display->select_list_object );
         display->select_window = ~0;
     }
     struct Z_stack

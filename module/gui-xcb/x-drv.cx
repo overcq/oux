@@ -793,7 +793,7 @@ Po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                             }
                                         }
                                   case XK_Escape:
-                                        E_gui_xcb_Q_object_W( window, display->select_list_object );
+                                        E_gui_xcb_Q_object_W( display, window, display->select_list_object );
                                         display->select_window = ~0;
                                         U_F( req, draw );
                                         break;
@@ -1116,7 +1116,7 @@ Po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                     {   G(); Gs0_( "reparent" );
                         break;
                     }
-                  case XCB_RESIZE_REQUEST: // To “zdarzenie” ‘x’ jest używane po to, by po zmianie rozmiaru okna przez operatora ‘server’ ‟X” nie wypełniał wstępnie tła okna (niepowtarzalną) zawartością okna z poprzedniego, mniejszego rozmiaru; jest wyłączana “pixmapa” okna.
+                  case XCB_RESIZE_REQUEST: // To “zdarzenie” X jest używane po to, by po zmianie rozmiaru okna przez operatora ‘server’ X nie wypełniał wstępnie tła okna (niepowtarzalną) zawartością okna z poprzedniego, mniejszego rozmiaru; jest wyłączana “pixmapa” okna.
                     {   xcb_resize_request_event_t *x_resize_req = (P)x_event;
                         G(); Gs0_( "resize request" ); Gd( x_resize_req->width ); Gd( x_resize_req->height );
                         if( window->width_new != x_resize_req->width
@@ -1156,12 +1156,11 @@ Po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                         break;
                     }
                   default:
-                        // Czy da się zrobić uproszczone zabezpieczenie przed “zdarzeniami” ‘x’ przychodzącymi nie z ‘servera’ ‟X”— przez rozpoznawanie tych od “menedżera okien” ‟X”?
+                        // Czy da się zrobić uproszczone zabezpieczenie przed “zdarzeniami” X przychodzącymi nie z ‘servera’ X — przez rozpoznawanie tych od “menedżera okien” X?
                         switch( XCB_EVENT_RESPONSE_TYPE( x_event ))
                         { case XCB_CONFIGURE_NOTIFY:
                             {   xcb_configure_notify_event_t *x_configure = (P)x_event;
                                 G(); Gs0_( "configure notify" ); Gd( x_configure->above_sibling ); Gd( x_configure->x ); Gd( x_configure->y ); Gd( x_configure->width ); Gd( x_configure->height );
-                                //NDFN Nie wiadomo co robić z obiektami, jeśli nie mieszczą się w nowym rozmiarze okna. uniemożliwiać zmniejszanie okna tak, że zakrywałoby obiekty?
                                 window->width_new = x_configure->width;
                                 window->height_new = x_configure->height;
                                 U_L( window->mode, resize );
@@ -1245,9 +1244,9 @@ Loop:           free( x_event );
                         {   struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->drag_S_object_src[i].window_id );
                             U_F( window->req, draw );
                             //TODO join object into destination window.
-                            if( !~E_gui_xcb_Q_object_I_remove_descendants( window, display->drag_S_object_src[i].object_id ))
+                            if( !~E_gui_xcb_Q_object_I_remove_descendants( display, window, display->drag_S_object_src[i].object_id ))
                                 U_F( display->req, restart );
-                            if( !~E_gui_xcb_Q_object_I_remove( window, display->drag_S_object_src[i].object_id ))
+                            if( !~E_gui_xcb_Q_object_I_remove( display, window, display->drag_S_object_src[i].object_id ))
                                 U_F( display->req, restart );
                             E_gui_xcb_Q_object_I_lay( display, window );
                         }
@@ -1403,7 +1402,7 @@ Loop:           free( x_event );
                                     {   display->cursor_window = ~0;
                                         if( ~display->select_window )
                                         {   struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->select_window );
-                                            E_gui_xcb_Q_object_W( window, display->select_list_object );
+                                            E_gui_xcb_Q_object_W( display, window, display->select_list_object );
                                             display->select_window = ~0;
                                             U_F( window->req, draw );
                                             U_F( display->req, draw );
@@ -1436,7 +1435,7 @@ Loop:           free( x_event );
                                                 if( !E_mem_Q_blk_I_remove( &ids, 0, 1 ))
                                                 {   W( display->drag_S_object_src );
                                                     for_each( object_id, dnd_window->object, E_mem_Q_tab )
-                                                        E_gui_xcb_Q_object_W( dnd_window, object_id );
+                                                        E_gui_xcb_Q_object_W( display, dnd_window, object_id );
                                                     goto Drag_start_error;
                                                 }
                                                 ids_n--;
@@ -1445,7 +1444,7 @@ Loop:           free( x_event );
                                                 if( !E_mem_Q_blk_I_append( &ids, object->child_n ))
                                                 {   W( display->drag_S_object_src );
                                                     for_each( object_id, dnd_window->object, E_mem_Q_tab )
-                                                        E_gui_xcb_Q_object_W( dnd_window, object_id );
+                                                        E_gui_xcb_Q_object_W( display, dnd_window, object_id );
                                                     goto Drag_start_error;
                                                 }
                                                 I parent_id = dnd_window->object->index_n - 1;
@@ -1457,12 +1456,12 @@ Loop:           free( x_event );
                                                     if( !~dnd_window_object_id )
                                                     {   W( display->drag_S_object_src );
                                                         for_each( object_id, dnd_window->object, E_mem_Q_tab )
-                                                            E_gui_xcb_Q_object_W( dnd_window, object_id );
+                                                            E_gui_xcb_Q_object_W( display, dnd_window, object_id );
                                                         goto Drag_start_error;
                                                     }
                                                     struct E_gui_xcb_Q_object_Z *dnd_window_object = E_mem_Q_tab_R( dnd_window->object, dnd_window_object_id );
                                                     dnd_window_object->data = object_src->data;
-                                                    E_gui_xcb_Q_object_I_add( dnd_window, parent_id, dnd_window_object_id );
+                                                    E_gui_xcb_Q_object_I_add( display, dnd_window, parent_id, dnd_window_object_id );
                                                 }
                                                 ids_n += object->child_n;
                                             }
@@ -1530,7 +1529,7 @@ Drag_start_error:                       ;
                                     )
                                     {   if( ~display->select_window )
                                         {   struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->select_window );
-                                            E_gui_xcb_Q_object_W( window, display->select_list_object );
+                                            E_gui_xcb_Q_object_W( display, window, display->select_list_object );
                                             display->select_window = ~0;
                                         }
                                         display->cursor_window = display->pointer_button_S_window_id;
@@ -1658,7 +1657,7 @@ Drag_start_error:                       ;
                                                 }
                                             }
                                         }else
-                                        {   E_gui_xcb_Q_object_W( window, display->select_list_object );
+                                        {   E_gui_xcb_Q_object_W( display, window, display->select_list_object );
                                             display->select_window = ~0;
                                             U_F( window->req, draw );
                                             U_F( display->req, draw );
@@ -1687,7 +1686,7 @@ Drag_start_error:                       ;
                                             {   E_text_Z_s_P_copy_s0_0( entry_data->s, select_data->select[i] );
                                                 entry_data->text_start = 0;
                                             }
-                                            E_gui_xcb_Q_object_W( window, display->select_list_object );
+                                            E_gui_xcb_Q_object_W( display, window, display->select_list_object );
                                             display->select_window = ~0;
                                             U_F( window->req, draw );
                                             U_F( display->req, draw );
@@ -1697,7 +1696,7 @@ Drag_start_error:                       ;
                                     {   display->cursor_window = ~0;
                                         if( ~display->select_window )
                                         {   struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->select_window );
-                                            E_gui_xcb_Q_object_W( window, display->select_list_object );
+                                            E_gui_xcb_Q_object_W( display, window, display->select_list_object );
                                             display->select_window = ~0;
                                             U_F( window->req, draw );
                                             U_F( display->req, draw );
