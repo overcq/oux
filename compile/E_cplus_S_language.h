@@ -105,7 +105,6 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
 // Instrukcja blokowa pętli głównej ‹zadania›.
 #define I_D                                 if( E_flow_Q_task_I_begin() ){} else O
 //------------------------------------------------------------------------------
-// Utworzenie i wyrzucenie ‹zadania› lub ‹zadania› “wątkowanego” czekającego na ‹systemowy raport odblokowujący›.
     #if defined( E_flow_C_thread_system_unblock_reports ) || defined( C_pthreads )
         #if defined( __gnu_linux__ )
 #define Da_()                               _unused int *E_flow_S_errno = __errno_location()
@@ -117,6 +116,7 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
 #error not implemented
         #endif
     #endif
+// Utworzenie i wyrzucenie ‹zadania› lub ‹zadania› “wątkowanego” czekającego na ‹systemowy raport odblokowujący›.
     #ifndef E_flow_C_thread_system_unblock_reports
         #ifdef C_line_report
 #define D_M(module,task)                    if( ~E_flow_Q_task_M( &(D_id(module,task)), _D_proc(module,task), J_s( _D_proc(module,task) ))){} else
@@ -193,11 +193,11 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
     #ifdef C_pthreads
 // Deklaracja ‹procedury› tworzącej dla ‹zadania› asynchronicznego.
 #define Da_A() \
-  struct E_flow_Q_task_async_Z_proc_args *proc_args = thread_proc_arg; \
-  pthread_mutex_t *J_autogen( thread_flow_mutex ) = proc_args->thread_flow_mutex; \
-  pthread_cond_t *J_autogen( thread_switch ) = proc_args->thread_switch; \
-  volatile B *J_autogen( thread_switch_in ) = proc_args->thread_switch_in; \
-  volatile B *J_autogen( thread_switch_out ) = proc_args->thread_switch_out
+  struct E_flow_Q_task_async_Z_proc_args *J_autogen( proc_args ) = thread_proc_arg; \
+  pthread_mutex_t *J_autogen( thread_flow_mutex ) = J_autogen( proc_args )->thread_flow_mutex; \
+  pthread_cond_t *J_autogen( thread_switch ) = J_autogen( proc_args )->thread_switch; \
+  volatile B *J_autogen( thread_switch_in ) = J_autogen( proc_args )->thread_switch_in; \
+  volatile B *J_autogen( thread_switch_out ) = J_autogen( proc_args )->thread_switch_out
 // Tuż przed oknem synchronizacji z ‹zadaniami› nieasynchronicznymi.
 #define Da_B_() \
   if( !E_flow_Q_thread_async_I_before_sync( J_autogen( thread_switch_in ), J_autogen( thread_switch ), J_autogen( thread_flow_mutex ))){} else
