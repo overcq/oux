@@ -1568,16 +1568,13 @@ E_flow_Q_thread_system_unblock_report_I_after_block(
   B *thread_switch_in
 , pthread_cond_t *thread_switch
 , pthread_mutex_t *thread_flow_mutex
-){  while( E_base_S->switch_back_suspend ) //TODO Zmienić na gwarantowane.
-    {   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, 0 );
-        Vr_( pthread_kill( task->thread, SIGALRM ));
-        V0_( sched_yield() );
-    }
+){  struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, 0 );
+    Vr_( pthread_kill( task->thread, SIGALRM ));
     while( !*thread_switch_in )
     {   Vr_( pthread_cond_wait( thread_switch, thread_flow_mutex ));
     }
     *thread_switch_in = no;
-    struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+    task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
     return task->run_state == E_flow_Z_run_state_S_stopping_by_task;
 }
 void
@@ -1617,16 +1614,13 @@ E_flow_Q_thread_async_I_before_sync(
   B *thread_switch_in
 , pthread_cond_t *thread_switch
 , pthread_mutex_t *thread_flow_mutex
-){  while( E_base_S->switch_back_suspend ) //TODO Zmienić na gwarantowane.
-    {   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, 0 );
-        Vr_( pthread_kill( task->thread, SIGALRM ));
-        V0_( sched_yield() );
-    }
+){  struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, 0 );
+    Vr_( pthread_kill( task->thread, SIGALRM ));
     while( !*thread_switch_in )
     {   Vr_( pthread_cond_wait( thread_switch, thread_flow_mutex ));
     }
     *thread_switch_in = no;
-    struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+    task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
     return task->run_state == E_flow_Z_run_state_S_stopping_by_task;
 }
 void
@@ -1984,19 +1978,17 @@ Loop:
                     _setttimer( &tv );
             }
             _sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_volatile, 0 );
-            if( !U_R( E_base_S->E_flow_S_signal, exit )
-            && !U_R( E_base_S->E_flow_S_signal, time )
-            && !U_R( E_base_S->E_flow_S_signal, call_req )
-            && !U_R( E_base_S->E_flow_S_signal, io_ready )
+            if( U_R( E_base_S->E_flow_S_signal, exit )
+            || U_R( E_base_S->E_flow_S_signal, time )
+            || U_R( E_base_S->E_flow_S_signal, call_req )
+            || U_R( E_base_S->E_flow_S_signal, io_ready )
             )
-                U_L( E_base_S->E_flow_S_signal, wake );
+                U_F( E_base_S->E_flow_S_signal, wake );
                 #ifdef E_flow_C_itimer_system_unblock_report
             if( E_base_S->E_flow_Z_itimer_system_unblock_report_I_sigsuspend )
             {   B system_unblock_report = no;
                 while( !U_R( E_base_S->E_flow_S_signal, wake ))
-                {   E_base_S->switch_back_suspend = yes;
-                    system_unblock_report = E_base_S->E_flow_Z_itimer_system_unblock_report_I_sigsuspend( &E_base_S->E_flow_Z_sigset_S_empty );
-                    E_base_S->switch_back_suspend = no;
+                {   system_unblock_report = E_base_S->E_flow_Z_itimer_system_unblock_report_I_sigsuspend( &E_base_S->E_flow_Z_sigset_S_empty );
                     if( system_unblock_report )
                         U_F( E_base_S->E_flow_S_signal, wake );
                     else
@@ -2017,14 +2009,7 @@ Loop:
             }else
                 #endif
                 while( !U_R( E_base_S->E_flow_S_signal, wake ))
-                {
-                        #if defined( E_flow_C_thread_system_unblock_reports ) || defined( C_pthreads )
-                    E_base_S->switch_back_suspend = yes;
-                        #endif
-                    Vp_(( sigsuspend( &E_base_S->E_flow_Z_sigset_S_empty ), !_errno || _errno == EINTR ));
-                        #if defined( E_flow_C_thread_system_unblock_reports ) || defined( C_pthreads )
-                    E_base_S->switch_back_suspend = no;
-                        #endif
+                {   Vp_(( sigsuspend( &E_base_S->E_flow_Z_sigset_S_empty ), !_errno || _errno == EINTR ));
                 }
             if( U_has_suspend_time
             && !U_R( E_base_S->E_flow_S_signal, time )
@@ -2037,6 +2022,7 @@ Loop:
                     #endif
                     _setttimer( &tv_ );
             }
+            U_L( E_base_S->E_flow_S_signal, wake );
             _sigprocmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_process_volatile, 0 );
         }
     }
