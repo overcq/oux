@@ -185,10 +185,9 @@ E_mem_Q_tab_I_segv_add_begin( struct E_mem_Q_tab_Z *tab_
             break;
     Pc data = tab_->data;
     N n_prepended;
-    E_flow_Q_task_I_touch_stack(); // Ponieważ brak “atomowości” zmieniania “tab_->index” z “tab_->data”.
-    _tasks_table_begin;
+    _Z_tasks_table_S_edit_begin;
     if( !E_mem_Q_blk_I_add( &tab_->data, 1, &n_prepended, 0 ))
-    {   _tasks_table_end;
+    {   _Z_tasks_table_S_edit_end;
         return ~0;
     }
     tab_->data_n++;
@@ -206,10 +205,10 @@ E_mem_Q_tab_I_segv_add_begin( struct E_mem_Q_tab_Z *tab_
         {   if( !E_mem_Q_blk_I_remove( &tab_->data, n_prepended ? 0 : tab_->data_n - 1, 1 ))
             {   GV_(NA);
             }
-            _tasks_table_end;
+            _Z_tasks_table_S_edit_end;
             return ~0;
         }
-    _tasks_table_end;
+    _Z_tasks_table_S_edit_end;
     return id;
 }
 _internal

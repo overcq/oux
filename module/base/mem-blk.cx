@@ -15,7 +15,7 @@ Struktura osadzenia przepływu wykonania menedżera:
 ⁃ W punkcie wejścia oraz wyjścia przepływu wykonania ‹zadania› z funkcji menedżera stan pamięci zarządzanej jest integralny. Funkcja może zmienić adres tylko tego bloku pamięci spośród udostępnionych przez menedżera, względem którego została wywołana.
 ⁃ W trakcie posiadania przepływu wykonania przez menedżera może wystąpić przerwanie zabierające przepływ wykonania— w postaci “sygnału” ‘uniksowego’, którego procedura obsługi może ewentualnie wykonywać dostęp do bloku pamięci zarządzanego przez tego menedżera; teksty procedur obsługi są w “menedżerze przepływu wykonania”.
 ⁃ Jednak “sygnały” ‘uniksowe’ czytające lub zmieniające konkretne bloki pamięci są blokowane przed przejęciem przepływu wykonania podczas ich modyfikacji, ponieważ te konkretne bloki są używane poprzez któregoś menedżera ·struktur· pamięci (menedżera pamięci wyższego poziomu), który nie potrafiłby wykonać swoich funkcji “atomowo” ze względu na złożoność danych, więc “sygnał” ‘uniksowy’ nie wystąpi podczas zmiany adresu bloku pamięci, z którego korzysta.
-⁃ Jakkolwiek “sygnał” ‘uniksowy’ “SEGV” używany nie jako błąd — do automatycznego ‘doalokowywania’ stron pamięci “stosów” ‹zadań› z wcześniej zarezerwowanego obszaru przestrzeni adresowej — może wystąpić kiedykolwiek po przesunięciu niżej wierzchołka “stosu” ‹zadania› w procedurze tego menedżera przez ‘kompilator’, a procedura obsługi tego “sygnału” czyta i zmienia dane w tablicy ‹zadań›. Więc w konkretnej implementacji zmieniania tablicy ‹zadań› “stos” ‹zadania› jest ‘prealokowany’ (“E_flow_Q_task_I_touch_stack”), a dla innego “thread” – ustawiany ‹przełącznik› zabraniający czytania tej tablicy w procedurze obsługi “sygnału” “SEGV”.
+⁃ Jakkolwiek “sygnał” ‘uniksowy’ “SEGV” używany nie jako błąd — do automatycznego ‘doalokowywania’ stron pamięci “stosów” ‹zadań› z wcześniej zarezerwowanego obszaru przestrzeni adresowej — może wystąpić kiedykolwiek po przesunięciu niżej wierzchołka “stosu” ‹zadania› w procedurze tego menedżera przez ‘kompilator’, a procedura obsługi tego “sygnału” czyta i zmienia dane w tablicy ‹zadań›. Więc w konkretnej implementacji zmieniania tablicy ‹zadań› “stos” ‹zadania› jest ‘prealokowany’ (“E_flow_Q_task_I_touch_stack”), a dla innego “thread” – ustawiany “mutex” oraz ‹przełącznik› zabraniający czytania tej tablicy w procedurze obsługi “sygnału” “SEGV”.
 Struktura “atomowości” menedżera:
 ⁃ W tekście programu menedżera jest gwarantowane ‘implicite’ ze składni języka (tzn. z domyślnej alokacji zmiennych lokalnych na “stosie” ·przed ich użyciem· jako wartość wyrażenia przypisywanego), że wpis w tablicy systemowej menedżera (adres, rozmiar bloku) zostanie zmieniony “atomowo” względem poszczególnego elementu wpisu (adres lub rozmiar), oraz z linii programu– zawsze tak, by przed i po “atomowej” zmianie odczyt całego wpisu był poprawny względem chwilowo obecnego bloku pamięci z zawartością. To umożliwia przerwanie przepływu wykonania przez “sygnał” lub “wątek” systemu operacyjnego i poprawny dostęp do pamięci udostępnionej przez menedżera, ale nie wywołanie funkcji menedżera. (Czy to ma jakieś zastosowanie, gdy funkcje i tak muszą być blokowane?)
 ⁃ Pomiędzy wszystkimi tablicami systemowymi menedżera integralność jest zachowywana przez realizację właściwej sekwencji zmieniania wpisów, w których to sekwencjach blok pamięci jest utrzymywany w pierwszej funkcji na nim się wykonującej— przez utrzymywanie jego wpisu w zmiennych lokalnych, a usuniętego z tablicy wolnych bloków, niedostępnego dla kolejnych funkcji. (Kolejność zmian “atomowych” dla chwilowej poprawności w trakcie zmiany pojedynczego wpisu nie została jeszcze sprawdzona.) To umożliwia rekurencyjne wywoływanie uniwersalnych funkcji wewnętrz menedżera oraz po dodaniu odpowiednich instrukcji synchronizacji “międzywątkowych” umożliwi przerywanie przepływu wykonania menedżera przez system operacyjny “wywłaszczający” dla kolejnego “wątku” spośród tych (nie synchronizowanych w “menedżerze przepływu wykonania”) nałożonych na program w technologii ‟oux” wymaganiami którejś ‘dokompilowanej’ “biblioteki”— i wykonanie funkcji menedżera przez program “biblioteczny” (np. zastąpionej procedury “biblioteki” ‟C”: “malloc”, “calloc”, “realloc”, “free”).
@@ -83,16 +83,22 @@ E_mem_Q_blk_T_new_0( P p
     V1p_( p_end = sbrk(0) );
     return (Pc)p < p_end;
 }
+//TODO Poprawić tę procedurę do nowych warunków.
 _internal
 void
 E_mem_Q_blk_I_assert_on_return( N line
-){  sigset_t sigset;
-    _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_Z_sigset_S_process_exec, &sigset );
-    B b = U_R( E_base_S->E_flow_S_mode, Z_task_table_S_can_read );
-    if(b)
-    {   E_flow_Q_task_I_touch_stack();
-        U_L( E_base_S->E_flow_S_mode, Z_task_table_S_can_read );
+){  int error = pthread_mutex_trylock( &E_base_S->E_flow_Z_task_table_S_mutex );
+    if( error
+    && error != EBUSY
+    )
+    {   _errno = error;
+        Ve();
+        V();
     }
+    if(error)
+        return;
+    sigset_t sigset;
+    _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_Z_sigset_S_process_exec, &sigset );
     struct E_mem_Q_blk_Z_mapped *mapped_p = (P)E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_mapped_id ].p;
     struct E_mem_Q_blk_Z_free *free_p = (P)E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_free_id ].p;
     struct E_mem_Q_blk_Z_allocated *allocated_p = (P)E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_allocated_id ].p;
@@ -292,9 +298,8 @@ E_mem_Q_blk_I_assert_on_return( N line
         }
         free_p[j].l = ~free_p[j].l;
     }
-    if(b)
-        U_F( E_base_S->E_flow_S_mode, Z_task_table_S_can_read );
     _sigprocmask( SIG_SETMASK, &sigset, 0 );
+    Vr_( pthread_mutex_unlock( &E_base_S->E_flow_Z_task_table_S_mutex ));
 }
     #else
 #define E_mem_Q_blk_I_assert_on_return(line)
@@ -1155,9 +1160,7 @@ E_mem_Q_blk_Q_table_M_from_free_or_map( N *allocated_or_table_i
             Pc dst_page;
             Pc p_ = p_1;
             if(p)
-            {   if( !U_R( E_base_S->E_flow_S_mode, Z_task_table_S_can_read ))
-                    E_flow_Q_task_I_touch_stack();
-                //TODO Poniżej być może zastąpić (bez deintegracji) procedurą “move”, która powstanie.
+            {   //TODO Poniżej być może zastąpić (bez deintegracji) procedurą “move”, która powstanie.
                 if( src_page < src_page_end )
                 {   dst_page = p_1 + dst_rel;
                     p_ = dst_page - ( src_page - (Pc)p );
@@ -1447,9 +1450,7 @@ E_mem_Q_blk_Q_table_M_from_free_or_map( N *allocated_or_table_i
         else
             E_mem_Q_blk_Q_sys_table_f_I_move_empty_entry( i_found );
         if(p)
-        {   if( !U_R( E_base_S->E_flow_S_mode, Z_task_table_S_can_read ))
-                E_flow_Q_task_I_touch_stack();
-            E_mem_Q_blk_I_copy( p_1 + l_rel, p, l );
+        {   E_mem_Q_blk_I_copy( p_1 + l_rel, p, l );
             if( *allocated_or_table_i == E_base_S->E_mem_Q_blk_S_allocated_id )
                 E_base_S->E_mem_Q_blk_S_allocated = (P)p_1;
         }
@@ -2189,8 +2190,6 @@ E_mem_Q_blk_I_append_( P p
                                         E_mem_Q_blk_Q_table_I_put_after( E_base_S->E_mem_Q_blk_S_free_id );
                                         E_mem_Q_blk_Q_table_I_put_end();
                                     }
-                                    if( !U_R( E_base_S->E_flow_S_mode, Z_task_table_S_can_read ))
-                                        E_flow_Q_task_I_touch_stack();
                                     E_mem_Q_blk_I_copy( p_align, p_0, l_0 );
                                         #ifdef E_mem_Q_blk_C_debug
                                     E_mem_Q_blk_P_fill_c( p_align + l_0, l + l_1, 0xa5 ); //TODO Procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
@@ -2229,8 +2228,6 @@ E_mem_Q_blk_I_append_( P p
                                             E_mem_Q_blk_Q_sys_table_f_I_move_empty_entry( free_i );
                                     }
                                     Pc p_1 = p_0 - l;
-                                    if( !U_R( E_base_S->E_flow_S_mode, Z_task_table_S_can_read ))
-                                        E_flow_Q_task_I_touch_stack();
                                     E_mem_Q_blk_I_copy( p_1, p_0, l_0 );
                                     E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n += n;
                                         #ifdef E_mem_Q_blk_C_debug
@@ -2359,8 +2356,6 @@ E_mem_Q_blk_I_prepend_( P p
                                     if( !free_p[ free_i ].l )
                                         E_mem_Q_blk_Q_sys_table_f_I_move_empty_entry( free_i );
                                 }
-                                if( !U_R( E_base_S->E_flow_S_mode, Z_task_table_S_can_read ))
-                                    E_flow_Q_task_I_touch_stack();
                                 E_mem_Q_blk_I_copy_rev( p_0 + l, p_0, l_0 );
                                 E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n += n;
                                 if( l_1 )
@@ -2472,8 +2467,6 @@ E_mem_Q_blk_I_insert_( P p
                             E_mem_Q_blk_Q_sys_table_f_I_move_empty_entry( free_i );
                         E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n += n;
                         *( P * )p = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p -= l_1;
-                        if( !U_R( E_base_S->E_flow_S_mode, Z_task_table_S_can_read ))
-                            E_flow_Q_task_I_touch_stack();
                         E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p
                         , E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p + l_1
                         , i * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
@@ -2500,8 +2493,6 @@ E_mem_Q_blk_I_insert_( P p
                                     *( P * )p = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p -= l_1;
                                 }
                                 E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n += n;
-                                if( !U_R( E_base_S->E_flow_S_mode, Z_task_table_S_can_read ))
-                                    E_flow_Q_task_I_touch_stack();
                                 if( l_1 )
                                     E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p
                                     , E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p + l_1
@@ -2547,7 +2538,7 @@ E_mem_Q_blk_I_insert_( P p
                 E_mem_Q_blk_I_copy_rev( (Pc)p_1 + ( i + n ) * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
                 , (Pc)p_1 + i * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
                 , l_0 - i * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
-                ); // “E_flow_Q_task_I_touch_stack” było wykonane w “E_mem_Q_blk_Q_table_M_from_free_or_map”.
+                );
                 #ifdef E_mem_Q_blk_C_debug
             E_mem_Q_blk_P_fill_c( (Pc)p_1 + i * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u, n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u, 0xa5 ); //TODO Procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
                 #endif
@@ -2623,8 +2614,6 @@ E_mem_Q_blk_I_remove_( P p
                 *( P * )p = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p += l;
             }else // Usuwane w środku bloku.
             {   Pc p_0 = *( Pc * )p + ( i + n ) * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u;
-                if( !U_R( E_base_S->E_flow_S_mode, Z_task_table_S_can_read ))
-                    E_flow_Q_task_I_touch_stack();
                 E_mem_Q_blk_I_copy( p_0 - l
                 , p_0
                 , *( Pc * )p + l_0 - p_0

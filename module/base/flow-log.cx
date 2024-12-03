@@ -208,9 +208,18 @@ E_flow_Z_line_report_Z_line_I_sync( Pc file
     E_flow_Z_line_report_Z_n_I_sync( E_base_S->E_flow_S_exe_pid, sizeof( E_base_S->E_flow_S_exe_pid ), 10 );
     E_flow_Z_line_report_Z_s_I_sync( file, 0 );
     E_flow_Z_line_report_Z_n_I_sync( line, sizeof(line), 10 );
-    if( U_R( E_base_S->E_flow_S_mode, Z_task_table_S_can_read ))
+    int error = pthread_mutex_trylock( &E_base_S->E_flow_Z_task_table_S_mutex );
+    if( error
+    && error != EBUSY
+    )
+    {   _errno = error;
+        Ve();
+        V();
+    }
+    if( !error )
     {   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
         E_flow_Z_line_report_Z_s_I_sync( task->proc_name, 0 );
+        Vr_( pthread_mutex_unlock( &E_base_S->E_flow_Z_task_table_S_mutex ));
     }
     E_flow_Z_line_report_Z_n_I_sync( E_base_S->E_flow_Q_task_S_current, sizeof( E_base_S->E_flow_Q_task_S_current ), 10 );
     if(s)
@@ -251,7 +260,7 @@ E_flow_Z_line_report_Z_line_I_error( Pc file
 //==============================================================================
 void
 E_flow_Z_stat_I_stat( void
-){  int fd = open( "/etc/machine-id", O_RDONLY );
+){  int fd = open( "/etc/machine-id", O_RDONLY ); //TODO Zmienić na własne procedury.
     if( ~fd )
     {   C buf[33];
         N l = read( fd, &buf[0], sizeof(buf) );

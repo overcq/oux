@@ -27,8 +27,13 @@ extern void E_flow_Q_process_call_I_func(P);
     #else
 #define _sigprocmask(how,set,oldset)    { V0_( sigprocmask( (how), (set), (oldset) )); }
     #endif
-#define _tasks_table_begin              _sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, &E_base_S->E_flow_Z_task_table_S_sigset ); U_L( E_base_S->E_flow_S_mode, Z_task_table_S_can_read )
-#define _tasks_table_end                U_F( E_base_S->E_flow_S_mode, Z_task_table_S_can_read ); _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_Z_task_table_S_sigset, 0 )
+    #ifdef C_pthreads
+#define _Z_tasks_table_S_edit_begin     Vr_( pthread_mutex_lock( &E_base_S->E_flow_Z_task_table_S_mutex )); _sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, &E_base_S->E_flow_Z_task_table_S_sigset ); E_flow_Q_task_I_touch_stack(); U_L( E_base_S->E_flow_S_mode, Z_task_table_S_can_read )
+#define _Z_tasks_table_S_edit_end       U_F( E_base_S->E_flow_S_mode, Z_task_table_S_can_read ); _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_Z_task_table_S_sigset, 0 ); Vr_( pthread_mutex_unlock( &E_base_S->E_flow_Z_task_table_S_mutex ))
+    #else
+#define _Z_tasks_table_S_edit_begin     _sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, &E_base_S->E_flow_Z_task_table_S_sigset ); E_flow_Q_task_I_touch_stack(); U_L( E_base_S->E_flow_S_mode, Z_task_table_S_can_read )
+#define _Z_tasks_table_S_edit_end       U_F( E_base_S->E_flow_S_mode, Z_task_table_S_can_read ); _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_Z_task_table_S_sigset, 0 )
+    #endif
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #ifndef E_flow_drv_C_clock_monotonic
 typedef struct timeval Z_clock_time;
@@ -97,12 +102,12 @@ typedef struct timespec Z_clock_time;
 #define _timerisset(tp)                 ( (tp)->tv_sec || (tp)->Z_clock_time_minor_field )
 #define _timerisover(tp)                ( (tp)->tv_sec == LONG_MAX && (tp)->Z_clock_time_minor_field == Z_clock_time_minor_field_S_max )
 #define _timercmp(a,CMP,b) \
-  (( !strcmp( J_s(CMP), "<" ) || !strcmp( J_s(CMP), "<=" ) ? (a)->tv_sec < (b)->tv_sec || ( (a)->tv_sec == (b)->tv_sec && (a)->Z_clock_time_minor_field CMP (b)->Z_clock_time_minor_field ) \
-  : ( !strcmp( J_s(CMP), "==" ) ? (a)->tv_sec CMP (b)->tv_sec && (a)->Z_clock_time_minor_field CMP (b)->Z_clock_time_minor_field \
-  : ( !strcmp( J_s(CMP), "!=" ) ? (a)->tv_sec CMP (b)->tv_sec || (a)->Z_clock_time_minor_field CMP (b)->Z_clock_time_minor_field \
-  : ( !strcmp( J_s(CMP), ">" ) || !strcmp( J_s(CMP), ">=" ) ? (a)->tv_sec > (b)->tv_sec || ( (a)->tv_sec == (b)->tv_sec && (a)->Z_clock_time_minor_field CMP (b)->Z_clock_time_minor_field ) \
+  ( !strcmp( J_s(CMP), "<" ) || !strcmp( J_s(CMP), "<=" ) ? (a)->tv_sec < (b)->tv_sec || ( (a)->tv_sec == (b)->tv_sec && (a)->Z_clock_time_minor_field CMP (b)->Z_clock_time_minor_field ) \
+  : !strcmp( J_s(CMP), "==" ) ? (a)->tv_sec CMP (b)->tv_sec && (a)->Z_clock_time_minor_field CMP (b)->Z_clock_time_minor_field \
+  : !strcmp( J_s(CMP), "!=" ) ? (a)->tv_sec CMP (b)->tv_sec || (a)->Z_clock_time_minor_field CMP (b)->Z_clock_time_minor_field \
+  : !strcmp( J_s(CMP), ">" ) || !strcmp( J_s(CMP), ">=" ) ? (a)->tv_sec > (b)->tv_sec || ( (a)->tv_sec == (b)->tv_sec && (a)->Z_clock_time_minor_field CMP (b)->Z_clock_time_minor_field ) \
   : ( _unreachable, no ) \
-  )))))
+  )
 // Czy przepełnienie z dodawania dwóch “Z_clock_time_minor_field” zmieści się w rzeczywistym typie danych tej zmiennej w “struct timeval” lub “struct timespec”.
     #if LONG_MAX >= 2 * Z_clock_time_minor_field_S_max
 #define _timeradd(a,b,res) \
