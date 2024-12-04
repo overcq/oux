@@ -289,11 +289,12 @@ E_gui_xcb_Q_display_M( void
         //screen->xbutton_drag_copy_x_delta = 20; //CONF
         //screen->xbutton_drag_copy_y_delta = 20; //CONF
         struct E_gui_xcb_Q_window_Z *dnd_window = &screen->dnd_window;
+        dnd_window->screen_id = screen_id;
         dnd_window->x_window = xcb_generate_id( display->x_display );
         xcb_create_window( display->x_display
         , XCB_COPY_FROM_PARENT
         , dnd_window->x_window
-        , screen_iter.data->root
+        , screen->x_root_window
         , E_gui_xcb_Q_window_S_hidden_x
         , E_gui_xcb_Q_window_S_hidden_y
         , 1
@@ -358,7 +359,6 @@ E_gui_xcb_Q_display_M( void
         , yes
         );
         xcb_map_window( display->x_display, dnd_window->x_window );
-        U_L( dnd_window->req, close );
         U_L( screen->state, draw_object_drag_move );
     }while( screen_iter.rem != 1
     && ( xcb_screen_next( &screen_iter ), screen_id++, yes ));

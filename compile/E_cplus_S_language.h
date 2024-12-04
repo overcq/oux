@@ -183,7 +183,7 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
   E_flow_Q_thread_system_unblock_report_M(( thread_unblock_proc_ ), &J_autogen( thread_flow_mutex ), &J_autogen( thread_switch ), &J_autogen( thread_switch_in ), &J_autogen( thread_switch_out ))
 // Tuż przed wywołaniem procedury blokującej w oczekiwaniu na ‹systemowy raport odblokowujący›.
 #define Xh_B_() \
-  E_flow_Q_thread_system_unblock_report_I_before_block( J_autogen( thread_switch_out ), J_autogen( thread_switch ), J_autogen( thread_flow_mutex )) 
+  E_flow_Q_thread_system_unblock_report_I_before_block( J_autogen( thread_switch_in ), J_autogen( thread_switch_out ), J_autogen( thread_switch ), J_autogen( thread_flow_mutex ))
 // Czekanie na ‹systemowy raport odblokowujący›; tuż po wywołaniu procedury blokującej.
 #define Xh_B() \
   if( !E_flow_Q_thread_system_unblock_report_I_after_block( J_autogen( thread_switch_in ), J_autogen( thread_switch ), J_autogen( thread_flow_mutex ))){} else

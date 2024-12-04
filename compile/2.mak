@@ -29,7 +29,6 @@ H_make_Z_list_I_index = $(strip $(foreach i,$(call H_make_Z_list_M_n,$(words $(2
 H_make_I_block_root = $(if $(filter 0,$(shell id -u)),$(error root user not allowed. Run make as user first.))
 #===============================================================================
 # Wczytanie plików (“0.mak”) definicji programu i ‹modułów›.
-#NDFN Są wymieniane, a mogłyby być automatycznie generowane, gdyby nie było modułów alternatywnych, np. “x-window-lo-cpu” i “x-window-hi-cpu”.
 H_make_S_modules := $(H_make_S_base_module) $(sort $(filter-out $(H_make_S_base_module),$(S_modules)))
 undefine S_modules
 #-------------------------------------------------------------------------------
@@ -143,11 +142,13 @@ H_make_S_lib_prefix := oux-
 #NDFN Wymienione, ponieważ są inne pliki “.h” w tym katalogu.
 H_make_S_compiler_cx_sources := simple.h base.h
 H_make_S_cx_sources := $(wildcard *.cx)
+H_make_S_all_cx_sources := $(foreach module,$(H_make_S_modules),$(wildcard $(H_make_S_root_path)/module/$(module)/*.cx)) $(H_make_S_cx_sources)
 H_make_S_headers := stdbool.h
 H_make_S_base_driver := flow-drv
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 H_make_Z_shell_cmd_arg_I_quote = '$(subst ','\'',$(1))'
 H_make_Z_shell_cmd_arg_I_quote_for = $(foreach s,$(1),$(call H_make_Z_shell_cmd_arg_I_quote,$(s)))
+H_make_Z_headers_I_sort = $(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(1)) | tr ' ' '\n' | grep -Fve / | sort -u; echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(1)) | tr ' ' '\n' | grep -Fe / | sort -u )
 #-------------------------------------------------------------------------------
 H_make_Z_shell_cmd_N_gen_headers_db := $(H_make_S_compile_path)/E_cplus_M_headers_db.sh
 H_make_Z_shell_cmd_N_cx_to_c := $(H_make_S_compile_path)/E_cplus_I_compile_N_cx_to_c.sh
@@ -178,11 +179,10 @@ H_make_C_pthreads := 1
 CFLAGS += -DE_flow_C_thread_system_unblock_reports
             endif
         else
-#NDFN Wymyślenie zależności przełącznikowej, by nie potrzebował za każdym razem przeglądać plików ‘cx’.
-            ifneq (,$(shell grep -Fwqe Xh1_M $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cx_sources)) && echo 1))
+            ifneq (,$(shell grep -Fwqe Xh1_M $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_all_cx_sources)) && echo 1))
 CFLAGS += -DE_flow_C_itimer_system_unblock_report
             endif
-            ifneq (,$(and $(H_make_T_pthreads),$(shell grep -Fwqe Xh_A $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cx_sources) $(foreach module,$(H_make_S_modules),$(wildcard $(H_make_S_root_path)/module/$(module)/*.cx))) && echo 1)))
+            ifneq (,$(and $(H_make_T_pthreads),$(shell grep -Fwqe Xh_A $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_all_cx_sources)) && echo 1)))
 H_make_C_pthreads := 1
 CFLAGS += -DE_flow_C_thread_system_unblock_reports
             endif
@@ -287,7 +287,7 @@ $(patsubst %.cx,E_cplus_S_0_%.h,$(H_make_S_cx_sources)) \
 $(patsubst %.cx,E_cplus_S_1_%.h,$(H_make_S_cx_sources)) \
 $(patsubst %.cx,E_cplus_S_2_%.h,$(H_make_S_cx_sources)) \
 $(foreach module,$(H_make_S_modules),$(addprefix $(H_make_S_module_path)/$(module)/,$(patsubst %.cx,E_cplus_S_0_$(module)__%.h,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))) $(patsubst %.cx,E_cplus_S_1_$(module)__%.h,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))) $(patsubst %.cx,E_cplus_S_2_$(module)__%.h,$(notdir $(wildcard $(H_make_S_module_path)/$(module)/*.cx))))) \
-$(patsubst %.cx,%.c,$(H_make_S_cx_sources) $(foreach module,$(H_make_S_modules),$(wildcard $(H_make_S_module_path)/$(module)/*.cx)))
+$(patsubst %.cx,%.c,$(H_make_S_all_cx_sources))
 0.mak 0.h $(foreach module,$(H_make_S_modules),$(addprefix $(H_make_S_module_path)/$(module)/,0.mak 0.h)):
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 H_make_Q_stat_S_url := https://overcq.ct8.pl/p.php?event=
@@ -348,12 +348,9 @@ $(addprefix $(H_make_S_compile_path)/,1.mak 2.mak) \
 0.mak $(foreach module,$(H_make_S_modules),$(H_make_S_module_path)/$(module)/0.mak) \
 E_cplus_S_cx_sources $(H_make_S_module_path)/E_cplus_S_cx_sources
 	$(H_make_I_block_root)
-	{   $(if $(H_make_S_headers) $(E_main_S_headers) $(E_module_S_headers), \
-        for include in $(call H_make_Z_shell_cmd_arg_I_quote_for,$(sort $(H_make_S_headers) $(E_main_S_headers) $(E_module_S_headers))); do \
+	{   for include in $(call H_make_Z_shell_cmd_arg_I_quote_for,$(call H_make_Z_headers_I_sort,assert.h $(H_make_S_headers) $(E_main_S_headers) $(E_module_S_headers))); do \
             echo "#include <$${include}>" ;\
         done ;\
-        ) \
-        echo '#include <assert.h>' ;\
         $(foreach module,$(H_make_S_modules),$(call H_make_Q_main_header_I_module_0,$(module));) \
         for header in $(call H_make_Z_shell_cmd_arg_I_quote_for,$(patsubst %.cx,E_cplus_S_0_%.h,$(H_make_S_cx_sources))); do \
             echo "#include \"$${header}\"" ;\
@@ -388,12 +385,9 @@ $(H_make_S_module_path)/E_cplus_S_cx_sources
 	{   $(if $(H_make_C_to_libs_C_replace_c_alloc), \
         echo "#define C_to_libs_C_replace_c_alloc_S_libc_filename J_s($(shell ldd $$( which $(MAKE) ) | grep -Fw libc.so | head -n 1 | sed -e 's`^.*\(libc\.so[0-9A-Za-z.-]*\).*`\1`' ))" ;\
         ) \
-        $(if $(H_make_S_headers) $(E_module_S_headers), \
-        for header in $(call H_make_Z_shell_cmd_arg_I_quote_for,$(sort $(H_make_S_headers) $(E_module_S_headers))); do \
+        for header in $(call H_make_Z_shell_cmd_arg_I_quote_for,$(call H_make_Z_headers_I_sort,assert.h $(H_make_S_headers) $(E_module_S_headers))); do \
             echo "#include <$${header}>" ;\
         done ;\
-        ) \
-        echo '#include <assert.h>' ;\
         $(foreach module,$(H_make_S_modules),$(call H_make_Q_main_header_I_module_0,$(module));) \
         echo '#include "E_cplus_S_machine.h"' ;\
         echo '#include "E_cplus_S_language.h"' ;\
@@ -410,8 +404,7 @@ E_cplus_S_cx_sources: \
 $(H_make_S_cx_sources)
     else
 E_cplus_S_cx_sources: \
-$(foreach module,$(H_make_S_modules),$(wildcard $(H_make_S_module_path)/$(module)/*.cx)) \
-$(H_make_S_cx_sources)
+$(H_make_S_all_cx_sources)
     endif
 	$(H_make_I_block_root)
 	if [ ! -e $(call H_make_Z_shell_cmd_arg_I_quote,$@) ] || [ "$$(cat $(call H_make_Z_shell_cmd_arg_I_quote,$@))" != $(call H_make_Z_shell_cmd_arg_I_quote,$^) ]; then \
@@ -603,7 +596,7 @@ install-0:
 	tmp_file=$$( mktemp ) ;\
 	trap '$(RM) "$$tmp_file"' EXIT ;\
 	{ echo '#!/bin/sh' ;\
-	$(if $(H_make_C_to_libs_C_replace_c_alloc),echo 'exec env LD_PRELOAD=lib$(H_make_S_lib_prefix)base.so "$$@"',echo 'exec "$$@"'); } > "$$tmp_file" ;\
+	$(if $(H_make_C_to_libs_C_replace_c_alloc),echo 'exec env LD_PRELOAD=lib$(H_make_S_lib_prefix)$(H_make_S_base_module).so "$$@"',echo 'exec "$$@"'); } > "$$tmp_file" ;\
 	{ $(CMP) "$$tmp_file" $(H_make_S_install_prefix)/usr/bin/oux \
 	|| $(INSTALL) -m 755 "$$tmp_file" $(H_make_S_install_prefix)/usr/bin/oux; \
 	} \

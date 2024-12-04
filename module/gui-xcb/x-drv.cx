@@ -1207,8 +1207,10 @@ Po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                 }else if( name == E_x_Z_atom_R( display, WM_DELETE_WINDOW ))
                                 {   if( U_R( display->mode, drag ))
                                         U_F( display->mode, drag_stop );
-                                    U_F( window->req, close );
-                                    U_F( x_window, close_window );
+                                    if( window != &screen->dnd_window )
+                                    {   U_F( window->req, close );
+                                        U_F( x_window, close_window );
+                                    }
                                 }else
                                 {   xcb_get_atom_name_cookie_t ret_id = xcb_get_atom_name_unchecked( display->x_display, x_client->data.data8[0] );
                                     xcb_get_atom_name_reply_t *ret = xcb_get_atom_name_reply( display->x_display, ret_id, 0 );
@@ -1760,7 +1762,7 @@ Drag_start_error:                       ;
             )
             {   U_L( display->mode, drag_stop );
                 U_F( display->req, flush );
-                xcb_ungrab_pointer( display->x_display, display->pointer_button_S_grab_time ); //NDFN Niedoskonałość zachowania: w określonych zestawieniach czasowych (opóźnień) wskaźnik zostanie ‘odgrabnięty’ nad cudzym oknem przy dowolnym zestawie przycisków naciśniętych pomiędzy kolejnymi otrzymanymi pakietami “zdarzeń” ‘x’ (co spowoduje reakcję tamtego okna na “ButtonRelease” lub już “MotionNotify” —np. uchwycenie ramki okna w menedżerze okien ‟Fluxbox”). Jeśli użytkownik klika pusto, to i tak nic nie pomoże oprócz normalnego ‘timeoutu’: sprawdzić, czy obsługuje właściwie “pointer_button_C_restart_delay” w całym trybie “drag_stop”, a wtedy pozostanie tylko niemożliwa do uniknięcia sytuacja trafienia z ‘ungrabnięciem’ w moment, gdy znowu rozpoczęto klikanie, które jakkolwiek wtedy ze względu na zaszły ‘timeout’ ‘restartu’ jest rozumiane przez ‹operatora› jako rozpoczęcie klikania w miejscu, gdzie właśnie ‘odgrabnięto’. A po tym– komentarz do usunięcia.
+                xcb_ungrab_pointer( display->x_display, display->pointer_button_S_grab_time );
             }
             if( U_R( display->mode, drag )
             && U_R( pointer, motion )
@@ -1890,6 +1892,18 @@ Drag_start_error:                       ;
                         U_F( display->req, flush );
                     }
                 }
+            }
+            if( U_R( x_window, close_window )
+            && U_E( display->req, pointer_S_ungrab )
+            )
+            {
+                    #ifdef E_flow_C_thread_system_unblock_reports
+                Yi_L( x_window, events_pointer_button_check );
+                    #endif
+                U_L( display->mode, drag_stop );
+                U_F( display->req, flush );
+                xcb_ungrab_pointer( display->x_display, display->pointer_button_S_grab_time );
+                display->pointer_button_S_seq_i = 0;
             }
             if( U_R( display->req, draw ))
                 U_F( x_window, draw );

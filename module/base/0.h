@@ -171,11 +171,13 @@ struct E_flow_Z_args
 #define E_io_Q_stream_out_S_delay 1
     #endif
 //------------------------------------------------------------------------------
-    #if !defined( E_io_C_aio ) && !defined( __FreeBSD__ )
+    #if defined( __OpenBSD__ )
 struct aiocb
 { int aio_fildes;
   P aio_buf;
   N aio_nbytes;
 };
+    #elif !defined( __gnu_linux__ ) && !defined( __FreeBSD__ )
+#error not implemented
     #endif
 /******************************************************************************/
