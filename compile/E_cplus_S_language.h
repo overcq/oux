@@ -102,9 +102,6 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
 //------------------------------------------------------------------------------
 // Instrukcja blokowa definicji ‹zadania›.
 #define D(module,task)                      _internal void _D_proc(module,task)( P thread_proc_arg )
-// Instrukcja blokowa pętli głównej ‹zadania›.
-#define I_D                                 O
-//#define I_D                                 if( E_flow_Q_task_I_begin() ){} else O
 //------------------------------------------------------------------------------
     #if defined( E_flow_C_thread_system_unblock_reports ) || defined( C_pthreads )
         #if defined( __gnu_linux__ )

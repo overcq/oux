@@ -663,19 +663,6 @@ E_flow_Q_thread_system_unblock_report_I( P args_
     return 0;
 }
     #endif
-// ‹Zadanie› sychroniczne i wątkowane wykonuje to przed rozpoczęcięm swojej pętli; w instrukcji “I_D”.
-B
-E_flow_Q_task_I_begin( void
-){  struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
-    task->run_state = E_flow_Z_run_state_S_ready;
-        #ifdef E_flow_C_thread_system_unblock_reports
-    if( !U_R( task->type, system_unblock_report ))
-        #endif
-    {   E_flow_Q_task_I_switch( task->run_state_object ); // Powrót do ‹zadania› uruchamiającego bieżące.
-        task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
-    }
-    return task->run_state == E_flow_Z_run_state_S_stopping_by_task;
-}
 void
 E_flow_Q_task_W( I *uid
 ){  I id = *uid;
@@ -2295,8 +2282,7 @@ E_flow_Q_process_call_I( I id
 //------------------------------------------------------------------------------
 D( flow, call_srv )
 {   X_M_( flow, call_req );
-    I_D
-    {   X_B( flow, call_req, 0 )
+    O{  X_B( flow, call_req, 0 )
             break;
         _sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_req, 0 );
         for_each_pop( call_id, E_base_S->E_flow_Q_process_call_srv_S, E_mem_Q_tab )
