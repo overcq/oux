@@ -176,51 +176,6 @@ E_mem_Q_tab_I_add_i( struct E_mem_Q_tab_Z *tab_
     }
     return id;
 }
-_internal
-I
-E_mem_Q_tab_I_segv_add_begin( struct E_mem_Q_tab_Z *tab_
-, P id_data
-){  for_i( id, tab_->index_n )
-        if( !tab_->index[id] )
-            break;
-    Pc data = tab_->data;
-    N n_prepended;
-    _Z_tasks_table_S_edit_begin;
-    if( !E_mem_Q_blk_I_add( &tab_->data, 1, &n_prepended, 0 ))
-    {   _Z_tasks_table_S_edit_end;
-        return ~0;
-    }
-    tab_->data_n++;
-    if( tab_->data != data )
-    {   for_i( i, id )
-            tab_->index[i] += tab_->data + ( n_prepended ? tab_->u : 0 ) - data;
-        if( i != tab_->index_n )
-            while( ++i != tab_->index_n )
-                if( tab_->index[i] )
-                    tab_->index[i] += tab_->data + ( n_prepended ? tab_->u : 0 ) - data;
-    }
-    *(Pp)id_data = tab_->data + ( n_prepended ? 0 : id * tab_->u );
-    if( id == tab_->index_n )
-        if( !E_mem_Q_blk_I_append( &tab_->index, 1 ))
-        {   if( !E_mem_Q_blk_I_remove( &tab_->data, n_prepended ? 0 : tab_->data_n - 1, 1 ))
-            {   GV_(NA);
-            }
-            _Z_tasks_table_S_edit_end;
-            return ~0;
-        }
-    _Z_tasks_table_S_edit_end;
-    return id;
-}
-_internal
-I
-E_mem_Q_tab_I_segv_add_end( struct E_mem_Q_tab_Z *tab_
-, I id
-, P id_data
-){  tab_->index[id] = id_data;
-    if( id == tab_->index_n )
-        tab_->index_n++;
-    return id;
-}
 N
 E_mem_Q_tab_I_remove( struct E_mem_Q_tab_Z *tab_
 , I id

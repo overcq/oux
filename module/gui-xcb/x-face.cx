@@ -367,6 +367,18 @@ E_gui_xcb_Q_display_M( void
     {   E_mem_Q_tab_W( display->screen );
         return ~0;
     }
+    display->cursor_window = ~0;
+    display->select_window = ~0;
+    U_L( display->state, pointer_S_in_window );
+    U_L( display->state, pointer_button_S_pressing );
+    U_L( display->mode, drag );
+    U_L( display->mode, drag_stop );
+    U_L( display->mode, draw_simple );
+    U_L( display->req, draw );
+    //U_L( display->req, draw_click );
+    U_F( display->req, flush );
+    U_L( display->req, pointer_S_ungrab );
+    U_L( display->req, restart );
     if( E_mem_Q_tab_R_n( E_gui_xcb_Q_display_S ) == 1 )
     {   D_M( x_window, flush )
         {   E_mem_Q_tab_W( display->window );
@@ -429,6 +441,22 @@ E_gui_xcb_Q_display_M( void
             #endif
     }
         #ifdef E_flow_C_thread_system_unblock_reports
+    D_M( x_window, events_pointer_button_check )
+    {   if( E_mem_Q_tab_R_n( E_gui_xcb_Q_display_S ) == 1 )
+        {   Da_W( x_window, draw );
+            display = E_mem_Q_tab_R( E_gui_xcb_Q_display_S, display_id );
+            Vr_( pthread_cond_destroy( &E_x_window_D_draw_S_cond));
+            Vr_( pthread_mutex_destroy( &E_x_window_D_draw_S_mutex ));
+            D_W( x_window, flush );
+        }
+        E_mem_Q_tab_W( display->window );
+        E_mem_Q_tab_W( display->screen );
+        W( display->class_name );
+        W( display->atom );
+        xcb_disconnect( display->x_display );
+        E_mem_Q_tab_I_remove( E_gui_xcb_Q_display_S, display_id );
+        return ~0;
+    }
     I *M_( thread_proc_arg );
     if( !thread_proc_arg )
     {   if( E_mem_Q_tab_R_n( E_gui_xcb_Q_display_S ) == 1 )
@@ -448,7 +476,8 @@ E_gui_xcb_Q_display_M( void
     }
     *thread_proc_arg = display_id;
     Dh_M( x_window, events, display_id, thread_proc_arg )
-    {   if( E_mem_Q_tab_R_n( E_gui_xcb_Q_display_S ) == 1 )
+    {   W( thread_proc_arg );
+        if( E_mem_Q_tab_R_n( E_gui_xcb_Q_display_S ) == 1 )
         {   Da_W( x_window, draw );
             display = E_mem_Q_tab_R( E_gui_xcb_Q_display_S, display_id );
             Vr_( pthread_cond_destroy( &E_x_window_D_draw_S_cond));
@@ -464,18 +493,6 @@ E_gui_xcb_Q_display_M( void
         return ~0;
     }
         #endif
-    display->cursor_window = ~0;
-    display->select_window = ~0;
-    U_L( display->state, pointer_S_in_window );
-    U_L( display->state, pointer_button_S_pressing );
-    U_L( display->mode, drag );
-    U_L( display->mode, drag_stop );
-    U_L( display->mode, draw_simple );
-    U_L( display->req, draw );
-    //U_L( display->req, draw_click );
-    U_F( display->req, flush );
-    U_L( display->req, pointer_S_ungrab );
-    U_L( display->req, restart );
     return display_id;
 }
 void
@@ -483,6 +500,7 @@ E_gui_xcb_Q_display_W( I id
 ){  struct E_gui_xcb_Q_display_Z *display = E_mem_Q_tab_R( E_gui_xcb_Q_display_S, id );
         #ifdef E_flow_C_thread_system_unblock_reports
     Dh_W( x_window, events, id );
+    D_W( x_window, events_pointer_button_check );
         #endif
     if( E_mem_Q_tab_R_n( E_gui_xcb_Q_display_S ) == 1 )
     {
