@@ -390,8 +390,7 @@ E_flow_Q_task_M( I *uid
             return ~0;
         }
         task->task_proc_arg = task_proc_args->task_proc_arg.p = task_proc_arg;
-        *thread_switch_in = yes;
-        *thread_switch_out = no;
+        *thread_switch_in = *thread_switch_out = no;
         task_proc_args->alt_stack.ss_size += E_base_S->E_mem_S_page_size;
             #if defined( __gnu_linux__ )
         V1p( task_proc_args->alt_stack.ss_sp = mmap( 0
@@ -571,10 +570,10 @@ E_flow_Q_task_M( I *uid
         }
             #endif
         Vr_( pthread_mutex_lock( thread_flow_mutex ));
-        while( !*thread_switch_out )
+        if( !*thread_switch_in )
         {   Vr_( pthread_cond_wait( thread_switch, thread_flow_mutex ));
         }
-        *thread_switch_out = no;
+        *thread_switch_in = no;
         Vr_( pthread_cond_signal( thread_switch ));
         E_base_S->E_flow_Q_task_S_current = task_id_;
         Vr_( pthread_mutex_unlock( thread_flow_mutex ));
@@ -656,6 +655,7 @@ E_flow_Q_thread_system_unblock_report_I( P args_
     V0( sigaltstack( &args->alt_stack, 0 ))
         return 0;
     Vr_( pthread_mutex_lock( args->task_proc_arg.thread_flow_mutex ));
+    *args->task_proc_arg.thread_switch_in = yes;
     args->task_proc( &args->task_proc_arg );
     Vr_( pthread_mutex_unlock( args->task_proc_arg.thread_flow_mutex ));
     V0_( sigaltstack( 0, 0 ));
@@ -674,11 +674,17 @@ E_flow_Q_task_W( I *uid
     if( U_R( task->type, system_unblock_report ))
     {   task->thread_unblock_proc( task->task_proc_arg );
         Vr_( pthread_mutex_lock( task->thread_flow_mutex ));
+        while( !*task->thread_switch_out )
+        {   Vr_( pthread_mutex_unlock( task->thread_flow_mutex ));
+            Vr_( sched_yield() );
+            Vr_( pthread_mutex_lock( task->thread_flow_mutex ));
+        }
         *task->thread_switch_in = yes;
+        I id_ = E_base_S->E_flow_Q_task_S_current;
         E_base_S->E_flow_Q_task_S_current = id;
         Vr_( pthread_mutex_unlock( task->thread_flow_mutex ));
         Vr_( pthread_join( task->thread, 0 ));
-        E_base_S->E_flow_Q_task_S_current = task->run_state_object;
+        E_base_S->E_flow_Q_task_S_current = id_;
         Vr_( pthread_mutex_destroy( task->thread_flow_mutex ));
         W( task->thread_flow_mutex );
         Vr_( pthread_cond_destroy( task->thread_switch ));
@@ -945,8 +951,7 @@ E_flow_Q_task_async_M( I *uid
         V0_( munmap( stack, stack_size ));
         return ~0;
     }
-    *thread_switch_in = yes;
-    *thread_switch_out = no;
+    *thread_switch_in = *thread_switch_out = no;
     task_proc_args->alt_stack.ss_size += E_base_S->E_mem_S_page_size;
         #if defined( __gnu_linux__ )
     V1p( task_proc_args->alt_stack.ss_sp = mmap( 0
@@ -1116,7 +1121,6 @@ E_flow_Q_task_async_M( I *uid
     }
     Vr_( pthread_attr_destroy( &thread_attr ));
         #if defined( C_line_report ) && defined( __gnu_linux__ )
-    Vr_( pthread_mutex_lock( thread_flow_mutex ));
     task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id );
     Pc s = E_text_Z_s_R_search_c_( task->proc_name, 'E' ) + 2;
     Pc s_end = E_text_Z_s0_R_end_0_le( s, 16 );
@@ -1140,7 +1144,6 @@ E_flow_Q_task_async_M( I *uid
         if( *s_end )
             W(s);
     }
-    Vr_( pthread_mutex_unlock( thread_flow_mutex ));
         #endif
     *uid = task_id;
     return task_id;
@@ -1181,7 +1184,12 @@ E_flow_Q_task_async_W( I *uid
     }
         #endif
     task->thread_unblock_proc( task->task_proc_arg );
-    Vr_( pthread_mutex_lock( task->thread_flow_mutex )); // Oczekuje aż się zatrzyma na “Da_B_” lub wyjdzie z procedury wątku.
+    Vr_( pthread_mutex_lock( task->thread_flow_mutex ));
+    while( !*task->thread_switch_out ) // Oczekuje aż się zatrzyma na “Da_B_” lub wyjdzie z procedury wątku.
+    {   Vr_( pthread_mutex_unlock( task->thread_flow_mutex ));
+        Vr_( sched_yield() );
+        Vr_( pthread_mutex_lock( task->thread_flow_mutex ));
+    }
     *task->thread_switch_in = yes;
     E_base_S->E_flow_Q_task_S_current = id;
     Vr_( pthread_mutex_unlock( task->thread_flow_mutex ));
@@ -1440,36 +1448,36 @@ E_flow_Q_thread_system_unblock_report_M( void ( *thread_unblock_proc )(P)
     *thread_switch_out = task->thread_switch_out;
 }
 void
-E_flow_Q_thread_system_unblock_report_I_before_block(
+E_flow_Q_thread_system_unblock_report_I_before_async(
   B *thread_switch_in
 , B *thread_switch_out
 , pthread_cond_t *thread_switch
 , pthread_mutex_t *thread_flow_mutex
-){  *thread_switch_out = yes;
-    Vr_( pthread_cond_signal( thread_switch ));
+){  Vr_( pthread_cond_signal( thread_switch ));
     E_flow_Q_task_I_touch_stack();
-    do
-    {   Vr_( pthread_cond_wait( thread_switch, thread_flow_mutex ));
-    }while( !*thread_switch_in );
+    Vr_( pthread_cond_wait( thread_switch, thread_flow_mutex ));
 }
 B
-E_flow_Q_thread_system_unblock_report_I_after_block(
+E_flow_Q_thread_system_unblock_report_I_after_async(
   B *thread_switch_in
+, B *thread_switch_out
 , pthread_cond_t *thread_switch
 , pthread_mutex_t *thread_flow_mutex
-){  *thread_switch_in = no;
+){  Vr_( pthread_mutex_lock( &E_base_S->E_flow_Z_task_table_S_mutex ));
+    struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, 0 );
+    pthread_t thread = task->thread;
+    Vr_( pthread_mutex_unlock( &E_base_S->E_flow_Z_task_table_S_mutex ));
+    *thread_switch_out = yes;
     Vr_( pthread_mutex_unlock( thread_flow_mutex ));
     while( !*thread_switch_in )
     {   if( !U_R( E_base_S->E_flow_S_signal, wake ))
-        {   Vr_( pthread_mutex_lock( &E_base_S->E_flow_Z_task_table_S_mutex ));
-            struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, 0 );
-            Vr_( pthread_kill( task->thread, SIGALRM ));
-            Vr_( pthread_mutex_unlock( &E_base_S->E_flow_Z_task_table_S_mutex ));
+        {   Vr_( pthread_kill( thread, SIGALRM ));
         }
         Vr_( sched_yield() );
     }
     Vr_( pthread_mutex_lock( thread_flow_mutex ));
-    struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+    *thread_switch_in = no;
+    task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
     return task->run_state == E_flow_Z_run_state_S_stopping_by_task;
 }
 void
@@ -1507,21 +1515,24 @@ E_flow_Q_itimer_system_unblock_report_I_wait( void
 B
 E_flow_Q_thread_async_I_before_sync(
   B *thread_switch_in
+, B *thread_switch_out
 , pthread_cond_t *thread_switch
 , pthread_mutex_t *thread_flow_mutex
-){  *thread_switch_in = no;
+){  Vr_( pthread_mutex_lock( &E_base_S->E_flow_Z_task_table_S_mutex ));
+    struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, 0 );
+    pthread_t thread = task->thread;
+    Vr_( pthread_mutex_unlock( &E_base_S->E_flow_Z_task_table_S_mutex ));
+    *thread_switch_out = yes;
     Vr_( pthread_mutex_unlock( thread_flow_mutex ));
     while( !*thread_switch_in )
     {   if( !U_R( E_base_S->E_flow_S_signal, wake ))
-        {   Vr_( pthread_mutex_lock( &E_base_S->E_flow_Z_task_table_S_mutex ));
-            struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, 0 );
-            Vr_( pthread_kill( task->thread, SIGALRM ));
-            Vr_( pthread_mutex_unlock( &E_base_S->E_flow_Z_task_table_S_mutex ));
+        {   Vr_( pthread_kill( thread, SIGALRM ));
         }
         Vr_( sched_yield() );
     }
     Vr_( pthread_mutex_lock( thread_flow_mutex ));
-    struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+    *thread_switch_in = no;
+    task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
     return task->run_state == E_flow_Z_run_state_S_stopping_by_task;
 }
 void
@@ -1530,12 +1541,9 @@ E_flow_Q_thread_async_I_after_sync(
 , B *thread_switch_out
 , pthread_cond_t *thread_switch
 , pthread_mutex_t *thread_flow_mutex
-){  *thread_switch_out = yes;
-    Vr_( pthread_cond_signal( thread_switch ));
+){  Vr_( pthread_cond_signal( thread_switch ));
     E_flow_Q_task_I_touch_stack();
-    do
-    {   Vr_( pthread_cond_wait( thread_switch, thread_flow_mutex ));
-    }while( !*thread_switch_in );
+    Vr_( pthread_cond_wait( thread_switch, thread_flow_mutex ));
 }
     #endif
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1699,20 +1707,17 @@ Loop:
                     #ifdef E_flow_C_thread_system_unblock_reports
                 if( U_R( task->type, system_unblock_report ))
                 {   if( task->run_state == E_flow_Z_run_state_S_ready
-                    && !*task->thread_switch_in
+                    && *task->thread_switch_out
                     )
                     {   E_base_S->E_flow_Q_task_S_current = task_id;
                         pthread_mutex_t *thread_flow_mutex = task->thread_flow_mutex;
                         volatile B *thread_switch_in = task->thread_switch_in;
                         volatile B *thread_switch_out = task->thread_switch_out;
                         pthread_cond_t *thread_switch = task->thread_switch;
-                        *thread_switch_in = yes;
                         Vr_( pthread_mutex_lock( thread_flow_mutex ));
-                        while( !*thread_switch_out )
-                        {   Vr_( pthread_cond_wait( thread_switch, thread_flow_mutex ));
-                        }
                         *thread_switch_out = no;
                         *thread_switch_in = yes;
+                        Vr_( pthread_cond_wait( thread_switch, thread_flow_mutex ));
                         Vr_( pthread_cond_signal( thread_switch ));
                         Vr_( pthread_mutex_unlock( thread_flow_mutex ));
                         E_mem_Q_tab_Q_iter_W( E_base_S->E_flow_Q_task_S, task_iter );
@@ -1723,20 +1728,17 @@ Loop:
                     #ifdef C_pthreads
                 if( U_R( task->type, async ))
                 {   if( task->run_state == E_flow_Z_run_state_S_ready
-                    && !*task->thread_switch_in
+                    && *task->thread_switch_out
                     )
                     {   E_base_S->E_flow_Q_task_S_current = task_id;
                         pthread_mutex_t *thread_flow_mutex = task->thread_flow_mutex;
                         volatile B *thread_switch_in = task->thread_switch_in;
                         volatile B *thread_switch_out = task->thread_switch_out;
                         pthread_cond_t *thread_switch = task->thread_switch;
-                        *thread_switch_in = yes;
                         Vr_( pthread_mutex_lock( thread_flow_mutex ));
-                        while( !*thread_switch_out )
-                        {   Vr_( pthread_cond_wait( thread_switch, thread_flow_mutex ));
-                        }
                         *thread_switch_out = no;
                         *thread_switch_in = yes;
+                        Vr_( pthread_cond_wait( thread_switch, thread_flow_mutex ));
                         Vr_( pthread_cond_signal( thread_switch ));
                         Vr_( pthread_mutex_unlock( thread_flow_mutex ));
                         E_mem_Q_tab_Q_iter_W( E_base_S->E_flow_Q_task_S, task_iter );
@@ -1773,19 +1775,16 @@ Loop:
                 #ifdef E_flow_C_thread_system_unblock_reports
             if( U_R( task->type, system_unblock_report ))
             {   if( task->run_state == E_flow_Z_run_state_S_ready
-                && !*task->thread_switch_in
+                && *task->thread_switch_out
                 )
                 {   pthread_mutex_t *thread_flow_mutex = task->thread_flow_mutex;
                     volatile B *thread_switch_in = task->thread_switch_in;
                     volatile B *thread_switch_out = task->thread_switch_out;
                     pthread_cond_t *thread_switch = task->thread_switch;
-                    *thread_switch_in = yes;
                     Vr_( pthread_mutex_lock( thread_flow_mutex ));
-                    while( !*thread_switch_out )
-                    {   Vr_( pthread_cond_wait( thread_switch, thread_flow_mutex ));
-                    }
                     *thread_switch_out = no;
                     *thread_switch_in = yes;
+                    Vr_( pthread_cond_wait( thread_switch, thread_flow_mutex ));
                     Vr_( pthread_cond_signal( thread_switch ));
                     Vr_( pthread_mutex_unlock( thread_flow_mutex ));
                     continue;
@@ -1795,19 +1794,16 @@ Loop:
                 #ifdef C_pthreads
             if( U_R( task->type, async ))
             {   if( task->run_state == E_flow_Z_run_state_S_ready
-                && !*task->thread_switch_in
+                && *task->thread_switch_out
                 )
                 {   pthread_mutex_t *thread_flow_mutex = task->thread_flow_mutex;
                     volatile B *thread_switch_in = task->thread_switch_in;
                     volatile B *thread_switch_out = task->thread_switch_out;
                     pthread_cond_t *thread_switch = task->thread_switch;
-                    *thread_switch_in = yes;
                     Vr_( pthread_mutex_lock( thread_flow_mutex ));
-                    while( !*thread_switch_out )
-                    {   Vr_( pthread_cond_wait( thread_switch, thread_flow_mutex ));
-                    }
                     *thread_switch_out = no;
                     *thread_switch_in = yes;
+                    Vr_( pthread_cond_wait( thread_switch, thread_flow_mutex ));
                     Vr_( pthread_cond_signal( thread_switch ));
                     Vr_( pthread_mutex_unlock( thread_flow_mutex ));
                     continue;
@@ -1846,12 +1842,6 @@ Loop:
                     _setttimer( &tv );
             }
             _sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_volatile, 0 );
-            if( U_R( E_base_S->E_flow_S_signal, exit )
-            || U_R( E_base_S->E_flow_S_signal, time )
-            || U_R( E_base_S->E_flow_S_signal, call_req )
-            || U_R( E_base_S->E_flow_S_signal, io_ready )
-            )
-                U_F( E_base_S->E_flow_S_signal, wake );
                 #ifdef E_flow_C_itimer_system_unblock_report
             if( E_base_S->E_flow_Z_itimer_system_unblock_report_I_sigsuspend )
             {   B system_unblock_report = no;

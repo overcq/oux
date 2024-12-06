@@ -181,10 +181,10 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
   E_flow_Q_thread_system_unblock_report_M(( thread_unblock_proc_ ), &J_autogen( thread_flow_mutex ), &J_autogen( thread_switch ), &J_autogen( thread_switch_in ), &J_autogen( thread_switch_out ))
 // Tuż przed wywołaniem procedury blokującej w oczekiwaniu na ‹systemowy raport odblokowujący›.
 #define Xh_B_() \
-  E_flow_Q_thread_system_unblock_report_I_before_block( J_autogen( thread_switch_in ), J_autogen( thread_switch_out ), J_autogen( thread_switch ), J_autogen( thread_flow_mutex ))
+  E_flow_Q_thread_system_unblock_report_I_before_async( J_autogen( thread_switch_in ), J_autogen( thread_switch_out ), J_autogen( thread_switch ), J_autogen( thread_flow_mutex ))
 // Czekanie na ‹systemowy raport odblokowujący›; tuż po wywołaniu procedury blokującej.
 #define Xh_B() \
-  if( !E_flow_Q_thread_system_unblock_report_I_after_block( J_autogen( thread_switch_in ), J_autogen( thread_switch ), J_autogen( thread_flow_mutex ))){} else
+  if( !E_flow_Q_thread_system_unblock_report_I_after_async( J_autogen( thread_switch_in ), J_autogen( thread_switch_out ), J_autogen( thread_switch ), J_autogen( thread_flow_mutex ))){} else
     #else
 #define Xh_A( thread_unblock_proc_ )
     #endif
@@ -198,7 +198,7 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
   volatile B *J_autogen( thread_switch_out ) = J_autogen( proc_args )->thread_switch_out
 // Tuż przed oknem synchronizacji z ‹zadaniami› nieasynchronicznymi.
 #define Da_B_() \
-  if( !E_flow_Q_thread_async_I_before_sync( J_autogen( thread_switch_in ), J_autogen( thread_switch ), J_autogen( thread_flow_mutex ))){} else
+  if( !E_flow_Q_thread_async_I_before_sync( J_autogen( thread_switch_in ), J_autogen( thread_switch_out ), J_autogen( thread_switch ), J_autogen( thread_flow_mutex ))){} else
 // Tuż po oknie synchronizacji z ‹zadaniami› nieasynchronicznymi.
 #define Da_B() \
   E_flow_Q_thread_async_I_after_sync( J_autogen( thread_switch_in ), J_autogen( thread_switch_out ), J_autogen( thread_switch ), J_autogen( thread_flow_mutex ))

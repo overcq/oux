@@ -27,7 +27,7 @@ case "$1" in
         print '\''};'\'';
     ' "$@"
     ;;
--h1_) # ‹report› ‘uid’ declarations for these are used by ‹modules› and owned elsewhere; in the executable program if compiled with the ‹modules› as ‘dll’.
+-h1_) # ‹report› ‘uid’ declarations for these are used by ‹modules› and owned elsewhere; in the executable program if compiled with the ‹modules› as ‘dll’
     trap 'rm "$tmp_file_0" "$tmp_file_1" "$tmp_file_2"' EXIT
     tmp_file_0=$(mktemp); tmp_file_1=$(mktemp); tmp_file_2=$(mktemp)
     while [ -n "$2" ]; do
@@ -91,7 +91,7 @@ case "$1" in
         echo '};'
     fi
     ;;
--h1) # ‹report› ‘uid’ declarations.
+-h1) # ‹report› ‘uid’ declarations
     trap 'rm "$tmp_file_0" "$tmp_file_1" "$tmp_file_2"' EXIT
     tmp_file_0=$(mktemp); tmp_file_1=$(mktemp); tmp_file_2=$(mktemp)
     awk '
@@ -166,7 +166,7 @@ case "$1" in
         fi
     fi
     ;;
--h2) # Type forward declarations.
+-h2) # type forward declarations
     perl -e '
         use strict;
         use warnings;
@@ -176,13 +176,13 @@ case "$1" in
             s`//.*$``;
             if( /^\s*#(?:if|(?:elif|else|endif)\b)/ )
             {   print;
-            }elsif( /^(?:struct|union)\s+E_\w+/ ) #typy publiczne.
+            }elsif( /^(?:struct|union)\s+E_\w+/ ) # typy publiczne
             {   print "$&;";
             }
         }
     ' "$2"
     ;;
--h3) # Type definitions. Variable and procedure forward declarations.
+-h3) # type definitions, variable and procedure forward declarations
     perl -e '
         use strict;
         use warnings;
@@ -230,16 +230,16 @@ case "$1" in
             }
             if( /^\s*#(?:if|(?:elif|else|endif)\b)/ )
             {   print;
-            }elsif( /^((?:(?:enum|struct|union)\s+)?\w+\s+\(?\**E_[^=;]*)[=;]/ ) #zmienne publiczne.
+            }elsif( /^((?:(?:enum|struct|union)\s+)?\w+\s+\(?\**E_[^=;]*)[=;]/ ) # zmienne publiczne
             {   print "extern $1;";
-            }elsif( /^(?:enum|struct|union)\s+E_\w+/ ) #typy publiczne.
+            }elsif( /^(?:enum|struct|union)\s+E_\w+/ ) # typy publiczne
             {   $inside_braces = 1;
                 $last_line = $_;
-            }elsif( /^E_\w+\(/ ) #procedura publiczna.
+            }elsif( /^E_\w+\(/ ) # procedura publiczna
             {   print $last_line;
                 print;
                 $inside_braces = 4;
-            }elsif( /^D(\([^)]*\))/ ) #‹zadanie›.
+            }elsif( /^D(\([^)]*\))/ ) # ‹zadanie›
             {   print "extern I D_id$1; $&;";
             }else
             {   $last_line = $_;
@@ -314,9 +314,9 @@ case "$1" in
                 }
                 next;
             }
-            if( /^(?:(?:enum|struct|union)\s+)?\w+\s+\**E_.*;/ ) #zmienne publiczne.
+            if( /^(?:(?:enum|struct|union)\s+)?\w+\s+\**E_.*;/ ) # zmienne publiczne
             {   print1;
-            }elsif( /^(?:enum|struct|union)\s+E_\w/ ) #typy publiczne.
+            }elsif( /^(?:enum|struct|union)\s+E_\w/ ) # typy publiczne
             {   $inside_enum = /^enum/;
                 unless( $inside_enum )
                 {   print1;
@@ -324,12 +324,12 @@ case "$1" in
                 {   print_blank;
                 }
                 $inside_braces = 1;
-            }elsif( /^E_\w+\(/ ) #procedura publiczna.
+            }elsif( /^E_\w+\(/ ) # procedura publiczna
             {   print1;
                 $inside_braces = 4;
-            }elsif( /^D(\([^)]*\))/ ) #‹zadanie›.
+            }elsif( /^D(\([^)]*\))/ ) # ‹zadanie›
             {   print1 "_internal I D_id$1 = ~0; $_";
-            }elsif( /^\/\*/ ) #komentarz blokowy.
+            }elsif( /^\/\*/ ) # komentarz blokowy
             {   if( /\*\// )
                 {   $_ = $'\'';
                     redo;
