@@ -171,7 +171,7 @@ E_flow_Q_task_M( I *uid
 , void (*task_proc)(P)
     #ifdef E_flow_C_thread_system_unblock_reports
 , P task_proc_arg
-, B task_in_thread_kind
+, B task_system_unblock_report
     #endif
     #ifdef C_line_report
 , Pc task_proc_name
@@ -184,7 +184,7 @@ E_flow_Q_task_M( I *uid
     granulation_u = E_simple_Z_n_I_align_down_to_v2( granulation_u, E_base_S->E_mem_S_page_size );
         #ifdef E_flow_C_thread_system_unblock_reports
     struct E_flow_Q_task_async_I_thread_proc_Z_args *task_proc_args;
-    if( task_in_thread_kind )
+    if( task_system_unblock_report )
     {   M_( task_proc_args );
         if( !task_proc_args )
             return ~0;
@@ -208,7 +208,7 @@ E_flow_Q_task_M( I *uid
         granulation_u -= task_proc_args->alt_stack.ss_size;
     }
     N pthread_stack_min = E_simple_Z_n_I_align_up_to_v2( PTHREAD_STACK_MIN, E_base_S->E_mem_S_page_size );
-    if( task_in_thread_kind )
+    if( task_system_unblock_report )
     {   if( granulation_u < pthread_stack_min )
         {   GV_(NA); // Late instrumentation error: granulation unit too small because too many tasks in available memory.
             return ~0;
@@ -279,7 +279,7 @@ E_flow_Q_task_M( I *uid
                 #ifndef E_flow_C_thread_system_unblock_reports
             if( granulation_u < E_base_S->E_mem_S_page_size )
                 #else
-            if( granulation_u < ( task_in_thread_kind ? pthread_stack_min : E_base_S->E_mem_S_page_size ))
+            if( granulation_u < ( task_system_unblock_report ? pthread_stack_min : E_base_S->E_mem_S_page_size ))
                 #endif
                 return ~0;
         }
@@ -288,7 +288,7 @@ E_flow_Q_task_M( I *uid
         #ifndef E_flow_C_thread_system_unblock_reports
     N touched_size = E_base_S->E_mem_S_page_size;
         #else
-    N touched_size = task_in_thread_kind ? pthread_stack_min : E_base_S->E_mem_S_page_size;
+    N touched_size = task_system_unblock_report ? pthread_stack_min : E_base_S->E_mem_S_page_size;
         #endif
     Pc touched_stack = exe_stack - touched_size;
         #if defined( __gnu_linux__ )
@@ -322,8 +322,8 @@ E_flow_Q_task_M( I *uid
     U_L( task->type, async );
         #endif
         #ifdef E_flow_C_thread_system_unblock_reports
-    U_R( task->type, system_unblock_report ) = task_in_thread_kind;
-    if( task_in_thread_kind )
+    U_R( task->type, system_unblock_report ) = task_system_unblock_report;
+    if( task_system_unblock_report )
     {   volatile B *M_( thread_switch_in );
         if( !thread_switch_in )
         {   _Z_tasks_table_S_edit_begin;
@@ -680,11 +680,10 @@ E_flow_Q_task_W( I *uid
             Vr_( pthread_mutex_lock( task->thread_flow_mutex ));
         }
         *task->thread_switch_in = yes;
-        I id_ = E_base_S->E_flow_Q_task_S_current;
         E_base_S->E_flow_Q_task_S_current = id;
         Vr_( pthread_mutex_unlock( task->thread_flow_mutex ));
         Vr_( pthread_join( task->thread, 0 ));
-        E_base_S->E_flow_Q_task_S_current = id_;
+        E_base_S->E_flow_Q_task_S_current = task->run_state_object;
         Vr_( pthread_mutex_destroy( task->thread_flow_mutex ));
         W( task->thread_flow_mutex );
         Vr_( pthread_cond_destroy( task->thread_switch ));
@@ -1156,6 +1155,7 @@ E_flow_Q_thread_async_I( P args_
     struct E_flow_Q_task_async_I_thread_proc_Z_args *args = args_;
     V0( sigaltstack( &args->alt_stack, 0 ))
         return 0;
+    E_flow_Q_task_I_touch_stack();
     Vr_( pthread_mutex_lock( args->task_proc_arg.thread_flow_mutex ));
     args->task_proc( &args->task_proc_arg );
     Vr_( pthread_mutex_unlock( args->task_proc_arg.thread_flow_mutex ));
@@ -1449,9 +1449,7 @@ E_flow_Q_thread_system_unblock_report_M( void ( *thread_unblock_proc )(P)
 }
 void
 E_flow_Q_thread_system_unblock_report_I_before_async(
-  B *thread_switch_in
-, B *thread_switch_out
-, pthread_cond_t *thread_switch
+  pthread_cond_t *thread_switch
 , pthread_mutex_t *thread_flow_mutex
 ){  Vr_( pthread_cond_signal( thread_switch ));
     E_flow_Q_task_I_touch_stack();
@@ -1537,9 +1535,7 @@ E_flow_Q_thread_async_I_before_sync(
 }
 void
 E_flow_Q_thread_async_I_after_sync(
-  B *thread_switch_in
-, B *thread_switch_out
-, pthread_cond_t *thread_switch
+  pthread_cond_t *thread_switch
 , pthread_mutex_t *thread_flow_mutex
 ){  Vr_( pthread_cond_signal( thread_switch ));
     E_flow_Q_task_I_touch_stack();

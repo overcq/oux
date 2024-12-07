@@ -11,7 +11,7 @@
 # Są dostępne następujące rodzaje programu wynikowego:
 # • Jeden plik wykonywalny, zależny tylko od “bibliotek” systemu operacyjnego. Domyślnie.
 # • Plik wykonywalny zależny od ‹modułów› tworzonych tutaj jako ‘dll’ (“to libs”). Oszczędza pamięć, gdy jest używany kolejny program.
-# • Program do uruchomienia instrukcją wpisaną pomiędzy innym programem (“middle code”). Tekst programu do tego jest już przygotowany, ale brak sposobu konfiguracji i ‘kompilacji’ docelowej —w “2.mak”.
+# • Program do uruchomienia instrukcją wpisaną pomiędzy innym programem (“middle code”). Tekst programu do tego jest już przygotowany, ale brak sposobu konfiguracji i ‘kompilacji’ docelowej — w “2.mak”.
 H_make_C_to_libs := 1
 H_make_C_to_libs_C_replace_c_alloc := 1
 #H_make_C_middle_code := 1

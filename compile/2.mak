@@ -143,7 +143,7 @@ H_make_S_lib_prefix := oux-
 H_make_S_compiler_cx_sources := simple.h base.h
 H_make_S_cx_sources := $(wildcard *.cx)
 H_make_S_all_cx_sources := $(foreach module,$(H_make_S_modules),$(wildcard $(H_make_S_root_path)/module/$(module)/*.cx)) $(H_make_S_cx_sources)
-H_make_S_headers := stdbool.h
+H_make_S_headers := stdbool.h assert.h
 H_make_S_base_driver := flow-drv
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 H_make_Z_shell_cmd_arg_I_quote = '$(subst ','\'',$(1))'
@@ -168,7 +168,7 @@ H_make_T_pthreads := $(if $(shell whatis pthread),1)
 CFLAGS += -DC_middle_code -ffreestanding
 #H_make_C_pthreads := 1
 #CFLAGS += -DE_flow_C_thread_system_unblock_reports
-        ifeq (OpenBSD,$(H_make_S_os)) # “sigwait”.
+        ifeq (OpenBSD,$(H_make_S_os)) # “sigwait”
 H_make_C_pthreads := 1
         endif
     else
@@ -348,7 +348,7 @@ $(addprefix $(H_make_S_compile_path)/,1.mak 2.mak) \
 0.mak $(foreach module,$(H_make_S_modules),$(H_make_S_module_path)/$(module)/0.mak) \
 E_cplus_S_cx_sources $(H_make_S_module_path)/E_cplus_S_cx_sources
 	$(H_make_I_block_root)
-	{   for include in $(call H_make_Z_shell_cmd_arg_I_quote_for,$(call H_make_Z_headers_I_sort,assert.h $(H_make_S_headers) $(E_main_S_headers) $(E_module_S_headers))); do \
+	{   for include in $(call H_make_Z_shell_cmd_arg_I_quote_for,$(call H_make_Z_headers_I_sort,$(H_make_S_headers) $(E_main_S_headers) $(E_module_S_headers))); do \
             echo "#include <$${include}>" ;\
         done ;\
         $(foreach module,$(H_make_S_modules),$(call H_make_Q_main_header_I_module_0,$(module));) \
@@ -385,7 +385,7 @@ $(H_make_S_module_path)/E_cplus_S_cx_sources
 	{   $(if $(H_make_C_to_libs_C_replace_c_alloc), \
         echo "#define C_to_libs_C_replace_c_alloc_S_libc_filename J_s($(shell ldd $$( which $(MAKE) ) | grep -Fw libc.so | head -n 1 | sed -e 's`^.*\(libc\.so[0-9A-Za-z.-]*\).*`\1`' ))" ;\
         ) \
-        for header in $(call H_make_Z_shell_cmd_arg_I_quote_for,$(call H_make_Z_headers_I_sort,assert.h $(H_make_S_headers) $(E_module_S_headers))); do \
+        for header in $(call H_make_Z_shell_cmd_arg_I_quote_for,$(call H_make_Z_headers_I_sort,$(H_make_S_headers) $(E_module_S_headers))); do \
             echo "#include <$${header}>" ;\
         done ;\
         $(foreach module,$(H_make_S_modules),$(call H_make_Q_main_header_I_module_0,$(module));) \

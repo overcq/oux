@@ -208,6 +208,7 @@ E_flow_Z_line_report_Z_line_I_sync( Pc file
     E_flow_Z_line_report_Z_n_I_sync( E_base_S->E_flow_S_exe_pid, sizeof( E_base_S->E_flow_S_exe_pid ), 10 );
     E_flow_Z_line_report_Z_s_I_sync( file, 0 );
     E_flow_Z_line_report_Z_n_I_sync( line, sizeof(line), 10 );
+        #ifdef C_pthreads
     int error = pthread_mutex_trylock( &E_base_S->E_flow_Z_task_table_S_mutex );
     if( error
     && error != EBUSY
@@ -217,10 +218,14 @@ E_flow_Z_line_report_Z_line_I_sync( Pc file
         V();
     }
     if( !error )
-    {   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+    {
+        #endif
+        struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
         E_flow_Z_line_report_Z_s_I_sync( task->proc_name, 0 );
+        #ifdef C_pthreads
         Vr_( pthread_mutex_unlock( &E_base_S->E_flow_Z_task_table_S_mutex ));
     }
+        #endif
     E_flow_Z_line_report_Z_n_I_sync( E_base_S->E_flow_Q_task_S_current, sizeof( E_base_S->E_flow_Q_task_S_current ), 10 );
     if(s)
         E_flow_Z_line_report_Z_s_I_sync( s, 0 );
