@@ -58,7 +58,6 @@ struct E_mem_Q_blk_Z_allocated // Dla kontroli poprawności wydawania i oddawani
 };
 //==============================================================================
     #ifdef E_mem_Q_blk_C_debug
-#define T_sign(v) ( (S)(v) < 0 )
 _internal
 void
 E_mem_Q_blk_I_print( N line
@@ -83,223 +82,178 @@ E_mem_Q_blk_T_new_0( P p
     V1p_( p_end = sbrk(0) );
     return (Pc)p < p_end;
 }
-//TODO Poprawić tę procedurę do nowych warunków.
 _internal
 void
 E_mem_Q_blk_I_assert_on_return( N line
-){  int error = pthread_mutex_trylock( &E_base_S->E_flow_Z_task_table_S_mutex );
-    if( error
-    && error != EBUSY
-    )
-    {   _errno = error;
-        Ve();
-        V();
-    }
-    if(error)
-        return;
-    sigset_t sigset;
-    _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_Z_sigset_S_process_exec, &sigset );
-    struct E_mem_Q_blk_Z_mapped *mapped_p = (P)E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_mapped_id ].p;
+){  struct E_mem_Q_blk_Z_mapped *mapped_p = (P)E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_mapped_id ].p;
     struct E_mem_Q_blk_Z_free *free_p = (P)E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_free_id ].p;
     struct E_mem_Q_blk_Z_allocated *allocated_p = (P)E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_allocated_id ].p;
     N mapped_n = E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_mapped_id ].n;
     N free_n = E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_free_id ].n;
     N allocated_n = E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_allocated_id ].n;
-    for_n_rev( j, mapped_n )
-        if( mapped_p[j].p )
+    for_n_rev( i, mapped_n )
+        if( mapped_p[i].p )
             break;
-    if( ~j )
-        while( j-- )
-            if( !mapped_p[j].p )
+    if( ~i )
+        while( i-- )
+        {   if( !mapped_p[i].p )
             {   E_mem_Q_blk_I_print(line);
-                G_(); Gd(j); V(); // empty value inside
+                G_(); Gd(i); V(); // empty value inside
             }
+        }
     Pc p = 0;
-    for_n_( j, mapped_n )
-    {   if( !mapped_p[j].p )
+    for_n_( i, mapped_n )
+    {   if( !mapped_p[i].p )
             break;
-        if( p > mapped_p[j].p )
+        if( p >= mapped_p[i].p )
         {   E_mem_Q_blk_I_print(line);
-            G_(); Gd(j); V(); // not sorted
+            G_(); Gd(i); V(); // not sorted or duplicate address
         }
-        p = mapped_p[j].p;
+        p = mapped_p[i].p;
     }
-    for_n_rev_( j, allocated_n )
-        if( allocated_p[j].p )
+    for_n_rev_( i, allocated_n )
+        if( allocated_p[i].p )
             break;
-    if( ~j )
-        while( j-- )
-            if( !allocated_p[j].p )
+    if( ~i )
+        while( i-- )
+            if( !allocated_p[i].p )
             {   E_mem_Q_blk_I_print(line);
-                G_(); Gd(j); V(); // empty value inside
+                G_(); Gd(i); V(); // empty value inside
             }
     p = 0;
-    for_n_( j, allocated_n )
-    {   if( !allocated_p[j].p )
+    for_n_( i, allocated_n )
+    {   if( !allocated_p[i].p )
             break;
-        if( p > allocated_p[j].p )
+        if( p >= allocated_p[i].p )
         {   E_mem_Q_blk_I_print(line);
-            G_(); Gd(j); V(); // not sorted
+            G_(); Gd(i); V(); // not sorted or duplicate address
         }
-        p = allocated_p[j].p;
+        p = allocated_p[i].p;
     }
-    for_n_rev_( j, free_n )
-        if( free_p[j].p )
+    for_n_( i, allocated_n )
+    {   if( !allocated_p[i].p )
             break;
-    if( ~j )
-        while( j-- )
-            if( !free_p[j].p )
+        if( allocated_p[i].n )
+        {   i++;
+            break;
+        }
+    }
+    for( ; i != allocated_n; i++ )
+    {   if( !allocated_p[i].p )
+            break;
+        if( !allocated_p[i].n )
+        {   E_mem_Q_blk_I_print(line);
+            G_(); Gd(i); V(); // 0‐size after other‐size entry
+        }
+    }
+    for_n_rev_( i, free_n )
+        if( free_p[i].p )
+            break;
+    if( ~i )
+        while( i-- )
+            if( !free_p[i].p )
             {   E_mem_Q_blk_I_print(line);
-                G_(); Gd(j); V(); // empty value inside
+                G_(); Gd(i); V(); // empty value inside
             }
     p = 0;
-    for_n_( j, free_n )
-    {   if( !free_p[j].p )
+    for_n_( i, free_n )
+    {   if( !free_p[i].p )
             break;
-        if( p > free_p[j].p )
+        if( p >= free_p[i].p )
         {   E_mem_Q_blk_I_print(line);
-            G_(); Gd(j); V(); // not sorted
+            G_(); Gd(i); V(); // not sorted or duplicate address
         }
-        p = free_p[j].p;
+        p = free_p[i].p;
     }
-    for_n_( j, allocated_n )
-        if( allocated_p[j].p
-        && E_mem_Q_blk_T_new_0( allocated_p[j].p )
+    for_n_( i, free_n )
+    {   if(( !free_p[i].p
+          && free_p[i].l
         )
-        {   for_n( i, allocated_n )
-            {   if( i == j )
-                    continue;
-                if( allocated_p[i].p == allocated_p[j].p )
-                {   E_mem_Q_blk_I_print(line);
-                    G_(); Gd(i); Gd(j); V(); // duplicate
-                }
-            }
-        }
-    for_n_( j, free_n )
-    {   if(( !free_p[j].p
-          && free_p[j].l
-        )
-        || ( free_p[j].p
-          && !free_p[j].l
+        || ( free_p[i].p
+          && !free_p[i].l
         ))
         {   E_mem_Q_blk_I_print(line);
-            G_(); Gd(j); V(); // inconsistent
+            G_(); Gd(i); V(); // inconsistent
         }
     }
-    for_n_( j, mapped_n )
-    {   if(( !mapped_p[j].p
-          && mapped_p[j].l
+    for_n_( i, mapped_n )
+    {   if(( !mapped_p[i].p
+          && mapped_p[i].l
         )
-        || ( mapped_p[j].p
-          && !mapped_p[j].l
+        || ( mapped_p[i].p
+          && !mapped_p[i].l
         ))
         {   E_mem_Q_blk_I_print(line);
-            G_(); Gd(j); V(); // inconsistent
+            G_(); Gd(i); V(); // inconsistent
         }
-        if( !mapped_p[j].p )
+        if( !mapped_p[i].p )
             break;
-        if( !E_simple_Z_p_T_aligned_to_v2( mapped_p[j].p, E_base_S->E_mem_S_page_size ))
+        if( !E_simple_Z_p_T_aligned_to_v2( mapped_p[i].p, E_base_S->E_mem_S_page_size ))
         {   E_mem_Q_blk_I_print(line);
-            G_(); Gd(j); V();
+            G_(); Gd(i); V();
         }
-        if( !E_simple_Z_n_T_aligned_to_v2( mapped_p[j].l, E_base_S->E_mem_S_page_size ))
+        if( !E_simple_Z_n_T_aligned_to_v2( mapped_p[i].l, E_base_S->E_mem_S_page_size ))
         {   E_mem_Q_blk_I_print(line);
-            G_(); Gd(j); V();
+            G_(); Gd(i); V();
         }
     }
-    for_n_( j, mapped_n )
-    {   if( !mapped_p[j].p )
+    for_n( allocated_i, allocated_n )
+    {   if( !allocated_p[ allocated_i ].p
+        || allocated_p[ allocated_i ].n
+        )
             break;
-        Pc p = mapped_p[j].p;
+    }
+    N free_i = 0;
+    for_n( mapped_i, mapped_n )
+    {   if( !mapped_p[ mapped_i ].p )
+            break;
+        Pc p = mapped_p[ mapped_i ].p;
+        if( free_i != free_n
+        && free_p[ free_i ].p
+        && p == free_p[ free_i ].p
+        )
+        {   p += free_p[ free_i ].l;
+            free_i++;
+        }
         do
-        {   for_n( i, allocated_n )
-            {   if( !allocated_p[i].p )
-                    break;
-                if( !allocated_p[i].n
-                || T_sign( allocated_p[i].n )
-                )
-                    continue;
-                if( p == allocated_p[i].p )
-                {   p += allocated_p[i].n * allocated_p[i].u;
-                    allocated_p[i].n = ~allocated_p[i].n;
-                    break;
-                }
-            }
-            if( i == allocated_n
-            || !allocated_p[i].p
+        {   while( allocated_i != allocated_n
+            && allocated_p[ allocated_i ].p
+            && p == allocated_p[ allocated_i ].p
             )
-            {   for_n( i, free_n )
-                {   if( !free_p[i].p )
-                        break;
-                    if( T_sign( free_p[i].l ))
-                        continue;
-                    if( p == free_p[i].p )
-                    {   p += free_p[i].l;
-                        free_p[i].l = ~free_p[i].l;
-                        break;
-                    }
-                }
-                if( i == free_n
-                || !free_p[i].p
+            {   p += allocated_p[ allocated_i ].n * allocated_p[ allocated_i ].u;
+                allocated_i++;
+            }
+            if( p != mapped_p[ mapped_i ].p + mapped_p[ mapped_i ].l )
+            {   if( free_i != free_n
+                && free_p[ free_i ].p
+                && p == free_p[ free_i ].p
                 )
-                {   for_n( j, allocated_n )
-                    {   if( !allocated_p[j].p )
-                            break;
-                        if( !allocated_p[j].n )
-                            continue;
-                        if( T_sign( allocated_p[j].n ))
-                            allocated_p[j].n = ~allocated_p[j].n;
-                    }
-                    for_n_( j, free_n )
-                    {   if( !free_p[j].p )
-                            break;
-                        if( T_sign( free_p[j].l ))
-                            free_p[j].l = ~free_p[j].l;
-                    }
-                    E_mem_Q_blk_I_print(line);
+                {   p += free_p[ free_i ].l;
+                    free_i++;
+                }else
+                {   E_mem_Q_blk_I_print(line);
                     G_(); Gh(p); V(); // linearity
                 }
             }
-        }while( p < mapped_p[j].p + mapped_p[j].l );
-        if( p != mapped_p[j].p + mapped_p[j].l )
-        {   for_n( j, allocated_n )
-            {   if( !allocated_p[j].p )
-                    break;
-                if( !allocated_p[j].n )
-                    continue;
-                if( T_sign( allocated_p[j].n ))
-                    allocated_p[j].n = ~allocated_p[j].n;
-            }
-            for_n_( j, free_n )
-            {   if( !free_p[j].p )
-                    break;
-                if( T_sign( free_p[j].l ))
-                    free_p[j].l = ~free_p[j].l;
-            }
-            E_mem_Q_blk_I_print(line);
-            G_(); Gh(p); V(); // not mapped to end
+        }while( p < mapped_p[ mapped_i ].p + mapped_p[ mapped_i ].l
+        && allocated_i != allocated_n
+        && allocated_p[ allocated_i ].p
+        );
+        if( p != mapped_p[ mapped_i ].p + mapped_p[ mapped_i ].l )
+        {   E_mem_Q_blk_I_print(line);
+            G_(); Gh(p); V(); // linearity
         }
     }
-    for_n_( j, allocated_n )
-    {   if( !allocated_p[j].p )
-            break;
-        if( !allocated_p[j].n )
-            continue;
-        if( !T_sign( allocated_p[j].n ))
-        {   G_(); Gd(line); Gh( allocated_p[j].p ); V(); // lost
-        }
-        allocated_p[j].n = ~allocated_p[j].n;
+    if( allocated_i != allocated_n
+    && allocated_p[ allocated_i ].p
+    )
+    {   G_(); Gd(line); Gh( allocated_p[ allocated_i ].p ); V(); // lost
     }
-    for_n_( j, free_n )
-    {   if( !free_p[j].p )
-            break;
-        if( !T_sign( free_p[j].l ))
-        {   G_(); Gd(line); Gh( free_p[j].p ); Gd( free_p[j].l ); V(); // lost
-        }
-        free_p[j].l = ~free_p[j].l;
+    if( free_i != free_n
+    && free_p[ free_i ].p
+    )
+    {   G_(); Gd(line); Gh( free_p[ free_i ].p ); Gd( free_p[ free_i ].l ); V(); // lost
     }
-    _sigprocmask( SIG_SETMASK, &sigset, 0 );
-    Vr_( pthread_mutex_unlock( &E_base_S->E_flow_Z_task_table_S_mutex ));
 }
     #else
 #define E_mem_Q_blk_I_assert_on_return(line)

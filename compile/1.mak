@@ -21,10 +21,10 @@ E_flow_drv_C_clock_monotonic := 1
 E_io_C_aio := 1
 # Czy włączyć wewnętrzne testy poprawności?
 H_make_C_debug := 1
-# Włącza kontrolę poprawności pamięci menedżera bloków. Używać tylko do wstępnych testów.
+# Włącza kontrolę poprawności menedżera bloków.
 #E_mem_Q_blk_C_debug := 1
 # Ustawić do instalacji w katalogu użytkownika.
-H_make_S_install_prefix :=
+#H_make_S_install_prefix := $(HOME)/.local
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 H_make_S_install_usr_lib := $(if $(wildcard /usr/lib64/libc.so),/usr/lib64,/usr/lib)
 CMP := cmp -s

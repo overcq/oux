@@ -103,14 +103,18 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
 // Instrukcja blokowa definicji ‹zadania›.
 #define D(module,task)                      _internal void _D_proc(module,task)( P thread_proc_arg )
 //------------------------------------------------------------------------------
-    #if defined( __gnu_linux__ )
+    #ifdef E_flow_C_errno_p
+        #if defined( __gnu_linux__ )
 #define Da_()                               _unused int *E_flow_S_errno = __errno_location()
-    #elif defined( __FreeBSD__ )
+        #elif defined( __FreeBSD__ )
 #define Da_()                               _unused int *E_flow_S_errno = __error()
-    #elif defined( __OpenBSD__ )
+        #elif defined( __OpenBSD__ )
 #define Da_()                               _unused int *E_flow_S_errno = __errno()
-    #else
+        #else
 #error not implemented
+        #endif
+    #else
+#define Da_()
     #endif
 // Utworzenie i wyrzucenie ‹zadania› lub ‹zadania› “wątkowanego” czekającego na ‹systemowy raport odblokowujący›.
     #ifndef E_flow_C_thread_system_unblock_reports
