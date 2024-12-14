@@ -565,6 +565,7 @@ E_net_http2_Q_buffer_I_encode_or_plain( Pc *buffer
     {   E_net_http2_Q_buffer_I_write_v( buffer, 0x80, 7, length );
         for_n( i, length )
             E_net_http2_Q_buffer_I_write_n( buffer, buffer_[i], 1 );
+        W( buffer_ );
     }else
     {   W( buffer_ );
         E_net_http2_Q_buffer_I_write_v( buffer, 0, 7, l );
@@ -843,7 +844,7 @@ E_net_http2_Q_buffer_I_read_headers( Pc *buffer
                 return ~0;
             }
             (*headers_n)++;
-            l = E_text_Z_s0_R_l(name) + 2 + E_text_Z_s0_R_l(value) + 1;
+            l = E_text_Z_s0_R_l(name) + J_s0_R_l( ": " ) + E_text_Z_s0_R_l(value) + 1;
             (*headers)[ *headers_n - 1 ] = M(l);
             if( !(*headers)[ *headers_n - 1 ] )
             {   E_mem_Q_blk_I_remove( headers, --*headers_n, 1 );
@@ -933,7 +934,7 @@ E_net_http2_Q_buffer_I_read_headers( Pc *buffer
                     return ~0;
                 }
                 (*headers_n)++;
-                l = E_text_Z_s0_R_l(name) + 2 + E_text_Z_s0_R_l(value) + 1;
+                l = E_text_Z_s0_R_l(name) + J_s0_R_l( ": " ) + E_text_Z_s0_R_l(value) + 1;
                 (*headers)[ *headers_n - 1 ] = M(l);
                 if( !(*headers)[ *headers_n - 1 ] )
                 {   E_mem_Q_blk_I_remove( headers, --*headers_n, 1 );
@@ -1023,7 +1024,7 @@ E_net_http2_Q_buffer_I_read_headers( Pc *buffer
                     return ~0;
                 }
                 (*headers_n)++;
-                l = E_text_Z_s0_R_l(name) + 2 + E_text_Z_s0_R_l(value) + 1;
+                l = E_text_Z_s0_R_l(name) + J_s0_R_l( ": " ) + E_text_Z_s0_R_l(value) + 1;
                 (*headers)[ *headers_n - 1 ] = M(l);
                 if( !(*headers)[ *headers_n - 1 ] )
                 {   E_mem_Q_blk_I_remove( headers, --*headers_n, 1 );
@@ -1095,13 +1096,13 @@ E_net_http2_Q_buffer_I_write_headers( Pc *buffer
             {   *dynamic_table_size_max_hit = yes;
                 E_net_http2_Q_buffer_I_write_v( buffer, 0, 4, index );
             }
-            if( !~E_net_http2_Q_buffer_I_encode_or_plain( buffer, headers[ headers_i ] + 12 ))
+            if( !~E_net_http2_Q_buffer_I_encode_or_plain( buffer, headers[ headers_i ] + J_s0_R_l( ":authority: " )))
                 return ~0;
         }else if( E_text_Z_s0_T_starts_case_s0( headers[ headers_i ], ":method: " ))
-        {   if( E_text_Z_s0_T_eq_s0( headers[ headers_i ] + 9, "GET" ))
+        {   if( E_text_Z_s0_T_eq_s0( headers[ headers_i ] + J_s0_R_l( ":method: " ), "GET" ))
             {   index = 2;
                 E_net_http2_Q_buffer_I_write_v( buffer, 0x80, 7, index );
-            }else if( E_text_Z_s0_T_eq_s0( headers[ headers_i ] + 9, "POST" ))
+            }else if( E_text_Z_s0_T_eq_s0( headers[ headers_i ] + J_s0_R_l( ":method: " ), "POST" ))
             {   index = 3;
                 E_net_http2_Q_buffer_I_write_v( buffer, 0x80, 7, index );
             }else
@@ -1121,14 +1122,14 @@ E_net_http2_Q_buffer_I_write_headers( Pc *buffer
                 {   *dynamic_table_size_max_hit = yes;
                     E_net_http2_Q_buffer_I_write_v( buffer, 0, 4, index );
                 }
-                if( !~E_net_http2_Q_buffer_I_encode_or_plain( buffer, headers[ headers_i ] + 9 ))
+                if( !~E_net_http2_Q_buffer_I_encode_or_plain( buffer, headers[ headers_i ] + J_s0_R_l( ":method: " )))
                     return ~0;
             }
         }else if( E_text_Z_s0_T_starts_case_s0( headers[ headers_i ], ":path: " ))
-        {   if( E_text_Z_s0_T_eq_s0( headers[ headers_i ] + 7, "/" ))
+        {   if( E_text_Z_s0_T_eq_s0( headers[ headers_i ] + J_s0_R_l( ":path: " ), "/" ))
             {   index = 4;
                 E_net_http2_Q_buffer_I_write_v( buffer, 0x80, 7, index );
-            }else if( E_text_Z_s0_T_eq_s0( headers[ headers_i ] + 7, "/index.html" ))
+            }else if( E_text_Z_s0_T_eq_s0( headers[ headers_i ] + J_s0_R_l( ":path: " ), "/index.html" ))
             {   index = 5;
                 E_net_http2_Q_buffer_I_write_v( buffer, 0x80, 7, index );
             }else
@@ -1148,14 +1149,14 @@ E_net_http2_Q_buffer_I_write_headers( Pc *buffer
                 {   *dynamic_table_size_max_hit = yes;
                     E_net_http2_Q_buffer_I_write_v( buffer, 0, 4, index );
                 }
-                if( !~E_net_http2_Q_buffer_I_encode_or_plain( buffer, headers[ headers_i ] + 7 ))
+                if( !~E_net_http2_Q_buffer_I_encode_or_plain( buffer, headers[ headers_i ] + J_s0_R_l( ":path: " )))
                     return ~0;
             }
         }else if( E_text_Z_s0_T_starts_case_s0( headers[ headers_i ], ":scheme: " ))
-        {   if( E_text_Z_s0_T_eq_s0( headers[ headers_i ] + 9, "http" ))
+        {   if( E_text_Z_s0_T_eq_s0( headers[ headers_i ] + J_s0_R_l( ":scheme: " ), "http" ))
             {   index = 6;
                 E_net_http2_Q_buffer_I_write_v( buffer, 0x80, 7, index );
-            }else if( E_text_Z_s0_T_eq_s0( headers[ headers_i ] + 9, "https" ))
+            }else if( E_text_Z_s0_T_eq_s0( headers[ headers_i ] + J_s0_R_l( ":scheme: " ), "https" ))
             {   index = 7;
                 E_net_http2_Q_buffer_I_write_v( buffer, 0x80, 7, index );
             }else
@@ -1175,29 +1176,29 @@ E_net_http2_Q_buffer_I_write_headers( Pc *buffer
                 {   *dynamic_table_size_max_hit = yes;
                     E_net_http2_Q_buffer_I_write_v( buffer, 0, 4, index );
                 }
-                if( !~E_net_http2_Q_buffer_I_encode_or_plain( buffer, headers[ headers_i ] + 9 ))
+                if( !~E_net_http2_Q_buffer_I_encode_or_plain( buffer, headers[ headers_i ] + J_s0_R_l( ":scheme: " )))
                     return ~0;
             }
         }else if( E_text_Z_s0_T_starts_case_s0( headers[ headers_i ], ":status: " ))
-        {   if( E_text_Z_s0_T_eq_s0( headers[ headers_i ] + 9, "200" ))
+        {   if( E_text_Z_s0_T_eq_s0( headers[ headers_i ] + J_s0_R_l( ":status: " ), "200" ))
             {   index = 8;
                 E_net_http2_Q_buffer_I_write_v( buffer, 0x80, 7, index );
-            }else if( E_text_Z_s0_T_eq_s0( headers[ headers_i ] + 9, "204" ))
+            }else if( E_text_Z_s0_T_eq_s0( headers[ headers_i ] + J_s0_R_l( ":status: " ), "204" ))
             {   index = 9;
                 E_net_http2_Q_buffer_I_write_v( buffer, 0x80, 7, index );
-            }else if( E_text_Z_s0_T_eq_s0( headers[ headers_i ] + 9, "206" ))
+            }else if( E_text_Z_s0_T_eq_s0( headers[ headers_i ] + J_s0_R_l( ":status: " ), "206" ))
             {   index = 10;
                 E_net_http2_Q_buffer_I_write_v( buffer, 0x80, 7, index );
-            }else if( E_text_Z_s0_T_eq_s0( headers[ headers_i ] + 9, "304" ))
+            }else if( E_text_Z_s0_T_eq_s0( headers[ headers_i ] + J_s0_R_l( ":status: " ), "304" ))
             {   index = 11;
                 E_net_http2_Q_buffer_I_write_v( buffer, 0x80, 7, index );
-            }else if( E_text_Z_s0_T_eq_s0( headers[ headers_i ] + 9, "400" ))
+            }else if( E_text_Z_s0_T_eq_s0( headers[ headers_i ] + J_s0_R_l( ":status: " ), "400" ))
             {   index = 12;
                 E_net_http2_Q_buffer_I_write_v( buffer, 0x80, 7, index );
-            }else if( E_text_Z_s0_T_eq_s0( headers[ headers_i ] + 9, "404" ))
+            }else if( E_text_Z_s0_T_eq_s0( headers[ headers_i ] + J_s0_R_l( ":status: " ), "404" ))
             {   index = 13;
                 E_net_http2_Q_buffer_I_write_v( buffer, 0x80, 7, index );
-            }else if( E_text_Z_s0_T_eq_s0( headers[ headers_i ] + 9, "500" ))
+            }else if( E_text_Z_s0_T_eq_s0( headers[ headers_i ] + J_s0_R_l( ":status: " ), "500" ))
             {   index = 14;
                 E_net_http2_Q_buffer_I_write_v( buffer, 0x80, 7, index );
             }else
@@ -1217,12 +1218,12 @@ E_net_http2_Q_buffer_I_write_headers( Pc *buffer
                 {   *dynamic_table_size_max_hit = yes;
                     E_net_http2_Q_buffer_I_write_v( buffer, 0, 4, index );
                 }
-                if( !~E_net_http2_Q_buffer_I_encode_or_plain( buffer, headers[ headers_i ] + 9 ))
+                if( !~E_net_http2_Q_buffer_I_encode_or_plain( buffer, headers[ headers_i ] + J_s0_R_l( ":status: " )))
                     return ~0;
             }
         }else
         {   for_n( i, sizeof( E_net_http2_S_static_table ) / sizeof( E_net_http2_S_static_table[0] ))
-            {   N l = E_text_Z_s0_R_l( E_net_http2_S_static_table[i] ) + 2;
+            {   N l = E_text_Z_s0_R_l( E_net_http2_S_static_table[i] ) + J_s0_R_l( ": " );
                 Pc s = M( l + 1 );
                 if( !s )
                     return ~0;
@@ -1287,7 +1288,7 @@ E_net_http2_Q_buffer_I_write_headers( Pc *buffer
             }
             if( i == sizeof( E_net_http2_S_static_table ) / sizeof( E_net_http2_S_static_table[0] ))
             {   for_n( i, *dynamic_table_n )
-                {   N l = E_text_Z_s0_R_l( (*dynamic_table)[i] ) + 2;
+                {   N l = E_text_Z_s0_R_l( (*dynamic_table)[i] ) + J_s0_R_l( ": " );
                     Pc s = M( l + 1 );
                     if( !s )
                         return ~0;
@@ -1300,7 +1301,7 @@ E_net_http2_Q_buffer_I_write_headers( Pc *buffer
                 }
                 if( i == *dynamic_table_n )
                 {   for_n( i, *dynamic_table_n )
-                    {   N l = E_text_Z_s0_R_l( (*dynamic_table)[i] ) + 2;
+                    {   N l = E_text_Z_s0_R_l( (*dynamic_table)[i] ) + J_s0_R_l( ": " );
                         Pc s = M( l + 1 );
                         if( !s )
                             return ~0;
@@ -1353,7 +1354,7 @@ E_net_http2_Q_buffer_I_write_headers( Pc *buffer
                                 return ~0;
                             E_text_Z_s_P_copy_s0_0( (*dynamic_table)[ *dynamic_table_n - 1 ], headers[ headers_i ] );
                         }
-                        if( !~E_net_http2_Q_buffer_I_encode_or_plain( buffer, s + 2 ))
+                        if( !~E_net_http2_Q_buffer_I_encode_or_plain( buffer, s + J_s0_R_l( ": " )))
                             return ~0;
                     }
                 }
