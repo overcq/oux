@@ -28,10 +28,10 @@ extern void E_flow_Q_process_call_I_func(P);
 #define _sigprocmask(how,set,oldset)    { V0_( sigprocmask( (how), (set), (oldset) )); }
     #endif
     #ifdef C_pthreads
-#define _Z_tasks_table_S_edit_begin     Vr_( pthread_mutex_lock( &E_base_S->E_flow_Z_task_table_S_mutex )); _sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, &E_base_S->E_flow_Z_task_table_S_sigset ); E_flow_Q_task_I_touch_stack(); U_L( E_base_S->E_flow_S_mode, Z_task_table_S_can_read )
+#define _Z_tasks_table_S_edit_begin     E_flow_Q_task_I_touch_stack(0); Vr_( pthread_mutex_lock( &E_base_S->E_flow_Z_task_table_S_mutex )); _sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, &E_base_S->E_flow_Z_task_table_S_sigset ); U_L( E_base_S->E_flow_S_mode, Z_task_table_S_can_read )
 #define _Z_tasks_table_S_edit_end       U_F( E_base_S->E_flow_S_mode, Z_task_table_S_can_read ); _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_Z_task_table_S_sigset, 0 ); Vr_( pthread_mutex_unlock( &E_base_S->E_flow_Z_task_table_S_mutex ))
     #else
-#define _Z_tasks_table_S_edit_begin     _sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, &E_base_S->E_flow_Z_task_table_S_sigset ); E_flow_Q_task_I_touch_stack(); U_L( E_base_S->E_flow_S_mode, Z_task_table_S_can_read )
+#define _Z_tasks_table_S_edit_begin     E_flow_Q_task_I_touch_stack(0); _sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, &E_base_S->E_flow_Z_task_table_S_sigset ); U_L( E_base_S->E_flow_S_mode, Z_task_table_S_can_read )
 #define _Z_tasks_table_S_edit_end       U_F( E_base_S->E_flow_S_mode, Z_task_table_S_can_read ); _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_Z_task_table_S_sigset, 0 )
     #endif
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -155,6 +155,11 @@ typedef struct timespec Z_clock_time;
     #endif
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #ifdef C_to_libs_C_replace_c_alloc
+typedef size_t ( *E_mem_Q_blk_I_libc_malloc_usable_size_Z )(P);
+typedef P ( *E_mem_Q_blk_I_libc_aligned_alloc_Z )( size_t, size_t );
+typedef int ( *E_mem_Q_blk_I_libc_posix_memalign_Z )( P *, size_t, size_t );
+typedef P ( *E_mem_Q_blk_I_libc_malloc_Z )( size_t );
+typedef P ( *E_mem_Q_blk_I_libc_calloc_Z )( size_t, size_t );
 typedef P ( *E_mem_Q_blk_I_libc_realloc_Z )( P, size_t );
 typedef P ( *E_mem_Q_blk_I_libc_reallocarray_Z )( P, size_t, size_t );
 typedef void ( *E_mem_Q_blk_I_libc_free_Z )(P);

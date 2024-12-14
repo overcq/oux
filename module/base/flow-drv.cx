@@ -729,13 +729,10 @@ E_flow_Q_task_I_stop( void
 // Wymuszenie ‘prealokacji’ “stosu” ‹zadania›, by nie została wywołana procedura obsługi “sygnału” ‘uniksowego’ “SEGV” w trakcie zmieniania pamięci ‘alokowanej’ dynamicznie, z której korzysta.
 _internal
 void
-E_flow_Q_task_I_touch_stack( void
+E_flow_Q_task_I_touch_stack( N page_count
 ){  if( !E_base_S->E_flow_Q_task_S_current ) // ‹Zadanie› inne niż “main”, ponieważ to ma stos zarządzany przez system operacyjny.
         return;
-    N pages = 4; //CONF
-    if( !pages )
-    {   GV_(NDFN); V();
-    }
+    N pages = page_count ? page_count : 4; //CONF
     volatile Pc sp;
     __asm__ volatile (
     #if defined( __i386__ ) || defined( __x86_64__ )
@@ -1155,7 +1152,7 @@ E_flow_Q_thread_async_I( P args_
     struct E_flow_Q_task_async_I_thread_proc_Z_args *args = args_;
     V0( sigaltstack( &args->alt_stack, 0 ))
         return 0;
-    E_flow_Q_task_I_touch_stack();
+    E_flow_Q_task_I_touch_stack(0);
     Vr_( pthread_mutex_lock( args->task_proc_arg.thread_flow_mutex ));
     args->task_proc( &args->task_proc_arg );
     Vr_( pthread_mutex_unlock( args->task_proc_arg.thread_flow_mutex ));
@@ -1452,7 +1449,7 @@ E_flow_Q_thread_system_unblock_report_I_before_async(
   pthread_cond_t *thread_switch
 , pthread_mutex_t *thread_flow_mutex
 ){  Vr_( pthread_cond_signal( thread_switch ));
-    E_flow_Q_task_I_touch_stack();
+    E_flow_Q_task_I_touch_stack(0);
     Vr_( pthread_cond_wait( thread_switch, thread_flow_mutex ));
 }
 B
@@ -1538,7 +1535,7 @@ E_flow_Q_thread_async_I_after_sync(
   pthread_cond_t *thread_switch
 , pthread_mutex_t *thread_flow_mutex
 ){  Vr_( pthread_cond_signal( thread_switch ));
-    E_flow_Q_task_I_touch_stack();
+    E_flow_Q_task_I_touch_stack(0);
     Vr_( pthread_cond_wait( thread_switch, thread_flow_mutex ));
 }
     #endif

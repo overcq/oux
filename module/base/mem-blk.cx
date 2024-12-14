@@ -2615,7 +2615,7 @@ E_mem_Q_blk_I_add( P p
     E_mem_Q_blk_I_assert_on_return( __LINE__ );
     _single_thread_end;
     if( !~(N)p_ )
-    {   GV_(NXP); Gh( p_ ); V();
+    {   GV_(NXP); V();
     }
     return p_;
 }
@@ -2630,7 +2630,7 @@ E_mem_Q_blk_I_prepend_append( P p
     E_mem_Q_blk_I_assert_on_return( __LINE__ );
     _single_thread_end;
     if( !~(N)p_ )
-    {   GV_(NXP); Gh( p_ ); V();
+    {   GV_(NXP); V();
     }
     return p_;
 }
@@ -2703,60 +2703,48 @@ malloc_usable_size( P p
 ){  Da_();
     if( !p )
         return 0;
-    _single_thread_begin;
-    struct E_mem_Q_blk_Z_allocated allocated_p;
-    N min = 0;
-    N max = E_mem_Q_blk_Q_sys_table_R_last( E_base_S->E_mem_Q_blk_S_allocated_id, (Pc)&allocated_p.p - (Pc)&allocated_p );
-    N allocated_i = max / 2;
-    O{  if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p == p )
-        {   N l = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u;
-            _single_thread_end;
-            return l;
-        }
-        if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p > (Pc)p )
-        {   if( allocated_i == min )
-                break;
-            max = allocated_i - 1;
-            allocated_i = max - ( allocated_i - min ) / 2;
-        }else
-        {   if( allocated_i == max )
-                break;
-            min = allocated_i + 1;
-            allocated_i = min + ( max - allocated_i ) / 2;
-        }
-    }
-    _single_thread_end;
-    return 0;
-}
-int
-posix_memalign( P *p
-, size_t align
-, size_t size
-){  Da_();
-    if( !E_simple_Z_n_T_power_2(align)
-    || align % sizeof(P)
+    int error = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
+    if( error
+    && error != EBUSY
     )
-        return EINVAL;
-    P p_ = E_mem_Q_blk_M_malloc( size, align );
-    if( !p_ )
-        return ENOMEM;
-    *p = p_;
-    return 0;
+    {   _errno = error;
+        Ve();
+        V();
+    }
+    if( !error )
+    {   struct E_mem_Q_blk_Z_allocated allocated_p;
+        N min = 0;
+        N max = E_mem_Q_blk_Q_sys_table_R_last( E_base_S->E_mem_Q_blk_S_allocated_id, (Pc)&allocated_p.p - (Pc)&allocated_p );
+        N allocated_i = max / 2;
+        O{  if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p == p )
+            {   N l = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u;
+                _single_thread_end;
+                return l;
+            }
+            if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p > (Pc)p )
+            {   if( allocated_i == min )
+                    break;
+                max = allocated_i - 1;
+                allocated_i = max - ( allocated_i - min ) / 2;
+            }else
+            {   if( allocated_i == max )
+                    break;
+                min = allocated_i + 1;
+                allocated_i = min + ( max - allocated_i ) / 2;
+            }
+        }
+        _single_thread_end;
+    }
+    return E_base_S->E_mem_Q_blk_I_libc_malloc_usable_size ? ( *E_base_S->E_mem_Q_blk_I_libc_malloc_usable_size )(p) : 0;
 }
+//------------------------------------------------------------------------------
 _internal
 P
-E_mem_Q_blk_M_malloc( N l
-, N align
-){  return E_mem_Q_blk_M_tab_calloc( 1, l, align );
-}
-_internal
-P
-E_mem_Q_blk_M_tab_calloc(
+E_mem_Q_blk_M_calloc(
   N u
 , N n
 , N align
-){  _single_thread_begin;
-    struct E_mem_Q_blk_Z_allocated allocated_p;
+){  struct E_mem_Q_blk_Z_allocated allocated_p;
     N allocated_i = E_mem_Q_blk_Q_sys_table_R_new_id( E_base_S->E_mem_Q_blk_S_allocated_id, (Pc)&allocated_p.p - (Pc)&allocated_p, (Pc)&allocated_p.n - (Pc)&allocated_p, 0, 0 );
     if( !~allocated_i )
     {   E_mem_Q_blk_I_assert_on_return( __LINE__ );
@@ -2777,10 +2765,74 @@ E_mem_Q_blk_M_tab_calloc(
     _single_thread_end;
     return p_;
 }
+//------------------------------------------------------------------------------
+P
+aligned_alloc(
+  size_t align
+, size_t size
+){  Da_();
+    if( !E_simple_Z_n_T_power_2(align)
+    || align % sizeof(P)
+    )
+    {   _errno = EINVAL;
+        return 0;
+    }
+    int error = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
+    if( error
+    && error != EBUSY
+    )
+    {   _errno = error;
+        Ve();
+        V();
+    }
+    if(error)
+        return E_base_S->E_mem_Q_blk_I_libc_aligned_alloc ? ( *E_base_S->E_mem_Q_blk_I_libc_aligned_alloc )( align, size ) : 0;
+    P p_ = E_mem_Q_blk_M_calloc( 1, size, align );
+    if( !p_ )
+        _errno = ENOMEM;
+    return p_;
+}
+int
+posix_memalign( P *p
+, size_t align
+, size_t size
+){  Da_();
+    if( !E_simple_Z_n_T_power_2(align)
+    || align % sizeof(P)
+    )
+        return EINVAL;
+    int error = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
+    if( error
+    && error != EBUSY
+    )
+    {   _errno = error;
+        Ve();
+        V();
+    }
+    if(error)
+        return E_base_S->E_mem_Q_blk_I_libc_posix_memalign ? ( *E_base_S->E_mem_Q_blk_I_libc_posix_memalign )( p, align, size ) : ( *p = 0, 0 );
+    P p_ = E_mem_Q_blk_M_calloc( 1, size, align );
+    if( !p_ )
+        return ENOMEM;
+    *p = p_;
+    return 0;
+}
 P
 malloc( size_t l
 ){  Da_();
-    P p = E_mem_Q_blk_M_malloc( l, E_mem_Q_blk_S_align_to_all );
+    int error = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
+    if( error
+    && error != EBUSY
+    )
+    {   _errno = error;
+        Ve();
+        V();
+    }
+    if(error)
+        return E_base_S->E_mem_Q_blk_I_libc_malloc ? ( *E_base_S->E_mem_Q_blk_I_libc_malloc )(l) : 0;
+    if( !l ) // Przydzielenie minimalnego rozmiaru dla rozmiaru zerowego.
+        l = E_mem_Q_blk_S_align_to_all;
+    P p = E_mem_Q_blk_M_calloc( 1, l, E_mem_Q_blk_S_align_to_all );
     if( !p )
         _errno = ENOMEM;
     return p;
@@ -2793,11 +2845,21 @@ calloc( size_t n
     {   _errno = ENOMEM;
         return 0;
     }
-    P p = E_mem_Q_blk_M_tab_calloc( 1, n * u, E_mem_Q_blk_S_align_to_all );
-    if( !p )
-        _errno = ENOMEM;
-    else
+    int error = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
+    if( error
+    && error != EBUSY
+    )
+    {   _errno = error;
+        Ve();
+        V();
+    }
+    if(error)
+        return E_base_S->E_mem_Q_blk_I_libc_calloc ? ( *E_base_S->E_mem_Q_blk_I_libc_calloc )( n, u ) : 0;
+    P p = E_mem_Q_blk_M_calloc( 1, n * u, E_mem_Q_blk_S_align_to_all );
+    if(p)
         _0( p, n * u );
+    else
+        _errno = ENOMEM;
     return p;
 }
 P
@@ -2806,62 +2868,67 @@ realloc( P p
 ){  Da_();
     if( !p )
         return malloc(l);
-    _single_thread_begin;
-    struct E_mem_Q_blk_Z_allocated allocated_p;
-    N min = 0;
-    N max = E_mem_Q_blk_Q_sys_table_R_last( E_base_S->E_mem_Q_blk_S_allocated_id, (Pc)&allocated_p.p - (Pc)&allocated_p );
-    N allocated_i = max / 2;
-    O{  if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p == p )
-        {   N l_0 = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u;
-            if( !l )
-            {   N n_0 = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n;
-                E_mem_Q_blk_Q_sys_table_a_I_move_empty_entry( allocated_i );
-                if( n_0 )
-                {   struct E_mem_Q_blk_Z_free free_p_;
-                    E_mem_Q_blk_Q_sys_table_mf_P_put( E_base_S->E_mem_Q_blk_S_free_id, (Pc)&free_p_.p - (Pc)&free_p_, (Pc)&free_p_.l - (Pc)&free_p_, p, l_0 );
+    int error = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
+    if( error
+    && error != EBUSY
+    )
+    {   _errno = error;
+        Ve();
+        V();
+    }
+    if( !error )
+    {   struct E_mem_Q_blk_Z_allocated allocated_p;
+        N min = 0;
+        N max = E_mem_Q_blk_Q_sys_table_R_last( E_base_S->E_mem_Q_blk_S_allocated_id, (Pc)&allocated_p.p - (Pc)&allocated_p );
+        N allocated_i = max / 2;
+        O{  if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p == p )
+            {   N l_0 = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u;
+                if( !l )
+                {   N n_0 = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n;
+                    E_mem_Q_blk_Q_sys_table_a_I_move_empty_entry( allocated_i );
+                    if( n_0 )
+                    {   struct E_mem_Q_blk_Z_free free_p_;
+                        E_mem_Q_blk_Q_sys_table_mf_P_put( E_base_S->E_mem_Q_blk_S_free_id, (Pc)&free_p_.p - (Pc)&free_p_, (Pc)&free_p_.l - (Pc)&free_p_, p, l_0 );
+                    }
+                    E_mem_Q_blk_I_assert_on_return( __LINE__ );
+                    _single_thread_end;
+                    return 0;
+                }
+                if( l > l_0 )
+                {   P p_ = E_mem_Q_blk_I_append_( &p, l - l_0, E_mem_Q_blk_S_align_to_all );
+                    E_mem_Q_blk_I_assert_on_return( __LINE__ );
+                    _single_thread_end;
+                    if( p_ )
+                        p_ = p;
+                    else
+                        _errno = ENOMEM;
+                    return p_;
+                }
+                if( l < l_0 )
+                {   P p_ = E_mem_Q_blk_I_remove_( &p, l, l_0 - l );
+                    E_mem_Q_blk_I_assert_on_return( __LINE__ );
+                    _single_thread_end;
+                    return p_;
                 }
                 E_mem_Q_blk_I_assert_on_return( __LINE__ );
                 _single_thread_end;
-                return 0;
+                return p;
             }
-            if( l > l_0 )
-            {   P p_ = E_mem_Q_blk_I_append_( &p, l - l_0, E_mem_Q_blk_S_align_to_all );
-                E_mem_Q_blk_I_assert_on_return( __LINE__ );
-                _single_thread_end;
-                if( p_ )
-                    p_ = p;
-                else
-                    _errno = ENOMEM;
-                return p_;
+            if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p > (Pc)p )
+            {   if( allocated_i == min )
+                    break;
+                max = allocated_i - 1;
+                allocated_i = max - ( allocated_i - min ) / 2;
+            }else
+            {   if( allocated_i == max )
+                    break;
+                min = allocated_i + 1;
+                allocated_i = min + ( max - allocated_i ) / 2;
             }
-            if( l < l_0 )
-            {   P p_ = E_mem_Q_blk_I_remove_( &p, l, l_0 - l );
-                E_mem_Q_blk_I_assert_on_return( __LINE__ );
-                _single_thread_end;
-                return p_;
-            }
-            E_mem_Q_blk_I_assert_on_return( __LINE__ );
-            _single_thread_end;
-            return p;
         }
-        if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p > (Pc)p )
-        {   if( allocated_i == min )
-                break;
-            max = allocated_i - 1;
-            allocated_i = max - ( allocated_i - min ) / 2;
-        }else
-        {   if( allocated_i == max )
-                break;
-            min = allocated_i + 1;
-            allocated_i = min + ( max - allocated_i ) / 2;
-        }
+        _single_thread_end;
     }
-    _single_thread_end;
-    P p_;
-    int errno_;
-    Vpe((( p_ = ( *E_base_S->E_mem_Q_blk_I_libc_realloc )( p, l )) || !_errno ), errno_ )
-        _errno = errno_;
-    return p_;
+    return E_base_S->E_mem_Q_blk_I_libc_realloc ? ( *E_base_S->E_mem_Q_blk_I_libc_realloc )( p, l ) : 0;
 }
 P
 reallocarray( P p
@@ -2875,99 +2942,115 @@ reallocarray( P p
     N l = n * u;
     if( !p )
         return malloc(l);
-    _single_thread_begin;
-    struct E_mem_Q_blk_Z_allocated allocated_p;
-    N min = 0;
-    N max = E_mem_Q_blk_Q_sys_table_R_last( E_base_S->E_mem_Q_blk_S_allocated_id, (Pc)&allocated_p.p - (Pc)&allocated_p );
-    N allocated_i = max / 2;
-    O{  if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p == p )
-        {   N l_0 = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u;
-            if( !l )
-            {   N n_0 = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n;
-                E_mem_Q_blk_Q_sys_table_a_I_move_empty_entry( allocated_i );
-                if( n_0 )
-                {   struct E_mem_Q_blk_Z_free free_p_;
-                    E_mem_Q_blk_Q_sys_table_mf_P_put( E_base_S->E_mem_Q_blk_S_free_id, (Pc)&free_p_.p - (Pc)&free_p_, (Pc)&free_p_.l - (Pc)&free_p_, p, l_0 );
+    int error = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
+    if( error
+    && error != EBUSY
+    )
+    {   _errno = error;
+        Ve();
+        V();
+    }
+    if( !error )
+    {   struct E_mem_Q_blk_Z_allocated allocated_p;
+        N min = 0;
+        N max = E_mem_Q_blk_Q_sys_table_R_last( E_base_S->E_mem_Q_blk_S_allocated_id, (Pc)&allocated_p.p - (Pc)&allocated_p );
+        N allocated_i = max / 2;
+        O{  if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p == p )
+            {   N l_0 = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u;
+                if( !l )
+                {   N n_0 = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n;
+                    E_mem_Q_blk_Q_sys_table_a_I_move_empty_entry( allocated_i );
+                    if( n_0 )
+                    {   struct E_mem_Q_blk_Z_free free_p_;
+                        E_mem_Q_blk_Q_sys_table_mf_P_put( E_base_S->E_mem_Q_blk_S_free_id, (Pc)&free_p_.p - (Pc)&free_p_, (Pc)&free_p_.l - (Pc)&free_p_, p, l_0 );
+                    }
+                    E_mem_Q_blk_I_assert_on_return( __LINE__ );
+                    _single_thread_end;
+                    return 0;
+                }
+                if( l > l_0 )
+                {   P p_ = E_mem_Q_blk_I_append_( &p, l - l_0, E_mem_Q_blk_S_align_to_all );
+                    E_mem_Q_blk_I_assert_on_return( __LINE__ );
+                    _single_thread_end;
+                    if( p_ )
+                        p_ = p;
+                    else
+                        _errno = ENOMEM;
+                    return p_;
+                }
+                if( l < l_0 )
+                {   P p_ = E_mem_Q_blk_I_remove_( &p, l, l_0 - l );
+                    E_mem_Q_blk_I_assert_on_return( __LINE__ );
+                    _single_thread_end;
+                    return p_;
                 }
                 E_mem_Q_blk_I_assert_on_return( __LINE__ );
                 _single_thread_end;
-                return 0;
+                return p;
             }
-            if( l > l_0 )
-            {   P p_ = E_mem_Q_blk_I_append_( &p, l - l_0, E_mem_Q_blk_S_align_to_all );
-                E_mem_Q_blk_I_assert_on_return( __LINE__ );
-                _single_thread_end;
-                if( p_ )
-                    p_ = p;
-                else
-                    _errno = ENOMEM;
-                return p_;
+            if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p > (Pc)p )
+            {   if( allocated_i == min )
+                    break;
+                max = allocated_i - 1;
+                allocated_i = max - ( allocated_i - min ) / 2;
+            }else
+            {   if( allocated_i == max )
+                    break;
+                min = allocated_i + 1;
+                allocated_i = min + ( max - allocated_i ) / 2;
             }
-            if( l < l_0 )
-            {   P p_ = E_mem_Q_blk_I_remove_( &p, l, l_0 - l );
-                E_mem_Q_blk_I_assert_on_return( __LINE__ );
-                _single_thread_end;
-                return p_;
-            }
-            E_mem_Q_blk_I_assert_on_return( __LINE__ );
-            _single_thread_end;
-            return p;
         }
-        if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p > (Pc)p )
-        {   if( allocated_i == min )
-                break;
-            max = allocated_i - 1;
-            allocated_i = max - ( allocated_i - min ) / 2;
-        }else
-        {   if( allocated_i == max )
-                break;
-            min = allocated_i + 1;
-            allocated_i = min + ( max - allocated_i ) / 2;
-        }
+        _single_thread_end;
     }
-    _single_thread_end;
-    P p_;
-    int errno_;
-    Vpe((( p_ = ( *E_base_S->E_mem_Q_blk_I_libc_reallocarray )( p, n, u )) || !_errno ), errno_ )
-        _errno = errno_;
-    return p_;
+    return E_base_S->E_mem_Q_blk_I_libc_reallocarray ? ( *E_base_S->E_mem_Q_blk_I_libc_reallocarray )( p, n, u ) : 0;
 }
 void
 free( P p
 ){  Da_();
     if( !p ) // Funkcja zerowego adresu, taka jak w oryginalnym “free”.
         return;
-    _single_thread_begin;
-    struct E_mem_Q_blk_Z_allocated allocated_p;
-    N min = 0;
-    N max = E_mem_Q_blk_Q_sys_table_R_last( E_base_S->E_mem_Q_blk_S_allocated_id, (Pc)&allocated_p.p - (Pc)&allocated_p );
-    N allocated_i = max / 2;
-    O{  if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p == p )
-        {   N n = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n;
-            N u = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u;
-            E_mem_Q_blk_Q_sys_table_a_I_move_empty_entry( allocated_i );
-            if(n)
-            {   struct E_mem_Q_blk_Z_free free_p_;
-                E_mem_Q_blk_Q_sys_table_mf_P_put( E_base_S->E_mem_Q_blk_S_free_id, (Pc)&free_p_.p - (Pc)&free_p_, (Pc)&free_p_.l - (Pc)&free_p_, p, n * u );
-            }
-            E_mem_Q_blk_I_assert_on_return( __LINE__ );
-            _single_thread_end;
-            return;
-        }
-        if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p > (Pc)p )
-        {   if( allocated_i == min )
-                break;
-            max = allocated_i - 1;
-            allocated_i = max - ( allocated_i - min ) / 2;
-        }else
-        {   if( allocated_i == max )
-                break;
-            min = allocated_i + 1;
-            allocated_i = min + ( max - allocated_i ) / 2;
-        }
+    int error = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
+    if( error
+    && error != EBUSY
+    )
+    {   _errno = error;
+        Ve();
+        V();
     }
-    _single_thread_end;
-    ( *E_base_S->E_mem_Q_blk_I_libc_free )(p);
+    if( !error )
+    {   struct E_mem_Q_blk_Z_allocated allocated_p;
+        N min = 0;
+        N max = E_mem_Q_blk_Q_sys_table_R_last( E_base_S->E_mem_Q_blk_S_allocated_id, (Pc)&allocated_p.p - (Pc)&allocated_p );
+        N allocated_i = max / 2;
+        O{  if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p == p )
+            {   N n = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n;
+                N u = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u;
+                E_mem_Q_blk_Q_sys_table_a_I_move_empty_entry( allocated_i );
+                if(n)
+                {   struct E_mem_Q_blk_Z_free free_p_;
+                    E_mem_Q_blk_Q_sys_table_mf_P_put( E_base_S->E_mem_Q_blk_S_free_id, (Pc)&free_p_.p - (Pc)&free_p_, (Pc)&free_p_.l - (Pc)&free_p_, p, n * u );
+                }
+                E_mem_Q_blk_I_assert_on_return( __LINE__ );
+                _single_thread_end;
+                return;
+            }
+            if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p > (Pc)p )
+            {   if( allocated_i == min )
+                    break;
+                max = allocated_i - 1;
+                allocated_i = max - ( allocated_i - min ) / 2;
+            }else
+            {   if( allocated_i == max )
+                    break;
+                min = allocated_i + 1;
+                allocated_i = min + ( max - allocated_i ) / 2;
+            }
+        }
+        _single_thread_end;
+    }
+    //NDFN Dlaczego poniższe nie może być włączone?
+    //if( E_base_S->E_mem_Q_blk_I_libc_free )
+        //( *E_base_S->E_mem_Q_blk_I_libc_free )(p);
 }
     #endif
 /******************************************************************************/
