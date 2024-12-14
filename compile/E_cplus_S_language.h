@@ -446,5 +446,5 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
     #endif
 #define _unused                             __attribute__ ((__unused__))
 //==============================================================================
-#define E_mem_Q_file_S_eof                  ( ~1L )
+#define S_eof                  ( ~1L )
 /******************************************************************************/

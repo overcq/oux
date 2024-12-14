@@ -243,9 +243,10 @@ Cont:   ai_1 = ai_1->ai_next;
     {   if( !E_mem_Q_blk_I_append( &E_net_http2_S_connect, 1 ))
         {   C buf[ 9 + 8 ];
             Pc buf_ = (Pc)&buf[0];
-            E_net_http2_Q_buffer_I_write_frame_header( &buf_, 8, E_net_http2_Z_frame_type_S_goaway, 0, 0 );
-            E_net_http2_Q_buffer_I_write_n( &buf_, 0, 4 );
-            E_net_http2_Q_buffer_I_write_n( &buf_, E_net_http2_Z_error_S_internal_error, 4 );
+            Pc buffer_end = buf_ + sizeof(buf);
+            E_net_http2_Q_buffer_I_write_frame_header( &buf_, buffer_end, 8, E_net_http2_Z_frame_type_S_goaway, 0, 0 );
+            E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, 0, 4 );
+            E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, E_net_http2_Z_error_S_internal_error, 4 );
             E_net_cli_I_write_data( ssl, fd, &buf[0], buf_ - (Pc)&buf[0] );
             SSL_shutdown(ssl);
             SSL_free(ssl);
@@ -277,17 +278,18 @@ Cont:   ai_1 = ai_1->ai_next;
         E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].last_stream = ~0;
         C buf[ 24 + 9 + 5 * 6 ] = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
         Pc buf_ = (Pc)&buf[24];
-        E_net_http2_Q_buffer_I_write_frame_header( &buf_, 5 * 6, E_net_http2_Z_frame_type_S_settings, 0, 0 );
-        E_net_http2_Q_buffer_I_write_n( &buf_, E_net_http2_Z_frame_type_setting_Z_header_table_size, 2 );
-        E_net_http2_Q_buffer_I_write_n( &buf_, 64 * 1024, 4 );
-        E_net_http2_Q_buffer_I_write_n( &buf_, E_net_http2_Z_frame_type_setting_Z_enable_push, 2 );
-        E_net_http2_Q_buffer_I_write_n( &buf_, 0, 4 );
-        E_net_http2_Q_buffer_I_write_n( &buf_, E_net_http2_Z_frame_type_setting_Z_max_concurrent_streams, 2 );
-        E_net_http2_Q_buffer_I_write_n( &buf_, (I)~0, 4 );
-        E_net_http2_Q_buffer_I_write_n( &buf_, E_net_http2_Z_frame_type_setting_Z_initial_window_size, 2 );
-        E_net_http2_Q_buffer_I_write_n( &buf_, E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].recv_window_size, 4 );
-        E_net_http2_Q_buffer_I_write_n( &buf_, E_net_http2_Z_frame_type_setting_Z_max_frame_size, 2 );
-        E_net_http2_Q_buffer_I_write_n( &buf_, E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].recv_frame_size_max, 4 );
+        Pc buffer_end = buf_ + sizeof(buf);
+        E_net_http2_Q_buffer_I_write_frame_header( &buf_, buffer_end, 5 * 6, E_net_http2_Z_frame_type_S_settings, 0, 0 );
+        E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, E_net_http2_Z_frame_type_setting_Z_header_table_size, 2 );
+        E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, 64 * 1024, 4 );
+        E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, E_net_http2_Z_frame_type_setting_Z_enable_push, 2 );
+        E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, 0, 4 );
+        E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, E_net_http2_Z_frame_type_setting_Z_max_concurrent_streams, 2 );
+        E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, (I)~0, 4 );
+        E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, E_net_http2_Z_frame_type_setting_Z_initial_window_size, 2 );
+        E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].recv_window_size, 4 );
+        E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, E_net_http2_Z_frame_type_setting_Z_max_frame_size, 2 );
+        E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].recv_frame_size_max, 4 );
         e = E_net_cli_I_write_data( ssl, fd, &buf[0], sizeof(buf) );
         if( e <= 0 )
         {   e = SSL_get_error( ssl, e );
@@ -332,9 +334,10 @@ Cont:   ai_1 = ai_1->ai_next;
         {   W( E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].buf );
             C buf[ 9 + 8 ];
             Pc buf_ = (Pc)&buf[0];
-            E_net_http2_Q_buffer_I_write_frame_header( &buf_, 8, E_net_http2_Z_frame_type_S_goaway, 0, 0 );
-            E_net_http2_Q_buffer_I_write_n( &buf_, 0, 4 );
-            E_net_http2_Q_buffer_I_write_n( &buf_, E_net_http2_Z_error_S_internal_error, 4 );
+            Pc buffer_end = buf_ + sizeof(buf);
+            E_net_http2_Q_buffer_I_write_frame_header( &buf_, buffer_end, 8, E_net_http2_Z_frame_type_S_goaway, 0, 0 );
+            E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, 0, 4 );
+            E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, E_net_http2_Z_error_S_internal_error, 4 );
             E_net_cli_I_write_data( ssl, fd, &buf[0], buf_ - (Pc)&buf[0] );
             SSL_shutdown(ssl);
             SSL_free(ssl);
@@ -357,9 +360,10 @@ Cont:   ai_1 = ai_1->ai_next;
             W( E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].buf );
             C buf[ 9 + 8 ];
             Pc buf_ = (Pc)&buf[0];
-            E_net_http2_Q_buffer_I_write_frame_header( &buf_, 8, E_net_http2_Z_frame_type_S_goaway, 0, 0 );
-            E_net_http2_Q_buffer_I_write_n( &buf_, 0, 4 );
-            E_net_http2_Q_buffer_I_write_n( &buf_, E_net_http2_Z_error_S_internal_error, 4 );
+            Pc buffer_end = buf_ + sizeof(buf);
+            E_net_http2_Q_buffer_I_write_frame_header( &buf_, buffer_end, 8, E_net_http2_Z_frame_type_S_goaway, 0, 0 );
+            E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, 0, 4 );
+            E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, E_net_http2_Z_error_S_internal_error, 4 );
             E_net_cli_I_write_data( ssl, fd, &buf[0], buf_ - (Pc)&buf[0] );
             SSL_shutdown(ssl);
             SSL_free(ssl);
@@ -384,9 +388,10 @@ Cont:   ai_1 = ai_1->ai_next;
             W( E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].buf );
             C buf[ 9 + 8 ];
             Pc buf_ = (Pc)&buf[0];
-            E_net_http2_Q_buffer_I_write_frame_header( &buf_, 8, E_net_http2_Z_frame_type_S_goaway, 0, 0 );
-            E_net_http2_Q_buffer_I_write_n( &buf_, 0, 4 );
-            E_net_http2_Q_buffer_I_write_n( &buf_, E_net_http2_Z_error_S_internal_error, 4 );
+            Pc buffer_end = buf_ + sizeof(buf);
+            E_net_http2_Q_buffer_I_write_frame_header( &buf_, buffer_end, 8, E_net_http2_Z_frame_type_S_goaway, 0, 0 );
+            E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, 0, 4 );
+            E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, E_net_http2_Z_error_S_internal_error, 4 );
             E_net_cli_I_write_data( ssl, fd, &buf[0], buf_ - (Pc)&buf[0] );
             SSL_shutdown(ssl);
             SSL_free(ssl);
@@ -412,9 +417,10 @@ Cont:   ai_1 = ai_1->ai_next;
             W( E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].buf );
             C buf[ 9 + 8 ];
             Pc buf_ = (Pc)&buf[0];
-            E_net_http2_Q_buffer_I_write_frame_header( &buf_, 8, E_net_http2_Z_frame_type_S_goaway, 0, 0 );
-            E_net_http2_Q_buffer_I_write_n( &buf_, 0, 4 );
-            E_net_http2_Q_buffer_I_write_n( &buf_, E_net_http2_Z_error_S_internal_error, 4 );
+            Pc buffer_end = buf_ + sizeof(buf);
+            E_net_http2_Q_buffer_I_write_frame_header( &buf_, buffer_end, 8, E_net_http2_Z_frame_type_S_goaway, 0, 0 );
+            E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, 0, 4 );
+            E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, E_net_http2_Z_error_S_internal_error, 4 );
             E_net_cli_I_write_data( ssl, fd, &buf[0], buf_ - (Pc)&buf[0] );
             SSL_shutdown(ssl);
             SSL_free(ssl);
@@ -882,8 +888,9 @@ End_1:      if( E_net_http_S_connect[i].ssl )
                         }
                         struct E_net_http2_Z_stream *stream = E_mem_Q_tab_R( E_net_http2_S_connect[i].stream, frame_stream - 1 );
                         if( !( frame_flags & E_net_http2_Z_frame_type_data_Z_flag_S_end_stream ))
-                        {   E_net_http2_Q_buffer_I_write_frame_header( &E_net_http2_S_connect[i].buf_2_, 4, E_net_http2_Z_frame_type_S_window_update, 0, frame_stream );
-                            E_net_http2_Q_buffer_I_write_n( &E_net_http2_S_connect[i].buf_2_, data_length, 4 );
+                        {   Pc buffer_end = E_net_http2_S_connect[i].buf_2_ + 9 + E_net_http2_S_connect[i].send_frame_size_max;
+                            E_net_http2_Q_buffer_I_write_frame_header( &E_net_http2_S_connect[i].buf_2_, buffer_end, 4, E_net_http2_Z_frame_type_S_window_update, 0, frame_stream );
+                            E_net_http2_Q_buffer_I_write_n( &E_net_http2_S_connect[i].buf_2_, buffer_end, data_length, 4 );
                         }
                         if( stream->data_start )
                         {   stream->file_name = M( J_s0_R_l( "/tmp/oux-net-cli-XXXXXX" ) + 1 );
@@ -1117,7 +1124,8 @@ Reset_stream:           ;
                         }
                         if( frame_flags == E_net_http2_Z_frame_type_settings_Z_flag_S_ack )
                             break;
-                        E_net_http2_Q_buffer_I_write_frame_header( &E_net_http2_S_connect[i].buf_2_, 0, E_net_http2_Z_frame_type_S_settings, E_net_http2_Z_frame_type_settings_Z_flag_S_ack, 0 );
+                        Pc buffer_end = E_net_http2_S_connect[i].buf_2_ + 9 + E_net_http2_S_connect[i].send_frame_size_max;
+                        E_net_http2_Q_buffer_I_write_frame_header( &E_net_http2_S_connect[i].buf_2_, buffer_end, 0, E_net_http2_Z_frame_type_S_settings, E_net_http2_Z_frame_type_settings_Z_flag_S_ack, 0 );
                         for_n( j, frame_length / 6 )
                         {   N identifier = E_net_http2_Q_buffer_I_read_n( &E_net_http2_S_connect[i].buf_, 2 );
                             N value = E_net_http2_Q_buffer_I_read_n( &E_net_http2_S_connect[i].buf_, 4 );
@@ -1128,9 +1136,9 @@ Reset_stream:           ;
                                     break;
                               case E_net_http2_Z_frame_type_setting_Z_max_concurrent_streams:
                                     if( value > (I)~0 )
-                                    {   E_net_http2_Q_buffer_I_write_frame_header( &E_net_http2_S_connect[i].buf_2_, 6, E_net_http2_Z_frame_type_S_settings, 0, 0 );
-                                        E_net_http2_Q_buffer_I_write_n( &E_net_http2_S_connect[i].buf_2_, E_net_http2_Z_frame_type_setting_Z_max_concurrent_streams, 2 );
-                                        E_net_http2_Q_buffer_I_write_n( &E_net_http2_S_connect[i].buf_2_, (I)~0, 4 );
+                                    {   E_net_http2_Q_buffer_I_write_frame_header( &E_net_http2_S_connect[i].buf_2_, buffer_end, 6, E_net_http2_Z_frame_type_S_settings, 0, 0 );
+                                        E_net_http2_Q_buffer_I_write_n( &E_net_http2_S_connect[i].buf_2_, buffer_end, E_net_http2_Z_frame_type_setting_Z_max_concurrent_streams, 2 );
+                                        E_net_http2_Q_buffer_I_write_n( &E_net_http2_S_connect[i].buf_2_, buffer_end, (I)~0, 4 );
                                     }
                                     E_net_http2_S_connect[i].concurrent_streams_max = value;
                                     break;
@@ -1147,6 +1155,10 @@ Reset_stream:           ;
                               case E_net_http2_Z_frame_type_setting_Z_max_frame_size:
                                     if( value == E_net_http2_S_connect[i].send_frame_size_max )
                                         break;
+                                    if( value < 24 )
+                                    {   goaway_error = E_net_http2_Z_error_S_internal_error;
+                                        goto End2_2;
+                                    }
                                     Pc p = E_net_http2_S_connect[i].buf_2;
                                     if( value > E_net_http2_S_connect[i].send_frame_size_max )
                                     {   if( !E_mem_Q_blk_I_append( &E_net_http2_S_connect[i].buf_2, value - E_net_http2_S_connect[i].send_frame_size_max ))
@@ -1184,8 +1196,12 @@ Reset_stream:           ;
                             goto End2_2;
                         }
                         E_net_http2_S_connect[i].buf_ += frame_length;
-                        E_net_http2_Q_buffer_I_write_frame_header( &E_net_http2_S_connect[i].buf_2_, frame_length, E_net_http2_Z_frame_type_S_ping, E_net_http2_Z_frame_type_ping_Z_flag_S_ack, 0 );
-                        E_net_http2_Q_buffer_I_write_s_l( &E_net_http2_S_connect[i].buf_2_, E_net_http2_S_connect[i].buf_, frame_length );
+                        Pc buffer_end = E_net_http2_S_connect[i].buf_2_ + 9 + E_net_http2_S_connect[i].send_frame_size_max;
+                        E_net_http2_Q_buffer_I_write_frame_header( &E_net_http2_S_connect[i].buf_2_, buffer_end, frame_length, E_net_http2_Z_frame_type_S_ping, E_net_http2_Z_frame_type_ping_Z_flag_S_ack, 0 );
+                        if( E_net_http2_Q_buffer_I_write_s_l( &E_net_http2_S_connect[i].buf_2_, buffer_end, E_net_http2_S_connect[i].buf_, frame_length ))
+                        {   goaway_error = E_net_http2_Z_error_S_internal_error;
+                            goto End2_2;
+                        }
                         break;
                     }
                   case E_net_http2_Z_frame_type_S_goaway:
@@ -1282,9 +1298,13 @@ Reset_stream:           ;
             continue;
 End2_2:     if( !~E_net_http2_S_connect[i].last_stream )
             {   G_(); Gd( goaway_error );
-                E_net_http2_Q_buffer_I_write_frame_header( &E_net_http2_S_connect[i].buf_2_, 8, E_net_http2_Z_frame_type_S_goaway, 0, 0 );
-                E_net_http2_Q_buffer_I_write_n( &E_net_http2_S_connect[i].buf_2_, E_mem_Q_tab_R_n( E_net_http2_S_connect[i].stream ) + 1, 4 );
-                E_net_http2_Q_buffer_I_write_n( &E_net_http2_S_connect[i].buf_2_, goaway_error, 4 );
+                Pc buffer_start = E_net_http2_S_connect[i].buf_2_;
+                Pc buffer_end = E_net_http2_S_connect[i].buf_2 + 9 + E_net_http2_S_connect[i].send_frame_size_max;
+                if( E_net_http2_Q_buffer_I_write_frame_header( &E_net_http2_S_connect[i].buf_2_, buffer_end, 8, E_net_http2_Z_frame_type_S_goaway, 0, 0 )
+                || E_net_http2_Q_buffer_I_write_n( &E_net_http2_S_connect[i].buf_2_, buffer_end, E_mem_Q_tab_R_n( E_net_http2_S_connect[i].stream ) + 1, 4 )
+                || E_net_http2_Q_buffer_I_write_n( &E_net_http2_S_connect[i].buf_2_, buffer_end, goaway_error, 4 )
+                )
+                    E_net_http2_S_connect[i].buf_2_ = buffer_start;
             }
             ssl_ret = E_net_cli_I_write_data( E_net_http2_S_connect[i].ssl, E_net_http2_S_connect[i].connect_sock, E_net_http2_S_connect[i].buf_2, E_net_http2_S_connect[i].buf_2_ - E_net_http2_S_connect[i].buf_2 );
 End2_1:     ;

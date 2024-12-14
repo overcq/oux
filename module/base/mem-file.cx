@@ -612,7 +612,7 @@ E_mem_Q_file_R_current_blk( struct E_mem_Q_file_Z *file
     && data_pos + l > file->l )
         l = file->l - data_pos;
     if( l <= file->pos - data_pos )
-        return E_mem_Q_file_S_eof;
+        return S_eof;
     if( !~E_mem_Q_file_Q_cache_I_put( file, data_pos, l ))
         return ~0;
     U_F( file->current_blk, valid );
@@ -638,7 +638,7 @@ E_mem_Q_file_R_c( I id
 ){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
     N ret = E_mem_Q_file_R_current_blk(file);
     if( !~ret
-    || ret == E_mem_Q_file_S_eof
+    || ret == S_eof
     )
         return ret;
     *c = file->blk[ file->current_blk ].data[ file->current_blk_pos++ ];
@@ -655,7 +655,7 @@ E_mem_Q_file_R_rev_c( I id
 ){  struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
     N ret = E_mem_Q_file_R_current_blk(file);
     if( !~ret
-    || ret == E_mem_Q_file_S_eof
+    || ret == S_eof
     )
         return ret;
     *c = file->blk[ file->current_blk ].data[ file->current_blk_pos-- ];
@@ -699,7 +699,7 @@ E_mem_Q_file_R_u( I id
 ){  C c;
     N ret = E_mem_Q_file_R_c( id, &c );
     if( !~ret
-    || ret == E_mem_Q_file_S_eof
+    || ret == S_eof
     )
         return ret;
     if( (S8)c >= 0 )
@@ -715,7 +715,7 @@ E_mem_Q_file_R_u( I id
     for_n( i, 6 - n )
     {   ret = E_mem_Q_file_R_c( id, &c );
         if( !~ret
-        || ret == E_mem_Q_file_S_eof
+        || ret == S_eof
         )
             return ret;
         if(( c & 0xc0 ) != 0x80 )
@@ -746,7 +746,7 @@ E_mem_Q_file_R_u_upto( I id
         {   (*s)[ s_i ] = '\0';
             return i;
         }
-        if( i == E_mem_Q_file_S_eof )
+        if( i == S_eof )
         {   (*s)[ s_i ] = '\0';
             return i;
         }
@@ -792,7 +792,7 @@ E_mem_Q_file_R_u_upto_0( I id
         {   (*s)[ s_i ] = '\0';
             return i;
         }
-        if( i == E_mem_Q_file_S_eof )
+        if( i == S_eof )
         {   (*s)[ s_i ] = '\0';
             return i;
         }
@@ -826,7 +826,7 @@ Cont:;
     {   (*s)[ s_i ] = '\0';
         return i;
     }
-    if( i == E_mem_Q_file_S_eof )
+    if( i == S_eof )
     {   (*s)[ s_i ] = '\0';
         return i;
     }
@@ -875,7 +875,7 @@ E_mem_Q_file_P_c( I id
             return ~0;
     N ret = E_mem_Q_file_R_current_blk(file);
     if( !~ret
-    || ret == E_mem_Q_file_S_eof
+    || ret == S_eof
     )
         return ret;
     // Czy da się skleić zakresy danych nie zapisanych.
@@ -1150,7 +1150,7 @@ E_mem_Q_file_P_rem_s( I id
     U_L( file->current_blk, valid_eob );
     N ret = E_mem_Q_file_R_current_blk(file);
     if( !~ret
-    || ret == E_mem_Q_file_S_eof
+    || ret == S_eof
     )
         return ret;
     if( !file->blk_n
