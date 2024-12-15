@@ -267,29 +267,18 @@ Cont:   ai_1 = ai_1->ai_next;
         E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].connect_sock = fd;
         E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].hostname = hostname; //NDFN Nie wiadomo, skąd pochodzi, ale na razie tak.
         E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].buf_l = 0;
-        E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].send_dynamic_table_size_max = 4096; //CONF
-        E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].send_dynamic_table_size_max_hit = no;
+        E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].send_dynamic_table_size_max = 4096;
         E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].concurrent_streams_max = ~0;
-        E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].recv_window_size = 1024 * 1024; //CONF
-        E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].send_window_size = 65535; //CONF
-        E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].recv_frame_size_max = 64 * 1024; //CONF
-        E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].send_frame_size_max = 16384; //CONF
+        E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].recv_window_size = 65535;
+        E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].send_window_size = 65535;
+        E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].recv_frame_size_max = 16384;
+        E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].send_frame_size_max = 16384;
         E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].header_list_size_max = ~0;
         E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].last_stream = ~0;
         C buf[ 24 + 9 + 5 * 6 ] = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
         Pc buf_ = (Pc)&buf[24];
         Pc buffer_end = buf_ + sizeof(buf);
-        E_net_http2_Q_buffer_I_write_frame_header( &buf_, buffer_end, 5 * 6, E_net_http2_Z_frame_type_S_settings, 0, 0 );
-        E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, E_net_http2_Z_frame_type_setting_Z_header_table_size, 2 );
-        E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, 64 * 1024, 4 );
-        E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, E_net_http2_Z_frame_type_setting_Z_enable_push, 2 );
-        E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, 0, 4 );
-        E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, E_net_http2_Z_frame_type_setting_Z_max_concurrent_streams, 2 );
-        E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, (I)~0, 4 );
-        E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, E_net_http2_Z_frame_type_setting_Z_initial_window_size, 2 );
-        E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].recv_window_size, 4 );
-        E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, E_net_http2_Z_frame_type_setting_Z_max_frame_size, 2 );
-        E_net_http2_Q_buffer_I_write_n( &buf_, buffer_end, E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].recv_frame_size_max, 4 );
+        E_net_http2_Q_buffer_I_write_frame_header( &buf_, buffer_end, 0, E_net_http2_Z_frame_type_S_settings, 0, 0 );
         e = E_net_cli_I_write_data( ssl, fd, &buf[0], sizeof(buf) );
         if( e <= 0 )
         {   e = SSL_get_error( ssl, e );
