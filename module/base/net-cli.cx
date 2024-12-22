@@ -267,6 +267,7 @@ Cont:   ai_1 = ai_1->ai_next;
         E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].connect_sock = fd;
         E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].hostname = hostname; //NDFN Nie wiadomo, skąd pochodzi, ale na razie tak.
         E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].buf_l = 0;
+        E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].recv_dynamic_table_size_max = 4096;
         E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].send_dynamic_table_size_max = 4096;
         E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].concurrent_streams_max = ~0;
         E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].recv_window_size = 65535;
@@ -1060,7 +1061,7 @@ End_1:      if( E_net_http_S_connect[i].ssl )
                             E_net_http2_S_connect[i].buf_ += headers_length + pad_length;
                             stream->end_stream = frame_flags & E_net_http2_Z_frame_type_headers_Z_flag_S_end_stream;
                         }else
-                        {   if( !~E_net_http2_Q_buffer_I_read_headers( &E_net_http2_S_connect[i].buf_, headers_length, &stream->headers, &stream->headers_n, &E_net_http2_S_connect[i].dynamic_table_dec, &E_net_http2_S_connect[i].dynamic_table_dec_n ))
+                        {   if( !~E_net_http2_Q_buffer_I_read_headers( &E_net_http2_S_connect[i].buf_, headers_length, &stream->headers, &stream->headers_n, &E_net_http2_S_connect[i].dynamic_table_dec, &E_net_http2_S_connect[i].dynamic_table_dec_n, E_net_http2_S_connect[i].recv_dynamic_table_size_max ))
                             {   goaway_error = E_net_http2_Z_error_S_internal_error;
                                 goto End2_2;
                             }
@@ -1155,7 +1156,11 @@ Reset_stream:           ;
                                             goto End2_2;
                                         }
                                     }else
-                                    {   if( !E_mem_Q_blk_I_remove( &E_net_http2_S_connect[i].buf_2, 9 + value, E_net_http2_S_connect[i].send_frame_size_max - value ))
+                                    {   if( value < 16384 )
+                                        {   goaway_error = E_net_http2_Z_error_S_protocol_error;
+                                            goto End2_2;
+                                        }
+                                        if( !E_mem_Q_blk_I_remove( &E_net_http2_S_connect[i].buf_2, 9 + value, E_net_http2_S_connect[i].send_frame_size_max - value ))
                                         {   goaway_error = E_net_http2_Z_error_S_internal_error;
                                             goto End2_2;
                                         }
@@ -1166,9 +1171,6 @@ Reset_stream:           ;
                               case E_net_http2_Z_frame_type_setting_Z_max_header_list_size:
                                     E_net_http2_S_connect[i].header_list_size_max = value;
                                     break;
-                              default:
-                                    goaway_error = E_net_http2_Z_error_S_protocol_error;
-                                    goto End2_2;
                             }
                         }
                         break;
@@ -1256,7 +1258,7 @@ Reset_stream:           ;
                         E_net_http2_S_connect[i].buf_ += frame_length;
                         if( frame_flags & E_net_http2_Z_frame_type_continuation_Z_flag_S_end_headers )
                         {   p = stream->buf_headers;
-                            if( !~E_net_http2_Q_buffer_I_read_headers( &stream->buf_headers, stream->buf_headers_l, &stream->headers, &stream->headers_n, &E_net_http2_S_connect[i].dynamic_table_dec, &E_net_http2_S_connect[i].dynamic_table_dec_n ))
+                            if( !~E_net_http2_Q_buffer_I_read_headers( &stream->buf_headers, stream->buf_headers_l, &stream->headers, &stream->headers_n, &E_net_http2_S_connect[i].dynamic_table_dec, &E_net_http2_S_connect[i].dynamic_table_dec_n, E_net_http2_S_connect[i].recv_dynamic_table_size_max ))
                             {   goaway_error = E_net_http2_Z_error_S_internal_error;
                                 goto End2_2;
                             }

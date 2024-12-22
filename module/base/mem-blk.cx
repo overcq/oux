@@ -2761,9 +2761,7 @@ E_mem_Q_blk_M_calloc(
         E_mem_Q_blk_P_fill_c( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p, E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u, 0xa5 ); //TODO Procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
         #endif
     E_mem_Q_blk_I_assert_on_return( __LINE__ );
-    P p_ = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p;
-    _single_thread_end;
-    return p_;
+    return E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p;
 }
 //------------------------------------------------------------------------------
 P
@@ -2788,6 +2786,7 @@ aligned_alloc(
     if(error)
         return E_base_S->E_mem_Q_blk_I_libc_aligned_alloc ? ( *E_base_S->E_mem_Q_blk_I_libc_aligned_alloc )( align, size ) : 0;
     P p_ = E_mem_Q_blk_M_calloc( 1, size, align );
+    _single_thread_end;
     if( !p_ )
         _errno = ENOMEM;
     return p_;
@@ -2812,6 +2811,7 @@ posix_memalign( P *p
     if(error)
         return E_base_S->E_mem_Q_blk_I_libc_posix_memalign ? ( *E_base_S->E_mem_Q_blk_I_libc_posix_memalign )( p, align, size ) : ( *p = 0, 0 );
     P p_ = E_mem_Q_blk_M_calloc( 1, size, align );
+    _single_thread_end;
     if( !p_ )
         return ENOMEM;
     *p = p_;
@@ -2833,6 +2833,7 @@ malloc( size_t l
     if( !l ) // Przydzielenie minimalnego rozmiaru dla rozmiaru zerowego.
         l = E_mem_Q_blk_S_align_to_all;
     P p = E_mem_Q_blk_M_calloc( 1, l, E_mem_Q_blk_S_align_to_all );
+    _single_thread_end;
     if( !p )
         _errno = ENOMEM;
     return p;
@@ -2856,6 +2857,7 @@ calloc( size_t n
     if(error)
         return E_base_S->E_mem_Q_blk_I_libc_calloc ? ( *E_base_S->E_mem_Q_blk_I_libc_calloc )( n, u ) : 0;
     P p = E_mem_Q_blk_M_calloc( 1, n * u, E_mem_Q_blk_S_align_to_all );
+    _single_thread_end;
     if(p)
         _0( p, n * u );
     else
