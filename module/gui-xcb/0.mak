@@ -15,7 +15,6 @@ S_headers := X11/keysym.h xcb/xcb.h xcb/xcb_event.h xcb/xcb_icccm.h xcb/xproto.h
     ifeq (Linux,$(H_make_S_os))
 S_headers += xkbcommon/xkbcommon-x11.h
     endif
-#“C_xcb_shape” do użycia tylko z własnymi oknami, pozwalającymi ‘serverowi’ ‟X” odświeżać bez migotania, ponieważ z ustawionej “pixmapy” tła.
     ifeq (,)
 S_packages += xcb-shape
 S_headers += xcb/shape.h

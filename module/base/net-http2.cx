@@ -884,6 +884,8 @@ E_net_http2_Q_buffer_I_read_headers( Pc *buffer
                 return ~0;
             }
             E_text_Z_s_P_copy_s0_0( E_text_Z_s_P_copy_s0( E_text_Z_s_P_copy_s0( (*headers)[ *headers_n - 1 ], name ), ": " ), value );
+            W(value);
+            W(name);
             if( headers_l + l - 1 + 32 > dynamic_table_size_max
             && *dynamic_table_n
             )
@@ -898,23 +900,16 @@ E_net_http2_Q_buffer_I_read_headers( Pc *buffer
             }
             if( headers_l + l - 1 + 32 <= dynamic_table_size_max )
             {   if( !E_mem_Q_blk_I_prepend( dynamic_table, 1 ))
-                {   W(value);
-                    W(name);
                     return ~0;
-                }
                 (*dynamic_table)[0] = M(l);
                 if( !(*dynamic_table)[0] )
                 {   E_mem_Q_blk_I_remove( dynamic_table, 0, 1 );
-                    W(value);
-                    W(name);
                     return ~0;
                 }
                 (*dynamic_table_n)++;
                 headers_l += l - 1 + 32;
                 E_text_Z_s_P_copy_s0_0( (*dynamic_table)[0], (*headers)[ *headers_n - 1 ] );
             }
-            W(value);
-            W(name);
         }else if(( v & 0xf0 ) == 0
         || ( v & 0xf0 ) == 0x10
         )

@@ -338,7 +338,19 @@ E_gui_xcb_Q_object_Z_button_I_draw(
         }
       }
     );
-    E_gui_xcb_Q_object_I_draw_P_color( display, screen, object, E_gui_xcb_Q_theme.line );
+    B U_L( button, hover );
+    if( ~display->focus_S_window_id
+    && display->focus_S_window_id == display->pointer_button_S_hover_window_id
+    && ~display->pointer_button_S_hover_object_id
+    )
+    {   struct E_gui_xcb_Q_window_Z *window_hover = E_mem_Q_tab_R( display->window, display->pointer_button_S_hover_window_id );
+        if( window_hover == window )
+        {   struct E_gui_xcb_Q_object_Z *object_hover = E_mem_Q_tab_R( window->object, display->pointer_button_S_hover_object_id );
+            if( object_hover == object )
+                U_F( button, hover );
+        }
+    }
+    E_gui_xcb_Q_object_I_draw_P_color( display, screen, object, U_R( button, hover ) ? E_gui_xcb_Q_theme.current_brace : E_gui_xcb_Q_theme.line );
     E_gui_xcb_Q_object_I_draw_Z_rectangles( display, screen, window, object
     , 1
     , ( xcb_rectangle_t[] )

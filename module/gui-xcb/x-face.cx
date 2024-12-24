@@ -114,8 +114,10 @@ struct E_gui_xcb_Q_display_Z
   S16 pointer_button_S_x, pointer_button_S_y;
   S16 drag_S_stop_root_x, drag_S_stop_root_y; //NDFN Przed zaprojektowaniem ‘drop’.
   S16 drag_S_grab_x, drag_S_grab_y;
-  I pointer_button_S_window_id;
-  I pointer_button_S_object_id;
+  I focus_S_window_id;
+  I pointer_button_S_hover_window_id;
+  I pointer_button_S_hover_object_id;
+  I pointer_button_S_click_object_id;
   I drag_S_dnd_window_screen_id;
   I Z_screen_id_S_default;
   N8 pointer_button;
@@ -183,7 +185,10 @@ E_gui_xcb_Q_display_M( void
         #ifdef E_flow_C_thread_system_unblock_reports
     display->pointer_button_S_impulser_time = 0;
         #endif
-    display->pointer_button_S_object_id = ~0;
+    display->focus_S_window_id = ~0;
+    display->pointer_button_S_hover_window_id = ~0;
+    display->pointer_button_S_hover_object_id = ~0;
+    display->pointer_button_S_click_object_id = ~0;
     display->pointer_button_S_seq_i = 0;
     display->drag_S_dnd_window_screen_id = 0;
     xcb_font_t font = xcb_generate_id( display->x_display );
@@ -506,9 +511,9 @@ E_gui_xcb_Q_display_W( I id
             #ifndef E_flow_C_thread_system_unblock_reports
         D_W( x_window, events );
             #endif
-        Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex_display_window ));
+        Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex_change_display_window ));
         Da_W( x_window, draw );
-        Vr_( pthread_mutex_lock( &E_x_window_D_draw_S_mutex_display_window ));
+        Vr_( pthread_mutex_lock( &E_x_window_D_draw_S_mutex_change_display_window ));
         display = E_mem_Q_tab_R( E_gui_xcb_Q_display_S, id );
         Vr_( pthread_cond_destroy( &E_x_window_D_draw_S_cond));
         Vr_( pthread_mutex_destroy( &E_x_window_D_draw_S_mutex ));
