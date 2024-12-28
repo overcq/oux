@@ -2703,6 +2703,7 @@ malloc_usable_size( P p
 ){  Da_();
     if( !p )
         return 0;
+        #ifdef C_pthreads
     int error = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
     if( error
     && error != EBUSY
@@ -2712,6 +2713,7 @@ malloc_usable_size( P p
         V();
     }
     if( !error )
+        #endif
     {   struct E_mem_Q_blk_Z_allocated allocated_p;
         N min = 0;
         N max = E_mem_Q_blk_Q_sys_table_R_last( E_base_S->E_mem_Q_blk_S_allocated_id, (Pc)&allocated_p.p - (Pc)&allocated_p );
@@ -2775,6 +2777,7 @@ aligned_alloc(
     {   _errno = EINVAL;
         return 0;
     }
+        #ifdef C_pthreads
     int error = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
     if( error
     && error != EBUSY
@@ -2785,6 +2788,7 @@ aligned_alloc(
     }
     if(error)
         return E_base_S->E_mem_Q_blk_I_libc_aligned_alloc ? ( *E_base_S->E_mem_Q_blk_I_libc_aligned_alloc )( align, size ) : 0;
+        #endif
     P p_ = E_mem_Q_blk_M_calloc( 1, size, align );
     _single_thread_end;
     if( !p_ )
@@ -2800,6 +2804,7 @@ posix_memalign( P *p
     || align % sizeof(P)
     )
         return EINVAL;
+        #ifdef C_pthreads
     int error = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
     if( error
     && error != EBUSY
@@ -2810,6 +2815,7 @@ posix_memalign( P *p
     }
     if(error)
         return E_base_S->E_mem_Q_blk_I_libc_posix_memalign ? ( *E_base_S->E_mem_Q_blk_I_libc_posix_memalign )( p, align, size ) : ( *p = 0, 0 );
+        #endif
     P p_ = E_mem_Q_blk_M_calloc( 1, size, align );
     _single_thread_end;
     if( !p_ )
@@ -2820,6 +2826,7 @@ posix_memalign( P *p
 P
 malloc( size_t l
 ){  Da_();
+        #ifdef C_pthreads
     int error = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
     if( error
     && error != EBUSY
@@ -2830,6 +2837,7 @@ malloc( size_t l
     }
     if(error)
         return E_base_S->E_mem_Q_blk_I_libc_malloc ? ( *E_base_S->E_mem_Q_blk_I_libc_malloc )(l) : 0;
+        #endif
     if( !l ) // Przydzielenie minimalnego rozmiaru dla rozmiaru zerowego.
         l = E_mem_Q_blk_S_align_to_all;
     P p = E_mem_Q_blk_M_calloc( 1, l, E_mem_Q_blk_S_align_to_all );
@@ -2846,6 +2854,7 @@ calloc( size_t n
     {   _errno = ENOMEM;
         return 0;
     }
+        #ifdef C_pthreads
     int error = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
     if( error
     && error != EBUSY
@@ -2856,6 +2865,7 @@ calloc( size_t n
     }
     if(error)
         return E_base_S->E_mem_Q_blk_I_libc_calloc ? ( *E_base_S->E_mem_Q_blk_I_libc_calloc )( n, u ) : 0;
+        #endif
     P p = E_mem_Q_blk_M_calloc( 1, n * u, E_mem_Q_blk_S_align_to_all );
     _single_thread_end;
     if(p)
@@ -2870,6 +2880,7 @@ realloc( P p
 ){  Da_();
     if( !p )
         return malloc(l);
+        #ifdef C_pthreads
     int error = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
     if( error
     && error != EBUSY
@@ -2879,6 +2890,7 @@ realloc( P p
         V();
     }
     if( !error )
+        #endif
     {   struct E_mem_Q_blk_Z_allocated allocated_p;
         N min = 0;
         N max = E_mem_Q_blk_Q_sys_table_R_last( E_base_S->E_mem_Q_blk_S_allocated_id, (Pc)&allocated_p.p - (Pc)&allocated_p );
@@ -2944,6 +2956,7 @@ reallocarray( P p
     N l = n * u;
     if( !p )
         return malloc(l);
+        #ifdef C_pthreads
     int error = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
     if( error
     && error != EBUSY
@@ -2953,6 +2966,7 @@ reallocarray( P p
         V();
     }
     if( !error )
+        #endif
     {   struct E_mem_Q_blk_Z_allocated allocated_p;
         N min = 0;
         N max = E_mem_Q_blk_Q_sys_table_R_last( E_base_S->E_mem_Q_blk_S_allocated_id, (Pc)&allocated_p.p - (Pc)&allocated_p );
@@ -3011,6 +3025,7 @@ free( P p
 ){  Da_();
     if( !p ) // Funkcja zerowego adresu, taka jak w oryginalnym “free”.
         return;
+        #ifdef C_pthreads
     int error = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
     if( error
     && error != EBUSY
@@ -3020,6 +3035,7 @@ free( P p
         V();
     }
     if( !error )
+        #endif
     {   struct E_mem_Q_blk_Z_allocated allocated_p;
         N min = 0;
         N max = E_mem_Q_blk_Q_sys_table_R_last( E_base_S->E_mem_Q_blk_S_allocated_id, (Pc)&allocated_p.p - (Pc)&allocated_p );

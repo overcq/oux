@@ -8,7 +8,7 @@
 * ©overcq                on ‟Gentoo Linux 17.1” “x86_64”             2021‒10‒4 N
 *******************************************************************************/
 #define S_keepalive_timeout     5
-#define S_system_idle_time      0
+#define S_system_idle_time      50
 #define S_inflate_buffer_size   ( 64 * 1024 )
 Pc E_net_cli_S_client_name = "OUX/C+ web-cli";
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -521,7 +521,12 @@ D( net, cli )
         X_U( net, ret );
         N ready_n;
             #ifndef E_flow_C_thread_system_unblock_reports
-#error TODO
+                #ifdef __gnu_linux__
+        VO1_( ready_n = epoll_wait( E_net_cli_S_epoll_fd, E_net_cli_S_ee_ready, E_net_cli_S_ee_ready_n, S_system_idle_time ));
+                #else
+        VO1_( ready_n = poll( E_net_cli_S_poll_fd, E_net_cli_S_poll_fd_n, S_system_idle_time ));
+                #endif
+        I_B()
             #else
         Xh_B_();
                 #ifdef __gnu_linux__
@@ -530,6 +535,7 @@ D( net, cli )
         VO1_( ready_n = poll( E_net_cli_S_poll_fd, E_net_cli_S_poll_fd_n, E_net_http_S_connect_n || E_net_http2_S_connect_n ? S_system_idle_time : -1 ));
                 #endif
         Xh_B()
+            #endif
         {   for_n( i, E_net_http_S_connect_n )
             {   if( E_net_http_S_connect[i].ssl )
                 {   SSL_shutdown( E_net_http_S_connect[i].ssl );
@@ -568,7 +574,6 @@ D( net, cli )
             }
             break;
         }
-            #endif
         X_L( net, disconnect );
         X_L( net, ret );
         for_n( i, E_net_http_S_connect_n )

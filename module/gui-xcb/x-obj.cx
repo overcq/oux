@@ -1170,11 +1170,13 @@ E_gui_xcb_Q_object_I_draw_Z_draw_proc( void (*draw_object_proc)( struct E_gui_xc
         if( U_R( display->req, draw ))
             U_F( x_window, draw );
     }
-    if( U_E( x_window, draw ))
+        #ifdef C_pthreads
+    if( U_R( x_window, draw ))
     {   Vr_( pthread_mutex_lock( &E_x_window_D_draw_S_mutex ));
         E_x_window_D_draw_S_b = yes;
         Vr_( pthread_cond_signal( &E_x_window_D_draw_S_cond ));
         Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex ));
     }
+        #endif
 }
 /******************************************************************************/
