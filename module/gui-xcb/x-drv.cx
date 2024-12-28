@@ -886,7 +886,6 @@ Po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                         if( U_R( req, draw ))
                         {   U_F( window->req, draw );
                             U_F( display->req, draw );
-                            U_F( display->req, flush );
                         }
                         break;
                     }
@@ -927,7 +926,9 @@ Po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                             if( x_button->time - xbutton_time < display->pointer_button_C_restart_delay )
                                 break;
                             if( !U_R( display->mode, drag ))
-                                display->pointer_button_S_grab_time = display->pointer_button_S_time;
+                            {   display->pointer_button_S_grab_time = display->pointer_button_S_time;
+                                display->pointer_button_S_click_object_id = ~0;
+                            }
                             display->pointer_button = x_button->detail;
                             display->pointer_button_S_root_x = x_button->root_x;
                             display->pointer_button_S_root_y = x_button->root_y;
@@ -942,7 +943,10 @@ Po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                         || display->pointer_button_S_seq_i & 1 // Podczas sekwencji klikania naciśnięto kolejny przycisk bez zwolnienia poprzedniego (z wyjątkiem obsłużonego wcześniej przycisku przeciągania będącego w stanie wciśniętym).
                         )
                             U_L( display->state, pointer_S_click_valid );
-                        display->pointer_button_S_seq_i++;
+                        if( U_R( display->mode, drag )
+                        || !U_R( display->req, pointer_S_ungrab )
+                        )
+                            display->pointer_button_S_seq_i++;
                         break;
                     }
                   case XCB_BUTTON_RELEASE:
@@ -995,15 +999,15 @@ Po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                         G(); Gs0_( "enter" ); Gd( x_enter_notify->mode ); Gd( x_enter_notify->detail );
                         // W X (menedżer okien Fluxbox) naciśnięcie 1. przycisku powoduje ‘leave➪grab’ i ‘enter➪ungrab’, więc obejście następną linią warunku sprawdzającą posiadanie wskaźnika przez okno.
                         if( x_enter_notify->mode == XCB_NOTIFY_MODE_UNGRAB )
-                        {   display->pointer_button_S_hover_window_id = window_id;
-                            U_L( display->req, pointer_S_ungrab );
+                        {   U_L( display->req, pointer_S_ungrab );
                             if( !U_R( display->state, pointer_S_in_window ))
+                            {   U_F( display->state, pointer_S_in_window );
                                 display->pointer_button_S_seq_i = 0;
-                            U_F( display->state, pointer_S_in_window );
+                            }
+                            display->pointer_button_S_hover_window_id = window_id;
                         }else if( !U_R( display->mode, drag ))
-                        {   display->pointer_button_S_hover_window_id = window_id;
-                            display->pointer_button_S_seq_i = 0;
-                            U_F( display->state, pointer_S_in_window );
+                        {   U_F( display->state, pointer_S_in_window );
+                            display->pointer_button_S_hover_window_id = window_id;
                         }
                         U_R( display->state, pointer_button_S_pressing ) = x_enter_notify->state & ( XCB_BUTTON_MASK_1 | XCB_BUTTON_MASK_2 | XCB_BUTTON_MASK_3 | XCB_BUTTON_MASK_4 | XCB_BUTTON_MASK_5 ) ? yes : no;
                         break;
@@ -1013,11 +1017,8 @@ Po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                         G(); Gs0_( "leave" ); Gd( x_leave_notify->mode ); Gd( x_leave_notify->detail );
                         if( x_leave_notify->mode == XCB_NOTIFY_MODE_NORMAL )
                         {   if( !U_R( display->mode, drag ))
-                            {   display->pointer_button_S_seq_i = 0;
-                                display->pointer_button_S_hover_window_id = ~0;
+                            {   U_L( display->state, pointer_S_click_valid );
                                 U_L( display->state, pointer_S_in_window );
-                                U_F( window->req, draw );
-                                U_F( display->req, draw );
                             }
                         }else if( x_leave_notify->mode == XCB_NOTIFY_MODE_UNGRAB )
                         {   U_L( display->req, pointer_S_ungrab );
@@ -1027,8 +1028,7 @@ Po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                             Yi_L( x_window, events_pointer_button_check );
                                 #endif
                             display->pointer_button_S_seq_i = 0;
-                            if( !U_R( display->mode, drag ))
-                                display->pointer_button_S_click_object_id = ~0;
+                            display->pointer_button_S_hover_window_id = ~0;
                         }
                         break;
                     }
@@ -1061,7 +1061,6 @@ Po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                     {   G(); Gs0_( "expose" );
                         U_F( window->req, draw );
                         U_F( display->req, draw );
-                        U_F( display->req, flush );
                         break;
                     }
                   case XCB_GRAPHICS_EXPOSURE:
@@ -1166,7 +1165,7 @@ Po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                 {   window->x = x_configure->x;
                                     window->y = x_configure->y;
                                     if( window_id == display->pointer_button_S_hover_window_id ) // Albo “window_id” jest ustawiony dla okna, albo jest “empty” dla okna ‘dnd’.
-                                        display->pointer_button_S_seq_i = 0;
+                                        U_L( display->state, pointer_S_click_valid );
                                 }
                                 break;
                             }
@@ -1291,7 +1290,6 @@ Loop:           free( x_event );
                             object_data->selected = ( motion_y - ( object->y + 1 )) / font->height + object_data->scroll;
                             U_F( window->req, draw );
                             U_F( display->req, draw );
-                            U_F( display->req, flush );
                         }
                     }
                 }
@@ -1320,6 +1318,7 @@ Loop:           free( x_event );
                     xcb_grab_pointer_reply_t *ret = xcb_grab_pointer_reply( display->x_display, ret_id, 0 );
                     if( ret->status == XCB_GRAB_STATUS_SUCCESS ) // Czy aktualny stan od pierwszego kliknięcia serii.
                     {   free(ret);
+                        U_F( display->req, pointer_S_ungrab );
                         I pointer_object_id;
                         if( !U_R( display->mode, drag ))
                             if( display->pointer_button_S_x >= 0
@@ -1356,9 +1355,8 @@ Loop:           free( x_event );
                         if( U_R( display->mode, drag )
                         || ( ~pointer_object_id
                           && pointer_object_id == display->pointer_button_S_click_object_id
-                        )) // Czy kliknięto nad początkowym obiektem?
-                        {   U_F( display->req, pointer_S_ungrab );
-                            xcb_timestamp_t grab_time = display->pointer_button_S_time + ( display->pointer_button_S_seq_i & 1 ? display->pointer_button_C_release_timeout : display->pointer_button_C_seq_timeout );
+                        )) // Czy kliknięto nad początkowym obiektem lub kliknięto w trybie ‘drag’?
+                        {   xcb_timestamp_t grab_time = display->pointer_button_S_time + ( display->pointer_button_S_seq_i & 1 ? display->pointer_button_C_release_timeout : display->pointer_button_C_seq_timeout );
                             ret_id = xcb_grab_pointer_unchecked( display->x_display
                             , 1
                             , window->x_window
@@ -1383,7 +1381,6 @@ Loop:           free( x_event );
                                             U_L( object_data->state, cursor_visible_ );
                                             U_F( window->req, draw );
                                             U_F( display->req, draw );
-                                            U_F( display->req, flush );
                                         }
                                         struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->pointer_button_S_click_object_id );
                                         if( U_R( object->mode, draggable )
@@ -1397,7 +1394,6 @@ Loop:           free( x_event );
                                                 display->select_window = ~0;
                                                 U_F( window->req, draw );
                                                 U_F( display->req, draw );
-                                                U_F( display->req, flush );
                                             }
                                             Mt_( display->drag_S_object_src, 1 );
                                             if( display->drag_S_object_src )
@@ -1565,7 +1561,6 @@ Drag_start_error:                           ;
                                             U_F( object_data->state, cursor_visible_ );
                                             U_F( window->req, draw );
                                             U_F( display->req, draw );
-                                            U_F( display->req, flush );
                                         }else if( object->draw == E_gui_xcb_Q_object_Z_select_I_draw
                                         && display->pointer_button == 1
                                         && display->pointer_button_S_seq_i == 2
@@ -1641,7 +1636,6 @@ Drag_start_error:                           ;
                                                         display->select_list_object = select_list_id;
                                                         U_F( window->req, draw );
                                                         U_F( display->req, draw );
-                                                        U_F( display->req, flush );
                                                     }
                                                 }
                                             }else
@@ -1714,23 +1708,16 @@ Drag_start_error:                           ;
                                             U_F( display->req, flush );
                                         }
                                 }
-                                if( !U_R( display->mode, drag ))
-                                    if( !U_R( display->state, pointer_button_S_pressing ))
-                                    {   U_L( display->req, pointer_S_ungrab );
-                                        xcb_ungrab_pointer( display->x_display, display->pointer_button_S_grab_time );
-                                        U_F( display->req, flush );
-                                        display->pointer_button_S_seq_i = 0;
-                                    }else
-                                    {
-                                            #ifdef E_flow_C_thread_system_unblock_reports
-                                        if( display->pointer_button_S_impulser_time != grab_time )
-                                        {   display->pointer_button_S_impulser_time = grab_time;
-                                            Yi_F( x_window, events_pointer_button_check, ( display->pointer_button_S_seq_i & 1 ? display->pointer_button_C_release_timeout : display->pointer_button_C_seq_timeout ) * 1000 );
-                                        }
-                                            #endif
+                                if( U_R( display->state, pointer_button_S_pressing ))
+                                {
+                                        #ifdef E_flow_C_thread_system_unblock_reports
+                                    if( display->pointer_button_S_impulser_time != display->pointer_button_S_grab_time )
+                                    {   display->pointer_button_S_impulser_time = display->pointer_button_S_grab_time;
+                                        Yi_F( x_window, events_pointer_button_check, display->pointer_button_C_restart_delay * 1000 );
                                     }
-                                else
-                                    display->pointer_button_S_seq_i = 0;
+                                        #endif
+                                }
+                                display->pointer_button_S_seq_i = 0;
                             }else
                             {   free(ret);
                                     #ifdef E_flow_C_thread_system_unblock_reports
@@ -1740,6 +1727,11 @@ Drag_start_error:                           ;
                                 }
                                     #endif
                             }
+                        }else
+                        {   U_L( display->state, pointer_S_click_valid );
+                                #ifdef E_flow_C_thread_system_unblock_reports
+                            Yi_F( x_window, events_pointer_button_check, ( display->pointer_button_S_seq_i & 1 ? display->pointer_button_C_release_timeout : display->pointer_button_C_seq_timeout ) * 1000 );
+                                #endif
                         }
                     }else
                     {   free(ret);
@@ -1757,8 +1749,8 @@ Drag_start_error:                           ;
             && U_E( display->req, pointer_S_ungrab )
             )
             {   U_L( display->mode, drag_stop );
-                U_F( display->req, flush );
                 xcb_ungrab_pointer( display->x_display, display->pointer_button_S_grab_time );
+                U_F( display->req, flush );
             }
             if( U_R( pointer, motion ))
                 if( U_R( display->mode, drag ))
@@ -1938,8 +1930,8 @@ Drag_start_error:                           ;
                 Yi_L( x_window, events_pointer_button_check );
                     #endif
                 U_L( display->mode, drag_stop );
-                U_F( display->req, flush );
                 xcb_ungrab_pointer( display->x_display, display->pointer_button_S_grab_time );
+                U_F( display->req, flush );
                 display->pointer_button_S_seq_i = 0;
             }
             if( U_R( display->req, draw ))
