@@ -996,20 +996,21 @@ Po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                   case XCB_ENTER_NOTIFY:
                     {   xcb_enter_notify_event_t *x_enter_notify = (P)x_event;
                         G(); Gs0_( "enter" ); Gd( x_enter_notify->mode ); Gd( x_enter_notify->detail );
-                        // W X (menedżer okien Fluxbox) naciśnięcie 1. przycisku powoduje ‘leave➪grab’ i ‘enter➪ungrab’, więc obejście następną linią warunku sprawdzającą posiadanie wskaźnika przez okno.
-                        if( x_enter_notify->mode == XCB_NOTIFY_MODE_UNGRAB )
-                        {   U_L( display->req, pointer_S_ungrab );
-                            if( !U_R( display->state, pointer_S_in_window ))
+                        if( x_enter_notify->mode == XCB_NOTIFY_MODE_NORMAL )
+                        {   if( !U_R( display->mode, drag ))
                             {   U_F( display->state, pointer_S_in_window );
-G();
+                                display->pointer_button_S_hover_window_id = window_id;
+                                U_R( display->state, pointer_button_S_pressing ) = x_enter_notify->state & ( XCB_BUTTON_MASK_1 | XCB_BUTTON_MASK_2 | XCB_BUTTON_MASK_3 | XCB_BUTTON_MASK_4 | XCB_BUTTON_MASK_5 ) ? yes : no;
+                            }
+                        }else if( x_enter_notify->mode == XCB_NOTIFY_MODE_UNGRAB ) // W X (menedżer okien Fluxbox) naciśnięcie 1. przycisku powoduje ‘leave➪grab’ i ‘enter➪ungrab’, więc obejście następną linią warunku sprawdzającą posiadanie wskaźnika przez okno.
+                        {   if( !U_R( display->state, pointer_S_in_window ))
+                            {   U_F( display->state, pointer_S_in_window );
+                                U_L( display->req, pointer_S_ungrab );
                                 display->pointer_button_S_seq_i = 0;
+G();
                             }
                             display->pointer_button_S_hover_window_id = window_id;
-                        }else if( !U_R( display->mode, drag ))
-                        {   U_F( display->state, pointer_S_in_window );
-                            display->pointer_button_S_hover_window_id = window_id;
                         }
-                        U_R( display->state, pointer_button_S_pressing ) = x_enter_notify->state & ( XCB_BUTTON_MASK_1 | XCB_BUTTON_MASK_2 | XCB_BUTTON_MASK_3 | XCB_BUTTON_MASK_4 | XCB_BUTTON_MASK_5 ) ? yes : no;
                         break;
                     }
                   case XCB_LEAVE_NOTIFY:
@@ -1027,9 +1028,8 @@ G();
                                 #ifdef E_flow_C_thread_system_unblock_reports
                             Yi_L( x_window, events_pointer_button_check );
                                 #endif
-G();
                             display->pointer_button_S_seq_i = 0;
-                            display->pointer_button_S_hover_window_id = ~0;
+G();
                         }
                         break;
                     }
@@ -1217,7 +1217,8 @@ Loop:           free( x_event );
             if( U_R( display->mode, drag_stop )
             && U_E( display->mode, drag )
             )
-            {   if( !U_R( display->mode_ex, drag_stop_S_cancel ))
+            {   U_L( display->mode, drag_stop );
+                if( !U_R( display->mode_ex, drag_stop_S_cancel ))
                 {   //TODO Sprawdź miejsce ‘drop’.
                     if( U_R( display->mode_ex, drag_S_copy ))
                     {   for_n( i, display->drag_S_object_src_n )
@@ -1260,16 +1261,6 @@ Loop:           free( x_event );
                 );
                 W( dnd_window->drawable );
                 U_L( dnd_window->req, draw );
-                if( U_R( display->req, pointer_S_ungrab ))
-                {   if( !U_R( display->state, pointer_button_S_pressing ))
-                    {   U_L( display->mode, drag_stop );
-                        U_L( display->req, pointer_S_ungrab );
-                        xcb_ungrab_pointer( display->x_display, display->pointer_button_S_grab_time );
-G();
-                        display->pointer_button_S_seq_i = 0;
-                    }
-                }else
-                    U_L( display->mode, drag_stop );
                 U_F( display->req, draw );
                 U_F( display->req, flush );
             }else if( !U_R( display->mode, drag_stop )) // ‘Drag’ jest wyjątkowym trybem dla interpretacji “pointer_button”, bo ‘grabnięcie’ jest względem okna ‘dnd’— i poniższy blok nie może do czasu ‘odgrabnięcia’ czytać danych z tego okna, ponieważ jest ukryte, zasoby wyrzucone.
@@ -1724,14 +1715,11 @@ Drag_start_error:                           ;
                                 if( U_R( display->state, pointer_button_S_pressing ))
                                 {
                                         #ifdef E_flow_C_thread_system_unblock_reports
-                                    if( display->pointer_button_S_impulser_time != display->pointer_button_S_grab_time )
-                                    {   display->pointer_button_S_impulser_time = display->pointer_button_S_grab_time;
-                                        Yi_F( x_window, events_pointer_button_check, display->pointer_button_C_restart_delay * 1000 );
-                                    }
+                                    Yi_F( x_window, events_pointer_button_check, display->pointer_button_C_restart_delay * 1000 );
                                         #endif
                                 }
-G();
                                 display->pointer_button_S_seq_i = 0;
+G();
                             }else
                             {   free(ret);
                                     #ifdef E_flow_C_thread_system_unblock_reports
@@ -1742,10 +1730,12 @@ G();
                                     #endif
                             }
                         }else
-                        {   U_L( display->state, pointer_S_click_valid );
+                        {
                                 #ifdef E_flow_C_thread_system_unblock_reports
-                            Yi_F( x_window, events_pointer_button_check, ( display->pointer_button_S_seq_i & 1 ? display->pointer_button_C_release_timeout : display->pointer_button_C_seq_timeout ) * 1000 );
+                            Yi_F( x_window, events_pointer_button_check, display->pointer_button_C_restart_delay * 1000 );
                                 #endif
+                            display->pointer_button_S_seq_i = 0;
+G();
                         }
                     }else
                     {   free(ret);
@@ -1754,8 +1744,8 @@ G();
                             #endif
                         if( U_R( display->mode, drag ))
                             U_F( display->mode, drag_stop );
-G();
                         display->pointer_button_S_seq_i = 0;
+G();
                     }
                 }
             }
@@ -1763,8 +1753,7 @@ G();
             && !U_R( display->state, pointer_button_S_pressing )
             && U_E( display->req, pointer_S_ungrab )
             )
-            {   U_L( display->mode, drag_stop );
-                xcb_ungrab_pointer( display->x_display, display->pointer_button_S_grab_time );
+            {   xcb_ungrab_pointer( display->x_display, display->pointer_button_S_grab_time );
                 U_F( display->req, flush );
             }
             if( U_R( pointer, motion ))
@@ -1961,8 +1950,8 @@ G();
                 U_L( display->mode, drag_stop );
                 xcb_ungrab_pointer( display->x_display, display->pointer_button_S_grab_time );
                 U_F( display->req, flush );
-G();
                 display->pointer_button_S_seq_i = 0;
+G();
             }
             if( U_R( display->req, draw ))
                 U_F( x_window, draw );
