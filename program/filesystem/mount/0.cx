@@ -784,65 +784,83 @@ main(
     {   E_base_W();
         return 1;
     }
-        #if defined( __gnu_linux__ )
-    cap_t cap;
-    Vp( cap = cap_get_proc() )
+    N l = 128;
+    Pc s_2 = M(l);
+    if( !s_2 )
     {   VO1( close( fuse_fd )){}
         E_base_W();
         return 1;
     }
-    cap_value_t cap_list[1] = { CAP_SYS_ADMIN };
-    V1( cap_set_flag( cap, CAP_EFFECTIVE, 1, &cap_list[0], CAP_CLEAR ))
-    {   V1( cap_free(cap) ){}
-        VO1( close( fuse_fd )){}
-        E_base_W();
-        return 1;
-    }
-    N l = 128;
-    Pc s_2 = M(l);
-    if( !s_2 )
-    {   V1( cap_set_proc(cap) ){}
-        V1( cap_free(cap) ){}
-        VO1( close( fuse_fd )){}
-        E_base_W();
-        return 1;
-    }
     snprintf( s_2, l, "fd=%i,rootmode=%o,user_id=%u,group_id=%u,blksize=%u,allow_other", fuse_fd, 040000, getuid(), getgid(), Q_filesystem_S_size_of_cluster );
-    V1( mount( device, directory, "fuseblk", 0, s_2 ))
-    {   V1( cap_set_proc(cap) ){}
-        V1( cap_free(cap) ){}
+        #if defined( __gnu_linux__ )
+    cap_t cap_0, cap;
+    Vp( cap_0 = cap_get_proc() )
+    {   W( s_2 );
         VO1( close( fuse_fd )){}
         E_base_W();
         return 1;
     }
-    W( s_2 );
+    Vp( cap = cap_dup( cap_0 ))
+    {   V1( cap_free( cap_0 )){}
+        W( s_2 );
+        VO1( close( fuse_fd )){}
+        E_base_W();
+        return 1;
+    }
+    cap_value_t cap_list[1] = { CAP_SYS_ADMIN };
+    V1( cap_set_flag( cap, CAP_EFFECTIVE, 1, &cap_list[0], CAP_SET ))
+    {   V1( cap_free(cap) ){}
+        V1( cap_free( cap_0 )){}
+        W( s_2 );
+        VO1( close( fuse_fd )){}
+        E_base_W();
+        return 1;
+    }
     V1( cap_set_proc(cap) )
     {   V1( cap_free(cap) ){}
+        V1( cap_free( cap_0 )){}
+        W( s_2 );
         VO1( close( fuse_fd )){}
         E_base_W();
         return 1;
     }
     V1( cap_free(cap) )
-    {   VO1( close( fuse_fd )){}
+    {   V1( cap_set_proc( cap_0 )){}
+        V1( cap_free( cap_0 )){}
+        W( s_2 );
+        VO1( close( fuse_fd )){}
+        E_base_W();
+        return 1;
+    }
+    V1( mount( device, directory, "fuseblk", 0, s_2 ))
+    {   V1( cap_set_proc( cap_0 )){}
+        V1( cap_free( cap_0 )){}
+        W( s_2 );
+        VO1( close( fuse_fd )){}
+        E_base_W();
+        return 1;
+    }
+    V1( cap_set_proc( cap_0 ) )
+    {   V1( cap_free( cap_0 )){}
+        W( s_2 );
+        VO1( close( fuse_fd )){}
+        E_base_W();
+        return 1;
+    }
+    V1( cap_free( cap_0 ))
+    {   W( s_2 );
+        VO1( close( fuse_fd )){}
         E_base_W();
         return 1;
     }
         #else
-    N l = 128;
-    Pc s_2 = M(l);
-    if( !s_2 )
-    {   VO1( close( fuse_fd )){}
-        E_base_W();
-        return 1;
-    }
-    snprintf( s_2, l, "fd=%i,rootmode=%o,user_id=%u,group_id=%u,blksize=%u,allow_other", fuse_fd, 040000, getuid(), getgid(), Q_filesystem_S_size_of_cluster );
     V1( mount( device, directory, 0, s_2 ))
     {   VO1( close( fuse_fd )){}
         E_base_W();
         return 1;
     }
-    W( s_2 );
         #endif
+    W( s_2 );
     N read_buffer_size, read_count;
     P read_buffer = M( read_buffer_size = S_max_read_buffer_size );
     if( !read_buffer )
