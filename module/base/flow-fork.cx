@@ -7,7 +7,7 @@
 *         flow fork
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2016‒1‒22 o
 *******************************************************************************/
-// Rozłączenie procesu skopiowanego przez “fork” (w nowym procesie). Nie wolno przełączać ‹zadań› w części od “begin” do “end”.
+// Rozłączenie procesu skopiowanego przez “fork” (w nowym procesie). Nie wolno przełączać ‹zadań› w części od “begin” do “end”.
 pid_t
 E_flow_I_fork_I_begin( void
 ){  E_flow_Q_task_I_touch_stack(0); // Ponieważ podczas “fork” nie może być realizowana procedura obsługi “SIGSEGV”.
@@ -18,16 +18,16 @@ E_flow_I_fork_I_begin( void
 }
 void
 E_flow_I_fork_I_end( N pid
-){  if( !~pid )
+){  _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_I_fork_S_sigset, 0 );
+    if( !~pid )
     {   GV_(NA); V();
     }
-    _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_I_fork_S_sigset, 0 );
 }
 //------------------------------------------------------------------------------
-// Poniższe procedury, wykonywane w “procesie” potomnym, mogą używać tylko pasywnych funkcjonalności technologii, nie zintegrowanych w przepływie wykonania. czyli na przykład tylko synchronicznych raportów linii. Nigdy nie wiadomo bez sprawdzenia tekstu procedur, czy nie używa ona wewnątrz funkcjonalności zintegrowanych.
+// Poniższe procedury, wykonywane w “procesie” potomnym, mogą używać tylko pasywnych funkcjonalności technologii, nie zintegrowanych w przepływie wykonania. Czyli na przykład tylko synchronicznych raportów linii. Nigdy nie wiadomo bez sprawdzenia tekstu procedur, czy nie używa ona wewnątrz funkcjonalności zintegrowanych.
 void
 E_flow_I_fork_I_start( void
-){  // Jeszcze przed wykonaniem się “exec”– usunięcie identyfikacji siebie jako wykonawcy “procesu”, który utworzył ten— z wykonywania funkcji “process call”.
+){  // Jeszcze przed wykonaniem się “exec” – usunięcie identyfikacji siebie jako wykonawcy “procesu”, który utworzył ten — z wykonywania funkcji “process call”.
         #if defined( __gnu_linux__ )
     V0_( prctl( PR_SET_NAME, "_", 0, 0, 0 ));
         #elif defined( __FreeBSD__ ) || defined( __OpenBSD__ )
