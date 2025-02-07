@@ -313,7 +313,7 @@ P
 E_mem_Q_blk_I_copy_rev( P dst
 , P src
 , N l
-){  J_assert( (Pc)dst > (Pc)src || (Pc)dst <= (Pc)src - l );
+){  J_assert( (Pc)dst > (Pc)src && (Pc)dst <= (Pc)src - l );
     Pn dst_n = (P)E_simple_Z_p_I_align_down_to_v2( (Pc)dst + l, sizeof(N) );
     Pn src_n = (P)E_simple_Z_p_I_align_down_to_v2( (Pc)src + l, sizeof(N) );
     if( (Pc)src <= (Pc)src_n
@@ -1615,7 +1615,6 @@ E_mem_Q_blk_M_replace( P p
 , N l
 ){  return E_mem_Q_blk_M_replace_tab( p, 1, l );
 }
-// Jeśli ‘replace’ się nie uda, to wtedy pierwotny adres pozostaje poprawny.
 __attribute__ ((__malloc__))
 P
 E_mem_Q_blk_M_replace_tab( P p
@@ -1644,9 +1643,9 @@ E_mem_Q_blk_M_replace_tab( P p
             }
             if( !E_mem_Q_blk_Q_table_M_from_free_or_map( &allocated_i, u, n, 0, 0, 0, ~0 ))
             {   E_mem_Q_blk_Q_sys_table_a_I_move_empty_entry( allocated_i );
-                *( P * )p = 0;
                 E_mem_Q_blk_I_assert_on_return( __LINE__ );
                 _single_thread_end;
+                *( P * )p = 0;
                 return 0;
             }
                 #ifdef E_mem_Q_blk_C_debug
