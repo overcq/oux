@@ -26,6 +26,7 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
 #define J_ab(a,b)                           _J_ab(a,b)
 #define J_a_b(a,b)                          J_ab(J_ab(a,_),b)
 #define J_s0_R_l(s)                         ( sizeof(s) - 1 )
+#define J_a_R_n(a)                          ( sizeof(a) / sizeof( (a)[0] ))
 //------------------------------------------------------------------------------
 #define J_n_10_max_digits(l)                ( l == 8 ? 20 : l == 4 ? 10 : l == 2 ? 5 : 3 )
 #define J_swap(type,a,b)                    { type J_autogen(_) = a; a = b; b = J_autogen(_); }

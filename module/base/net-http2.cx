@@ -492,7 +492,7 @@ E_net_http2_Q_buffer_I_decode( Pc *buffer
             v_l += 8;
             length--;
         }
-        for_n( i, sizeof( E_net_http2_S_huffman_table ) / sizeof( E_net_http2_S_huffman_table[0] ))
+        for_n( i, J_a_R_n( E_net_http2_S_huffman_table ))
         {   if( v_l < E_net_http2_S_huffman_table[i].length )
                 continue;
             if(( v >> ( v_l - E_net_http2_S_huffman_table[i].length )) == E_net_http2_S_huffman_table[i].code )
@@ -730,9 +730,9 @@ E_net_http2_Q_buffer_I_read_headers( Pc *buffer
                 E_text_Z_s_P_copy_s0_0( (*headers)[ *headers_n - 1 ], "accept-encoding: gzip, deflate" );
             }else
             {   v -= E_net_http2_S_static_table_first_index;
-                if( v < sizeof( E_net_http2_S_static_table ) / sizeof( E_net_http2_S_static_table[0] ))
+                if( v < J_a_R_n( E_net_http2_S_static_table ))
                     return ~0;
-                v -= sizeof( E_net_http2_S_static_table ) / sizeof( E_net_http2_S_static_table[0] );
+                v -= J_a_R_n( E_net_http2_S_static_table );
                 if( v >= *dynamic_table_n )
                     return ~0;
                 if( !E_mem_Q_blk_I_append( headers, 1 ))
@@ -818,14 +818,14 @@ E_net_http2_Q_buffer_I_read_headers( Pc *buffer
                     }
                 }else
                 {   v -= E_net_http2_S_static_table_first_index;
-                    if( v < sizeof( E_net_http2_S_static_table ) / sizeof( E_net_http2_S_static_table[0] ))
+                    if( v < J_a_R_n( E_net_http2_S_static_table ))
                     {   N l = E_text_Z_s0_R_l_0( E_net_http2_S_static_table[v] );
                         name = M(l);
                         if( !name )
                             return ~0;
                         E_text_Z_s_P_copy_s0_0( name, E_net_http2_S_static_table[v] );
                     }else
-                    {   v -= sizeof( E_net_http2_S_static_table ) / sizeof( E_net_http2_S_static_table[0] );
+                    {   v -= J_a_R_n( E_net_http2_S_static_table );
                         if( v >= *dynamic_table_n )
                             return ~0;
                         Pc s = E_text_Z_s0_R_search_c( (*dynamic_table)[v] + 1, ':' );
@@ -1115,7 +1115,7 @@ E_net_http2_Q_buffer_I_write_headers( Pc *buffer
             && E_text_Z_s0_T_eq_s0( headers[ headers_i ] + l, (*dynamic_table)[i] + l )
             )
             {   W(s);
-                index = E_net_http2_S_static_table_first_index + sizeof( E_net_http2_S_static_table ) / sizeof( E_net_http2_S_static_table[0] ) + i;
+                index = E_net_http2_S_static_table_first_index + J_a_R_n( E_net_http2_S_static_table ) + i;
                 if( E_net_http2_Q_buffer_I_write_v( buffer, buffer_end, 0x80, 7, index ))
                     return S_eof;
                 break;
@@ -1385,7 +1385,7 @@ E_net_http2_Q_buffer_I_write_headers( Pc *buffer
                 }
             }
         }else
-        {   for_n( i, sizeof( E_net_http2_S_static_table ) / sizeof( E_net_http2_S_static_table[0] ))
+        {   for_n( i, J_a_R_n( E_net_http2_S_static_table ))
             {   N l = E_text_Z_s0_R_l( E_net_http2_S_static_table[i] ) + J_s0_R_l( ": " );
                 Pc s = M( l + 1 );
                 if( !s )
@@ -1493,7 +1493,7 @@ E_net_http2_Q_buffer_I_write_headers( Pc *buffer
                 }
                 W(s);
             }
-            if( i == sizeof( E_net_http2_S_static_table ) / sizeof( E_net_http2_S_static_table[0] ))
+            if( i == J_a_R_n( E_net_http2_S_static_table ))
             {   for_n( i, *dynamic_table_n )
                 {   N l = E_text_Z_s_R_search_c_( (*dynamic_table)[i] + 1, ':' ) - (*dynamic_table)[i] + J_s0_R_l( ": " );
                     Pc s = M( l + 1 );
@@ -1502,7 +1502,7 @@ E_net_http2_Q_buffer_I_write_headers( Pc *buffer
                     E_text_Z_s_P_copy_sl_0( s, (*dynamic_table)[i], l );
                     if( E_text_Z_s0_T_starts_case_s0( headers[ headers_i ], s ))
                     {   W(s);
-                        index = E_net_http2_S_static_table_first_index + sizeof( E_net_http2_S_static_table ) / sizeof( E_net_http2_S_static_table[0] ) + i;
+                        index = E_net_http2_S_static_table_first_index + J_a_R_n( E_net_http2_S_static_table ) + i;
                         N l_ = E_text_Z_s0_R_l( headers[ headers_i ] );
                         if( headers_l + l_ + 32 > dynamic_table_size_max
                         && *dynamic_table_n
