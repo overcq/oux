@@ -268,14 +268,15 @@ E_mem_Q_blk_T_eq( P p_1
             return no;
     return yes;
 }
+_internal
 P
-E_mem_Q_blk_I_copy( P dst
+E_mem_Q_blk_I_copy_fwd( P dst
 , P src
 , N l
-){  J_assert( (Pc)dst < (Pc)src || (Pc)dst >= (Pc)src + l );
-    Pn dst_n = (P)E_simple_Z_p_I_align_up_to_v2( dst, sizeof(N) );
+){  Pn dst_n = (P)E_simple_Z_p_I_align_up_to_v2( dst, sizeof(N) );
     Pn src_n = (P)E_simple_Z_p_I_align_up_to_v2( src, sizeof(N) );
-    if( (Pc)src + l >= (Pc)src_n
+    if( l >= sizeof(N)
+    && dst_n != src_n
     && (Pc)dst_n - (Pc)dst == (Pc)src_n - (Pc)src
     )
     {   N l_0 = (Pc)src_n - (Pc)src;
@@ -309,14 +310,15 @@ E_mem_Q_blk_I_copy( P dst
     }
     return dst_c;
 }
+_internal
 P
 E_mem_Q_blk_I_copy_rev( P dst
 , P src
 , N l
-){  J_assert( (Pc)dst > (Pc)src && (Pc)dst <= (Pc)src + l );
-    Pn dst_n = (P)E_simple_Z_p_I_align_down_to_v2( (Pc)dst + l, sizeof(N) );
+){  Pn dst_n = (P)E_simple_Z_p_I_align_down_to_v2( (Pc)dst + l, sizeof(N) );
     Pn src_n = (P)E_simple_Z_p_I_align_down_to_v2( (Pc)src + l, sizeof(N) );
-    if( (Pc)src <= (Pc)src_n
+    if( l >= sizeof(N)
+    && dst_n != src_n
     && (Pc)dst + l - (Pc)dst_n == (Pc)src + l - (Pc)src_n
     )
     {   N l_0 = (Pc)src + l - (Pc)src_n;
@@ -350,13 +352,16 @@ E_mem_Q_blk_I_copy_rev( P dst
     return dst_c;
 }
 P
-E_mem_Q_blk_I_copy_auto( P dst
+E_mem_Q_blk_I_copy( P dst
 , P src
 , N l
-){  if( (Pc)dst < (Pc)src
+){  J_assert( dst != src );
+    if( !l )
+        return dst;
+    if( (Pc)dst < (Pc)src
     || (Pc)dst >= (Pc)src + l
     )
-        return E_mem_Q_blk_I_copy( dst, src, l );
+        return E_mem_Q_blk_I_copy_fwd( dst, src, l );
     return E_mem_Q_blk_I_copy_rev( dst, src, l );
 }
 //TODO Do optymalizacji?
@@ -485,17 +490,16 @@ E_mem_Q_blk_Q_sys_table_mf_I_sort_inserted( N table_i
     N tmp_l = *( N * )( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + inserted_i * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u + rel_addr_l );
     if( middle != inserted_i )
         if( middle < inserted_i )
-            E_mem_Q_blk_I_copy_rev( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + ( middle + 1 ) * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u
+            E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + ( middle + 1 ) * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u
             , E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + middle * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u
             , ( inserted_i - middle ) * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u
             );
         else // if( middle > inserted_i )
         {   middle--;
-            if( middle - inserted_i )
-                E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + inserted_i * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u
-                , E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + ( inserted_i + 1 ) * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u
-                , ( middle - inserted_i ) * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u
-                );
+            E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + inserted_i * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u
+            , E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + ( inserted_i + 1 ) * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u
+            , ( middle - inserted_i ) * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u
+            );
         }
     *( Pc * )( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + middle * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u + rel_addr_p ) = tmp_p;
     *( N * )( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + middle * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u + rel_addr_l ) = tmp_l;
@@ -560,17 +564,16 @@ E_mem_Q_blk_Q_sys_table_a_I_sort_inserted( N inserted_i
     N tmp_u = E_base_S->E_mem_Q_blk_S_allocated[ inserted_i ].u;
     if( middle != inserted_i )
     {   if( middle < inserted_i )
-            E_mem_Q_blk_I_copy_rev( &E_base_S->E_mem_Q_blk_S_allocated[ middle + 1 ]
+            E_mem_Q_blk_I_copy( &E_base_S->E_mem_Q_blk_S_allocated[ middle + 1 ]
             , &E_base_S->E_mem_Q_blk_S_allocated[middle]
             , ( inserted_i - middle ) * E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_allocated_id ].u
             );
         else // if( middle > inserted_i )
         {   middle--;
-            if( middle - inserted_i )
-                E_mem_Q_blk_I_copy( &E_base_S->E_mem_Q_blk_S_allocated[ inserted_i ]
-                , &E_base_S->E_mem_Q_blk_S_allocated[ inserted_i + 1 ]
-                , ( middle - inserted_i ) * E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_allocated_id ].u
-                );
+            E_mem_Q_blk_I_copy( &E_base_S->E_mem_Q_blk_S_allocated[ inserted_i ]
+            , &E_base_S->E_mem_Q_blk_S_allocated[ inserted_i + 1 ]
+            , ( middle - inserted_i ) * E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_allocated_id ].u
+            );
         }
         if( inserted_i == E_base_S->E_mem_Q_blk_S_mapped_id )
             E_base_S->E_mem_Q_blk_S_mapped_id = middle;
@@ -1979,7 +1982,7 @@ E_mem_Q_blk_I_prepend_append_( P p
                                     free_p[ free_i ].l -= l_1;
                                     if( !free_p[ free_i ].l )
                                         E_mem_Q_blk_Q_sys_table_f_I_move_empty_entry( free_i );
-                                    E_mem_Q_blk_I_copy_auto( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p - ( l_1 - n_prepend * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u )
+                                    E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p - ( l_1 - n_prepend * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u )
                                     , E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p
                                     , l_0
                                     );
@@ -2293,7 +2296,7 @@ E_mem_Q_blk_I_prepend_( P p
                                     if( !free_p[ free_i ].l )
                                         E_mem_Q_blk_Q_sys_table_f_I_move_empty_entry( free_i );
                                 }
-                                E_mem_Q_blk_I_copy_rev( p_0 + l, p_0, l_0 );
+                                E_mem_Q_blk_I_copy( p_0 + l, p_0, l_0 );
                                 E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n += n;
                                 if( l_1 )
                                     *( P * )p = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p -= l_1;
@@ -2404,10 +2407,11 @@ E_mem_Q_blk_I_insert_( P p
                             E_mem_Q_blk_Q_sys_table_f_I_move_empty_entry( free_i );
                         E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n += n;
                         *( P * )p = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p -= l_1;
-                        E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p
-                        , E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p + l_1
-                        , i * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
-                        );
+                        if(i)
+                            E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p
+                            , E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p + l_1
+                            , i * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
+                            );
                             #ifdef E_mem_Q_blk_C_debug
                         E_mem_Q_blk_P_fill_c( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p + i * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u, l_1, 0xa5 ); //TODO Procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
                             #endif
@@ -2430,12 +2434,14 @@ E_mem_Q_blk_I_insert_( P p
                                     *( P * )p = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p -= l_1;
                                 }
                                 E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n += n;
-                                if( l_1 )
+                                if( l_1
+                                && i
+                                )
                                     E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p
                                     , E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p + l_1
                                     , i * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
                                     );
-                                E_mem_Q_blk_I_copy_rev( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p + l_1 + i * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u + l
+                                E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p + l_1 + i * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u + l
                                 ,  E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p + l_1 + i * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
                                 , l_0 - i * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
                                 );
@@ -2472,7 +2478,7 @@ E_mem_Q_blk_I_insert_( P p
                 return 0;
             //TODO Zrobić w “E_mem_Q_blk_Q_table_M_from_free_or_map” parametr przesuniecia dla ‘split’ i kopiowania tam odrazu?
             if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n )
-                E_mem_Q_blk_I_copy_rev( (Pc)p_1 + ( i + n ) * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
+                E_mem_Q_blk_I_copy( (Pc)p_1 + ( i + n ) * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
                 , (Pc)p_1 + i * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
                 , l_0 - i * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
                 );
