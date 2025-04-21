@@ -282,10 +282,10 @@ Po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                                 u = ~0;
                         }else
                             u = E_gui_xcb_Q_display_I_keysym_to_unicode( display, keysym );
-                        G_(); Gd( x_key->detail ); Gh( x_key->state ); Gh(keysym); Gd(modifier); Gh(u);
+                        G(); Gd( x_key->detail ); Gh( x_key->state ); Gh(keysym); Gd(modifier); Gh(u);
                         for_n( i, display->keyboard_mapping->keysyms_per_keycode )
                         {   xcb_keysym_t keysym = E_gui_xcb_Q_display_R_keysym( display, x_key->detail, i );
-                            G_(); Gd(keysym); Gd(i);
+                            G(); Gd(keysym); Gd(i);
                         }
                         if( display->pointer_button_S_seq_i )
                             break;
@@ -1210,7 +1210,15 @@ Po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                       break;
                 }
 Loop:           free( x_event );
-            }while( x_event = xcb_poll_for_queued_event( display->x_display )); //NDFN Ograniczyć liczbę ‘iteracji’ realizowanych jednorazowo?
+Next:       }while( x_event = xcb_poll_for_queued_event( display->x_display )); //NDFN Ograniczyć liczbę ‘iteracji’ realizowanych jednorazowo?
+                #ifdef C_pthreads
+            if( E_x_window_D_draw_S_b )
+            {   do
+                {   V0_( sched_yield() );
+                }while( E_x_window_D_draw_S_b );
+                goto Next;
+            }
+                #endif
             // Poniżej jest punkt przełączenia tymczasowego trybu “drag && drag_stop” na “drag_stop”, więc tylko w powyższym “switch” może być ten pierwszy (złożony), ale już nic nie mający aktywować.
             if( U_R( display->mode, drag_stop )
             && U_E( display->mode, drag )
@@ -1263,7 +1271,7 @@ Loop:           free( x_event );
                 U_F( display->req, flush );
             }else if( !U_R( display->mode, drag_stop )) // ‘Drag’ jest wyjątkowym trybem dla interpretacji “pointer_button”, bo ‘grabnięcie’ jest względem okna ‘dnd’— i poniższy blok nie może do czasu ‘odgrabnięcia’ czytać danych z tego okna, ponieważ jest ukryte, zasoby wyrzucone.
             {   if( ~display->select_window
-                && display->pointer_button_S_hover_window_id == display->select_window
+                && display->select_window == display->pointer_button_S_hover_window_id
                 )
                 {   struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->pointer_button_S_hover_window_id );
                         #ifdef C_pthreads
@@ -1817,49 +1825,52 @@ Drag_start_error:                           ;
                     }
                 }else if( ~display->pointer_button_S_hover_window_id )
                 {   struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->pointer_button_S_hover_window_id );
-                        #ifdef C_pthreads
-                    Vr_( pthread_mutex_lock( &E_x_window_D_draw_S_mutex_change_display_window ));
-                        #endif
-                    I pointer_object_id = window->object_mask[ motion_y * window->width + motion_x ];
-                        #ifdef C_pthreads
-                    Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex_change_display_window ));
-                        #endif
-                    if( ~pointer_object_id )
-                    {   struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, pointer_object_id );
-                        if( object->draw == E_gui_xcb_Q_object_Z_font_I_draw )
-                        {   I object_id = E_gui_xcb_Q_object_R_parent( window, pointer_object_id );
-                            if( ~object_id )
-                            {   struct E_gui_xcb_Q_object_Z *object_parent = E_mem_Q_tab_R( window->object, object_id );
-                                if( object_parent->draw == E_gui_xcb_Q_object_Z_button_I_draw )
-                                    pointer_object_id = object_id;
-                            }
-                        }
-                        if( display->pointer_button_S_hover_object_id != pointer_object_id )
-                        {   if( ~display->pointer_button_S_hover_object_id )
-                            {   struct E_gui_xcb_Q_object_Z *object_old = E_mem_Q_tab_R( window->object, display->pointer_button_S_hover_object_id );
-                                struct E_gui_xcb_Q_object_Z *object_new = E_mem_Q_tab_R( window->object, pointer_object_id );
-                                if( object_old->draw == E_gui_xcb_Q_object_Z_button_I_draw
-                                || object_new->draw == E_gui_xcb_Q_object_Z_button_I_draw
-                                )
-                                {   U_F( window->req, draw );
-                                    U_F( display->req, draw );
-                                }
-                            }else
-                            {   struct E_gui_xcb_Q_object_Z *object_new = E_mem_Q_tab_R( window->object, pointer_object_id );
-                                if( object_new->draw == E_gui_xcb_Q_object_Z_button_I_draw )
-                                {   U_F( window->req, draw );
-                                    U_F( display->req, draw );
+                    if( !U_R( window->req, draw ))
+                    {
+                            #ifdef C_pthreads
+                        Vr_( pthread_mutex_lock( &E_x_window_D_draw_S_mutex_change_display_window ));
+                            #endif
+                        I hover_object_id_current = window->object_mask[ motion_y * window->width + motion_x ];
+                            #ifdef C_pthreads
+                        Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex_change_display_window ));
+                            #endif
+                        if( ~hover_object_id_current )
+                        {   struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, hover_object_id_current );
+                            if( object->draw == E_gui_xcb_Q_object_Z_font_I_draw )
+                            {   I object_id = E_gui_xcb_Q_object_R_parent( window, hover_object_id_current );
+                                if( ~object_id )
+                                {   struct E_gui_xcb_Q_object_Z *object_parent = E_mem_Q_tab_R( window->object, object_id );
+                                    if( object_parent->draw == E_gui_xcb_Q_object_Z_button_I_draw )
+                                        hover_object_id_current = object_id;
                                 }
                             }
-                            display->pointer_button_S_hover_object_id = pointer_object_id;
+                            if( display->pointer_button_S_hover_object_id != hover_object_id_current )
+                            {   if( ~display->pointer_button_S_hover_object_id )
+                                {   struct E_gui_xcb_Q_object_Z *object_old = E_mem_Q_tab_R( window->object, display->pointer_button_S_hover_object_id );
+                                    struct E_gui_xcb_Q_object_Z *object_new = E_mem_Q_tab_R( window->object, hover_object_id_current );
+                                    if( object_old->draw == E_gui_xcb_Q_object_Z_button_I_draw
+                                    || object_new->draw == E_gui_xcb_Q_object_Z_button_I_draw
+                                    )
+                                    {   U_F( window->req, draw );
+                                        U_F( display->req, draw );
+                                    }
+                                }else
+                                {   struct E_gui_xcb_Q_object_Z *object_new = E_mem_Q_tab_R( window->object, hover_object_id_current );
+                                    if( object_new->draw == E_gui_xcb_Q_object_Z_button_I_draw )
+                                    {   U_F( window->req, draw );
+                                        U_F( display->req, draw );
+                                    }
+                                }
+                                display->pointer_button_S_hover_object_id = hover_object_id_current;
+                            }
+                        }else if( ~display->pointer_button_S_hover_object_id )
+                        {   struct E_gui_xcb_Q_object_Z *object_old = E_mem_Q_tab_R( window->object, display->pointer_button_S_hover_object_id );
+                            if( object_old->draw == E_gui_xcb_Q_object_Z_button_I_draw )
+                            {   U_F( window->req, draw );
+                                U_F( display->req, draw );
+                            }
+                            display->pointer_button_S_hover_object_id = hover_object_id_current;
                         }
-                    }else if( display->pointer_button_S_hover_object_id != pointer_object_id )
-                    {   struct E_gui_xcb_Q_object_Z *object_old = E_mem_Q_tab_R( window->object, display->pointer_button_S_hover_object_id );
-                        if( object_old->draw == E_gui_xcb_Q_object_Z_button_I_draw )
-                        {   U_F( window->req, draw );
-                            U_F( display->req, draw );
-                        }
-                        display->pointer_button_S_hover_object_id = pointer_object_id;
                     }
                 }
             if( U_R( window, postproc ))
@@ -2004,7 +2015,6 @@ D( x_window, draw )
         if( !E_x_window_D_draw_S_b )
         {   Vr_( pthread_cond_wait( &E_x_window_D_draw_S_cond, &E_x_window_D_draw_S_mutex ));
         }
-        E_x_window_D_draw_S_b = no;
         Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex ));
         Vr_( pthread_mutex_lock( &E_x_window_D_draw_S_mutex_change_display_window ));
             #endif
@@ -2022,7 +2032,7 @@ D( x_window, draw )
                             window->drawable[i] = E_gui_xcb_Q_theme.window_bg;
                         for_n_( i, window->width * window->height )
                             window->object_mask[i] = ~0;
-                        for_each( object_id, window->object, E_mem_Q_tab ) //NDFN Zakładana kolejność od na spodzie do na wierzchu. Nie wiadomo, czy “_q” jest konieczne.
+                        for_each( object_id, window->object, E_mem_Q_tab ) //NDFN Zakładana kolejność od na spodzie do na wierzchu.
                         {   display->current_object = object_id;
                             struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
                             if( !U_R( object->state, drag_src ))
@@ -2100,6 +2110,7 @@ D( x_window, draw )
         }
             #ifdef C_pthreads
         Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex_change_display_window ));
+        E_x_window_D_draw_S_b = no;
         Da_B_()
             #else
         Y_B( timer, 0 )

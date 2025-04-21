@@ -243,7 +243,7 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #ifdef C_line_report
 //TODO W przyszłości zastąpić niegwarantowane wypisywanie synchroniczne na wypisywanie do specjalnego wyjścia danych, zawsze dostępnego, a niekoniecznie o dużej pojemności.
-// ‹Raport linii› nie wymagający integralności programu. w miejscach, gdzie nie można wykonywać funkcji wypisywania integralnej tego programu. ponieważ nie można wywoływać żadnej funkcji obiektowości zarządzanej albo takiej funkcji może użyć funkcja żądania wypisania integralna tego programu.
+// ‹Raport linii› nie wymagający integralności programu. W miejscach, gdzie nie można wykonywać funkcji wypisywania integralnej tego programu. Ponieważ nie można wywoływać żadnej funkcji obiektowości zarządzanej albo takiej funkcji może użyć funkcja żądania wypisania integralna tego programu.
 #define G_()            _unused B _G_var = yes; E_flow_Z_line_report_Z_line_I_sync( &__FILE__[0], __LINE__, 0 )
 // ‹Raport linii›.
 #define G()             _unused B _G_var = no; E_flow_Z_line_report_Z_line_I( &__FILE__[0], __LINE__, 0 )

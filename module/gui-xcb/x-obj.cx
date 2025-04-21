@@ -127,7 +127,14 @@ E_gui_xcb_Q_object_W(
   struct E_gui_xcb_Q_display_Z *display
 , struct E_gui_xcb_Q_window_Z *window
 , I object_id
-){  struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
+){  if( ~display->pointer_button_S_hover_window_id )
+    {   struct E_gui_xcb_Q_window_Z *window_ = E_mem_Q_tab_R( display->window, display->pointer_button_S_hover_window_id );
+        if( window_ == window
+        && display->pointer_button_S_hover_object_id == object_id
+        )
+            display->pointer_button_S_hover_object_id = ~0;
+    }
+    struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
     E_gui_xcb_Q_object_I_set_max_window_dimensions( display, window, object, yes );
     if( object->data )
     {   if( object->clear_data )

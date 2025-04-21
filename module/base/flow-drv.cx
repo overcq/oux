@@ -21,8 +21,8 @@
 // Zasadą jest, że instrukcje oczekiwania na coś przez ‹zadanie› odblokowują je dokładnie po zaistnieniu tego czegoś, bez zależności raportowania zaistnienia czegokolwiek, co ‹zadanie› ma zarejestrowane, ale czeka na to inną instrukcją przełączającą ‹zadanie›. Więc oczekiwanie sekwencyjne na różne rzeczy przez ‹zadanie› jest sytuacją obsługiwaną (tak jak powyżej napisane), aczkolwiek nie polecaną.
 // Właścicielem ‹raportu›/‹impulsatora› jest ‹zadanie›, które na niego czeka (rejestracja oczekiwania– “X_M”/“Yi_M”), i tylko to ‹zadanie› może czekać na ten ‹raport›/‹impulsator› (w dowolnej liczbie miejsc wewnątrz własnej procedury); ale w ‘kompilacji’ ‹modułów› do “bibliotek” ‹zadanie› w ‹module› “main” —czyli w głównym pliku wykonywalnym programu— nie jest generatorem ‘uidu’ ‹raportu›/‹impulsatora›, który emituje któryś ‹moduł› “biblioteczny”. Właścicielem ‚raportów znacznikowych’ —statycznych, nierejestrowanych, pochodzących z “sygnałów” ‘uniksowych’— jest ‹zadanie› “main” (a procedura), ponieważ tylko to ‹zadanie› może obsługiwać stany programu uruchomionego przez nie w składnikach, a niektórych ‚raportów znacznikowych’– ‚scheduler’, ponieważ tylko on może zarządzać systemowym przepływem wykonania i go przełączać.
 //------------------------------------------------------------------------------
-// “process_call”– synchroniczne w przepływie pojedynczego ‹zadania›— funkcje żądane przy użyciu ‘uniksowego’ “sygnału”:
-// Tylko jedno ‹zadanie› w programie (‹sterownik› funkcji programu zewnętrznego) może implementować żądania funkcji konkretnego (jednego) programu ‟oux” uruchomionego w systemie operacyjnym. Obecnie w programie ‟bis” rozróżnianie programów jest realizowane przez rozróżnianie nazw procesów, tzn. nie jest uwzględniony przypadek, gdy program ‟oux” posiada procesy podrzędne. [To zdanie sprawdzić, bo coś już było zrobione.] Ponadto nie zostało (dla optymalizacji) zaimplementowane rozpoznawanie programu typu ‟oux” (uzupełnić o autoryzację potwierdzaną chwilowo?) oraz własnego (wykluczać u źródła), a wykonanie żądania funkcji do takiego programu nie jest dozwolone.
+// “process_call” – synchroniczne w przepływie pojedynczego ‹zadania› — funkcje żądane przy użyciu ‘uniksowego’ “sygnału”:
+// Tylko jedno ‹zadanie› w programie (‹sterownik› funkcji programu zewnętrznego) może implementować żądania funkcji konkretnego (jednego) programu ‟oux” uruchomionego w systemie operacyjnym. Obecnie w programie ‟current-system-integrator” rozróżnianie programów jest realizowane przez rozróżnianie nazw procesów, tzn. nie jest uwzględniony przypadek, gdy program ‟oux” posiada procesy podrzędne. [To zdanie sprawdzić, bo coś już było zrobione.] Ponadto nie zostało (dla optymalizacji) zaimplementowane rozpoznawanie programu typu ‟oux” (uzupełnić o autoryzację potwierdzaną chwilowo?) oraz własnego (wykluczać u źródła), a wykonanie żądania funkcji do takiego programu nie jest dozwolone.
 //TODO Rozwiązać inaczej “subid” ‹zadań› w wątku systemowym?
 _internal
 I _X_var( flow, call_req );
@@ -591,7 +591,7 @@ E_flow_Q_task_M( I *uid
         #endif
     *p = (P)&E_flow_Q_task_I_stop;
     E_flow_Q_task_I_switch( task_id );
-    if( !task->exe_stack ) // W bloku– nowe ‹zadanie›: nic nie zmieniać na stosie należącym do przełączanego.
+    if( !task->exe_stack ) // W bloku – nowe ‹zadanie›: nic nie zmieniać na stosie należącym do przełączanego.
     {   __asm__ volatile (
         #if defined( __i386__ ) || defined( __x86_64__ )
             #if defined( __i386__ )
@@ -1908,7 +1908,7 @@ E_flow_Q_task_I_switch( I task_to_id
     : "=m" ( task_from->exe_stack )
     : "r" ( task_to->exe_stack )
     : "cc", "memory"
-//CONF Jest ‘fpu’?
+//CONF Jest FPU?
     , "st", "st(1)", "st(2)", "st(3)", "st(4)", "st(5)", "st(6)", "st(7)"
         #ifdef __MMX__
     , "mm0", "mm1", "mm2", "mm3", "mm4", "mm5", "mm6", "mm7"
