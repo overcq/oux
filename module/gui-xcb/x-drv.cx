@@ -106,7 +106,7 @@ Po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                 #ifndef E_flow_C_thread_system_unblock_reports
             if( x_event )
                 #endif
-            do
+Loop_0:     do
             {   if( !x_event->response_type )
                 {   xcb_generic_error_t *x_error = (P)x_event;
                     GV_(NA); Gd( x_error->sequence ); Gd( x_error->major_code ); Gd( x_error->minor_code ); Gd( x_error->error_code ); Gd( x_error->resource_id ); V(); //NDFN Nienaprawialny błąd zbiorczy ‟X.org”.
@@ -207,7 +207,7 @@ Po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                             }
                           default:
                             {   GV(NKN); Gd( XCB_EVENT_RESPONSE_TYPE( x_event ));
-                                goto Loop;
+                                goto Loop_1;
                             }
                         }
                         break;
@@ -228,7 +228,7 @@ Po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                     }
                     if( !~window_id )
                     {   GV(NXP); Gd( XCB_EVENT_RESPONSE_TYPE( x_event )); Gd( x_event_window ); // Unknown window.
-                        goto Loop;
+                        goto Loop_1;
                     }
                 }
                 switch( x_event->response_type )
@@ -980,8 +980,8 @@ Po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                         )
                         {   U_F( display->mode, drag_stop );
                             U_L( display->mode_ex, drag_stop_S_cancel );
-                            display->drag_S_stop_root_x = display->pointer_button_S_root_x;
-                            display->drag_S_stop_root_y = display->pointer_button_S_root_y;
+                            display->drag_S_stop_root_x = x_button->root_x;
+                            display->drag_S_stop_root_y = x_button->root_y;
                             break;
                         }
                         if( x_button->time - xbutton_time > display->pointer_button_C_release_timeout
@@ -1209,14 +1209,16 @@ Po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
                       }
                       break;
                 }
-Loop:           free( x_event );
-Next:       }while( x_event = xcb_poll_for_queued_event( display->x_display )); //NDFN Ograniczyć liczbę ‘iteracji’ realizowanych jednorazowo?
+Loop_1:         free( x_event );
+Loop_2:     }while( x_event = xcb_poll_for_queued_event( display->x_display )); //NDFN Ograniczyć liczbę ‘iteracji’ realizowanych jednorazowo?
                 #ifdef C_pthreads
             if( E_x_window_D_draw_S_b )
             {   do
                 {   V0_( sched_yield() );
+                    if( x_event = xcb_poll_for_queued_event( display->x_display ))
+                        goto Loop_0;
                 }while( E_x_window_D_draw_S_b );
-                goto Next;
+                goto Loop_2;
             }
                 #endif
             // Poniżej jest punkt przełączenia tymczasowego trybu “drag && drag_stop” na “drag_stop”, więc tylko w powyższym “switch” może być ten pierwszy (złożony), ale już nic nie mający aktywować.
@@ -1224,33 +1226,84 @@ Next:       }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
             && U_E( display->mode, drag )
             )
             {   U_L( display->mode, drag_stop );
+                struct E_gui_xcb_Q_window_Z *dnd_window = &screen->dnd_window;
+                I window_id = ~0;
                 if( !U_R( display->mode_ex, drag_stop_S_cancel ))
-                {   //TODO Sprawdź miejsce ‘drop’.
-                    if( U_R( display->mode_ex, drag_S_copy ))
+                {   for_each_( window_id, display->window, E_mem_Q_tab )
+                    {   struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
+                        if( U_R( window->state, visible )
+                        && display->drag_S_stop_root_x >= window->x
+                        && display->drag_S_stop_root_x < window->x + window->width
+                        && display->drag_S_stop_root_y >= window->y
+                        && display->drag_S_stop_root_y < window->y + window->height
+                        )
+                            break;
+                    }
+                }
+                if( ~window_id )
+                {   if( U_R( display->mode_ex, drag_S_copy ))
                     {   for_n( i, display->drag_S_object_src_n )
                         {   struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->drag_S_object_src[i].window_id );
                             U_F( window->req, draw );
-                            if( !~E_gui_xcb_Q_object_I_remove_drag_src_descendants( window, display->drag_S_object_src[i].object_id ))
-                                U_F( display->req, restart );
-                            struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->drag_S_object_src[i].object_id );
-                            U_L( object->state, drag_src );
-                            //TODO Join object into destination window.
+                            if( !~E_gui_xcb_Q_object_I_remove_drag_src( window, display->drag_S_object_src[i].object_id ))
+                            {   U_F( display->req, restart );
+                                break;
+                            }
                         }
                     }else
                     {   for_n( i, display->drag_S_object_src_n )
                         {   struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->drag_S_object_src[i].window_id );
                             U_F( window->req, draw );
-                            //TODO join object into destination window.
-                            if( !~E_gui_xcb_Q_object_I_remove_descendants( display, window, display->drag_S_object_src[i].object_id ))
-                                U_F( display->req, restart );
                             if( !~E_gui_xcb_Q_object_I_remove( display, window, display->drag_S_object_src[i].object_id ))
-                                U_F( display->req, restart );
+                            {   U_F( display->req, restart );
+                                break;
+                            }
                             E_gui_xcb_Q_object_I_lay( display, window );
+                        }
+                    }
+                    N ids_n = E_mem_Q_tab_R_n( dnd_window->object );
+                    I *Mt_( ids, ids_n );
+                    if( !ids )
+                        U_F( display->req, restart );
+                    else
+                    {   struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
+                        N ids_i = 0;
+                        for_each( dnd_object_id, dnd_window->object, E_mem_Q_tab )
+                        {   struct E_gui_xcb_Q_object_Z *dnd_object = E_mem_Q_tab_R( dnd_window->object, dnd_object_id );
+                            S16 x = display->drag_S_stop_root_x - window->x - display->drag_S_grab_x;
+                            S16 y = display->drag_S_stop_root_y - window->y - display->drag_S_grab_y;
+                            if( x < 0 )
+                                x = 0;
+                            if( y < 0 )
+                                y = 0;
+                            ids[ ids_i++ ] = E_gui_xcb_Q_object_M( display, window, dnd_object->child_n
+                            , x
+                            , y
+                            , dnd_object->width, dnd_object->height
+                            , dnd_object->clear_data, dnd_object->draw, dnd_object->click
+                            );
+                        }
+                        ids_i = 0;
+                        for_each_( dnd_object_id, dnd_window->object, E_mem_Q_tab )
+                        {   struct E_gui_xcb_Q_object_Z *dnd_object = E_mem_Q_tab_R( dnd_window->object, dnd_object_id );
+                            struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, ids[ ids_i++ ] );
+                            U_R( object->mode, draggable ) = U_R( dnd_object->mode, draggable );
+                            for_n( i, object->child_n )
+                                object->child[i] = ids[ dnd_object->child[i] ];
+                        }
+                        W(ids);
+                    }
+                }else
+                {   for_n( i, display->drag_S_object_src_n )
+                    {   struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->drag_S_object_src[i].window_id );
+                        U_F( window->req, draw );
+                        if( !~E_gui_xcb_Q_object_I_remove_drag_src( window, display->drag_S_object_src[i].object_id ))
+                        {   U_F( display->req, restart );
+                            break;
                         }
                     }
                 }
                 W( display->drag_S_object_src );
-                struct E_gui_xcb_Q_window_Z *dnd_window = &screen->dnd_window;
                 E_mem_Q_tab_W( dnd_window->object );
                     #ifdef C_xcb_shape
                 xcb_free_pixmap( display->x_display, screen->dnd_window_shape_pixmap );
@@ -1391,6 +1444,7 @@ Next:       }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                                             U_F( display->req, draw );
                                         }
                                         struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, display->pointer_button_S_click_object_id );
+                                        //TODO Szukać rodzica reprezentującego całościowy obiekt.
                                         if( U_R( object->mode, draggable )
                                         && display->pointer_button == 1
                                         && display->pointer_button_S_seq_i == 1
@@ -1411,9 +1465,10 @@ Next:       }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                                                 dnd_window->object = E_mem_Q_tab_M( sizeof( struct E_gui_xcb_Q_object_Z ), 0 );
                                                 if( !dnd_window->object )
                                                     goto Drag_start_error;
-                                                I dnd_window_object_id = E_gui_xcb_Q_object_M( display, dnd_window, 0, 0, 0, object->width, object->height, 0, object->draw, 0 );
-                                                struct E_gui_xcb_Q_object_Z *dnd_window_object = E_mem_Q_tab_R( dnd_window->object, dnd_window_object_id );
-                                                dnd_window_object->data = object->data;
+                                                I dnd_object_id = E_gui_xcb_Q_object_M( display, dnd_window, 0, 0, 0, object->width, object->height, 0, object->draw, 0 );
+                                                struct E_gui_xcb_Q_object_Z *dnd_object = E_mem_Q_tab_R( dnd_window->object, dnd_object_id );
+                                                dnd_object->data = object->data;
+                                                U_R( dnd_object->mode, draggable ) = U_R( object->mode, draggable );
                                                 U_F( object->state, drag_src );
                                                 display->drag_S_object_src[0].window_id = display->pointer_button_S_hover_window_id;
                                                 display->drag_S_object_src[0].object_id = display->pointer_button_S_click_object_id;
@@ -1447,16 +1502,16 @@ Next:       }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                                                     {   ids[ ids_n + i ] = object->child[i];
                                                         struct E_gui_xcb_Q_object_Z *object_src = E_mem_Q_tab_R( window->object, object->child[i] );
                                                         U_F( object_src->state, drag_src );
-                                                        I dnd_window_object_id = E_gui_xcb_Q_object_M( display, dnd_window, 0, object_src->x - object->x, object_src->y - object->y, object_src->width, object_src->height, 0, object_src->draw, 0 );
-                                                        if( !~dnd_window_object_id )
+                                                        I dnd_object_id = E_gui_xcb_Q_object_M( display, dnd_window, 0, object_src->x - object->x, object_src->y - object->y, object_src->width, object_src->height, object_src->clear_data, object_src->draw, object_src->click );
+                                                        if( !~dnd_object_id )
                                                         {   W( display->drag_S_object_src );
                                                             for_each( object_id, dnd_window->object, E_mem_Q_tab )
                                                                 E_gui_xcb_Q_object_W( display, dnd_window, object_id );
                                                             goto Drag_start_error;
                                                         }
-                                                        struct E_gui_xcb_Q_object_Z *dnd_window_object = E_mem_Q_tab_R( dnd_window->object, dnd_window_object_id );
-                                                        dnd_window_object->data = object_src->data;
-                                                        E_gui_xcb_Q_object_I_add( display, dnd_window, parent_id, dnd_window_object_id );
+                                                        struct E_gui_xcb_Q_object_Z *dnd_object = E_mem_Q_tab_R( dnd_window->object, dnd_object_id );
+                                                        dnd_object->data = object_src->data;
+                                                        E_gui_xcb_Q_object_I_add( display, dnd_window, parent_id, dnd_object_id );
                                                     }
                                                     ids_n += object->child_n;
                                                 }
@@ -1503,7 +1558,6 @@ Next:       }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                                                 , dnd_window->width, dnd_window->height
                                                 );
                                                     #endif
-                                                display->pointer_button_S_hover_window_id = ~0;
                                                 U_L( dnd_window->mode, resize );
                                                 U_L( dnd_window->req, resize );
                                                 U_F( dnd_window->req, draw );
@@ -1823,7 +1877,7 @@ Drag_start_error:                           ;
                         U_F( display->req, draw );
                         U_F( display->req, flush );
                     }
-                }else if( ~display->pointer_button_S_hover_window_id )
+                }else if( U_R( display->state, pointer_S_in_window ))
                 {   struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->pointer_button_S_hover_window_id );
                     if( !U_R( window->req, draw ))
                     {

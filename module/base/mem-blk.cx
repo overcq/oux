@@ -972,6 +972,20 @@ E_mem_Q_blk_Q_table_I_put_end( void
 ){  J_assert( E_base_S->E_mem_Q_blk_Q_table_M_from_free_or_map_S_allocated_id_n );
     E_base_S->E_mem_Q_blk_Q_table_M_from_free_or_map_S_allocated_id_n--;
 }
+_internal
+N
+E_mem_Q_blk_I_default_align( N u
+){  N align;
+    if( u > sizeof(N) && u % sizeof(N) == 0 )
+        align = sizeof(N);
+    else if( u == sizeof(N) )
+        align = u;
+    else if( u < sizeof(N) && E_simple_Z_n_T_power_2(u) )
+        align = u;
+    else
+        align = 1;
+    return align;
+}
 // Dla tablic systemowych “mapped” i “free” ‘alokuje’ tyle “n”, ile żądane, lub więcej.
 _internal
 P
@@ -1002,14 +1016,8 @@ E_mem_Q_blk_Q_table_M_from_free_or_map( N *allocated_or_table_i
             l_align = sizeof(N);
         else if( ~align )
             l_align = align;
-        else if( u > sizeof(N) && u % sizeof(N) == 0 )
-            l_align = sizeof(N);
-        else if( u == sizeof(N) )
-            l_align = u;
-        else if( u < sizeof(N) && E_simple_Z_n_T_power_2(u) )
-            l_align = u;
         else
-            l_align = 1;
+            l_align = E_mem_Q_blk_I_default_align(u);
         if( *allocated_or_table_i == E_base_S->E_mem_Q_blk_S_mapped_id ) // Dla ewentualnego ‘mapowania’ tablicy wolnych bloków.
         {   n += 2;
             l_1 += 2 * u;
@@ -1629,7 +1637,14 @@ E_mem_Q_blk_M_replace_tab( P p
     N max = E_mem_Q_blk_Q_sys_table_R_last( E_base_S->E_mem_Q_blk_S_allocated_id, (Pc)&allocated_p.p - (Pc)&allocated_p );
     N allocated_i = max / 2;
     O{  if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p == *( P * )p )
-        {   J_assert( u * n != E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u );
+        {   if( u * n == E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
+            && ( !n
+              || E_mem_Q_blk_I_default_align(u) == E_mem_Q_blk_I_default_align( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u )
+            ))
+            {   P p_ = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p;
+                _single_thread_end;
+                return p_;
+            }
             if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n )
             {   E_mem_Q_blk_Q_table_I_put_begin( &allocated_i );
                 E_mem_Q_blk_Q_table_I_put_before( E_base_S->E_mem_Q_blk_S_free_id );

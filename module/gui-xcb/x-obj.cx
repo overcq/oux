@@ -50,7 +50,7 @@ struct E_gui_xcb_Q_object_Z
   N16 width, height; // Prostokąt oczekiwanej widoczności obiektu.
   unsigned U_R( mode, lay_height )      :1;
   unsigned U_R( mode, draggable )       :1;
-  unsigned U_R( state, drag_src )        :1;
+  unsigned U_R( state, drag_src )       :1;
 };
 struct E_gui_xcb_Q_object_Z_data_Z_entry
 { I font;
@@ -95,7 +95,8 @@ E_gui_xcb_Q_object_M(
   , N8
   , N8
   )
-){  I object_id = E_mem_Q_tab_I_add( window->object );
+){  J_assert( x >= 0 && y >= 0 );
+    I object_id = E_mem_Q_tab_I_add( window->object );
     if( !~object_id )
         return ~0;
     struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
@@ -126,15 +127,15 @@ void
 E_gui_xcb_Q_object_W(
   struct E_gui_xcb_Q_display_Z *display
 , struct E_gui_xcb_Q_window_Z *window
-, I object_id
+, I id
 ){  if( ~display->pointer_button_S_hover_window_id )
     {   struct E_gui_xcb_Q_window_Z *window_ = E_mem_Q_tab_R( display->window, display->pointer_button_S_hover_window_id );
         if( window_ == window
-        && display->pointer_button_S_hover_object_id == object_id
+        && display->pointer_button_S_hover_object_id == id
         )
             display->pointer_button_S_hover_object_id = ~0;
     }
-    struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
+    struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, id );
     E_gui_xcb_Q_object_I_set_max_window_dimensions( display, window, object, yes );
     if( object->data )
     {   if( object->clear_data )
@@ -142,7 +143,7 @@ E_gui_xcb_Q_object_W(
         W( object->data );
     }
     W( object->child );
-    E_mem_Q_tab_I_remove( window->object, object_id );
+    E_mem_Q_tab_I_remove( window->object, id );
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 I
@@ -227,33 +228,6 @@ E_gui_xcb_Q_object_I_add(
 }
 //------------------------------------------------------------------------------
 N
-E_gui_xcb_Q_object_I_remove(
-  struct E_gui_xcb_Q_display_Z *display
-, struct E_gui_xcb_Q_window_Z *window
-, I id
-){  for_each( object_id, window->object, E_mem_Q_tab )
-    {   struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
-        for_n( child_i, object->child_n )
-        {   if( object->child[ child_i ] == id )
-            {   E_mem_Q_blk_I_remove( &object->child, child_i, 1 );
-                object->child_n--;
-                struct E_gui_xcb_Q_object_Z *object_rem = E_mem_Q_tab_R( window->object, id );
-                if( object_rem->child_n )
-                {   if( !E_mem_Q_blk_I_append( &object->child, object_rem->child_n ))
-                        return ~0;
-                    E_mem_Q_blk_I_copy( &object->child[ child_i ] + object_rem->child_n, &object->child[ child_i ], ( object->child_n - child_i ) * sizeof( object->child[0] ));
-                    for_n( i, object_rem->child_n )
-                        object->child[ child_i + i ] = object_rem->child[i];
-                    object->child_n += object_rem->child_n;
-                }
-                goto End;
-            }
-        }
-    }
-End:E_gui_xcb_Q_object_W( display, window, id );
-    return 0;
-}
-N
 E_gui_xcb_Q_object_I_remove_descendants(
   struct E_gui_xcb_Q_display_Z *display
 , struct E_gui_xcb_Q_window_Z *window
@@ -263,19 +237,22 @@ E_gui_xcb_Q_object_I_remove_descendants(
     I *Mt_( ids, ids_n );
     if( !ids )
         return ~0;
-    for_n( child_i, object->child_n )
-        ids[ child_i ] = object->child[ child_i ];
+    E_mem_Q_blk_I_copy( &ids[0], &object->child[0], object->child_n * sizeof( *object->child ));
     object->child_n = 0;
+    if( !E_mem_Q_blk_M_replace_tab( &object->child, sizeof( *object->child ), object->child_n ))
+    {   W(ids);
+        return ~0;
+    }
     for_n( ids_i, ids_n )
     {   object = E_mem_Q_tab_R( window->object, ids[ ids_i ] );
         if( object->child_n )
-            if( !E_mem_Q_blk_I_append( &ids, object->child_n ))
+        {   if( !E_mem_Q_blk_I_append( &ids, object->child_n ))
             {   W(ids);
                 return ~0;
             }
-        for_n( child_i, object->child_n )
-            ids[ ids_n + child_i ] = object->child[ child_i ];
-        ids_n += object->child_n;
+            E_mem_Q_blk_I_copy( &ids[ ids_n ], &object->child[0], object->child_n * sizeof( *object->child ));
+            ids_n += object->child_n;
+        }
     }
     for_n_( ids_i, ids_n )
          E_gui_xcb_Q_object_W( display, window, ids[ ids_i ] );
@@ -283,26 +260,50 @@ E_gui_xcb_Q_object_I_remove_descendants(
     return 0;
 }
 N
-E_gui_xcb_Q_object_I_remove_drag_src_descendants( struct E_gui_xcb_Q_window_Z *window
+E_gui_xcb_Q_object_I_remove(
+  struct E_gui_xcb_Q_display_Z *display
+, struct E_gui_xcb_Q_window_Z *window
+, I id
+){  E_gui_xcb_Q_object_I_remove_descendants( display, window, id );
+    for_each( object_id, window->object, E_mem_Q_tab )
+    {   struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
+        for_n( child_i, object->child_n )
+        {   if( object->child[ child_i ] == id )
+            {   E_mem_Q_blk_I_remove( &object->child, child_i, 1 );
+                object->child_n--;
+                goto End;
+            }
+        }
+    }
+End:E_gui_xcb_Q_object_W( display, window, id );
+    return 0;
+}
+//------------------------------------------------------------------------------
+N
+E_gui_xcb_Q_object_I_remove_drag_src( struct E_gui_xcb_Q_window_Z *window
 , I id
 ){  struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, id );
+    U_L( object->state, drag_src );
     N ids_n = object->child_n;
     I *Mt_( ids, ids_n );
     if( !ids )
         return ~0;
-    for_n( child_i, object->child_n )
-        ids[ child_i ] = object->child[ child_i ];
+    E_mem_Q_blk_I_copy( &ids[0], &object->child[0], object->child_n * sizeof( *object->child ));
     object->child_n = 0;
+    if( !E_mem_Q_blk_M_replace_tab( &object->child, sizeof( *object->child ), object->child_n ))
+    {   W(ids);
+        return ~0;
+    }
     for_n( ids_i, ids_n )
     {   object = E_mem_Q_tab_R( window->object, ids[ ids_i ] );
         if( object->child_n )
-            if( !E_mem_Q_blk_I_append( &ids, object->child_n ))
+        {   if( !E_mem_Q_blk_I_append( &ids, object->child_n ))
             {   W(ids);
                 return ~0;
             }
-        for_n( child_i, object->child_n )
-            ids[ ids_n + child_i ] = object->child[ child_i ];
-        ids_n += object->child_n;
+            E_mem_Q_blk_I_copy( &ids[ ids_n ], &object->child[0], object->child_n * sizeof( *object->child ));
+            ids_n += object->child_n;
+        }
     }
     for_n_( ids_i, ids_n )
     {   object = E_mem_Q_tab_R( window->object, ids[ ids_i ] );
