@@ -139,6 +139,9 @@ struct E_gui_xcb_Q_display_Z
   //unsigned U_R( req, draw_click )                   :1;
   unsigned U_R( req, flush )                        :1;
   unsigned U_R( req, restart )                      :1; //TODO wymagana obsługa.
+    #ifdef C_pthreads
+  unsigned U_R( state, allow_draw )                 :1;
+    #endif
 };
 struct E_mem_Q_tab_Z *E_gui_xcb_Q_display_S;
 //==============================================================================
@@ -383,6 +386,9 @@ E_gui_xcb_Q_display_M( void
     U_F( display->req, flush );
     U_L( display->req, pointer_S_ungrab );
     U_L( display->req, restart );
+        #ifdef C_pthreads
+    U_L( display->state, allow_draw );
+        #endif
     if( E_mem_Q_tab_R_n( E_gui_xcb_Q_display_S ) == 1 )
     {   D_M( x_window, flush )
         {   E_mem_Q_tab_W( display->window );

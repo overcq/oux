@@ -166,6 +166,26 @@ E_gui_xcb_Q_object_R_top( struct E_gui_xcb_Q_window_Z *window
 , I id
 ){  return !~E_gui_xcb_Q_object_R_parent( window, id );
 }
+I
+E_gui_xcb_Q_object_R_top_ancestor( struct E_gui_xcb_Q_window_Z *window
+, I id
+){  J_assert( E_mem_Q_tab_T( window->object, id ));
+    I parent_id;
+    do
+    {   for_each_out_( id, parent_id, window->object, E_mem_Q_tab )
+        {   struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, parent_id );
+            for_n( child_i, object->child_n )
+            {   if( object->child[ child_i ] == id )
+                {   id = parent_id;
+                    break;
+                }
+            }
+            if( id == parent_id )
+                break;
+        }
+    }while( ~parent_id );
+    return id;
+}
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 _internal
 void

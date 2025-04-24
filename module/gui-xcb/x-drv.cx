@@ -47,6 +47,7 @@ D( x_window, events_pointer_button_check )
     Yi_W( x_window, events_pointer_button_check );
 }
     #endif
+pthread_mutex_t E_x_window_D_events_S_mutex;
 D( x_window, events )
 {
         #ifdef E_flow_C_thread_system_unblock_reports
@@ -72,11 +73,11 @@ Po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
         #else
     Yi_A( x_window, events_pointer_button_check );
         #endif
-    O{
+    O{  struct E_gui_xcb_Q_display_Z *display;
             #ifndef E_flow_C_thread_system_unblock_reports
         for_each( display_id, E_gui_xcb_Q_display_S, E_mem_Q_tab )
             #endif
-        {   struct E_gui_xcb_Q_display_Z *display = E_mem_Q_tab_R( E_gui_xcb_Q_display_S, display_id );
+        {   display = E_mem_Q_tab_R( E_gui_xcb_Q_display_S, display_id );
                 #ifndef E_flow_C_thread_system_unblock_reports
             xcb_generic_event_t *x_event = xcb_poll_for_event( display->x_display );
             int e;
@@ -1254,11 +1255,13 @@ Loop_2:     }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                     {   for_n( i, display->drag_S_object_src_n )
                         {   struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->drag_S_object_src[i].window_id );
                             U_F( window->req, draw );
+                            I top_id = E_gui_xcb_Q_object_R_top_ancestor( window, display->drag_S_object_src[i].object_id );
                             if( !~E_gui_xcb_Q_object_I_remove( display, window, display->drag_S_object_src[i].object_id ))
                             {   U_F( display->req, restart );
                                 break;
                             }
-                            E_gui_xcb_Q_object_I_lay( display, window );
+                            if( !top_id )
+                                E_gui_xcb_Q_object_I_lay( display, window );
                         }
                     }
                     N ids_n = E_mem_Q_tab_R_n( dnd_window->object );
@@ -1983,13 +1986,27 @@ Drag_start_error:                           ;
                 U_F( x_window, flush );
         }
             #ifdef C_pthreads
-        if( !U_R( x_window, close_window )
-        && U_E( x_window, draw )
-        )
-        {   Vr_( pthread_mutex_lock( &E_x_window_D_draw_S_mutex ));
-            E_x_window_D_draw_S_b = yes;
-            Vr_( pthread_cond_signal( &E_x_window_D_draw_S_cond ));
-            Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex ));
+        if( !U_R( x_window, close_window ))
+        {   U_F( display->state, allow_draw );
+            Vr_( pthread_mutex_lock( &E_x_window_D_events_S_mutex ));
+            for_each_out( display_id, display_id_, E_gui_xcb_Q_display_S, E_mem_Q_tab )
+            {   struct E_gui_xcb_Q_display_Z *display = E_mem_Q_tab_R( E_gui_xcb_Q_display_S, display_id_ );
+                if( !U_R( display->state, allow_draw ))
+                {   U_L( x_window, draw );
+                    break;
+                }
+            }
+            if( U_E( x_window, draw ))
+            {   Vr_( pthread_mutex_lock( &E_x_window_D_draw_S_mutex ));
+                E_x_window_D_draw_S_b = yes;
+                Vr_( pthread_cond_signal( &E_x_window_D_draw_S_cond ));
+                Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex ));
+                for_each( display_id_, E_gui_xcb_Q_display_S, E_mem_Q_tab )
+                {   struct E_gui_xcb_Q_display_Z *display = E_mem_Q_tab_R( E_gui_xcb_Q_display_S, display_id_ );
+                    U_L( display->state, allow_draw );
+                }
+            }
+            Vr_( pthread_mutex_unlock( &E_x_window_D_events_S_mutex ));
         }
             #endif
         X_U( x_window, close_window );
