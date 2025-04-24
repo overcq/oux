@@ -1281,6 +1281,7 @@ Loop_2:     }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                             , y
                             , dnd_object->width, dnd_object->height
                             , dnd_object->clear_data, dnd_object->draw, dnd_object->click
+                            , yes
                             );
                         }
                         ids_i = 0;
@@ -1465,7 +1466,7 @@ Loop_2:     }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                                                 dnd_window->object = E_mem_Q_tab_M( sizeof( struct E_gui_xcb_Q_object_Z ), 0 );
                                                 if( !dnd_window->object )
                                                     goto Drag_start_error;
-                                                I dnd_object_id = E_gui_xcb_Q_object_M( display, dnd_window, 0, 0, 0, object->width, object->height, 0, object->draw, 0 );
+                                                I dnd_object_id = E_gui_xcb_Q_object_M( display, dnd_window, 0, 0, 0, object->width, object->height, object->clear_data, object->draw, object->click, no );
                                                 struct E_gui_xcb_Q_object_Z *dnd_object = E_mem_Q_tab_R( dnd_window->object, dnd_object_id );
                                                 dnd_object->data = object->data;
                                                 U_R( dnd_object->mode, draggable ) = U_R( object->mode, draggable );
@@ -1502,7 +1503,7 @@ Loop_2:     }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                                                     {   ids[ ids_n + i ] = object->child[i];
                                                         struct E_gui_xcb_Q_object_Z *object_src = E_mem_Q_tab_R( window->object, object->child[i] );
                                                         U_F( object_src->state, drag_src );
-                                                        I dnd_object_id = E_gui_xcb_Q_object_M( display, dnd_window, 0, object_src->x - object->x, object_src->y - object->y, object_src->width, object_src->height, object_src->clear_data, object_src->draw, object_src->click );
+                                                        I dnd_object_id = E_gui_xcb_Q_object_M( display, dnd_window, 0, object_src->x - object->x, object_src->y - object->y, object_src->width, object_src->height, object_src->clear_data, object_src->draw, object_src->click, no );
                                                         if( !~dnd_object_id )
                                                         {   W( display->drag_S_object_src );
                                                             for_each( object_id, dnd_window->object, E_mem_Q_tab )

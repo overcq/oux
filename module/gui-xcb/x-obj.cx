@@ -95,6 +95,7 @@ E_gui_xcb_Q_object_M(
   , N8
   , N8
   )
+, S8 set_window_dimensions
 ){  J_assert( x >= 0 && y >= 0 );
     I object_id = E_mem_Q_tab_I_add( window->object );
     if( !~object_id )
@@ -117,9 +118,11 @@ E_gui_xcb_Q_object_M(
     U_L( object->mode, lay_height );
     U_L( object->mode, draggable );
     U_L( object->state, drag_src );
-    if( object_id
-    && !object->child_n
-    )
+    if( set_window_dimensions
+    || ( !~set_window_dimensions
+      && object_id
+      && E_gui_xcb_Q_object_R_top( window, object_id )
+    ))
         E_gui_xcb_Q_object_I_set_max_window_dimensions( display, window, object, no );
     return object_id;
 }
@@ -128,13 +131,11 @@ E_gui_xcb_Q_object_W(
   struct E_gui_xcb_Q_display_Z *display
 , struct E_gui_xcb_Q_window_Z *window
 , I id
-){  if( ~display->pointer_button_S_hover_window_id )
-    {   struct E_gui_xcb_Q_window_Z *window_ = E_mem_Q_tab_R( display->window, display->pointer_button_S_hover_window_id );
-        if( window_ == window
-        && display->pointer_button_S_hover_object_id == id
-        )
-            display->pointer_button_S_hover_object_id = ~0;
-    }
+){  struct E_gui_xcb_Q_window_Z *window_ = E_mem_Q_tab_R( display->window, display->pointer_button_S_hover_window_id );
+    if( window_ == window
+    && display->pointer_button_S_hover_object_id == id
+    )
+        display->pointer_button_S_hover_object_id = ~0;
     struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, id );
     E_gui_xcb_Q_object_I_set_max_window_dimensions( display, window, object, yes );
     if( object->data )
@@ -181,13 +182,11 @@ E_gui_xcb_Q_object_I_set_max_window_dimensions(
                 return;
         }
     }
-    S16 x_min = 0, y_min = 0;
-    for_each( object_id, window->object, E_mem_Q_tab )
-    {   if( !object_id )
-            continue;
-        struct E_gui_xcb_Q_object_Z *object_ = E_mem_Q_tab_R( window->object, object_id );
+    S16 x_min = 100, y_min = 50; //CONF
+    for_each_out( 0, object_id, window->object, E_mem_Q_tab )
+    {   struct E_gui_xcb_Q_object_Z *object_ = E_mem_Q_tab_R( window->object, object_id );
         if( object_ == object
-        || ~E_gui_xcb_Q_object_R_parent( window, object_id )
+        || !E_gui_xcb_Q_object_R_top( window, object_id )
         )
             continue;
         S16 object_x_max = object_->x + object_->width, object_y_max = object_->y + object_->height;
@@ -220,10 +219,7 @@ E_gui_xcb_Q_object_I_add(
     struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, id );
     if( !E_mem_Q_blk_I_append( &object->child, 1 ))
         return ~0;
-    object->child[ object->child_n ] = child_id;
-    if( !object->child )
-        E_gui_xcb_Q_object_I_set_max_window_dimensions( display, window, object, yes );
-    object->child_n++;
+    object->child[ object->child_n++ ] = child_id;
     return 0;
 }
 //------------------------------------------------------------------------------
@@ -326,6 +322,7 @@ E_gui_xcb_Q_object_Z_button_M(
     , 0
     , E_gui_xcb_Q_object_Z_button_I_draw
     , E_gui_xcb_Q_object_Z_button_I_click
+    , ~0
     );
 }
 _internal
@@ -407,6 +404,7 @@ E_gui_xcb_Q_object_Z_entry_M(
     , E_gui_xcb_Q_object_Z_font_I_clear_data
     , E_gui_xcb_Q_object_Z_entry_I_draw
     , 0
+    , ~0
     );
     struct E_gui_xcb_Q_object_Z_data_Z_entry *M_( object_data );
     if( !object_data )
@@ -596,6 +594,7 @@ E_gui_xcb_Q_object_Z_font_M(
     , E_gui_xcb_Q_object_Z_font_I_clear_data
     , E_gui_xcb_Q_object_Z_font_I_draw
     , 0
+    , ~0
     );
     struct E_gui_xcb_Q_object_Z_data_Z_font *M_( object_data );
     if( !object_data )
@@ -637,6 +636,7 @@ E_gui_xcb_Q_object_Z_frame_M(
     , 0
     , E_gui_xcb_Q_object_Z_frame_I_draw
     , 0
+    , ~0
     );
 }
 _internal
@@ -691,6 +691,7 @@ E_gui_xcb_Q_object_Z_select_M(
     , E_gui_xcb_Q_object_Z_select_I_clear_data
     , E_gui_xcb_Q_object_Z_select_I_draw
     , 0
+    , ~0
     );
     if( !~object_id )
         return ~0;
@@ -772,6 +773,7 @@ E_gui_xcb_Q_object_Z_select_list_M(
     , 0
     , E_gui_xcb_Q_object_Z_select_list_I_draw
     , 0
+    , no
     );
     if( !~object_id )
         return ~0;
