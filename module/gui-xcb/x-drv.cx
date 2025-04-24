@@ -8,13 +8,13 @@
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2015‒4‒28 *
 *******************************************************************************/
 // Zewnętrzne trwałe “XGrabServer” blokuje system; na przykład używane przez różnych “menedżerów okien” ‟X” podczas przeciągania okna.
-// W przyszłości, gdy jakiekolwiek pozostałe “NDFN” zostaną zrobione, to w celu sprawdzenia poprawności działania tego sterownika nie wystarczy jego użytkowanie w różnych warunkach, lecz będzie konieczne celowe przetestowanie przez podawanie wszystkich możliwych sekwencji “zdarzeń” odsuniętych o losowe minimalne odległości czasowe i punktowe: ⁃ w forsowaniu użytkowania, ⁃ na wewnętrznie obciążonym podsystemie ‟X”. By wyszukiwać błędne przełączenie przy którymś ekstremum integralności i wtedy dezintegrację sterownika rozpoznawaną po błędnym pojedynczym stanie, podczas gdy nienadążanie nie jest błędem.
+// W przyszłości, gdy jakiekolwiek pozostałe “NDFN” zostaną zrobione, to w celu sprawdzenia poprawności działania tego sterownika nie wystarczy jego użytkowanie w różnych warunkach, lecz będzie konieczne celowe przetestowanie przez podawanie wszystkich możliwych sekwencji “zdarzeń” odsuniętych o losowe minimalne odległości czasowe i punktowe: ⁃ w forsowaniu użytkowania, ⁃ na wewnętrznie obciążonym podsystemie ‟X”. By wyszukiwać błędne przełączenie przy którymś ekstremum integralności i wtedy dezintegrację sterownika rozpoznawaną po błędnym pojedynczym stanie, podczas gdy nienadążanie nie jest błędem.
 //------------------------------------------------------------------------------
 // Okno ‘dnd’ potrzebuje być utrzymywane w “menedżerze okien” na wierzchu wszystkich możliwych. typ okna “_NET_WM_WINDOW_TYPE_DND”, jeśli “menedżer okien” go obsługuje: czy ma być łącznie z “OVERRIDE_REDIRECT”, tak jak musi być dla zwykłych “menedżerów okien”?
 //TODO Uzupełnić o deterministyczny czas opóźnienia przerysowania po ponownym pokazaniu się okna ‹operatorowi›.
 // Czy działa przeciąganie pomiędzy przyległymi wyświetlaczami bez “Xinerama”.
-//⁃ uzupełnić o upuszczanie obiektu. podczas “drag” (‘grabnięcia’) “configure_notify” raportuje pozycję względem okna “root” z błędnym, pozostawionym z ostatnich operacji— “above_sibling”, ale i tak jest bezużyteczne dla ‘drop’, a tylko służy do przyszłej zmiany rozmiaru okna ‘dnd’ (np. przez dodawanie obiektów).
-//⁃ zuniwersalizować synchronizację do zwizualizowania kliknięcia ( “U_X( display->req, draw_click )” ).
+//⁃ Podczas “drag” (‘grabnięcia’) “configure_notify” raportuje pozycję względem okna “root” z błędnym, pozostawionym z ostatnich operacji — “above_sibling”, ale i tak jest bezużyteczne dla ‘drop’, a tylko służy do przyszłej zmiany rozmiaru okna ‘dnd’ (np. przez dodawanie obiektów).
+//⁃ Zuniwersalizować synchronizację do zwizualizowania kliknięcia ( “U_X( display->req, draw_click )” ).
 //TODO Kiedyś można zrobić tak, by uchwycenie animowanego elementu obiektu utrzymywało okno ‘dnd’ względem bieżącego położenia tego punktu elementu w obiekcie.
 //==============================================================================
     #ifdef E_flow_C_thread_system_unblock_reports
@@ -1328,13 +1328,7 @@ Loop_2:     }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                 && display->select_window == display->pointer_button_S_hover_window_id
                 )
                 {   struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->pointer_button_S_hover_window_id );
-                        #ifdef C_pthreads
-                    Vr_( pthread_mutex_lock( &E_x_window_D_draw_S_mutex_change_display_window ));
-                        #endif
                     I object_id = window->object_mask[ motion_y * window->width + motion_x ];
-                        #ifdef C_pthreads
-                    Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex_change_display_window ));
-                        #endif
                     if( ~object_id )
                     {   struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
                         if( object->draw == E_gui_xcb_Q_object_Z_select_list_I_draw )
@@ -1383,14 +1377,7 @@ Loop_2:     }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                             && display->pointer_button_S_y >= 0
                             && display->pointer_button_S_y < window->height
                             )
-                            {
-                                    #ifdef C_pthreads
-                                Vr_( pthread_mutex_lock( &E_x_window_D_draw_S_mutex_change_display_window ));
-                                    #endif
-                                pointer_object_id = window->object_mask[ display->pointer_button_S_y * window->width + display->pointer_button_S_x ];
-                                    #ifdef C_pthreads
-                                Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex_change_display_window ));
-                                    #endif
+                            {   pointer_object_id = window->object_mask[ display->pointer_button_S_y * window->width + display->pointer_button_S_x ];
                                 if( ~pointer_object_id )
                                 {   struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, pointer_object_id );
                                     if( object->draw == E_gui_xcb_Q_object_Z_font_I_draw )
@@ -1881,14 +1868,7 @@ Drag_start_error:                           ;
                 }else if( U_R( display->state, pointer_S_in_window ))
                 {   struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->pointer_button_S_hover_window_id );
                     if( !U_R( window->req, draw ))
-                    {
-                            #ifdef C_pthreads
-                        Vr_( pthread_mutex_lock( &E_x_window_D_draw_S_mutex_change_display_window ));
-                            #endif
-                        I hover_object_id_current = window->object_mask[ motion_y * window->width + motion_x ];
-                            #ifdef C_pthreads
-                        Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex_change_display_window ));
-                            #endif
+                    {   I hover_object_id_current = window->object_mask[ motion_y * window->width + motion_x ];
                         if( ~hover_object_id_current )
                         {   struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, hover_object_id_current );
                             if( object->draw == E_gui_xcb_Q_object_Z_font_I_draw )
@@ -1935,20 +1915,13 @@ Drag_start_error:                           ;
                     && ( window->width != window->width_new
                       || window->height != window->height_new
                     ))
-                    {
-                            #ifdef C_pthreads
-                        Vr_( pthread_mutex_lock( &E_x_window_D_draw_S_mutex_change_display_window ));
-                            #endif
-                        window->width = window->width_new;
+                    {   window->width = window->width_new;
                         window->height = window->height_new;
                         if( !E_mem_Q_blk_M_replace( &window->drawable, window->width * window->height * sizeof( *window->drawable )))
                         {   GV_(NA); V();
                         }
                         U_F( window->req, draw );
                         U_F( display->req, draw );
-                            #ifdef C_pthreads
-                        Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex_change_display_window ));
-                            #endif
                     }
                     if( window->user_activity_time > window->last_user_activity_time )
                     {   E_x_Z_property_P_v( display, window, _NET_WM_USER_TIME
@@ -1967,11 +1940,7 @@ Drag_start_error:                           ;
                         if( window->width != window->width_new
                         || window->height != window->height_new
                         )
-                        {
-                                #ifdef C_pthreads
-                            Vr_( pthread_mutex_lock( &E_x_window_D_draw_S_mutex_change_display_window ));
-                                #endif
-                            window->width = window->width_new;
+                        {   window->width = window->width_new;
                             window->height = window->height_new;
                             if( !E_mem_Q_blk_M_replace( &window->drawable, window->width * window->height * sizeof( *window->drawable )))
                             {   GV_(NA); V();
@@ -1984,9 +1953,6 @@ Drag_start_error:                           ;
                             E_gui_xcb_Q_object_I_lay( display, window );
                             U_F( window->req, draw );
                             U_F( display->req, draw );
-                                #ifdef C_pthreads
-                            Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex_change_display_window ));
-                                #endif
                         }else if( U_R( window->req, draw ))
                             U_F( display->req, draw );
                     if( window->user_activity_time > window->last_user_activity_time )
@@ -2046,7 +2012,6 @@ E_x_window_D_draw_I_unblock( P arg
     Vr_( pthread_cond_signal( &E_x_window_D_draw_S_cond ));
     Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex ));
 }
-pthread_mutex_t E_x_window_D_draw_S_mutex_change_display_window;
 pthread_mutex_t E_x_window_D_draw_S_mutex;
 pthread_cond_t E_x_window_D_draw_S_cond;
 B E_x_window_D_draw_S_b;
@@ -2071,7 +2036,6 @@ D( x_window, draw )
         {   Vr_( pthread_cond_wait( &E_x_window_D_draw_S_cond, &E_x_window_D_draw_S_mutex ));
         }
         Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex ));
-        Vr_( pthread_mutex_lock( &E_x_window_D_draw_S_mutex_change_display_window ));
             #endif
         for_each( display_id, E_gui_xcb_Q_display_S, E_mem_Q_tab )
         {   struct E_gui_xcb_Q_display_Z *display = E_mem_Q_tab_R( E_gui_xcb_Q_display_S, display_id );
@@ -2093,7 +2057,7 @@ D( x_window, draw )
                             if( !U_R( object->state, drag_src ))
                                 screen->draw_color &= 0xffffff;
                             else
-                                screen->draw_color = 0xff000000 | E_gui_xcb_Q_theme.current_brace;
+                                screen->draw_color = 0xff000000 | E_gui_xcb_Q_theme.current_boundary;
                             object->draw( display, screen, window, object ); //NDFN Nieprzerysowywanie wszystkich obiektów dla każdej klatki animacji.
                         }
                         xcb_put_image( display->x_display
@@ -2164,7 +2128,6 @@ D( x_window, draw )
             U_L( display->mode, draw_simple );
         }
             #ifdef C_pthreads
-        Vr_( pthread_mutex_unlock( &E_x_window_D_draw_S_mutex_change_display_window ));
         E_x_window_D_draw_S_b = no;
         Da_B_()
             #else
