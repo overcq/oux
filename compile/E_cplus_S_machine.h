@@ -55,6 +55,10 @@ typedef unsigned            N32;
 typedef int                 S32;
 typedef unsigned long       N64;
 typedef long                S64;
+        #ifdef __SSE__
+typedef unsigned __int128   N128;
+typedef __int128            S128;
+        #endif
     #endif
 //------------------------------------------------------------------------------
 // Podstawowe typy danych:
