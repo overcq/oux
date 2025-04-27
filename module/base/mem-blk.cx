@@ -482,17 +482,18 @@ E_mem_Q_blk_P_fill_c( P p
         N l_2 = ( l - l_0 ) % sizeof(N128);
         __asm__ volatile (
         "\n"    "rep stosb"
-        : "+D" (p)
-        : "a" (c), "c" ( l_0 )
+        : "+D" (p), "+c" ( l_0 )
+        : "a" (c)
         : "memory"
         );
         N128 x;
         p = &x;
+        N cx = sizeof(N128);
         __asm__ volatile (
         "\n"    "rep stosb"
-        "\n"    "movdqa %1,%%xmm0"
-        : "+D" (p)
-        : "m" (x), "a" (c), "c" ( sizeof(N128) )
+        "\n"    "movdqa %2,%%xmm0"
+        : "+D" (p), "+c" (cx)
+        : "m" (x), "a" (c)
         : "xmm0", "memory"
         );
         for_n( i, l_1 )
@@ -504,8 +505,8 @@ E_mem_Q_blk_P_fill_c( P p
             );
         __asm__ volatile (
         "\n"    "rep stosb"
-        : "+D" ( p_x )
-        : "a" (c), "c" ( l_2 )
+        : "+D" ( p_x ), "+c" ( l_2 )
+        : "a" (c)
         : "memory"
         );
         return p_x;
@@ -513,8 +514,8 @@ E_mem_Q_blk_P_fill_c( P p
             #endif
     __asm__ volatile (
     "\n"    "rep stosb"
-    : "+D" (p)
-    : "a" (c), "c" (l)
+    : "+D" (p), "+c" (l)
+    : "a" (c)
     : "memory"
     );
     return p;
