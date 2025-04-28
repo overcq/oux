@@ -85,7 +85,7 @@ struct E_base_Z
         #if defined( E_io_C_aio )
             #if defined( __gnu_linux__ ) || defined( __OpenBSD__ )
   _(SIGPOLL);
-            #elif defined( __FreeBSD__ )
+            #elif defined( __FreeBSD__ ) || defined( __NetBSD__ )
   _(SIGINFO);
             #else
 #error not implemented
@@ -146,7 +146,7 @@ E_mem_M_blk( void
     , -1
     , 0
     )))
-        #elif defined( __FreeBSD__ ) || defined( __OpenBSD__ )
+        #elif defined( __FreeBSD__ ) || defined( __NetBSD__ ) || defined( __OpenBSD__ )
     if( !~(N)( E_base_S = mmap( 0
     , initial_size
     , PROT_READ | PROT_WRITE
@@ -160,6 +160,9 @@ E_mem_M_blk( void
         #endif
     {   GV_(NA); V();
     }
+        #ifdef E_mem_Q_blk_C_debug
+    E_mem_Q_blk_P_fill_c( E_base_S, initial_size, 0xa5 ); //TODO Procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
+        #endif
     E_base_S->E_flow_S_system_name = "oux";
     E_base_S->E_flow_S_exe_name = E_mem_Q_file_S_filename_separator_s;
     E_base_S->E_mem_S_page_size = page_size;
@@ -168,6 +171,10 @@ E_mem_M_blk( void
     E_base_S->E_flow_Z_itimer_system_unblock_report_I_sigsuspend = 0;
     E_base_S->E_flow_Z_itimer_system_unblock_report_I_setitimer = 0;
         #endif
+    E_base_S->E_flow_Q_timer_S_last_real_time = ( Z_clock_time )
+    { .tv_sec = 0
+    , .Z_clock_time_minor_field = 0
+    };
     E_base_S->E_flow_Q_timer_S_next_real_time = ( Z_clock_time )
     { .tv_sec = LONG_MAX
     , .Z_clock_time_minor_field = Z_clock_time_minor_field_S_max
@@ -212,11 +219,20 @@ E_mem_M_blk( void
         free_p[0].p = 0;
         #ifdef C_pthreads
     pthread_mutexattr_t mutexattr;
-    Vr_( pthread_mutexattr_init( &mutexattr ));
-    Vr_( pthread_mutex_init( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex, &mutexattr ));
-    Vr_( pthread_mutexattr_destroy( &mutexattr ));
+    Vr( pthread_mutexattr_init( &mutexattr ))
+        V();
+    Vr( pthread_mutex_init( &E_base_S->E_flow_Z_task_table_S_mutex, &mutexattr ))
+        V();
+    Vr( pthread_mutex_init( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex, &mutexattr ))
+        V();
+    Vr( pthread_mutexattr_destroy( &mutexattr ))
+        V();
         #endif
         #ifdef C_to_libs_C_replace_c_alloc
+            #ifdef C_pthreads
+    Vr( pthread_mutex_lock( &E_base_S->E_flow_Z_task_table_S_mutex ))
+        V();
+            #endif
     E_base_S->E_mem_Q_blk_I_libc_malloc_usable_size = (P)0;
     E_base_S->E_mem_Q_blk_I_libc_aligned_alloc = (P)0;
     E_base_S->E_mem_Q_blk_I_libc_posix_memalign = (P)0;
@@ -225,47 +241,23 @@ E_mem_M_blk( void
     E_base_S->E_mem_Q_blk_I_libc_realloc = (P)0;
     E_base_S->E_mem_Q_blk_I_libc_reallocarray = (P)0;
     E_base_S->E_mem_Q_blk_I_libc_free = (P)0;
-    P libc;
-    if( !( libc = dlopen( C_to_libs_C_replace_c_alloc_S_libc_filename, RTLD_LAZY | RTLD_GLOBAL | RTLD_NOLOAD )))
-    {   Pc s = dlerror();
-        GV_(NA); if(s) Gs0(s); V();
-    }
-    if( !( E_base_S->E_mem_Q_blk_I_libc_malloc_usable_size = ( E_mem_Q_blk_I_libc_malloc_usable_size_Z )dlsym( libc, "malloc_usable_size" )))
-    {   Pc s = dlerror();
-        GV_(NA); if(s) Gs0(s); V();
-    }
-    if( !( E_base_S->E_mem_Q_blk_I_libc_aligned_alloc = ( E_mem_Q_blk_I_libc_aligned_alloc_Z )dlsym( libc, "aligned_alloc" )))
-    {   Pc s = dlerror();
-        GV_(NA); if(s) Gs0(s); V();
-    }
-    if( !( E_base_S->E_mem_Q_blk_I_libc_posix_memalign = ( E_mem_Q_blk_I_libc_posix_memalign_Z )dlsym( libc, "posix_memalign" )))
-    {   Pc s = dlerror();
-        GV_(NA); if(s) Gs0(s); V();
-    }
-    if( !( E_base_S->E_mem_Q_blk_I_libc_malloc = ( E_mem_Q_blk_I_libc_malloc_Z )dlsym( libc, "malloc" )))
-    {   Pc s = dlerror();
-        GV_(NA); if(s) Gs0(s); V();
-    }
-    if( !( E_base_S->E_mem_Q_blk_I_libc_calloc = ( E_mem_Q_blk_I_libc_calloc_Z )dlsym( libc, "calloc" )))
-    {   Pc s = dlerror();
-        GV_(NA); if(s) Gs0(s); V();
-    }
-    if( !( E_base_S->E_mem_Q_blk_I_libc_realloc = ( E_mem_Q_blk_I_libc_realloc_Z )dlsym( libc, "realloc" )))
-    {   Pc s = dlerror();
-        GV_(NA); if(s) Gs0(s); V();
-    }
-    if( !( E_base_S->E_mem_Q_blk_I_libc_reallocarray = ( E_mem_Q_blk_I_libc_reallocarray_Z )dlsym( libc, "reallocarray" )))
-    {   Pc s = dlerror();
-        GV_(NA); if(s) Gs0(s); V();
-    }
-    if( !( E_base_S->E_mem_Q_blk_I_libc_free = ( E_mem_Q_blk_I_libc_free_Z )dlsym( libc, "free" )))
-    {   Pc s = dlerror();
-        GV_(NA); if(s) Gs0(s); V();
-    }
+    P libc = dlopen( C_to_libs_C_replace_c_alloc_S_libc_filename, RTLD_LAZY | RTLD_GLOBAL | RTLD_NOLOAD );
+    if( !libc )
+        V();
+    E_base_S->E_mem_Q_blk_I_libc_malloc_usable_size = ( E_mem_Q_blk_I_libc_malloc_usable_size_Z )dlsym( libc, "malloc_usable_size" );
+    E_base_S->E_mem_Q_blk_I_libc_aligned_alloc = ( E_mem_Q_blk_I_libc_aligned_alloc_Z )dlsym( libc, "aligned_alloc" );
+    E_base_S->E_mem_Q_blk_I_libc_posix_memalign = ( E_mem_Q_blk_I_libc_posix_memalign_Z )dlsym( libc, "posix_memalign" );
+    E_base_S->E_mem_Q_blk_I_libc_malloc = ( E_mem_Q_blk_I_libc_malloc_Z )dlsym( libc, "malloc" );
+    E_base_S->E_mem_Q_blk_I_libc_calloc = ( E_mem_Q_blk_I_libc_calloc_Z )dlsym( libc, "calloc" );
+    E_base_S->E_mem_Q_blk_I_libc_realloc = ( E_mem_Q_blk_I_libc_realloc_Z )dlsym( libc, "realloc" );
+    E_base_S->E_mem_Q_blk_I_libc_reallocarray = ( E_mem_Q_blk_I_libc_reallocarray_Z )dlsym( libc, "reallocarray" );
+    E_base_S->E_mem_Q_blk_I_libc_free = ( E_mem_Q_blk_I_libc_free_Z )dlsym( libc, "free" );
     if( dlclose(libc) )
-    {   Pc s = dlerror();
-        GV_(NA); if(s) Gs0(s); V();
-    }
+        V();
+            #ifdef C_pthreads
+    Vr( pthread_mutex_unlock( &E_base_S->E_flow_Z_task_table_S_mutex ))
+        V();
+            #endif
         #endif
 }
 _internal
@@ -285,7 +277,7 @@ E_mem_M_file( void
     , -1
     , 0
     ));
-        #elif defined( __FreeBSD__ ) || defined( __OpenBSD__ )
+        #elif defined( __FreeBSD__ ) || defined( __NetBSD__ ) || defined( __OpenBSD__ )
     V1p_( E_base_S->E_mem_Q_file_S_buffer = mmap( 0
     , E_base_S->E_mem_Q_file_S_buffer_l
     , PROT_READ | PROT_WRITE
@@ -296,6 +288,9 @@ E_mem_M_file( void
     ));
         #else
 #error not implemented
+        #endif
+        #ifdef E_mem_Q_blk_C_debug
+    E_mem_Q_blk_P_fill_c( E_base_S->E_mem_Q_file_S_buffer, E_base_S->E_mem_Q_file_S_buffer_l, 0xa5 ); //TODO Procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
         #endif
 }
 _internal
@@ -322,8 +317,10 @@ E_base_M(
     E_flow_S_errno = __errno_location();
             #elif defined( __FreeBSD__ )
     E_flow_S_errno = __error();
-            #elif defined( __OpenBSD__ )
+            #elif defined( __NetBSD__ ) || defined( __OpenBSD__ )
     E_flow_S_errno = __errno();
+            #else
+#error not implemented
             #endif
         #endif
     feclearexcept( FE_ALL_EXCEPT );
@@ -350,14 +347,6 @@ E_base_M(
     if( !E_base_S->E_flow_Q_task_S )
         V();
     U_F( E_base_S->E_flow_S_mode, Z_task_table_S_can_read );
-        #ifdef C_pthreads
-    pthread_mutexattr_t mutexattr;
-    Vr( pthread_mutexattr_init( &mutexattr ))
-        V();
-    Vr( pthread_mutex_init( &E_base_S->E_flow_Z_task_table_S_mutex, &mutexattr ))
-        V();
-    Vr_( pthread_mutexattr_destroy( &mutexattr ));
-        #endif
     struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, 0 );
     *task = ( struct E_flow_Q_task_Z )
     { .run_state = E_flow_Z_run_state_S_ready
@@ -402,7 +391,7 @@ E_base_M(
                 #if defined( __gnu_linux__ ) || defined( __OpenBSD__ )
     V0_( sigaddset( &sigset, SIGPOLL ));
     V0_( sigaddset( &E_base_S->E_flow_Z_sigset_S_io_ready, SIGPOLL ));
-                #elif defined( __FreeBSD__ )
+                #elif defined( __FreeBSD__ ) || defined( __NetBSD__ )
     V0_( sigaddset( &sigset, SIGINFO ));
     V0_( sigaddset( &E_base_S->E_flow_Z_sigset_S_io_ready, SIGINFO ));
                 #else
@@ -431,7 +420,7 @@ E_base_M(
     long l;
         #if defined( __gnu_linux__ ) || defined( __FreeBSD__ )
     V1_( l = sysconf( _SC_HOST_NAME_MAX ));
-        #elif defined( __OpenBSD__ )
+        #elif defined( __NetBSD__ ) || defined( __OpenBSD__ )
     l = MAXHOSTNAMELEN;
         #else
 #error not implemented
@@ -465,7 +454,7 @@ E_base_M(
     sa.sa_sigaction = E_flow_Z_signal_V_io_ready;
                 #if defined( __gnu_linux__ ) || defined( __OpenBSD__ )
     _sigaction_M( SIGPOLL, &sa );
-                #elif defined( __FreeBSD__ )
+                #elif defined( __NetBSD__ ) || defined( __FreeBSD__ )
     _sigaction_M( SIGINFO, &sa );
                 #else
 #error not implemented
@@ -480,7 +469,7 @@ E_base_M(
     // Ustawienie procedury “sygnału” “SEGV”— do obsługi pamięci stosów ‹zadań›.
     stack_t alt_stack =
     { .ss_flags = 0
-        #if defined( __gnu_linux__ ) || defined( __FreeBSD__ )
+        #if defined( __gnu_linux__ ) || defined( __FreeBSD__ ) || defined( __NetBSD__ )
     , .ss_size = 2 * E_base_S->E_mem_S_page_size //CONF
         #elif defined( __OpenBSD__ )
     , .ss_size = 3 * E_base_S->E_mem_S_page_size //CONF
@@ -497,7 +486,7 @@ E_base_M(
     , -1
     , 0
     ));
-        #elif defined( __FreeBSD__ ) || defined( __OpenBSD__ )
+        #elif defined( __FreeBSD__ ) || defined( __NetBSD__ ) || defined( __OpenBSD__ )
     V1p_( alt_stack.ss_sp = mmap( 0
     , alt_stack.ss_size
     , PROT_READ | PROT_WRITE
@@ -509,6 +498,9 @@ E_base_M(
         #else
 #error not implemented
         #endif
+        #ifdef E_mem_Q_blk_C_debug
+    E_mem_Q_blk_P_fill_c( alt_stack.ss_sp, alt_stack.ss_size, 0xa5 ); //TODO Procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
+        #endif
     V0_( sigaltstack( &alt_stack, 0 ));
     sa.sa_sigaction = E_flow_Z_signal_V_segv;
     sa.sa_flags = SA_ONSTACK | SA_SIGINFO;
@@ -518,6 +510,8 @@ E_base_M(
     // Uruchomienie funkcjonalności ‹modułu›.
         #if defined( __gnu_linux__ ) || defined( __OpenBSD__ )
     V1_( E_base_S->E_flow_Z_task_stacks_S_n_pages = sysconf( _SC_AVPHYS_PAGES ));
+        #elif defined( __NetBSD__ )
+    V1_( E_base_S->E_flow_Z_task_stacks_S_n_pages = sysconf( _SC_PHYS_PAGES ));
         #elif defined( __FreeBSD__ )
     int mib[2] =
     { CTL_HW
@@ -531,6 +525,8 @@ E_base_M(
     N phys_mem;
     V1_( sysctl( mib, 2, &phys_mem, &len, 0, 0 ));
     E_base_S->E_flow_Z_task_stacks_S_n_pages = phys_mem / E_base_S->E_mem_S_page_size;
+        #else
+#error not implemented
         #endif
         #ifdef E_flow_C_thread_system_unblock_reports
     E_base_S->E_flow_Q_task_S_uid_subid = E_mem_Q_tab_M( sizeof( struct E_mem_Q_tab_Z * ), 0 );
@@ -602,6 +598,7 @@ E_base_M(
     E_net_cli_S_poll_fd[ E_net_cli_S_poll_fd_n - 1 ].fd = E_net_cli_S_poll_pipe[0];
     E_net_cli_S_poll_fd[ E_net_cli_S_poll_fd_n - 1 ].events = POLLIN;
         #endif
+    V1_( unsetenv( "LD_BIND_NOW" ));
     V1_( unsetenv( "LD_PRELOAD" ));
     E_flow_Z_stat_I_stat();
 }

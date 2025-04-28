@@ -61,8 +61,7 @@ struct E_mem_Q_blk_Z_allocated // Dla kontroli poprawności wydawania i oddawani
 _internal
 void
 E_mem_Q_blk_I_print( N line
-){  G_(); Gd(line);
-    struct E_mem_Q_blk_Z_mapped *mapped_p = (P)E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_mapped_id ].p;
+){  struct E_mem_Q_blk_Z_mapped *mapped_p = (P)E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_mapped_id ].p;
     for_n( i, E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_mapped_id ].n )
     {   G_(); Gd(i); Gh( mapped_p[i].p ); Gh( mapped_p[i].p + mapped_p[i].l );
     }
@@ -74,6 +73,7 @@ E_mem_Q_blk_I_print( N line
     for_n_( i, E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_free_id ].n )
     {   G_(); Gd(i); Gh( free_p[i].p ); Gh( free_p[i].p + free_p[i].l );
     }
+    G_(); Gd(line);
 }
 _internal
 B
@@ -203,6 +203,7 @@ E_mem_Q_blk_I_assert_on_return( N line
         )
             break;
     }
+        #ifndef C_to_libs_C_replace_c_alloc_S_libc_filename
     N free_i = 0;
     for_n( mapped_i, mapped_n )
     {   if( !mapped_p[ mapped_i ].p )
@@ -254,6 +255,7 @@ E_mem_Q_blk_I_assert_on_return( N line
     )
     {   G_(); Gd(line); Gh( free_p[ free_i ].p ); Gd( free_p[ free_i ].l ); V(); // lost
     }
+        #endif
 }
     #else
 #define E_mem_Q_blk_I_assert_on_return(line)
@@ -269,7 +271,7 @@ E_mem_Q_blk_T_eq( P p_1
     return yes;
 }
 _internal
-P
+void
 E_mem_Q_blk_I_copy_fwd( P dst
 , P src
 , N l
@@ -300,13 +302,9 @@ E_mem_Q_blk_I_copy_fwd( P dst
             : "r" ( dst_x++ ), "r" ( src_x++ )
             : "xmm0", "memory"
             );
-        __asm__ volatile (
-        "\n"    "rep movsb"
-        : "+D" ( dst_x ), "+S" ( src_x ), "+c" ( l_2 )
-        :
-        : "memory"
-        );
-        return dst_x;
+        dst = dst_x;
+        src = src_x;
+        l = l_2;
     }
             #endif
     __asm__ volatile (
@@ -315,7 +313,6 @@ E_mem_Q_blk_I_copy_fwd( P dst
     :
     : "memory"
     );
-    return dst;
         #else
     Pn dst_n = (P)E_simple_Z_p_I_align_up_to_v2( dst, sizeof(N) );
     Pn src_n = (P)E_simple_Z_p_I_align_up_to_v2( src, sizeof(N) );
@@ -345,7 +342,7 @@ E_mem_Q_blk_I_copy_fwd( P dst
             dst_c++;
             src_c++;
         }
-        return dst_c;
+        return;
     }
     Pc dst_c = dst, src_c = src;
     for_n( i, l )
@@ -353,11 +350,10 @@ E_mem_Q_blk_I_copy_fwd( P dst
         dst_c++;
         src_c++;
     }
-    return dst_c;
         #endif
 }
 _internal
-P
+void
 E_mem_Q_blk_I_copy_rev( P dst
 , P src
 , N l
@@ -381,7 +377,7 @@ E_mem_Q_blk_I_copy_rev( P dst
         "\n"    "rep movsb"
         : "+D" (dst), "+S" (src), "+c" ( l_0 )
         :
-        : "cc", "memory"
+        : "memory"
         );
         for_n( i, l_1 )
             __asm__ volatile (
@@ -391,20 +387,14 @@ E_mem_Q_blk_I_copy_rev( P dst
             : "r" ( --dst_x ), "r" ( --src_x )
             : "xmm0", "memory"
             );
-        dst_x = (P)( (Pc)dst_x - 1 );
-        src_x = (P)( (Pc)src_x - 1 );
-        __asm__ volatile (
-        "\n"    "rep movsb"
-        "\n"    "cld"
-        : "+D" ( dst_x ), "+S" ( src_x ), "+c" ( l_2 )
-        :
-        : "cc", "memory"
-        );
-        return (Pc)dst_x + 1;
-    }
+        dst = (P)( (Pc)dst_x - 1 );
+        src = (P)( (Pc)src_x - 1 );
+        l = l_2;
+    }else
             #endif
-    dst = (Pc)dst + l - 1;
-    src = (Pc)src + l - 1;
+    {   dst = (Pc)dst + l - 1;
+        src = (Pc)src + l - 1;
+    }
     __asm__ volatile (
     "\n"    "std"
     "\n"    "rep movsb"
@@ -413,7 +403,6 @@ E_mem_Q_blk_I_copy_rev( P dst
     :
     : "cc", "memory"
     );
-    return (Pc)dst + 1;
         #else
     Pn dst_n = (P)E_simple_Z_p_I_align_down_to_v2( (Pc)dst + l, sizeof(N) );
     Pn src_n = (P)E_simple_Z_p_I_align_down_to_v2( (Pc)src + l, sizeof(N) );
@@ -442,7 +431,7 @@ E_mem_Q_blk_I_copy_rev( P dst
             --src_c;
             *dst_c = *src_c;
         }
-        return dst_c;
+        return;
     }
     Pc dst_c = (Pc)dst + l, src_c = (Pc)src + l;
     while( src_c != src )
@@ -450,23 +439,23 @@ E_mem_Q_blk_I_copy_rev( P dst
         --src_c;
         *dst_c = *src_c;
     }
-    return dst_c;
         #endif
 }
-P
+void
 E_mem_Q_blk_I_copy( P dst
 , P src
 , N l
 ){  J_assert( dst != src );
     if( !l )
-        return dst;
+        return;
     if( (Pc)dst < (Pc)src
     || (Pc)dst >= (Pc)src + l
     )
-        return E_mem_Q_blk_I_copy_fwd( dst, src, l );
-    return E_mem_Q_blk_I_copy_rev( dst, src, l );
+        E_mem_Q_blk_I_copy_fwd( dst, src, l );
+    else
+        E_mem_Q_blk_I_copy_rev( dst, src, l );
 }
-P
+void
 E_mem_Q_blk_P_fill_c( P p
 , N l
 , C c
@@ -503,13 +492,8 @@ E_mem_Q_blk_P_fill_c( P p
             : "r" ( p_x++ )
             : "memory"
             );
-        __asm__ volatile (
-        "\n"    "rep stosb"
-        : "+D" ( p_x ), "+c" ( l_2 )
-        : "a" (c)
-        : "memory"
-        );
-        return p_x;
+        p = p_x;
+        l = l_2;
     }
             #endif
     __asm__ volatile (
@@ -518,7 +502,6 @@ E_mem_Q_blk_P_fill_c( P p
     : "a" (c)
     : "memory"
     );
-    return p;
         #else
     Pn p_n = (P)E_simple_Z_p_I_align_up_to_v2( p, sizeof(N) );
     N l_0 = (Pc)p_n - (Pc)p;
@@ -538,12 +521,11 @@ E_mem_Q_blk_P_fill_c( P p
         p_c = (Pc)p_n;
         for_n_( i, l_2 )
             *p_c++ = c;
-        return p_c;
+        return;
     }
     Pc p_c = p;
     for_n( i, l )
         *p_c++ = c;
-    return p_c;
         #endif
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1279,7 +1261,7 @@ E_mem_Q_blk_Q_table_M_from_free_or_map( N *allocated_or_table_i
             , -1
             , 0
             ))
-                #elif defined( __FreeBSD__ ) || defined( __OpenBSD__ )
+                #elif defined( __FreeBSD__ ) || defined( __NetBSD__ ) || defined( __OpenBSD__ )
             V1p( p_1 = mmap( 0
             , l_
             , PROT_READ | PROT_WRITE
@@ -1295,10 +1277,12 @@ E_mem_Q_blk_Q_table_M_from_free_or_map( N *allocated_or_table_i
                 #ifdef E_mem_Q_blk_C_debug
             E_mem_Q_blk_P_fill_c( p_1, l_, 0xa5 ); //TODO Procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
                 #endif
-            E_base_S->E_flow_Z_task_stacks_S_n_pages -= l_ / E_base_S->E_mem_S_page_size;
-            N failed_tasks = E_flow_Q_task_I_granulation();
-            if( failed_tasks )
-            {   GV_(NDFN); Gd( -failed_tasks );
+            if( U_R( E_base_S->E_flow_S_mode, Z_task_table_S_can_read ))
+            {   E_base_S->E_flow_Z_task_stacks_S_n_pages -= l_ / E_base_S->E_mem_S_page_size;
+                N failed_tasks = E_flow_Q_task_I_granulation();
+                if( failed_tasks )
+                {   GV_(NDFN); Gd( -failed_tasks );
+                }
             }
             Pc dst_page;
             Pc p_ = p_1;
@@ -1319,7 +1303,7 @@ E_mem_Q_blk_Q_table_M_from_free_or_map( N *allocated_or_table_i
                         , MREMAP_MAYMOVE | MREMAP_FIXED
                         , dst_page_end
                         ));
-                            #elif defined( __FreeBSD__ ) || defined( __OpenBSD__ )
+                            #elif defined( __FreeBSD__ ) || defined( __NetBSD__ ) || defined( __OpenBSD__ )
                         // Kopiowanie po jednej “stronie”, by tak właśnie zachodziło rzeczywiste ‘mapowanie’ w sprzętowym trybie “map on write”, gdy pojedyncze “strony” są też ‘odmapowywane’.
                         E_mem_Q_blk_I_copy( dst_page_end, src_page_, E_base_S->E_mem_S_page_size );
                         V0_( munmap( src_page_, E_base_S->E_mem_S_page_size ));

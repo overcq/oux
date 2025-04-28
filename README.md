@@ -22,7 +22,7 @@ Report vulnerabilities: https://github.com/overcq/oux/security/advisories or via
 
 OUX/C+ 2. Detailed version in git log.
 
-The product is developed in Gentoo Linux and tested in FreeBSD and OpenBSD.
+The product is developed in Gentoo Linux and tested in FreeBSD, NetBSD, OpenBSD.
 
 ## 4. Purpose
 

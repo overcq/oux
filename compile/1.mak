@@ -23,7 +23,7 @@ E_io_C_aio := 1
 # Czy włączyć wewnętrzne testy poprawności?
 H_make_C_debug := 1
 # Włącza kontrolę poprawności menedżera bloków.
-#E_mem_Q_blk_C_debug := 1
+E_mem_Q_blk_C_debug := 1
 # Ustawić do instalacji w katalogu użytkownika.
 #H_make_S_install_prefix := $(HOME)/.local
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

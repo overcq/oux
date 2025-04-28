@@ -11,7 +11,9 @@ extern I _X_var( io, stream_write );
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 extern void E_flow_Q_process_call_I_func(P);
 //==============================================================================
+    #ifdef E_flow_Q_process_call_C_alt
 #define E_flow_Q_process_call_S_ftok_id 1
+    #endif
 //------------------------------------------------------------------------------
     #ifndef C_middle_code
 #define _sigaction_M(signum,act)        { V0_( sigaction( (signum), (act), 0 )); }
@@ -47,7 +49,7 @@ typedef struct timespec Z_clock_time;
 #define Z_clock_time_minor_field_S_max  999999999
         #if defined( __gnu_linux__ ) || defined( __FreeBSD__ )
 #define _gettime(tp)                    { V0_( clock_gettime( CLOCK_BOOTTIME, (tp) )); }
-        #elif defined( __OpenBSD__ )
+        #elif defined( __NetBSD__ ) || defined( __OpenBSD__ )
 #define _gettime(tp)                    { V0_( clock_gettime( CLOCK_MONOTONIC, (tp) )); }
         #else
 #error not implemented
@@ -182,7 +184,7 @@ struct aiocb
   P aio_buf;
   N aio_nbytes;
 };
-    #elif !defined( __gnu_linux__ ) && !defined( __FreeBSD__ )
+    #elif !defined( __gnu_linux__ ) && !defined( __FreeBSD__ ) && !defined( __NetBSD__ )
 #error not implemented
     #endif
 /******************************************************************************/

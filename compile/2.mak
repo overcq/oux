@@ -159,7 +159,7 @@ H_make_Q_packages_R_ldlibs = $(if $(1),$(filter -l%,$(shell pkg-config --libs $(
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ifneq (,$(filter Linux OpenBSD,$(H_make_S_os)))
 H_make_T_pthreads := $(if $(shell whatis pthreads),1)
-    else ifeq (FreeBSD,$(H_make_S_os))
+    else ifneq (,$(filter FreeBSD NetBSD,$(H_make_S_os)))
 H_make_T_pthreads := $(if $(shell whatis pthread),1)
     endif
 #===============================================================================
@@ -201,22 +201,28 @@ H_make_S_c_std_alt := gnu
     endif
     ifeq (clang,$(H_make_S_cc))
 # Tylko spekulacje wersji “clang” obsługujących standardy ‟C”.
-		ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) >= 9.0) | bc ))
-CFLAGS += -std=$(H_make_S_c_std_alt)2x
+		ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) >= 18.0) | bc ))
+CFLAGS += -std=$(H_make_S_c_std_alt)23
+		else ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) >= 9.0) | bc ))
+CFLAGS += -std=$(H_make_S_c_std_alt)2x -Dalignof=_Alignof
+		else ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) >= 6.0) | bc ))
+CFLAGS += -std=$(H_make_S_c_std_alt)17 -Dalignof=_Alignof
 		else ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) >= 5.0) | bc ))
-CFLAGS += -std=$(H_make_S_c_std_alt)14
+CFLAGS += -std=$(H_make_S_c_std_alt)14 -Dalignof=_Alignof
 		else ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) >= 4.0) | bc ))
-CFLAGS += -std=$(H_make_S_c_std_alt)11
+CFLAGS += -std=$(H_make_S_c_std_alt)11 -Dalignof=_Alignof
 		endif
 CFLAGS += -O1 -finline -Qunused-arguments -Wno-incompatible-pointer-types-discards-qualifiers
     else #nie “clang”.
         ifeq (gcc,$(H_make_S_cc))
-            ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) >= 9) | bc ))
-CFLAGS += -std=$(H_make_S_c_std_alt)2x
+			ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) >= 14.0) | bc ))
+CFLAGS += -std=$(H_make_S_c_std_alt)23
+            else ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) >= 9) | bc ))
+CFLAGS += -std=$(H_make_S_c_std_alt)2x -Dalignof=_Alignof
             else ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) >= 8.3) | bc ))
-CFLAGS += -std=$(H_make_S_c_std_alt)17
+CFLAGS += -std=$(H_make_S_c_std_alt)17 -Dalignof=_Alignof
             else ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) >= 4.7) | bc ))
-CFLAGS += -std=$(H_make_S_c_std_alt)11
+CFLAGS += -std=$(H_make_S_c_std_alt)11 -Dalignof=_Alignof
 CFLAGS += -fno-signed-zeros
             else ifneq (0,$(shell echo $(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_cc_version) = 4.6) | bc )) #“gcc” z “c1x”
 CFLAGS += -std=$(H_make_S_c_std_alt)1x

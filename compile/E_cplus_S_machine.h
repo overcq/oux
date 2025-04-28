@@ -6,7 +6,7 @@
 *         platform definitions
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”              2015‒1‒6 *
 *******************************************************************************/
-    #if !( defined( __gnu_linux__ ) || defined( __FreeBSD__ ) || defined( __OpenBSD__ ))
+    #if !( defined( __gnu_linux__ ) || defined( __FreeBSD__ ) || defined( __NetBSD__ ) || defined( __OpenBSD__ ))
 #error Unknown operating system
     #endif
 //==============================================================================

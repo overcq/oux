@@ -14,6 +14,14 @@
 #define E_gui_xcb_Q_window_C_hidden_x     -10000
 #define E_gui_xcb_Q_window_C_hidden_y     -10000
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    #ifdef __NetBSD__
+#define XCB_ICCCM_SIZE_HINT_P_MIN_SIZE XCB_SIZE_HINT_P_MIN_SIZE
+#define XCB_ICCCM_WM_HINT_INPUT XCB_WM_HINT_INPUT
+#define XCB_ICCCM_WM_HINT_STATE XCB_WM_HINT_STATE
+#define XCB_ICCCM_WM_STATE_NORMAL XCB_WM_STATE_NORMAL
+typedef xcb_wm_hints_t xcb_icccm_wm_hints_t;
+    #endif
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #define XCB_ATOM_LAST_PREDEFINED    XCB_ATOM_WM_TRANSIENT_FOR
 #define XCB_ATOM_FIRST_DEFINED_     C_STRING
 #define XCB_ATOM_FIRST_DEFINED      J_ab( XCB_ATOM_, XCB_ATOM_FIRST_DEFINED_ )

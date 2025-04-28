@@ -13,6 +13,8 @@ S_headers := errno.h limits.h signal.h sys/time.h time.h unistd.h zlib.h
 S_packages += libcap
 S_headers += error.h
 CFLAGS += -D_GNU_SOURCE
+    else ifeq (NetBSD,$(H_make_S_os))
+S_libraries += kvm
     else ifeq (OpenBSD,$(H_make_S_os))
 S_headers += sys/param.h
 CFLAGS += -D_BSD_SOURCE -D_XOPEN_SOURCE_EXTENDED

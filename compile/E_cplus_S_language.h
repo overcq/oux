@@ -109,7 +109,7 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
 #define Da_()                               _unused int *E_flow_S_errno = __errno_location()
         #elif defined( __FreeBSD__ )
 #define Da_()                               _unused int *E_flow_S_errno = __error()
-        #elif defined( __OpenBSD__ )
+        #elif defined( __NetBSD__ ) || defined( __OpenBSD__ )
 #define Da_()                               _unused int *E_flow_S_errno = __errno()
         #else
 #error not implemented

@@ -125,7 +125,7 @@ E_flow_Q_task_I_granulation( void
         {
                 #if defined( __gnu_linux__ )
             N ss_size = 2 * E_base_S->E_mem_S_page_size; //CONF
-                #elif defined( __FreeBSD__ ) || defined( __OpenBSD__ )
+                #elif defined( __FreeBSD__ ) || defined( __NetBSD__ ) || defined( __OpenBSD__ )
             N ss_size = E_simple_Z_n_I_align_up_to_v2( MINSIGSTKSZ, E_base_S->E_mem_S_page_size ); //CONF
                 #else
 #error not implemented
@@ -191,9 +191,9 @@ E_flow_Q_task_M( I *uid
         *task_proc_args = ( struct E_flow_Q_task_async_I_thread_proc_Z_args )
         { .alt_stack = ( stack_t )
           { .ss_flags = 0
-              #if defined( __gnu_linux__ ) || defined( __FreeBSD__ )
+              #if defined( __gnu_linux__ ) || defined( __FreeBSD__ ) || defined( __NetBSD__ )
           , .ss_size = 2 * E_base_S->E_mem_S_page_size //CONF
-              #elif  defined( __OpenBSD__ )
+              #elif defined( __OpenBSD__ )
           , .ss_size = 3 * E_base_S->E_mem_S_page_size //CONF
               #else
 #error not implemented
@@ -259,7 +259,7 @@ E_flow_Q_task_M( I *uid
           )
         , err
         )
-            #elif defined( __FreeBSD__ ) || defined( __OpenBSD__ )
+            #elif defined( __FreeBSD__ ) || defined( __NetBSD__ ) || defined( __OpenBSD__ )
         V1pe( stack = mmap( 0
           , stack_size
           , PROT_READ | PROT_WRITE
@@ -296,7 +296,7 @@ E_flow_Q_task_M( I *uid
     , touched_size
     , PROT_READ | PROT_WRITE
     ))
-        #elif defined( __FreeBSD__ ) || defined( __OpenBSD__ )
+        #elif defined( __FreeBSD__ ) || defined( __NetBSD__ ) || defined( __OpenBSD__ )
     V0( mprotect( stack
     , stack_size - touched_size
     , PROT_NONE
@@ -307,6 +307,9 @@ E_flow_Q_task_M( I *uid
     {   V0_( munmap( stack, stack_size ));
         return ~0;
     }
+        #ifdef E_mem_Q_blk_C_debug
+    E_mem_Q_blk_P_fill_c( touched_stack, touched_size, 0xa5 ); //TODO Procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
+        #endif
     _Z_tasks_table_S_edit_begin;
     I task_id = E_mem_Q_tab_I_add( E_base_S->E_flow_Q_task_S );
     struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id );
@@ -401,7 +404,7 @@ E_flow_Q_task_M( I *uid
         , -1
         , 0
         ))
-            #elif defined( __FreeBSD__ ) || defined( __OpenBSD__ )
+            #elif defined( __FreeBSD__ ) || defined( __NetBSD__ ) || defined( __OpenBSD__ )
         V1p( task_proc_args->alt_stack.ss_sp = mmap( 0
         , task_proc_args->alt_stack.ss_size
         , PROT_READ | PROT_WRITE
@@ -442,6 +445,9 @@ E_flow_Q_task_M( I *uid
             V0_( munmap( stack, stack_size ));
             return ~0;
         }
+            #ifdef E_mem_Q_blk_C_debug
+        E_mem_Q_blk_P_fill_c( task_proc_args->alt_stack.ss_sp + E_base_S->E_mem_S_page_size, task_proc_args->alt_stack.ss_size - E_base_S->E_mem_S_page_size, 0xa5 ); //TODO Procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
+            #endif
         pthread_attr_t thread_attr;
         Vr( pthread_attr_init( &thread_attr ))
         {   V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
@@ -773,9 +779,9 @@ E_flow_Q_task_async_M( I *uid
     *task_proc_args = ( struct E_flow_Q_task_async_I_thread_proc_Z_args )
     { .alt_stack = ( stack_t )
       { .ss_flags = 0
-          #if defined( __gnu_linux__ ) || defined( __FreeBSD__ )
+          #if defined( __gnu_linux__ ) || defined( __FreeBSD__ ) || defined( __NetBSD__ )
       , .ss_size = 2 * E_base_S->E_mem_S_page_size //CONF
-          #elif  defined( __OpenBSD__ )
+          #elif defined( __OpenBSD__ )
       , .ss_size = 3 * E_base_S->E_mem_S_page_size //CONF
           #else
 #error not implemented
@@ -829,7 +835,7 @@ E_flow_Q_task_async_M( I *uid
           )
         , err
         )
-            #elif defined( __FreeBSD__ ) || defined( __OpenBSD__ )
+            #elif defined( __FreeBSD__ ) || defined( __NetBSD__ ) || defined( __OpenBSD__ )
         V1pe( stack = mmap( 0
           , stack_size
           , PROT_READ | PROT_WRITE
@@ -857,7 +863,7 @@ E_flow_Q_task_async_M( I *uid
     , pthread_stack_min
     , PROT_READ | PROT_WRITE
     ))
-        #elif defined( __FreeBSD__ ) || defined( __OpenBSD__ )
+        #elif defined( __FreeBSD__ ) || defined( __NetBSD__ ) || defined( __OpenBSD__ )
     V0( mprotect( stack
     , stack_size - pthread_stack_min
     , PROT_NONE
@@ -868,6 +874,9 @@ E_flow_Q_task_async_M( I *uid
     {   V0_( munmap( stack, stack_size ));
         return ~0;
     }
+        #ifdef E_mem_Q_blk_C_debug
+    E_mem_Q_blk_P_fill_c( touched_stack, pthread_stack_min, 0xa5 ); //TODO Procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
+        #endif
     _Z_tasks_table_S_edit_begin;
     I task_id = E_mem_Q_tab_I_add( E_base_S->E_flow_Q_task_S );
     struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id );
@@ -958,7 +967,7 @@ E_flow_Q_task_async_M( I *uid
     , -1
     , 0
     ))
-        #elif defined( __FreeBSD__ ) || defined( __OpenBSD__ )
+        #elif defined( __FreeBSD__ ) || defined( __NetBSD__ ) || defined( __OpenBSD__ )
     V1p( task_proc_args->alt_stack.ss_sp = mmap( 0
     , task_proc_args->alt_stack.ss_size
     , PROT_READ | PROT_WRITE
@@ -999,6 +1008,9 @@ E_flow_Q_task_async_M( I *uid
         V0_( munmap( stack, stack_size ));
         return ~0;
     }
+        #ifdef E_mem_Q_blk_C_debug
+    E_mem_Q_blk_P_fill_c( task_proc_args->alt_stack.ss_sp + E_base_S->E_mem_S_page_size, task_proc_args->alt_stack.ss_size - E_base_S->E_mem_S_page_size, 0xa5 ); //TODO Procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
+        #endif
     pthread_attr_t thread_attr;
     Vr( pthread_attr_init( &thread_attr ))
     {   V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
@@ -1651,7 +1663,7 @@ Loop:
                             )
                             {   task->run_state = E_flow_Z_run_state_S_ready;
                                 some_task_got_ready = yes;
-                            } // Narazie– jeśli nie może wznowić ‹zadania›, to gubi impuls.
+                            } // Narazie – jeśli nie może wznowić ‹zadania›, to gubi impuls.
                             some_timer_has_deactivated = yes;
                         }else
                         {   _timersub( &timer->left, &elapsed_time, &timer->left );
@@ -1917,9 +1929,9 @@ E_flow_Q_task_I_switch( I task_to_id
                 #endif
             #endif
             #if defined( __i386__ )
-    , "ebx", "ecx", "ebp", "esi", "edi"
+    , "ebx", "ecx", "esi", "edi"
             #else
-    , "rbx", "rcx", "rbp", "rsi", "rdi"
+    , "rbx", "rcx", "rsi", "rdi"
     , "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15"
                 #ifdef __SSE3__
     , "xmm8", "xmm9", "xmm10", "xmm11", "xmm12", "xmm13", "xmm14", "xmm15"
