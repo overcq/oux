@@ -1,6 +1,6 @@
 ################################################################################
 #   ___   workplace
-#  ¦OUX¦  ‟GNU” “make”
+#  ¦OUX¦  GNU “make”
 #  ¦/C+¦  bieżący integrator systemowy
 #   ---   server
 #         program makefile

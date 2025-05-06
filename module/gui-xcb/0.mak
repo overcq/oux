@@ -1,6 +1,6 @@
 ################################################################################
 #   ___   publicplace
-#  ¦OUX¦  ‟GNU” “make”
+#  ¦OUX¦  GNU “make”
 #  ¦/C+¦  component
 #   ---   ‟Xorg” —high ‘cpu’
 #         module makefile

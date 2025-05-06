@@ -6,7 +6,7 @@
 *         simple common procedures
 * ©overcq                on ‟Gentoo Linux 17.1” “x86_64”             2020‒5‒27 T
 *******************************************************************************/
-#define _inline static __attribute__ ((__always_inline__,__unused__))
+#define _inline static __attribute__ (( __always_inline__, __unused__ ))
 //==============================================================================
 _inline
 N

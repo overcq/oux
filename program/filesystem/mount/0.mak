@@ -1,6 +1,6 @@
 ##############################################################################
 #   ___   workplace
-#  ¦OUX¦  ‟GNU” “make”
+#  ¦OUX¦  GNU “make”
 #  ¦/C+¦  filesystem
 #   ---   mount
 #         program makefile

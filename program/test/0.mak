@@ -1,6 +1,6 @@
 ################################################################################
 #   ___   laboratory
-#  ¦OUX¦  ‟GNU” “make”
+#  ¦OUX¦  GNU “make”
 #  ¦/C+¦  ‘gui’ sample
 #   ---   OUX/C+ selective tests
 #         program makefile

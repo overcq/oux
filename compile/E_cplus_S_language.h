@@ -440,12 +440,12 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
 #define _errno                              errno
     #endif
 #define _forced_statement                   __asm__ volatile ( "" )
-#define _internal                           __attribute__ ((__visibility__( "internal" )))
-#define _packed                             __attribute__ ((__packed__))
+#define _internal                           __attribute__ (( __visibility__( "internal" ) ))
+#define _packed                             __attribute__ (( __packed__ ))
     #ifndef _unreachable
 #define _unreachable                        __builtin_unreachable()
     #endif
-#define _unused                             __attribute__ ((__unused__))
+#define _unused                             __attribute__ (( __unused__ ))
 //==============================================================================
 #define S_eof                  ( ~1L )
 /******************************************************************************/

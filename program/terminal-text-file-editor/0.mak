@@ -1,6 +1,6 @@
 ##############################################################################
 #   ___   workplace
-#  ¦OUX¦  ‟GNU” “make”
+#  ¦OUX¦  GNU “make”
 #  ¦/C+¦  file editor
 #   ---   ncurses text editor
 #         program makefile
