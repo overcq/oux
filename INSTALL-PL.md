@@ -30,7 +30,6 @@ Występuje błąd podczas uruchamiania.
 W systemie kompilacji powinny być zainstalowane:
 * programy narzędziowe
 * clang lub gcc
-
 * dokumentacja “man” funkcji systemowych i poniższych bibliotek
 * OpenSSL
 * xcb
