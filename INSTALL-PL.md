@@ -8,21 +8,28 @@
 * Gentoo Linux
 
 System operacyjny tworzenia oprogramowania.
+![Gentoo](picture/Gentoo.png)
 
 * FreeBSD 13.1
 
 Uruchamia się.
 ![FreeBSD](picture/FreeBSD.png)
 
+* NetBSD 10.1
+
+Wymaga opcji budowania do pojedynczego pliku programu.
+![NetBSD](picture/NetBSD.png)
+
 * OpenBSD 7.1
 
 Występuje błąd podczas uruchamiania.
+![OpenBSD](picture/OpenBSD.png)
 
 # Wymagania
 
 W systemie kompilacji powinny być zainstalowane:
 * programy narzędziowe
-* clang lub gccu
+* clang lub gcc
 
 * dokumentacja “man” funkcji systemowych i poniższych bibliotek
 * OpenSSL
@@ -33,7 +40,7 @@ Do uruchomienia programu testowego (“make run”) powinnien być zainstalowany
 
 # Kompilacja i instalacja
 
-Poniżej jest odwołanie do programu ‟GNU make”, który może być urchamiany poleceniem “gmake”.
+Poniżej jest odwołanie do programu GNU “make”, który może być urchamiany poleceniem “gmake”.
 
 Należy wykonać:
 1. jako zwykły użytkownik: “make” i potwierdzić zgodę na warunki użytkowania

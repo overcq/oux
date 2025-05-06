@@ -8,15 +8,22 @@
 * Gentoo Linux
 
 Software development operating system.
+![Gentoo](picture/Gentoo.png)
 
 * FreeBSD 13.1
 
 It starts.
 ![FreeBSD](picture/FreeBSD.png)
 
+* NetBSD 10.1
+
+Requires single program file build option.
+![NetBSD](picture/NetBSD.png)
+
 * OpenBSD 7.1
 
 There is an error starting up.
+![OpenBSD](picture/OpenBSD.png)
 
 # Requirements
 
@@ -32,7 +39,7 @@ To run the test program ("make run") should be installed:
 
 # Compilation and installation
 
-Below is a reference to a program ‟GNU make”, which can be run using the command “gmake”.
+Below is a reference to a program GNU “make”, which can be run using the command “gmake”.
 
 Should do:
 1. as a regular user: “make” and confirm that you agree to the terms of use
