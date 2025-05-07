@@ -8,6 +8,7 @@
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2016‒1‒22 o
 *******************************************************************************/
 // Rozłączenie procesu skopiowanego przez “fork” (w nowym procesie). Nie wolno przełączać ‹zadań› w części od “begin” do “end”.
+_export
 pid_t
 E_flow_I_fork_I_begin( void
 ){  E_flow_Q_task_I_touch_stack(0); // Ponieważ podczas “fork” nie może być realizowana procedura obsługi “SIGSEGV”.
@@ -16,6 +17,7 @@ E_flow_I_fork_I_begin( void
     V1( pid = fork() ){}
     return pid;
 }
+_export
 void
 E_flow_I_fork_I_end( N pid
 ){  _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_I_fork_S_sigset, 0 );
@@ -25,6 +27,7 @@ E_flow_I_fork_I_end( N pid
 }
 //------------------------------------------------------------------------------
 // Poniższe procedury, wykonywane w “procesie” potomnym, mogą używać tylko pasywnych funkcjonalności technologii, nie zintegrowanych w przepływie wykonania. Czyli na przykład tylko synchronicznych raportów linii. Nigdy nie wiadomo bez sprawdzenia tekstu procedur, czy nie używa ona wewnątrz funkcjonalności zintegrowanych.
+_export
 void
 E_flow_I_fork_I_start( void
 ){  // Jeszcze przed wykonaniem się “exec” – usunięcie identyfikacji siebie jako wykonawcy “procesu”, który utworzył ten — z wykonywania funkcji “process call”.
@@ -40,6 +43,7 @@ E_flow_I_fork_I_start( void
         V0_( close( file->fd ));
     }
 }
+_export
 void
 E_flow_I_fork_I_exec( Pc cwd
 , struct E_flow_Z_args *args
@@ -142,6 +146,7 @@ End_2:  ;
     V1(( execvp( argv[0], argv ), ~0 )){}
 }
 //------------------------------------------------------------------------------
+_export
 N
 E_flow_I_fork_I_wait( pid_t pid
 ){

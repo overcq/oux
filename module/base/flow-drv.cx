@@ -105,6 +105,7 @@ struct E_flow_Q_process_call_cli_Z
   unsigned U_R( state, reply )          :1;
 };
 //==============================================================================
+_internal
 N
 E_flow_Q_task_I_granulation( void
 ){  if( !E_base_S->E_flow_Q_task_S )
@@ -166,6 +167,7 @@ E_flow_Q_task_I_granulation( void
     }
     return ret;
 }
+_export
 I
 E_flow_Q_task_M( I *uid
 , void (*task_proc)(P)
@@ -619,6 +621,7 @@ E_flow_Q_task_M( I *uid
 }
     #ifdef E_flow_C_thread_system_unblock_reports
 // Nie wolno tworzyć “wątku”/‘instancji’ tego samego ‹zadania› w bloku startowym (innej ‘instancji’) tego samego ‹zadania›. Czyli nie wolno tworzyć w ogóle w takim ‹zadaniu›, ponieważ ‹zadania› tworzy się w bloku startowym.
+_export
 I
 E_flow_Q_task_M_thread( I *uid
 , I subid
@@ -669,6 +672,7 @@ E_flow_Q_thread_system_unblock_report_I( P args_
     return 0;
 }
     #endif
+_export
 void
 E_flow_Q_task_W( I *uid
 ){  I id = *uid;
@@ -709,6 +713,7 @@ E_flow_Q_task_W( I *uid
     _Z_tasks_table_S_edit_end;
 }
     #ifdef E_flow_C_thread_system_unblock_reports
+_export
 void
 E_flow_Q_task_W_thread( I *uid
 , I subid
@@ -760,6 +765,7 @@ E_flow_Q_task_I_touch_stack( N page_count
 }
 //------------------------------------------------------------------------------
     #ifdef C_pthreads
+_export
 I
 E_flow_Q_task_async_M( I *uid
 , void (*task_proc)(P)
@@ -1172,6 +1178,7 @@ E_flow_Q_thread_async_I( P args_
     V0_( munmap( args->alt_stack.ss_sp, args->alt_stack.ss_size ));
     return 0;
 }
+_export
 void
 E_flow_Q_task_async_W( I *uid
 ){  I id = *uid;
@@ -1217,6 +1224,7 @@ E_flow_Q_task_async_W( I *uid
 }
     #endif
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+_export
 I
 E_flow_Q_report_M( N uid
 ){  struct E_flow_Q_report_Z *report;
@@ -1233,11 +1241,13 @@ E_flow_Q_report_M( N uid
     }
     return report_id;
 }
+_export
 void
 E_flow_Q_report_W( I id
 ){  E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_report_S, id );
 }
 //------------------------------------------------------------------------------
+_export
 void
 E_flow_Q_report_I_signal( I id
 ){  struct E_flow_Q_report_Z *report = E_mem_Q_tab_R( E_base_S->E_flow_Q_report_S, id );
@@ -1257,6 +1267,7 @@ E_flow_Q_report_I_signal( I id
         }
     }
 }
+_export
 B
 E_flow_Q_report_I_wait( I id
 , N *lost_count
@@ -1287,12 +1298,14 @@ E_flow_Q_report_I_wait( I id
     report->reported_count = 0;
     return ret;
 }
+_export
 void
 E_flow_Q_report_I_clear( I id
 ){  struct E_flow_Q_report_Z *report = E_mem_Q_tab_R( E_base_S->E_flow_Q_report_S, id );
     report->reported_count = 0;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+_export
 I
 E_flow_Q_timer_M( N period
 ){  Z_clock_time tv;
@@ -1326,6 +1339,7 @@ E_flow_Q_timer_M( N period
     timer->left = timer->period;
     return timer_id;
 }
+_export
 void
 E_flow_Q_timer_W( I id
 ){  E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_timer_S, id );
@@ -1339,6 +1353,7 @@ E_flow_Q_timer_W( I id
     _timerover( &E_base_S->E_flow_Q_timer_S_next_real_time );
 }
 //------------------------------------------------------------------------------
+_export
 B
 E_flow_Q_timer_I_wait( I id
 , N *lost_count
@@ -1353,6 +1368,7 @@ E_flow_Q_timer_I_wait( I id
     return ret;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+_export
 I
 E_flow_Q_impulser_M( N uid
 ){  struct E_flow_Q_timer_Z *timer;
@@ -1371,6 +1387,7 @@ E_flow_Q_impulser_M( N uid
     timer->task_to = E_base_S->E_flow_Q_task_S_current;
     return timer_id;
 }
+_export
 I
 E_flow_Q_impulser_M_srv( N uid
 ){  struct E_flow_Q_timer_Z *timer;
@@ -1389,6 +1406,7 @@ E_flow_Q_impulser_M_srv( N uid
     return timer_id;
 }
 //------------------------------------------------------------------------------
+_export
 void
 E_flow_Q_impulser_I_activate( I id
 , N time
@@ -1417,6 +1435,7 @@ E_flow_Q_impulser_I_activate( I id
     E_base_S->E_flow_Q_timer_S_last_real_time = tv;
     _timeradd( &tv, &timer->left, &E_base_S->E_flow_Q_timer_S_next_real_time );
 }
+_export
 void
 E_flow_Q_impulser_I_deactivate( I id
 ){  struct E_flow_Q_timer_Z *timer = E_mem_Q_tab_R( E_base_S->E_flow_Q_timer_S, id );
@@ -1434,6 +1453,7 @@ E_flow_Q_impulser_I_deactivate( I id
 }
 //------------------------------------------------------------------------------
 //NDFN Dodać “lost_count”?
+_export
 B
 E_flow_Q_impulser_I_wait( I id
 ){  struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
@@ -1443,6 +1463,7 @@ E_flow_Q_impulser_I_wait( I id
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #ifdef E_flow_C_thread_system_unblock_reports
+_export
 void
 E_flow_Q_thread_system_unblock_report_M( void ( *thread_unblock_proc )(P)
 , pthread_mutex_t **thread_flow_mutex
@@ -1456,6 +1477,7 @@ E_flow_Q_thread_system_unblock_report_M( void ( *thread_unblock_proc )(P)
     *thread_switch_in = task->thread_switch_in;
     *thread_switch_out = task->thread_switch_out;
 }
+_export
 void
 E_flow_Q_thread_system_unblock_report_I_before_async(
   pthread_cond_t *thread_switch
@@ -1464,6 +1486,7 @@ E_flow_Q_thread_system_unblock_report_I_before_async(
     E_flow_Q_task_I_touch_stack(0);
     Vr_( pthread_cond_wait( thread_switch, thread_flow_mutex ));
 }
+_export
 B
 E_flow_Q_thread_system_unblock_report_I_after_async(
   B *thread_switch_in
@@ -1487,6 +1510,7 @@ E_flow_Q_thread_system_unblock_report_I_after_async(
     task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
     return task->run_state == E_flow_Z_run_state_S_stopping_by_task;
 }
+_export
 void
 E_flow_Q_thread_system_unblock_report_I_unblock( I task_uid
 , I task_subid
@@ -1497,6 +1521,7 @@ E_flow_Q_thread_system_unblock_report_I_unblock( I task_uid
     #endif
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #ifdef E_flow_C_itimer_system_unblock_report
+_export
 void
 E_flow_Q_itimer_system_unblock_report_M( B (*sigsuspend_)( sigset_t * )
 , void (*setitimer_)( Z_clock_time * )
@@ -1504,12 +1529,14 @@ E_flow_Q_itimer_system_unblock_report_M( B (*sigsuspend_)( sigset_t * )
     E_base_S->E_flow_Z_itimer_system_unblock_report_I_setitimer = setitimer_;
     E_base_S->E_flow_Z_itimer_system_unblock_report_S_task_id = E_base_S->E_flow_Q_task_S_current;
 }
+_export
 void
 E_flow_Q_itimer_system_unblock_report_W( void
 ){  E_base_S->E_flow_Z_itimer_system_unblock_report_I_sigsuspend = 0;
     E_base_S->E_flow_Z_itimer_system_unblock_report_I_setitimer = 0;
 }
 //------------------------------------------------------------------------------
+_export
 B
 E_flow_Q_itimer_system_unblock_report_I_wait( void
 ){  struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
@@ -1519,6 +1546,7 @@ E_flow_Q_itimer_system_unblock_report_I_wait( void
     #endif
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #ifdef C_pthreads
+_export
 B
 E_flow_Q_thread_async_I_before_sync(
   B *thread_switch_in
@@ -1542,6 +1570,7 @@ E_flow_Q_thread_async_I_before_sync(
     task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
     return task->run_state == E_flow_Z_run_state_S_stopping_by_task;
 }
+_export
 void
 E_flow_Q_thread_async_I_after_sync(
   pthread_cond_t *thread_switch
@@ -1553,7 +1582,8 @@ E_flow_Q_thread_async_I_after_sync(
     #endif
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Każde ‹zadanie› synchroniczne po wywołaniu “E_flow_Q_task_I_schedule” i po przełączeniu w tej procedurze do innego ‹zadania› (“E_flow_Q_task_I_switch”) czeka przed instrukcją powrotu z tej procedury, by kontynuować w miejscu wywołania i ewentualnie zakończyć własne ‹zadanie› po powrocie.
-__attribute__ ((__noinline__,__returns_twice__,__hot__))
+_export
+__attribute__ (( __noinline__, __returns_twice__, __hot__ ))
 B
 E_flow_Q_task_I_schedule( void
 ){  _forced_statement;
@@ -1891,8 +1921,8 @@ Loop:
     }
 }
 // Przełączenie do ‹zadania› przez przełączenie wskaźnika “stosu” wykonania.
-__attribute__ ((__noinline__,__returns_twice__,__hot__))
 _internal
+__attribute__ (( __noinline__, __returns_twice__, __hot__ ))
 void
 E_flow_Q_task_I_switch( I task_to_id
 ){  feclearexcept( FE_ALL_EXCEPT );
@@ -2210,6 +2240,7 @@ E_flow_Z_signal_V_io_ready( int uid
 }
 #endif
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+_export
 I
 E_flow_Q_process_call_M( N l
 , P *data
@@ -2235,6 +2266,7 @@ E_flow_Q_process_call_M( N l
     *data = shm;
     return call_id;
 }
+_export
 void
 E_flow_Q_process_call_W( I id
 ){  struct E_flow_Q_process_call_cli_Z *call = E_mem_Q_tab_R( E_base_S->E_flow_Q_process_call_cli_S, id );
@@ -2245,6 +2277,7 @@ E_flow_Q_process_call_W( I id
     _sigprocmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply_pong, 0 );
 }
 //------------------------------------------------------------------------------
+_export
 B
 E_flow_Q_process_call_I( I id
 , pid_t process_id

@@ -439,6 +439,7 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
     #else
 #define _errno                              errno
     #endif
+#define _export                             __attribute__ (( __visibility__( "protected" ) ))
 #define _forced_statement                   __asm__ volatile ( "" )
 #define _internal                           __attribute__ (( __visibility__( "internal" ) ))
 #define _packed                             __attribute__ (( __packed__ ))
@@ -447,5 +448,5 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
     #endif
 #define _unused                             __attribute__ (( __unused__ ))
 //==============================================================================
-#define S_eof                  ( ~1L )
+#define S_eof                               ( ~1L )
 /******************************************************************************/
