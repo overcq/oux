@@ -162,6 +162,19 @@ E_text_Z_s0_T_ends_s0( Pc s
     return !*t;
 }
 _export
+N
+E_text_Z_s0_I_cmp_s0( Pc s
+, Pc t
+){  while( *s
+    && *t
+    && *s == *t
+    )
+    {   s++;
+        t++;
+    }
+    return *s - *t;
+}
+_export
 B
 E_text_Z_s_T_ends_s0( Pc s
 , Pc s_end
@@ -1125,23 +1138,11 @@ E_text_Z_s_P_copy_s_0( Pc s
 //------------------------------------------------------------------------------
 _export
 Pc
-E_text_Z_s_P_copy_sl( Pc s
-, Pc t
-, N l
-){  J_assert( s < t || s >= t + l );
-    while( l-- )
-    {   *s = *t;
-        s++;
-        t++;
-    }
-    return s;
-}
-_export
-Pc
 E_text_Z_s_P_copy_sl_0( Pc s
 , Pc t
 , N l
-){  return E_text_Z_s_P_0( E_text_Z_s_P_copy_sl( s, t, l ));
+){  E_mem_Q_blk_I_copy( s, t, l );
+    return E_text_Z_s_P_0( s + l );
 }
 //------------------------------------------------------------------------------
 _export
@@ -1207,7 +1208,7 @@ E_text_Z_s_I_append_s0( Pc *s
     Pc p;
     if( !( p = E_mem_Q_blk_I_append( s, l )))
         return 0;
-    E_text_Z_s_P_copy_sl( p, t, l );
+    E_mem_Q_blk_I_copy( p, t, l );
     return l;
 }
 _export
@@ -1242,7 +1243,7 @@ E_text_Z_s_I_prepend_s0( Pc *s
     Pc p;
     if( !( p = E_mem_Q_blk_I_prepend( s, l )))
         return 0;
-    E_text_Z_s_P_copy_sl( *s, t, l );
+    E_mem_Q_blk_I_copy( *s, t, l );
     return p;
 }
 //------------------------------------------------------------------------------

@@ -360,6 +360,9 @@ E_mem_Q_blk_I_copy_rev( P dst
 , N l
 ){
         #if defined( __i386__ ) || defined( __x86_64__ )
+    __asm__ volatile (
+    "\n"    "std"
+    );
             #ifdef __SSE__
     N128 *dst_x = (P)E_simple_Z_p_I_align_down_to_v2( dst + l, sizeof(N128) );
     N128 *src_x = (P)E_simple_Z_p_I_align_down_to_v2( src + l, sizeof(N128) );
@@ -374,7 +377,6 @@ E_mem_Q_blk_I_copy_rev( P dst
         N l_1 = ( l - l_0 ) / sizeof(N128);
         N l_2 = ( l - l_0 ) % sizeof(N128);
         __asm__ volatile (
-        "\n"    "std"
         "\n"    "rep movsb"
         : "+D" (dst), "+S" (src), "+c" ( l_0 )
         :
@@ -397,12 +399,11 @@ E_mem_Q_blk_I_copy_rev( P dst
         src = (Pc)src + l - 1;
     }
     __asm__ volatile (
-    "\n"    "std"
     "\n"    "rep movsb"
     "\n"    "cld"
     : "+D" (dst), "+S" (src), "+c" (l)
     :
-    : "cc", "memory"
+    : "memory"
     );
         #else
     Pn dst_n = (P)E_simple_Z_p_I_align_down_to_v2( (Pc)dst + l, sizeof(N) );
@@ -2667,7 +2668,7 @@ E_mem_Q_blk_I_insert_( P p
             );
             if( !p_1 )
                 return 0;
-            //TODO Zrobić w “E_mem_Q_blk_Q_table_M_from_free_or_map” parametr przesuniecia dla ‘split’ i kopiowania tam odrazu?
+            //TODO Zrobić w “E_mem_Q_blk_Q_table_M_from_free_or_map” parametr przesuniecia dla ‘split’ i kopiowania tam od razu?
             if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n )
                 E_mem_Q_blk_I_copy( (Pc)p_1 + ( i + n ) * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
                 , (Pc)p_1 + i * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
