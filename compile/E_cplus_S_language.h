@@ -91,6 +91,7 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
 //------------------------------------------------------------------------------
 #define _0(pointer_variable,l)              E_mem_Q_blk_P_fill_c( (pointer_variable), l, 0 )
 #define _0_(pointer_variable)               _0( (pointer_variable), sizeof( *(pointer_variable) ))
+#define _0t_(pointer_variable,n)            _0( (pointer_variable), (n) * sizeof( *(pointer_variable) ))
 //------------------------------------------------------------------------------
 // Utworzenie i wyrzucenie zmiennej w pamięci ‘alokowanej’ w “menedżerze pamięci”.
 #define M(l)                                E_mem_Q_blk_M(l)
@@ -120,29 +121,29 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
 // Utworzenie i wyrzucenie ‹zadania› lub ‹zadania› “wątkowanego” czekającego na ‹systemowy raport odblokowujący›.
     #ifndef E_flow_C_thread_system_unblock_reports
         #ifdef C_line_report
-#define D_M(module,task)                    if( ~E_flow_Q_task_M( &(D_id(module,task)), _D_proc(module,task), J_s( _D_proc(module,task) ))){} else
+#define D_M(module,task)                    if( ~E_flow_Q_task_M( &D_id(module,task), &_D_proc(module,task), J_s( _D_proc(module,task) ))){} else
         #else
-#define D_M(module,task)                    if( ~E_flow_Q_task_M( &(D_id(module,task)), _D_proc(module,task) )){} else
+#define D_M(module,task)                    if( ~E_flow_Q_task_M( &D_id(module,task), &_D_proc(module,task) )){} else
         #endif
     #else
 //TODO Rozdzielić dla “Dh” — na ‹zadania› takie jak “D” (bez “subid”) oraz takie jak obecnie “Dh” (“Dhi”).
         #ifdef C_line_report
-#define D_M(module,task)                    if( ~E_flow_Q_task_M( &(D_id(module,task)), _D_proc(module,task), 0, no, J_s( _D_proc(module,task) ))){} else
-#define Dh_M(module,task,subid,arg)         if( ~E_flow_Q_task_M_thread( &(D_id(module,task)), (subid), _D_proc(module,task), (arg), J_s( _D_proc(module,task) ))){} else
+#define D_M(module,task)                    if( ~E_flow_Q_task_M( &D_id(module,task), &_D_proc(module,task), 0, no, J_s( _D_proc(module,task) ))){} else
+#define Dh_M(module,task,subid,arg)         if( ~E_flow_Q_task_M_thread( &D_id(module,task), (subid), &_D_proc(module,task), (arg), J_s( _D_proc(module,task) ))){} else
         #else
-#define D_M(module,task)                    if( ~E_flow_Q_task_M( &(D_id(module,task)), _D_proc(module,task), 0, no )){} else
-#define Dh_M(module,task,subid,arg)         if( ~E_flow_Q_task_M_thread( &(D_id(module,task)), (subid), _D_proc(module,task), (arg) )){} else
+#define D_M(module,task)                    if( ~E_flow_Q_task_M( &D_id(module,task), &_D_proc(module,task), 0, no )){} else
+#define Dh_M(module,task,subid,arg)         if( ~E_flow_Q_task_M_thread( &D_id(module,task), (subid), &_D_proc(module,task), (arg) )){} else
         #endif
 #define Dh_W(module,task,subid)             E_flow_Q_task_W_thread( &(D_id(module,task)), (subid) )
     #endif
 #define D_W(module,task)                    E_flow_Q_task_W( &(D_id(module,task)) )
     #ifdef C_pthreads
         #ifdef C_line_report
-#define Da_M(module,task,thread_unblock_proc)   if( ~E_flow_Q_task_async_M( &(D_id(module,task)), _D_proc(module,task), &( thread_unblock_proc ), J_s( _D_proc(module,task) ))){} else
+#define Da_M(module,task,thread_unblock_proc)   if( ~E_flow_Q_task_async_M( &D_id(module,task), &_D_proc(module,task), &( thread_unblock_proc ), J_s( _D_proc(module,task) ))){} else
         #else
-#define Da_M(module,task,thread_unblock_proc)   if( ~E_flow_Q_task_async_M( &(D_id(module,task)), _D_proc(module,task), &( thread_unblock_proc ))){} else
+#define Da_M(module,task,thread_unblock_proc)   if( ~E_flow_Q_task_async_M( &D_id(module,task), &_D_proc(module,task), &( thread_unblock_proc ))){} else
         #endif
-#define Da_W(module,task)                   E_flow_Q_task_async_W( &(D_id(module,task)) )
+#define Da_W(module,task)                   E_flow_Q_task_async_W( &D_id(module,task) )
     #endif
 //------------------------------------------------------------------------------
 // Znacznik stanu —zwykle stanu pojedynczego obiektu sygnalizującego później kolekcję— umieszczony w strukturze tego ‹obiektu› dostępnej przez wyrażenie.

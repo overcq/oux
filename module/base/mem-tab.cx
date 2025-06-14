@@ -189,9 +189,10 @@ E_mem_Q_tab_I_remove( struct E_mem_Q_tab_Z *tab_
             {   struct E_mem_Q_tab_S_iterator_Z *iterator = (P)tab_->iterator->index[i];
                 for_i( j, iterator->n )
                     if( iterator->index[j] == id )
-                    {   iterator->n--;
-                        if( !E_mem_Q_blk_I_remove( &iterator->index, j, 1 ))
-                            return ~0;
+                    {   if( !E_mem_Q_blk_I_remove( &iterator->index, j, 1 ))
+                        {   GV_(NA);
+                        }
+                        iterator->n--;
                         break;
                     }
             }
@@ -213,7 +214,8 @@ E_mem_Q_tab_I_remove( struct E_mem_Q_tab_Z *tab_
     Pc data = tab_->data;
     tab_->data_n--;
     if( !E_mem_Q_blk_I_remove( &tab_->data, ( p - tab_->data ) / tab_->u, 1 ))
-        return ~0;
+    {   GV_(NA);
+    }
     if( tab_->data != data )
     {   for_i( i, tab_->index_n )
             if( tab_->index[i] )

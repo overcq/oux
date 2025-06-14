@@ -37,7 +37,7 @@ case "$1" in
                 next
             }
             { print }
-        ' <"$2" \
+        ' < "$2" \
         | perl -ne '
             use strict;
             use warnings;
@@ -54,7 +54,7 @@ case "$1" in
                 next
             }
             { print }
-        ' <"$2" \
+        ' < "$2" \
         | perl -ne '
             use strict;
             use warnings;
@@ -100,7 +100,7 @@ case "$1" in
             next
         }
         { print }
-    ' <"$2" \
+    ' < "$2" \
     | perl -ne '
         use strict;
         use warnings;
@@ -119,7 +119,7 @@ case "$1" in
                     next
                 }
                 { print }
-            ' <"$3" \
+            ' < "$3" \
             | perl -ne '
                 use strict;
                 use warnings;
@@ -205,7 +205,7 @@ case "$1" in
             {   if( /^}[^=;]*/ )
                 {   my $s = $&;
                     if( /^}\s*(\*)*\w/ )
-                    {   print '\''}extern'\''. ( $1 eq '\'\'' ? '\'\ \'' : '\'\'' ) . substr( $s, 1 ) .'\'';'\'';
+                    {   print '\''}extern'\''. ( !defined($1) ? '\'\ \'' : '\'\'' ) . substr( $s, 1 ) .'\'';'\'';
                     }else
                     {   print $s .'\'';'\'';
                     }

@@ -7,7 +7,7 @@
 *         memory blocks manager
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2015‒4‒28 *
 *******************************************************************************/
-/** Menedżer bloków pamięci alokowanej dynamicznie, ale nie do niepotrzebnego alokowania i zwalniania w pętlach, przechowujący rozmiar pojedynczego elementu bloku tylko do własnej administracji pamięcią.
+/* Menedżer bloków pamięci alokowanej dynamicznie, ale nie do niepotrzebnego alokowania i zwalniania w pętlach, przechowujący rozmiar pojedynczego elementu bloku tylko do własnej administracji pamięcią.
 Implementacyjnie – w “E_mem_Q_blk” uchwytami są adresy elementów (ponad zmienianymi numerami elementów), a w “E_mem_Q_tab” – numery elementów (ponad zmienianymi adresami). Czyli w sensie funkcjonalnym z zewnątrz – ten pierwszy jest menedżerem tablic rzeczywistych (ciągłych w pamięci), a ten drugi – zarządzanych.
 ⁂
 Deterministyczna strategia modyfikacji pamięci stosowana w tym menedżerze i globalnie wewnętrznie w miejscu użycia jego funkcji.
@@ -569,11 +569,11 @@ E_mem_Q_blk_Q_sys_table_a_I_move_empty_entry( N allocated_i
         , E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_allocated_id ].p + ( allocated_i + 1 ) * E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_allocated_id ].u
         , ( allocated_end - ( allocated_i + 1 )) * E_base_S->E_mem_Q_blk_S_allocated[ E_base_S->E_mem_Q_blk_S_allocated_id ].u
         );
-        if( allocated_i <= E_base_S->E_mem_Q_blk_S_mapped_id )
+        if( allocated_i < E_base_S->E_mem_Q_blk_S_mapped_id )
             E_base_S->E_mem_Q_blk_S_mapped_id--;
-        if( allocated_i <= E_base_S->E_mem_Q_blk_S_free_id )
+        if( allocated_i < E_base_S->E_mem_Q_blk_S_free_id )
             E_base_S->E_mem_Q_blk_S_free_id--;
-        if( allocated_i <= E_base_S->E_mem_Q_blk_S_allocated_id )
+        if( allocated_i < E_base_S->E_mem_Q_blk_S_allocated_id )
             E_base_S->E_mem_Q_blk_S_allocated_id--;
     }
     allocated_p[ allocated_end - 1 ].p = 0;
@@ -2044,7 +2044,7 @@ E_mem_Q_blk_I_add_( P p
                                 *n_prepended = l_1 / E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u;
                             if( n_appended )
                                 *n_appended = l / E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u;
-                            return E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p + l_1 + l_0;
+                            return E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p + l_1;
                         }
                         if( free_p[ free_j ].p > p_0 + l_0 )
                         {   if( free_j == min )
@@ -2079,7 +2079,7 @@ E_mem_Q_blk_I_add_( P p
                 *n_prepended = 0;
             if( n_appended )
                 *n_appended = n;
-            return (Pc)p_1 + l_0;
+            return p_1;
         }
         if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p > *( Pc * )p )
         {   if( allocated_i == min )
