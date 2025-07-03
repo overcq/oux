@@ -44,21 +44,23 @@ E_desk_cmd_M( void
       , E_cmd_Z_argv_I_exec_I_0
       }
     , { "text"
-      , ( Pc [] ){ "sh", "-c", "geany -s --socket-file=/tmp/${USER}/geany-socket-$( xprop -root _NET_CURRENT_DESKTOP | cut -d \\  -f 3 )${1:+ -- \"$@\"}", "/bin/sh", 0 }
+      , ( Pc [] ){ "/usr/bin/sh", "-c", "geany -s --socket-file=/tmp/${USER}/geany-socket-$( xprop -root _NET_CURRENT_DESKTOP | cut -d \\  -f 3 )${1:+ -- \"$@\"}", "/usr/bin/sh", 0 }
       , (P)0
       , E_cmd_Z_argv_I_exec_I_0
       }
     , { "www"
       , ( Pc [] )
-        { "bash"
+        { "/usr/bin/bash"
         , "-c"
-        , "ulimit "
-         "-m 524288;"
+        , "sudo chmod g+x /run/user/1000;"
+         "umask 7;"
          "args=(); while [ -n \"$1\" ]; do echo \"$1\" | grep -qEe '^(https?|file):/""/' && args+=( \"$1\" ) || args+=( \"file:/""/$1\" ); shift; done;"
          "exec "
          "env "
          "LANG=pl "
-         "chromium "
+         "gksu -u inc-www \'"
+         "/usr/bin/dbus-run-session "
+         "/usr/bin/chromium "
          "--allow-file-access-from-files "
          "--disable-bundled-ppapi-flash "
          "--ignore-gpu-blocklist "
@@ -76,9 +78,9 @@ E_desk_cmd_M( void
          "--proxy-bypass-list=czateria-api.interia.pl,gov.pl,.gov.pl,localhost,gentoo,.gentoo,10/8,172.16/12,192.168/16,127.0.0.1,[::1] "
         //"--proxy-pac-url=file:/" "/" E_const_P_home_dir "/lib/proxy.pac"
          "--new-window "
-         "--start-maximized"
-         "${args[0]:+ -- \"${args[@]}\"}"
-        , "/bin/sh"
+         "--start-maximized -- "
+         "\'\\'${args[@]}\\'"
+        , "/usr/bin/bash"
         , 0
         }
       , (P)~0

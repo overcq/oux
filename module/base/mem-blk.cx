@@ -448,8 +448,9 @@ void
 E_mem_Q_blk_I_copy( P dst
 , P src
 , N l
-){  J_assert( dst != src );
-    if( !l )
+){  if( !l
+    || dst == src
+    )
         return;
     if( (Pc)dst < (Pc)src
     || (Pc)dst >= (Pc)src + l
@@ -2626,9 +2627,7 @@ E_mem_Q_blk_I_insert_( P p
                                     *( P * )p = E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p -= l_1;
                                 }
                                 E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n += n;
-                                if( l_1
-                                && i
-                                )
+                                if( l_1 )
                                     E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p
                                     , E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p + l_1
                                     , i * E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].u
@@ -2762,6 +2761,7 @@ E_mem_Q_blk_I_remove_( P p
                 , p_0
                 , *( Pc * )p + l_0 - p_0
                 );
+                E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n -= n;
                 E_mem_Q_blk_Q_table_I_put_before( E_base_S->E_mem_Q_blk_S_free_id );
                 struct E_mem_Q_blk_Z_free free_p_;
                 if( !~E_mem_Q_blk_Q_sys_table_mf_P_put( E_base_S->E_mem_Q_blk_S_free_id, (Pc)&free_p_.p - (Pc)&free_p_, (Pc)&free_p_.l - (Pc)&free_p_
@@ -2773,7 +2773,6 @@ E_mem_Q_blk_I_remove_( P p
                     return 0;
                 }
                 E_mem_Q_blk_Q_table_I_put_after( E_base_S->E_mem_Q_blk_S_free_id );
-                E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n -= n;
             }
             E_mem_Q_blk_Q_table_I_put_end();
             return E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p;
