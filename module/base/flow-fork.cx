@@ -148,7 +148,7 @@ End_2:  ;
 //------------------------------------------------------------------------------
 _export
 N
-E_flow_I_fork_I_wait( pid_t pid
+E_flow_I_fork_I_wait_for_start( pid_t pid
 ){
         #if defined( __gnu_linux__ )
     N path_l = 6 + E_text_Z_n_N_s_G( pid, sizeof(pid), 10 ) + 1;
@@ -161,10 +161,10 @@ E_flow_I_fork_I_wait( pid_t pid
     O{  DIR *dir;
         _errno = 0;
         dir = opendir(path);
-        if( !dir )
-        {   if( _errno == ENOENT )
-                break;
-            Ve();
+        if(dir)
+            break;
+        if( _errno != ENOENT )
+        {   Ve();
             G_(); Gs0(path);
             W(path);
             return ~0;
@@ -180,7 +180,7 @@ E_flow_I_fork_I_wait( pid_t pid
         return ~0;
     O{  int n = 0;
         kvm_getprocs( kernel, KERN_PROC_PID, pid, &n );
-        if( !n )
+        if(n)
             break;
         V1( sched_yield() )
             return ~0;
@@ -193,7 +193,7 @@ E_flow_I_fork_I_wait( pid_t pid
         return ~0;
     O{  int n = 0;
         kvm_getprocs( kernel, KERN_PROC_PID, pid, sizeof( struct kinfo_proc ), &n );
-        if( !n )
+        if(n)
             break;
         V1( sched_yield() )
             return ~0;

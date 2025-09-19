@@ -1,0 +1,70 @@
+//-*-C-*-
+/*******************************************************************************
+*   ___   public
+*  ¦OUX¦  C+
+*  ¦/C+¦  component
+*   ---   GUI client
+*         tworzenie ‹modułu› przy rozpoczęciu programu
+* ©overcq                on ‟Gentoo Linux 23.0” “x86_64”              2025‒9‒8 W
+*******************************************************************************/
+enum E_gui_cli_Q_client_Z_type
+{ E_gui_cli_Q_client_Z_type_Z_gtk
+};
+struct E_gui_cli_Q_client_Z
+{ pid_t srv_pid;
+  enum E_gui_cli_Q_client_Z_type type;
+};
+struct E_mem_Q_tab_Z *E_gui_cli_Q_client_S;
+//==============================================================================
+void
+E_gui_cli_M( void
+){  E_gui_cli_Q_client_S = E_mem_Q_tab_M( sizeof( struct E_gui_cli_Q_client_Z ), 0 );
+    if( !E_gui_cli_Q_client_S )
+    {   GV(NA); V();
+    }
+}
+void
+E_gui_cli_W( void
+){  for_each( id, E_gui_cli_Q_client_S, E_mem_Q_tab )
+    {   struct E_gui_cli_Q_client_Z *client = E_mem_Q_tab_R( E_gui_cli_Q_client_S, id );
+        switch( client->type )
+        { case E_gui_cli_Q_client_Z_type_Z_gtk:
+                E_gui_cli_Q_gtk_cli_I_quit(id);
+                break;
+        }
+    }
+    E_mem_Q_tab_W( E_gui_cli_Q_client_S );
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+I
+E_gui_cli_Q_client_M( enum E_gui_cli_Q_client_Z_type type
+){  I id = E_mem_Q_tab_I_add( E_gui_cli_Q_client_S );
+    if( !~id )
+        return id;
+    struct E_gui_cli_Q_client_Z *client = E_mem_Q_tab_R( E_gui_cli_Q_client_S, id );
+    client->type = type;
+    pid_t pid = E_flow_I_fork_I_begin();
+    if( !pid )
+    {   E_flow_I_fork_I_start();
+        switch(type)
+        { case E_gui_cli_Q_client_Z_type_Z_gtk:
+                E_flow_I_fork_I_exec( "/home/inc/moje/programy/gui-srv/GTK", ( struct E_flow_Z_args [] ){ 1, ( char *[] ){ "./a.out" } }, 1 );
+                break;
+        }
+        exit( EXIT_FAILURE );
+    }
+    E_flow_I_fork_I_end(pid);
+    client->srv_pid = pid;
+    return id;
+}
+void
+E_gui_cli_Q_client_W( I id
+){  struct E_gui_cli_Q_client_Z *client = E_mem_Q_tab_R( E_gui_cli_Q_client_S, id );
+    switch( client->type )
+    { case E_gui_cli_Q_client_Z_type_Z_gtk:
+            E_gui_cli_Q_gtk_cli_I_quit(id);
+            break;
+    }
+    E_mem_Q_tab_I_remove( E_gui_cli_Q_client_S, id );
+}
+/******************************************************************************/

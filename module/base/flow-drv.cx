@@ -314,7 +314,9 @@ E_flow_Q_task_M( I *uid
         #ifdef E_mem_Q_blk_C_debug
     E_mem_Q_blk_P_fill_c( touched_stack, touched_size, 0xa5 ); //TODO Procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
         #endif
+    struct E_flow_Q_task_Z *task_current = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
     _Z_tasks_table_S_edit_begin;
+    E_base_S->E_flow_Q_task_S_tmp.stack = task_current->stack;
     I task_id = E_mem_Q_tab_I_add( E_base_S->E_flow_Q_task_S );
     struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id );
     task->stack = stack;
@@ -709,7 +711,9 @@ E_flow_Q_task_W( I *uid
     {   E_flow_Q_task_I_switch(id); // Przełącz tylko po to, by ‹zadanie› zwalniane zwolniło zasoby; również stosowo, hierarchicznie z powrotem przełączając przy zwalnianiu ‹zadań› przez siebie uruchomionych.
         task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, id );
     }
+    struct E_flow_Q_task_Z *task_current = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
     _Z_tasks_table_S_edit_begin;
+    E_base_S->E_flow_Q_task_S_tmp.stack = task_current->stack;
     V0_( munmap( task->stack, task->stack_size ));
     E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, id );
     _Z_tasks_table_S_edit_end;
@@ -885,7 +889,9 @@ E_flow_Q_task_async_M( I *uid
         #ifdef E_mem_Q_blk_C_debug
     E_mem_Q_blk_P_fill_c( touched_stack, pthread_stack_min, 0xa5 ); //TODO Procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
         #endif
+    struct E_flow_Q_task_Z *task_current = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
     _Z_tasks_table_S_edit_begin;
+    E_base_S->E_flow_Q_task_S_tmp.stack = task_current->stack;
     I task_id = E_mem_Q_tab_I_add( E_base_S->E_flow_Q_task_S );
     struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id );
     task->stack = stack;
@@ -1172,7 +1178,6 @@ E_flow_Q_thread_async_I( P args_
     struct E_flow_Q_task_async_I_thread_proc_Z_args *args = args_;
     V0( sigaltstack( &args->alt_stack, 0 ))
         return 0;
-    E_flow_Q_task_I_touch_stack(0);
     Vr_( pthread_mutex_lock( args->task_proc_arg.thread_flow_mutex ));
     args->task_proc( &args->task_proc_arg );
     Vr_( pthread_mutex_unlock( args->task_proc_arg.thread_flow_mutex ));
@@ -1219,7 +1224,9 @@ E_flow_Q_task_async_W( I *uid
     W( task->thread_switch );
     W( task->thread_switch_out );
     W( task->thread_switch_in );
+    struct E_flow_Q_task_Z *task_current = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
     _Z_tasks_table_S_edit_begin;
+    E_base_S->E_flow_Q_task_S_tmp.stack = task_current->stack;
     V0_( munmap( task->stack, task->stack_size ));
     E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, id );
     _Z_tasks_table_S_edit_end;
@@ -1485,7 +1492,6 @@ E_flow_Q_thread_system_unblock_report_I_before_async(
   pthread_cond_t *thread_switch
 , pthread_mutex_t *thread_flow_mutex
 ){  Vr_( pthread_cond_signal( thread_switch ));
-    E_flow_Q_task_I_touch_stack(0);
     Vr_( pthread_cond_wait( thread_switch, thread_flow_mutex ));
 }
 _export
@@ -1578,7 +1584,6 @@ E_flow_Q_thread_async_I_after_sync(
   pthread_cond_t *thread_switch
 , pthread_mutex_t *thread_flow_mutex
 ){  Vr_( pthread_cond_signal( thread_switch ));
-    E_flow_Q_task_I_touch_stack(0);
     Vr_( pthread_cond_wait( thread_switch, thread_flow_mutex ));
 }
     #endif
@@ -2011,25 +2016,40 @@ E_flow_Z_signal_V_segv( int uid
 , P context
 ){  Da_();
     int errno_ = _errno;
-    if( E_base_S->E_flow_Q_task_S_current
-    && U_R( E_base_S->E_flow_S_mode, Z_task_table_S_can_read )
-    )
-    {   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
-        if( (Pc)siginfo->si_addr < task->touched_stack )
-        {   if( (Pc)siginfo->si_addr >= task->stack + E_base_S->E_mem_S_page_size )
-            {   Pc new_base = E_simple_Z_p_I_align_down_to_v2( siginfo->si_addr, E_base_S->E_mem_S_page_size );
-                V0_( mprotect( new_base
-                , task->touched_stack - new_base
-                , PROT_READ | PROT_WRITE
-                ));
-                task->touched_stack = new_base;
-                _errno = errno_;
-                return;
+    if( E_base_S->E_flow_Q_task_S_current )
+    {   if( U_R( E_base_S->E_flow_S_mode, Z_task_table_S_can_read ))
+        {   struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
+            if( (Pc)siginfo->si_addr < task->touched_stack )
+            {   if( (Pc)siginfo->si_addr >= task->stack + E_base_S->E_mem_S_page_size )
+                {   Pc new_base = E_simple_Z_p_I_align_down_to_v2( siginfo->si_addr, E_base_S->E_mem_S_page_size );
+                    V0_( mprotect( new_base
+                    , task->touched_stack - new_base
+                    , PROT_READ | PROT_WRITE
+                    ));
+                    task->touched_stack = new_base;
+                    _errno = errno_;
+                    return;
+                }
+                if( (Pc)siginfo->si_addr >= task->stack )
+                {   GV_(NA); // Late instrumentation error: task stack too small.
+                }
             }
-            if( (Pc)siginfo->si_addr >= task->stack )
-            {   GV_(NA); // Late instrumentation error: task stack too small.
+        }else
+            if( (Pc)siginfo->si_addr < E_base_S->E_flow_Q_task_S_tmp.touched_stack )
+            {   if( (Pc)siginfo->si_addr >= E_base_S->E_flow_Q_task_S_tmp.stack + E_base_S->E_mem_S_page_size )
+                {   Pc new_base = E_simple_Z_p_I_align_down_to_v2( siginfo->si_addr, E_base_S->E_mem_S_page_size );
+                    V0_( mprotect( new_base
+                    , E_base_S->E_flow_Q_task_S_tmp.touched_stack - new_base
+                    , PROT_READ | PROT_WRITE
+                    ));
+                    E_base_S->E_flow_Q_task_S_tmp.touched_stack = new_base;
+                    _errno = errno_;
+                    return;
+                }
+                if( (Pc)siginfo->si_addr >= E_base_S->E_flow_Q_task_S_tmp.stack )
+                {   GV_(NA); // Late instrumentation error: task stack too small.
+                }
             }
-        }
     }
     GV_(NDFN); Gd( siginfo->si_code ); Gh( siginfo->si_addr ); // Other fault.
     struct sigaction sa =
