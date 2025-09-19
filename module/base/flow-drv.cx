@@ -314,9 +314,7 @@ E_flow_Q_task_M( I *uid
         #ifdef E_mem_Q_blk_C_debug
     E_mem_Q_blk_P_fill_c( touched_stack, touched_size, 0xa5 ); //TODO Procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
         #endif
-    struct E_flow_Q_task_Z *task_current = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
-    _Z_tasks_table_S_edit_begin;
-    E_base_S->E_flow_Q_task_S_tmp.stack = task_current->stack;
+    _Z_tasks_table_S_edit_begin_first;
     I task_id = E_mem_Q_tab_I_add( E_base_S->E_flow_Q_task_S );
     struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id );
     task->stack = stack;
@@ -711,9 +709,7 @@ E_flow_Q_task_W( I *uid
     {   E_flow_Q_task_I_switch(id); // Przełącz tylko po to, by ‹zadanie› zwalniane zwolniło zasoby; również stosowo, hierarchicznie z powrotem przełączając przy zwalnianiu ‹zadań› przez siebie uruchomionych.
         task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, id );
     }
-    struct E_flow_Q_task_Z *task_current = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
-    _Z_tasks_table_S_edit_begin;
-    E_base_S->E_flow_Q_task_S_tmp.stack = task_current->stack;
+    _Z_tasks_table_S_edit_begin_first;
     V0_( munmap( task->stack, task->stack_size ));
     E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, id );
     _Z_tasks_table_S_edit_end;
@@ -889,9 +885,7 @@ E_flow_Q_task_async_M( I *uid
         #ifdef E_mem_Q_blk_C_debug
     E_mem_Q_blk_P_fill_c( touched_stack, pthread_stack_min, 0xa5 ); //TODO Procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
         #endif
-    struct E_flow_Q_task_Z *task_current = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
-    _Z_tasks_table_S_edit_begin;
-    E_base_S->E_flow_Q_task_S_tmp.stack = task_current->stack;
+    _Z_tasks_table_S_edit_begin_first;
     I task_id = E_mem_Q_tab_I_add( E_base_S->E_flow_Q_task_S );
     struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, task_id );
     task->stack = stack;
@@ -1224,9 +1218,7 @@ E_flow_Q_task_async_W( I *uid
     W( task->thread_switch );
     W( task->thread_switch_out );
     W( task->thread_switch_in );
-    struct E_flow_Q_task_Z *task_current = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
-    _Z_tasks_table_S_edit_begin;
-    E_base_S->E_flow_Q_task_S_tmp.stack = task_current->stack;
+    _Z_tasks_table_S_edit_begin_first;
     V0_( munmap( task->stack, task->stack_size ));
     E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, id );
     _Z_tasks_table_S_edit_end;
