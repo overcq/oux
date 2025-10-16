@@ -34,7 +34,9 @@ main(
 ){  N ret = E_base_M( argc, argv );
     if(ret)
         return (int)ret;
-    E_ui_M();
+    ret = E_ui_M();
+    if(ret)
+        return (int)ret;
     ret = E_gui_xcb_M();
     if(ret)
         return (int)ret;
@@ -47,7 +49,7 @@ main(
     I out = 0;
 #endif
     E_io_Q_stream_out_P( out
-    , "\n\"OUX/C+ 2\" test sample (c)2017‐2025 overcq"
+    , "\n\"OUX/C+ 3\" test sample (c)2017‐2025 overcq"
     , 0
     );
     I_B();
@@ -124,22 +126,29 @@ End_4:;
         return (int)_X_var( main, gtk_cli_activate );
     X_B( main, gtk_cli_activate, 0 )
         goto End_1;
-    E_ui_Q_gtk_cli_I_build( gtk_cli_id, "<?xml version=\"1.0\"?>"
-    "<interface>"
-        "<object class=\"GtkApplicationWindow\" id=\"main-window\">"
-            "<property name=\"title\">test</property>"
-            "<child>"
-                "<object class=\"GtkGrid\">"
-                    "<child>"
-                        "<object class=\"GtkButton\">"
-                            "<property name=\"label\">Button</property>"
-                        "</object>"
-                    "</child>"
-                "</object>"
-            "</child>"
-        "</object>"
-    "</interface>"
-    );
+    I collection_id = E_ui_Q_collection_M( "Test" );
+    if( collection_id < 0 )
+        return (int)collection_id;
+    I object_id = E_ui_Q_object_M( collection_id, ~0 );
+    if( object_id < 0 )
+        return (int)object_id;
+    struct E_ui_Q_collection_Z *collection = E_mem_Q_tab_R( E_ui_Q_collection_S, collection_id );
+    struct E_ui_Q_object_Z *object = E_mem_Q_tab_R( collection->object, object_id );
+    object->type = E_ui_Z_ui_Z_type_Z_action;
+    object->action.label = "Button";
+    Pc s;
+    ret = E_ui_Q_gtk_cli_N( &s );
+    if(ret)
+        return (int)ret;
+    ret = E_ui_Q_collection_W( collection_id );
+    if(ret)
+        return (int)ret;
+    ret = E_ui_Q_gtk_cli_I_build( gtk_cli_id, s );
+    if(ret)
+        return (int)ret;
+    ret = W(s);
+    if(ret)
+        return (int)ret;
 
     X_M( x_window, close_window );
     if( _X_var( x_window, close_window ) < 0 )
@@ -150,12 +159,12 @@ End_4:;
             if( !~ret )
                 goto End_2;
             else if( (S)ret < 0 )
-                exit( (int)ret );
+                return (int)ret;
             I display_id = E_gui_xcb_Q_display_M();
             if( !~display_id )
                 goto End_3;
             else if( display_id < 0 )
-                exit( (int)display_id );
+                return (int)display_id;
             struct E_gui_xcb_Q_display_Z *display = E_mem_Q_tab_R( E_gui_xcb_Q_display_S, display_id );
             for_each( screen_id, display->screen, E_mem_Q_tab )
             {   struct E_gui_xcb_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, screen_id );
@@ -166,59 +175,59 @@ End_4:;
                     if( !~window_id )
                         goto End;
                     else if( window_id < 0 )
-                        exit( (int)window_id );
+                        return (int)window_id;
                     struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, window_id );
                     I object_id = E_gui_xcb_Q_object_Z_frame_M( display, window );
                     if( !~object_id )
                         goto End;
                     else if( object_id < 0 )
-                        exit( (int)object_id );
+                        return (int)object_id;
                     for_n( i, 3 )
                     {   I id = E_gui_xcb_Q_object_Z_frame_M( display, window );
                         if( !~id )
                             goto End;
                         else if( id < 0 )
-                            exit( (int)id );
+                            return (int)id;
                         else if( id < 0 )
-                            exit( (int)id );
+                            return (int)id;
                         ret = E_gui_xcb_Q_object_I_add( display, window, object_id, id );
                         if( !~ret )
                             goto End;
                         else if( (S)ret < 0 )
-                            exit( (int)ret );
+                            return (int)ret;
                         for_n( i, 5 )
                         {   I id_2 = E_gui_xcb_Q_object_Z_frame_M( display, window );
                             if( !~id_2 )
                                 goto End;
                             else if( id_2 < 0 )
-                                exit( (int)id_2 );
+                                return (int)id_2;
                             ret = E_gui_xcb_Q_object_I_add( display, window, id, id_2 );
                             if( !~ret )
                                 goto End;
                             else if( (S)ret < 0 )
-                                exit( (int)ret );
+                                return (int)ret;
                             for_n( i, 2 )
                             {   I id_3 = E_gui_xcb_Q_object_Z_frame_M( display, window );
                                 if( !~id_3 )
                                     goto End;
                                 else if( id_3 < 0 )
-                                    exit( (int)id_3 );
+                                    return (int)id_3;
                                 ret = E_gui_xcb_Q_object_I_add( display, window, id_2, id_3 );
                                 if( !~ret )
                                     goto End;
                                 else if( (S)ret < 0 )
-                                    exit( (int)ret );
+                                    return (int)ret;
                                 for_n( i, 3 )
                                 {   I id_4 = E_gui_xcb_Q_object_Z_button_font_M( display, window, 0, "abc" );
                                     if( !~id_4 )
                                         goto End;
                                     else if( id_4 < 0 )
-                                        exit( (int)id_4 );
+                                        return (int)id_4;
                                     ret = E_gui_xcb_Q_object_I_add( display, window, id_3, id_4 );
                                     if( !~ret )
                                         goto End;
                                     else if( (S)ret < 0 )
-                                        exit( (int)ret );
+                                        return (int)ret;
                                 }
                             }
                             for_n_( i, 2 )
@@ -226,12 +235,12 @@ End_4:;
                                 if( !~id_3 )
                                     goto End;
                                 else if( id_3 < 0 )
-                                    exit( (int)id_3 );
+                                    return (int)id_3;
                                 ret = E_gui_xcb_Q_object_I_add( display, window, id_2, id_3 );
                                 if( !~ret )
                                     goto End;
                                 else if( (S)ret < 0 )
-                                    exit( (int)ret );
+                                    return (int)ret;
                             }
                         }
                         for_n_( i, 5 )
@@ -239,18 +248,18 @@ End_4:;
                             if( !~id_2 )
                                 goto End;
                             else if( id_2 < 0 )
-                                exit( (int)id_2 );
+                                return (int)id_2;
                             ret = E_gui_xcb_Q_object_I_add( display, window, id, id_2 );
                             if( !~ret )
                                 goto End;
                             else if( (S)ret < 0 )
-                                exit( (int)ret );
+                                return (int)ret;
                             struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, id_2 );
                             object = E_mem_Q_tab_R( window->object, object->child[0] );
                             struct E_gui_xcb_Q_object_Z_data_Z_select *object_data = object->data;
                             object_data->select_n = 5;
                             if( !E_mem_Q_blk_M_replace_tab( &object_data->select, sizeof( Pc ), object_data->select_n ))
-                                exit( EXIT_FAILURE );
+                                return EXIT_FAILURE;
                             for_n( i, object_data->select_n )
                             {   N l = E_text_Z_n_N_s_G( i, sizeof(i), 10 );
                                 object_data->select[i] = M( l + 218 + 1 );
@@ -273,7 +282,7 @@ End_4:;
                     if( !~object_id )
                         goto End;
                     else if( object_id < 0 )
-                        exit( (int)object_id );
+                        return (int)object_id;
                     struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
                     U_F( object->mode, draggable );
                     object_id = E_gui_xcb_Q_object_M( display, window
@@ -288,7 +297,7 @@ End_4:;
                     if( !~object_id )
                         goto End;
                     else if( object_id < 0 )
-                        exit( (int)object_id );
+                        return (int)object_id;
                     object = E_mem_Q_tab_R( window->object, object_id );
                     U_F( object->mode, draggable );
                     object_id = E_gui_xcb_Q_object_M( display, window
@@ -303,7 +312,7 @@ End_4:;
                     if( !~object_id )
                         goto End;
                     else if( object_id < 0 )
-                        exit( (int)object_id );
+                        return (int)object_id;
                     object = E_mem_Q_tab_R( window->object, object_id );
                     U_F( object->mode, draggable );
                     E_gui_xcb_Q_object_I_lay( display, window );
@@ -335,7 +344,9 @@ End:ret = E_tui_W();
     ret = E_gui_xcb_W();
     if(ret)
         return (int)ret;
-    E_ui_W();
+    ret = E_ui_W();
+    if(ret)
+        return (int)ret;
     return (int)E_base_W();
 }
 //D( main, cursor )

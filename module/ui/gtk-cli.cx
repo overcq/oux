@@ -39,4 +39,242 @@ E_ui_Q_gtk_cli_I_build( I id
     E_flow_Q_process_call_I( call_id, client->srv_pid, &res );
     return E_flow_Q_process_call_W( call_id );
 }
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+_internal
+N
+E_ui_Q_gtk_cli_N_( Pc *s
+, struct E_ui_Q_collection_Z *collection
+, struct E_ui_Q_object_Z *object
+){  switch( object->type )
+    { case E_ui_Z_ui_Z_type_Z_group:
+        {   for_n( i, object->child_n )
+            {   struct E_ui_Q_object_Z *object_ = E_mem_Q_tab_R( collection->object, object->child[i] );
+                if( object_->type != E_ui_Z_ui_Z_type_Z_action )
+                    break;
+            }
+            if( i == object->child_n )
+            {   if( !E_text_Z_s0_I_append_s0( s, "<child><object class=\"GtkMenuButton\"><property name=\"label\">" ))
+                    return ~0;
+                Pc s_ = E_text_I_serialize_Z_xml_N( object->title );
+                if( !s_ )
+                    return ~0;
+                else if( (S)s_ < 0 )
+                    return (N)s_;
+                if( !E_text_Z_s0_I_append_s0( s, s_ ))
+                {   N ret = W( s_ );
+                    return ret ? ~1 : ~0;
+                }
+                N ret = W( s_ );
+                if(ret)
+                    return ~1;
+                if( !E_text_Z_s0_I_append_s0( s, "</property><child><object class=\"GtkPopoverMenu\">" ))
+                    return ~0;
+                for_n( i, object->child_n )
+                {   struct E_ui_Q_object_Z *object_ = E_mem_Q_tab_R( collection->object, object->child[i] );
+                    if( !E_text_Z_s0_I_append_s0( s, "<child><object class=\"GtkModelButton\"><property name=\"text\">" ))
+                        return ~0;
+                    Pc s_ = E_text_I_serialize_Z_xml_N( object_->action.label );
+                    if( !s_ )
+                        return ~0;
+                    else if( (S)s_ < 0 )
+                        return (N)s_;
+                    if( !E_text_Z_s0_I_append_s0( s, s_ ))
+                    {   N ret = W( s_ );
+                        return ret ? ~1 : ~0;
+                    }
+                    ret = W( s_ );
+                    if(ret)
+                        return ~1;
+                    if( !E_text_Z_s0_I_append_s0( s, "</object></child>" ))
+                        return ~0;
+                }
+                if( !E_text_Z_s0_I_append_s0( s, "</object></child></object></child>" ))
+                    return ~0;
+            }else
+            {   if( !E_text_Z_s0_I_append_s0( s, "<child><object class=\"GtkFrame\"><property name=\"label-widget\"><object class=\"GtkLabel\"><property name=\"label\">" ))
+                    return ~0;
+                Pc s_ = E_text_I_serialize_Z_xml_N( object->title );
+                if( !s_ )
+                    return ~0;
+                else if( (S)s_ < 0 )
+                    return (N)s_;
+                if( !E_text_Z_s0_I_append_s0( s, s_ ))
+                {   N ret = W( s_ );
+                    return ret ? ~1 : ~0;
+                }
+                N ret = W( s_ );
+                if(ret)
+                    return ~1;
+                if( !E_text_Z_s0_I_append_s0( s, "</property></object></property><property name=\"child\"><object class=\"GtkBox\">" ))
+                    return ~0;
+                for_n( i, object->child_n )
+                {   struct E_ui_Q_object_Z *object_ = E_mem_Q_tab_R( collection->object, object->child[i] );
+                    N ret = E_ui_Q_gtk_cli_N_( s, collection, object_ );
+                    if( !~ret )
+                        return ~0;
+                    else if(ret)
+                        return ret;
+                }
+                if( !E_text_Z_s0_I_append_s0( s, "</object></property></object></child>" ))
+                    return ~0;
+            }
+            break;
+        }
+      case E_ui_Z_ui_Z_type_Z_text:
+        {   if( !E_text_Z_s0_I_append_s0( s, "<child><object class=\"GtkEntry\"/></child>" ))
+                return ~0;
+            break;
+        }
+      case E_ui_Z_ui_Z_type_Z_list:
+        {   if( object->list.multi )
+            {   if( !E_text_Z_s0_I_append_s0( s, "<child><object class=\"GtkFrame\"><property name=\"label-widget\"><object class=\"GtkLabel\"><property name=\"label\">" ))
+                    return ~0;
+                Pc s_ = E_text_I_serialize_Z_xml_N( object->list.title );
+                if( !s_ )
+                    return ~0;
+                else if( (S)s_ < 0 )
+                    return (N)s_;
+                if( !E_text_Z_s0_I_append_s0( s, s_ ))
+                {   N ret = W( s_ );
+                    return ret ? ~1 : ~0;
+                }
+                N ret = W( s_ );
+                if(ret)
+                    return ~1;
+                if( !E_text_Z_s0_I_append_s0( s, "</property></object></property><property name=\"child\">" ))
+                    return ~0;
+                for_n( i, object->list.select_n )
+                {   if( !E_text_Z_s0_I_append_s0( s, "<object class=\"GtkCheckButton\"><property name=\"label\">" ))
+                        return ~0;
+                    Pc s_ = E_text_I_serialize_Z_xml_N( object->list.select[i] );
+                    if( !s_ )
+                        return ~0;
+                    else if( (S)s_ < 0 )
+                        return (N)s_;
+                    if( !E_text_Z_s0_I_append_s0( s, s_ ))
+                        return ~0;
+                    ret = W( s_ );
+                    if(ret)
+                        return ~1;
+                    if( !E_text_Z_s0_I_append_s0( s, "</property></object>" ))
+                        return ~0;
+                }
+                if( !E_text_Z_s0_I_append_s0( s, "</property></object></child>" ))
+                    return ~0;
+            }else
+            {   if( !E_text_Z_s0_I_append_s0( s, "<child><object class=\"GtkDropDown\"><property name=\"model\"><object class=\"GtkStringList\"><items>" ))
+                    return ~0;
+                for_n( i, object->list.select_n )
+                {   if( !E_text_Z_s0_I_append_s0( s, "<item>" ))
+                        return ~0;
+                    Pc s_ = E_text_I_serialize_Z_xml_N( object->list.select[i] );
+                    if( !s_ )
+                        return ~0;
+                    else if( (S)s_ < 0 )
+                        return (N)s_;
+                    if( !E_text_Z_s0_I_append_s0( s, s_ ))
+                    {   N ret = W( s_ );
+                        return ret ? ~1 : ~0;
+                    }
+                    N ret = W( s_ );
+                    if(ret)
+                        return ~1;
+                    if( !E_text_Z_s0_I_append_s0( s, "</item>" ))
+                        return ~0;
+                }
+                if( !E_text_Z_s0_I_append_s0( s, "</items></object></property></object></child>" ))
+                    return ~0;
+            }
+            break;
+        }
+      case E_ui_Z_ui_Z_type_Z_action:
+        {   if( !E_text_Z_s0_I_append_s0( s, "<child><object class=\"GtkButton\"><property name=\"label\">" ))
+                return ~0;
+            Pc s_ = E_text_I_serialize_Z_xml_N( object->action.label );
+            if( !s_ )
+                return ~0;
+            else if( (S)s_ < 0 )
+                return (N)s_;
+            if( !E_text_Z_s0_I_append_s0( s, s_ ))
+            {   N ret = W( s_ );
+                return ret ? ~1 : ~0;
+            }
+            N ret = W( s_ );
+            if(ret)
+                return ~1;
+            if( !E_text_Z_s0_I_append_s0( s, "</property></object></child>" ))
+                return ~0;
+            break;
+        }
+      case E_ui_Z_ui_Z_type_Z_level:
+        {   if( object->level.max )
+            {   if( !E_text_Z_s0_I_append_s0( s, "<child><object class=\"GtkProgressBar\"><property name=\"fraction\">" ))
+                    return ~0;
+                F f = object->level.current / object->level.max;
+                //E_text_Z_f_N_s()
+                Pc s_ = E_text_I_serialize_Z_xml_N( "0" );
+                if( !s_ )
+                    return ~0;
+                else if( (S)s_ < 0 )
+                    return (N)s_;
+                if( !E_text_Z_s0_I_append_s0( s, s_ ))
+                {   N ret = W( s_ );
+                    return ret ? ~1 : ~0;
+                }
+                N ret = W( s_ );
+                if(ret)
+                    return ~1;
+                if( !E_text_Z_s0_I_append_s0( s, "</property></object></child>" ))
+                    return ~0;
+            }else
+                if( !E_text_Z_s0_I_append_s0( s, "<child><object class=\"GtkSpinner\"/></child>" ))
+                    return ~0;
+            break;
+        }
+    }
+    return 0;
+}
+N
+E_ui_Q_gtk_cli_N( Pc *s
+){  for_each( collection_id, E_ui_Q_collection_S, E_mem_Q_tab )
+    {   struct E_ui_Q_collection_Z *collection = E_mem_Q_tab_R( E_ui_Q_collection_S, collection_id );
+        N l = J_s0_R_l( "<?xml version=\"1.0\"?><interface><object class=\"GtkApplicationWindow\" id=\"main-window\"><property name=\"title\">" ) + 1;
+        *s = M(l);
+        if( !*s )
+            return ~0;
+        E_text_Z_s_P_copy_s0_0( *s, "<?xml version=\"1.0\"?><interface><object class=\"GtkApplicationWindow\" id=\"main-window\"><property name=\"title\">" );
+        Pc s_ = E_text_I_serialize_Z_xml_N( collection->title );
+        if( !s_ )
+        {   N ret = W( *s );
+            return ret ? ~1 : ~0;
+        }
+        if( (S)s_ < 0 )
+            return (N)s_;
+        if( !E_text_Z_s0_I_append_s0( s, s_ ))
+        {   N ret = W( *s );
+            return ret ? ~1 : ~0;
+        }
+        N ret = W( s_ );
+        if(ret)
+            return ~1;
+        if( !E_text_Z_s0_I_append_s0( s, "</property>" ))
+        {   ret = W( *s );
+            return ret ? ~1 : ~0;
+        }
+        for_each( object_id, collection->object, E_mem_Q_tab )
+        {   struct E_ui_Q_object_Z *object = E_mem_Q_tab_R( collection->object, object_id );
+            N ret = E_ui_Q_gtk_cli_N_( s, collection, object );
+            if( !~ret )
+            {   ret = W( *s );
+                return ret ? ~1 : ~0;
+            }else if(ret)
+                return ret;
+        }
+        if( !E_text_Z_s0_I_append_s0( s, "</object></interface>" ))
+        {   ret = W( *s );
+            return ret ? ~1 : ~0;
+        }
+    }
+    return 0;
+}
 /******************************************************************************/

@@ -13,7 +13,7 @@
 # • Plik wykonywalny zależny od ‹modułów› tworzonych tutaj jako ‘dll’ (“to libs”). Oszczędza pamięć, gdy jest używany kolejny program.
 # • Program do uruchomienia instrukcją wpisaną pomiędzy innym programem (“middle code”). Tekst programu do tego jest już przygotowany, ale brak sposobu konfiguracji i ‘kompilacji’ docelowej — w “2.mak”.
 H_make_C_to_libs := 1
-# Zastępuje niedoskonale systemowego menedżera pamięci. Włączać tylko w programach nie wymagających niezawodności.
+# Zastępuje niedoskonale systemowy menedżer pamięci. Włączać tylko w programach nie wymagających niezawodności.
 H_make_C_to_libs_C_replace_c_alloc := 1
 #H_make_C_middle_code := 1
 # Przełącza na zegar nanosekundowy ‟POSIX 2008” (z pozastandardowymi rozszerzeniami) zamiast milisekundowego ‟POSIX 2001”. Te nowe mogą być odporne na nieakceptowalne ustawianie zegara systemowego, więc powinno być włączone. Rozdzielczość nanosekundowa i tak nie jest potrzebna lub wykorzystywana.

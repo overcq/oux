@@ -1119,20 +1119,20 @@ E_text_Z_n_N_s_G( N n
 _export
 Pc
 E_text_Z_ns_N_s( Pc s_end
-, S sn
+, S ns
 , N l
 , N base
-){  s_end = E_text_Z_n_N_s( s_end, J_abs(sn), l, base );
-    if( sn < 0 )
+){  s_end = E_text_Z_n_N_s( s_end, J_abs(ns), l, base );
+    if( ns < 0 )
         *--s_end = '-';
     return s_end;
 }
 _export
 N
-E_text_Z_ns_N_s_G( S sn
+E_text_Z_ns_N_s_G( S ns
 , N l
 , N base
-){  return E_text_Z_n_N_s_G( J_abs(sn), l, base ) + ( sn < 0 ? 1 : 0 );
+){  return E_text_Z_n_N_s_G( J_abs(ns), l, base ) + ( ns < 0 ? 1 : 0 );
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 _export
@@ -1874,5 +1874,54 @@ E_text_Z_getter_Z_c_R_u_rev( N (*getter)(void)
     ? v
     : ~0;
     return 1 + i;
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Pc
+E_text_I_serialize_Z_xml_N( Pc t
+){  Pc t_ = t;
+    U u;
+    while( *t_ )
+    {   t_ = E_text_Z_su_R_u( t_, &u );
+        if( (S)u < 0 )
+            return 0;
+        if( u == '&'
+        || u == '<'
+        || u == '>'
+        )
+            break;
+    }
+    Pc s = M( t_ - 1 - t + ( u == '&' ? J_s0_R_l( "&amp;" ) : u == '<' ? J_s0_R_l( "&gt;" ) : u == '>' ? J_s0_R_l( "&lt;" ) : 0 ) + 1 );
+    if( !s )
+        return 0;
+    if( *t_ )
+    {   Pc s_ = E_text_Z_s_P_copy_s( s, t, t_ - 1 );
+        E_text_Z_s_P_copy_s0_0( s_, u == '&' ? "&amp;" : u == '<' ? "&lt;" : "&gt;" );
+        t = t_;
+        while( *t_ )
+        {   t_ = E_text_Z_su_R_u( t_, &u );
+            if( (S)u < 0 )
+            {   N ret = W(s);
+                return ret ? (P)~1 : 0;
+            }
+            if( u == '&'
+            || u == '<'
+            || u == '>'
+            )
+            {   if( !( s_ = E_mem_Q_blk_I_append( &s, t_ - 1 - t + ( u == '&' ? J_s0_R_l( "&amp;" ) : u == '<' ? J_s0_R_l( "&gt;" ) : J_s0_R_l( "&lt;" )))))
+                {   N ret = W(s);
+                    return ret ? (P)~1 : 0;
+                }
+                s_ = E_text_Z_s_P_copy_s( s_ - 1, t, t_ - 1 );
+                E_text_Z_s_P_copy_s0_0( s_, u == '&' ? "&amp;" : u == '<' ? "&lt;" : "&gt;" );
+                t = t_;
+            }
+        }
+        if( !E_text_Z_s0_I_append_s( &s, t, t_ ))
+        {   N ret = W(s);
+            return ret ? (P)~1 : 0;
+        }
+    }else
+        E_text_Z_s_P_copy_s_0( s, t, t_ );
+    return s;
 }
 /******************************************************************************/
