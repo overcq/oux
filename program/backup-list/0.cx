@@ -36,6 +36,8 @@ E_main_I_top_dirs( void
     if( !dirs )
         return ~0;
     dirs[0] = M( 1 + 1 );
+    if( !dirs[0] )
+        return ~0;
     dirs[0][0] = '/';
     dirs[0][1] = '\0';
     do
@@ -44,18 +46,23 @@ E_main_I_top_dirs( void
         DIR *dir;
         int errno_;
         Vpe( dir = opendir( dirs[ dirs_current ] ), errno_ )
-        {   G_(); Gs0( dirs[ dirs_current ] );
-            if( errno_ == EACCES
+        {   if( errno_ == EACCES
             || errno_ == ENOENT
             || errno_ == ENOTDIR
             )
-            {   W( dirs[ dirs_current ] );
+            {   N ret = W( dirs[ dirs_current ] );
+                if(ret)
+                    return ret;
                 dirs_n--;
                 if( !E_mem_Q_blk_I_remove( &dirs, dirs_current, 1 ))
-                {   GV_(NA);
-                    for( N i = 0; i != dirs_n; i++ )
-                        W( dirs[i] );
-                    W(dirs);
+                {   for( N i = 0; i != dirs_n; i++ )
+                    {   ret = W( dirs[i] );
+                        if(ret)
+                            return ret;
+                    }
+                    ret = W(dirs);
+                    if(ret)
+                        return ret;
                     return ~0;
                 }
                 if( !dirs_n )
@@ -63,32 +70,49 @@ E_main_I_top_dirs( void
                 continue;
             }
             for( N i = 0; i != dirs_n; i++ )
-                W( dirs[i] );
-            W(dirs);
-            return ~0;
+            {   N ret = W( dirs[i] );
+                if(ret)
+                    return ret;
+            }
+            N ret = W(dirs);
+            return ret ? ret : ~0;
         }
         O{  _errno = 0;
             struct dirent *dirent = readdir(dir);
             if( !dirent )
             {   if( _errno )
                 {   Vp(dirent){}
-                    V1( closedir(dir) ){}
+                    V1( closedir(dir) )
+                        return ~0;
                     for( N i = 0; i != dirs_n; i++ )
-                        W( dirs[i] );
-                    W(dirs);
+                    {   N ret = W( dirs[i] );
+                        if(ret)
+                            return ret;
+                    }
+                    N ret = W(dirs);
+                    if(ret)
+                        return ret;
                     return ~0;
                 }
-                W( dirs[ dirs_current ] );
+                N ret = W( dirs[ dirs_current ] );
+                if(ret)
+                    return ret;
                 dirs_n--;
                 if( !E_mem_Q_blk_I_remove( &dirs, dirs_current, 1 ))
-                {   GV_(NA);
-                    V1( closedir(dir) ){}
+                {   V1( closedir(dir) )
+                        return ~0;
                     for( N i = 0; i != dirs_n; i++ )
-                        W( dirs[i] );
-                    W(dirs);
+                    {   ret = W( dirs[i] );
+                        if(ret)
+                            return ret;
+                    }
+                    ret = W(dirs);
+                    if(ret)
+                        return ret;
                     return ~0;
                 }
-                V1( closedir(dir) ){}
+                V1( closedir(dir) )
+                    return ~0;
                 break;
             }
             if( E_text_Z_s0_T_eq_s0( &dirent->d_name[0], "." )
@@ -98,11 +122,15 @@ E_main_I_top_dirs( void
             Pc pathname = M( E_text_Z_s0_R_l( dirs[ dirs_current ] ) + ( !E_text_Z_s0_T_eq_s0( dirs[ dirs_current ], "/" ) ? 1 : 0 ) + E_text_Z_s0_R_l( &dirent->d_name[0] ) + 1 );
             if( !pathname )
             {   GV_(NA);
-                V1( closedir(dir) ){}
+                V1( closedir(dir) )
+                    return ~0;
                 for( N i = 0; i != dirs_n; i++ )
-                    W( dirs[i] );
-                W(dirs);
-                return ~0;
+                {   N ret = W( dirs[i] );
+                    if(ret)
+                        return ret;
+                }
+                N ret = W(dirs);
+                return ret ? ret : ~0;
             }
             Pc s = E_text_Z_s_P_copy_s0( pathname, dirs[ dirs_current ] );
             if( !E_text_Z_s0_T_eq_s0( dirs[ dirs_current ], "/" ))
@@ -114,97 +142,150 @@ E_main_I_top_dirs( void
             {   I file = E_mem_Q_file_M( pathname, yes, 0 );
                 if( !~file )
                 {   W(pathname);
-                    V1( closedir(dir) ){}
+                    V1( closedir(dir) )
+                        return ~0;
                     for( N i = 0; i != dirs_n; i++ )
-                        W( dirs[i] );
-                    W(dirs);
-                    return ~0;
+                    {   N ret = W( dirs[i] );
+                        if(ret)
+                            return ret;
+                    }
+                    N ret = W(dirs);
+                    return ret ? ret : ~0;
                 }
-                W(pathname);
+                N ret = W(pathname);
+                if(ret)
+                    return ret;
                 pathname = M( E_text_Z_s0_R_l_0( dirs[ dirs_current ] ));
                 if( !pathname )
-                {   GV_(NKN);
-                    V1( closedir(dir) ){}
+                {   V1( closedir(dir) )
+                        return ~0;
                     for( N i = 0; i != dirs_n; i++ )
-                        W( dirs[i] );
-                    W(dirs);
-                    return ~0;
+                    {   N ret = W( dirs[i] );
+                        if(ret)
+                            return ret;
+                    }
+                    N ret = W(dirs);
+                    return ret ? ret : ~0;
                 }
                 E_text_Z_s_P_copy_s0_0( pathname, dirs[ dirs_current ] );
                 if( E_main_Z_s_N_escape( &pathname ))
                 {   GV_(NKN);
-                    W(pathname);
-                    V1( closedir(dir) ){}
+                    N ret = W(pathname);
+                    if(ret)
+                        return ret;
+                    V1( closedir(dir) )
+                        return ~0;
                     for( N i = 0; i != dirs_n; i++ )
-                        W( dirs[i] );
-                    W(dirs);
-                    return ~0;
+                    {   N ret = W( dirs[i] );
+                        if(ret)
+                            return ret;
+                    }
+                    ret = W(dirs);
+                    return ret ? ret : ~0;
                 }
                 O{  Pc line = 0;
                     N ret = E_mem_Q_file_R_u_upto( file, "\n", &line );
                     if(ret)
-                    {   if( ret == E_mem_Q_file_S_eof )
+                    {   if( ret == S_eof )
                             break;
-                        W(pathname);
-                        V1( closedir(dir) ){}
+                        N ret_ = W(pathname);
+                        if( ret_ )
+                            return ret;
+                        V1( closedir(dir) )
+                            return ret;
                         for( N i = 0; i != dirs_n; i++ )
-                            W( dirs[i] );
+                        {   ret_ = W( dirs[i] );
+                            if( ret_ )
+                                return ret;
+                        }
                         W(dirs);
-                        return ~0;
+                        return ret;
                     }
                     N line_l = E_text_Z_s0_R_l(line);
                     if( line_l < 2 )
                     {   GV_(NKN);
-                        W(line);
-                        W(pathname);
-                        V1( closedir(dir) ){}
+                        N ret = W(line);
+                        if(ret)
+                            return ret;
+                        ret = W(pathname);
+                        if(ret)
+                            return ret;
+                        V1( closedir(dir) )
+                            return ~0;
                         for( N i = 0; i != dirs_n; i++ )
-                            W( dirs[i] );
-                        W(dirs);
-                        return ~0;
+                        {   ret = W( dirs[i] );
+                            if(ret)
+                                return ret;
+                        }
+                        ret = W(dirs);
+                        return ret ? ret : ~0;
                     }
                     line[ line_l - 1 ] = '\0';
                     printf( "- %s/%s\n", pathname, line );
                     W(line);
                 }
-                if( E_mem_Q_file_W(file) )
-                {   W(pathname);
-                    V1( closedir(dir) ){}
+                ret = E_mem_Q_file_W(file);
+                if(ret)
+                {   N ret_ = W(pathname);
+                    if( ret_ )
+                        return ret;
+                    V1( closedir(dir) )
+                        return ret;
                     for( N i = 0; i != dirs_n; i++ )
-                        W( dirs[i] );
+                    {   ret_ = W( dirs[i] );
+                        if( ret_ )
+                            return ret;
+                    }
                     W(dirs);
-                    return ~0;
+                    return ret;
                 }
                 printf( "+ %s\n", pathname );
-                W(pathname);
+                ret = W(pathname);
+                if(ret)
+                    return ret;
                 continue;
             }
             if( dirent->d_type == DT_UNKNOWN )
             {   struct stat stat;
                 V1( lstat( pathname, &stat ))
-                {   W(pathname);
-                    V1( closedir(dir) ){}
+                {   N ret = W(pathname);
+                    if(ret)
+                        return ret;
+                    V1( closedir(dir) )
+                        return ~0;
                     for( N i = 0; i != dirs_n; i++ )
-                        W( dirs[i] );
-                    W(dirs);
-                    return ~0;
+                    {   ret = W( dirs[i] );
+                        if(ret)
+                            return ret;
+                    }
+                    ret = W(dirs);
+                    return ret ? ret : ~0;
                 }
-                W(pathname);
+                N ret = W(pathname);
+                if(ret)
+                    return ret;
                 if( S_ISDIR( stat.st_mode ))
                     dirent->d_type = DT_DIR;
             }
             if( dirent->d_type != DT_DIR )
-            {   W(pathname);
+            {   N ret = W(pathname);
+                if(ret)
+                    return ret;
                 continue;
             }
-            if( !E_mem_Q_blk_I_append( &dirs, dirs_n + 1 ))
-            {   GV_(NA);
-                W(pathname);
-                V1( closedir(dir) ){}
+            if( !E_mem_Q_blk_I_append( &dirs, 1 ))
+            {   N ret = W(pathname);
+                if(ret)
+                    return ret;
+                V1( closedir(dir) )
+                    return ~0;
                 for( N i = 0; i != dirs_n; i++ )
-                    W( dirs[i] );
-                W(dirs);
-                return ~0;
+                {   ret = W( dirs[i] );
+                    if(ret)
+                        return ret;
+                }
+                ret = W(dirs);
+                return ret ? ret : ~0;
             }
             if(( E_text_Z_s0_T_eq_s0( dirs[ dirs_current ], "/" )
               && ( E_text_Z_s0_T_eq_s0( &dirent->d_name[0], "boot" )
@@ -231,29 +312,36 @@ E_main_I_top_dirs( void
             || E_text_Z_s0_T_eq_s0( &dirent->d_name[0], "caches" )
             || E_text_Z_s0_T_eq_s0( &dirent->d_name[0], "Sdk" )
             )
-            {   W(pathname);
+            {   N ret = W(pathname);
+                if(ret)
+                    return ret;
                 continue;
             }
             dirs[ dirs_n ] = pathname;
             dirs_n++;
         }
     }while( dirs_n );
-    W(dirs);
-    return 0;
+    N ret = W(dirs);
+    return ret ? ret : 0;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 int
 main(
   int argc
 , char *argv[]
-){  E_base_M( argc, argv );
-    if( !~E_main_I_top_dirs() )
+){  N ret = E_base_M( argc, argv );
+    if(ret)
+        return (int)ret;
+    ret = E_main_I_top_dirs();
+    if( !~ret )
         goto Error;
-    E_base_W();
-    return 0;
+    else if( (S)ret < 0 )
+        return (int)ret;
+    ret = E_base_W();
+    return ret;
 Error:
-    E_base_W();
-    return 1;
+    ret = E_base_W();
+    return ret ? (int)ret : EXIT_FAILURE;
 }
 //==============================================================================
 void

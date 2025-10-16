@@ -74,7 +74,7 @@ typedef S64                 S; // Ta sama liczba jak powyżej, ale ze znakiem.�
         #ifdef C_id_small
 typedef S16                 I; // ‹Identyfikator› tylko danych zarządzanych przez ‹menedżerów› ‟oux” (a nie przez zewnętrzne, dołączane podsystemy).
         #else
-typedef N32                 I;
+typedef S32                 I;
         #endif
     #endif
 typedef unsigned            In; // Służy do konwersji wartości “I” podczas porównywania.

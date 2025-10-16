@@ -30,8 +30,10 @@ main(
   int argc
 , Pc *argv
 ){  if( argc != 2 )
-        V();
-    E_base_M( argc, argv );
+        return EXIT_FAILURE;
+    N ret = E_base_M( argc, argv );
+    if(ret)
+        return (int)ret;
     E_main_I_getch_S_meta_key = no;
     initscr();
     start_color();
@@ -48,21 +50,47 @@ main(
     raw();
     keypad( stdscr, TRUE );
     notimeout( stdscr, TRUE );
-    E_lines_M();
-    if( !~( E_main_S_file = E_mem_Q_file_M( argv[1], no, 0 )))
-    {   endwin(); G_(); V();
+    ret = E_lines_M();
+    if(ret)
+    {   endwin();
+        return (int)ret;
     }
-    E_main_Q_file_I_paint_lines(0);
+    E_main_S_file = E_mem_Q_file_M( argv[1], no, 0 );
+    if( E_main_S_file < 0 )
+    {   endwin();
+        return (int)E_main_S_file;
+    }
+    ret = E_main_Q_file_I_paint_lines(0);
+    if( (S)ret < 0 )
+    {   endwin();
+        return (int)ret;
+    }
     move( 0, 0 );
-    D_M( main, getch );
+    ret = D_M( main, getch );
+    if( (S)ret < 0 )
+    {   endwin();
+        return (int)ret;
+    }
     X_M( main, none );
+    if( _X_var( main, none ) < 0 )
+    {   endwin();
+        return (int)_X_var( main, none );
+    }
     X_B( main, none, 0 ){}
-    X_W( main, none );
-    D_W( main, getch );
+    ret = X_W( main, none );
+    if(ret)
+    {   endwin();
+        return (int)ret;
+    }
+    ret = D_W( main, getch );
+    if(ret)
+    {   endwin();
+        return (int)ret;
+    }
     E_lines_W();
     endwin();
-    E_base_W();
-    return 0;
+    ret = E_base_W();
+    return ret ? (int)ret : 0;
 }
 B
 E_main_I_sigsuspend( sigset_t *sigset
@@ -481,35 +509,38 @@ E_main_I_clear_from( int y
         clrtoeol();
     }
 }
-void
+N
 E_main_Q_file_I_paint_lines( int y
 ){  N u_i = E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y ].start;
-    E_mem_Q_file_P_pos( E_main_S_file, u_i );
+    N ret = E_mem_Q_file_P_pos( E_main_S_file, u_i );
+    if(ret)
+        return ret;
     int x = 0, y_, x_;
     getmaxyx( stdscr, y_, x_ );
     move( y, 0 );
     O{  U u;
         N u_i_ = E_text_Z_getter_Z_c_R_u( &E_main_Q_file_R_c, &u );
-        if( !~u_i_ )
-        {   endwin(); G_(); V();
-        }
-        if( u_i_ == E_mem_Q_file_S_eof )
+        if( u_i_ == S_eof )
         {   if( !u_i )
-            {   E_lines_Q_lines_I_append();
+            {   ret = E_lines_Q_lines_I_append();
+                if(ret)
+                    return ret;
                 E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ] = ( struct E_lines_Q_lines_Z ){ u_i, ~0 };
             }
             E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].l = x;
             break;
-        }
+        }else if( (S)u_i_ < 0 )
+            return u_i_;
         if( !( u == '\n'
         || u == '\t'
         || iswprint(u)
         ))
-        {   endwin(); G_(); V();
-        }
+            return ~0;
         if( u == '\n' )
         {   E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].l = x + 1;
-            E_lines_Q_lines_I_append();
+            ret = E_lines_Q_lines_I_append();
+            if(ret)
+                return ret;
             E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ] = ( struct E_lines_Q_lines_Z ){ u_i + u_i_, ~0 };
             if( y == y_ - 1 )
                 break;
@@ -524,7 +555,9 @@ E_main_Q_file_I_paint_lines( int y
         ins_wch( &cc );
         if( x == x_ - 1 )
         {   E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].l = x + 1;
-            E_lines_Q_lines_I_append();
+            ret = E_lines_Q_lines_I_append();
+            if(ret)
+                return ret;
             E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ] = ( struct E_lines_Q_lines_Z ){ u_i + u_i_, ~0 };
             if( y == y_ - 1 )
                 break;
@@ -534,8 +567,9 @@ E_main_Q_file_I_paint_lines( int y
             x++;
 Cont:   u_i += u_i_;
     }
+    return 0;
 }
-B ///czy narysowano linię.
+N // Czy narysowano linię.
 E_main_Q_file_I_paint_first_line( void
 ){  if( !E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen ].start )
         return no;
@@ -545,17 +579,15 @@ E_main_Q_file_I_paint_first_line( void
     B start = yes;
     O{  U u;
         N u_i_ = E_text_Z_getter_Z_c_R_u( &E_main_Q_file_R_c, &u );
-        if( !~u_i_ )
-        {   endwin(); G_(); V();
-        }
-        if( u_i_ == E_mem_Q_file_S_eof )
+        if( u_i_ == S_eof )
             return no;
+        else if( (S)u_i_ < 0 )
+            return u_i_;
         if( !( u == '\n'
         || u == '\t'
         || iswprint(u)
         ))
-        {   endwin(); G_(); V();
-        }
+            return ~0;
         if(start)
         {   scrl( -1 );
             E_lines_Q_lines_S_first_on_screen--;
@@ -574,24 +606,24 @@ E_main_Q_file_I_paint_first_line( void
     }
     return yes;
 }
-B ///czy narysowano linię.
+N // Czy narysowano linię.
 E_main_Q_file_I_paint_last_line( void
 ){  int x = 0, x_, y_;
     getmaxyx( stdscr, y_, x_ );
     if( E_lines_Q_lines_S_first_on_screen + y_ == E_lines_Q_lines_S_l )
         return no;
     N u_i = E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y_ ].start;
-    E_mem_Q_file_P_pos( E_main_S_file, u_i );
+    N ret = E_mem_Q_file_P_pos( E_main_S_file, u_i );
+    if(ret)
+        return ret;
     B start = yes;
     O{  U u;
         N u_i_ = E_text_Z_getter_Z_c_R_u( &E_main_Q_file_R_c, &u );
-        if( !~u_i_ )
-        {   endwin(); G_(); V();
-        }
-        if( u_i_ == E_mem_Q_file_S_eof )
+        if( u_i_ == S_eof )
         {   E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].l = x;
             return no;
-        }
+        }else if( (S)u_i_ < 0 )
+            return u_i_;
         if( !( u == '\n'
         || u == '\t'
         || iswprint(u)
@@ -605,7 +637,9 @@ E_main_Q_file_I_paint_last_line( void
         }
         if( u == '\n' )
         {   E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].l = x + 1;
-            E_lines_Q_lines_I_append();
+            ret = E_lines_Q_lines_I_append();
+            if(ret)
+                return ret;
             E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ] = ( struct E_lines_Q_lines_Z ){ u_i + u_i_, ~0 };
             break;
         }
@@ -616,7 +650,9 @@ E_main_Q_file_I_paint_last_line( void
         ins_wch( &cc );
         if( x == x_ - 1 )
         {   E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ].l = x + 1;
-            E_lines_Q_lines_I_append();
+            ret = E_lines_Q_lines_I_append();
+            if(ret)
+                return ret;
             E_lines_Q_lines_S[ E_lines_Q_lines_S_l - 1 ] = ( struct E_lines_Q_lines_Z ){ u_i + u_i_, ~0 };
             break;
         }
@@ -625,70 +661,72 @@ E_main_Q_file_I_paint_last_line( void
     }
     return yes;
 }
-B ///czy nie zakończono na pierwszym oknie.
+N // Czy nie zakończono na pierwszym oknie.
 E_main_Q_file_I_paint_prev_window( void
-){  B ret = yes;
+){  N ret = yes;
     int x_, y_;
     getmaxyx( stdscr, y_, x_ );
     for_n( i, y_ )
-        if( !E_main_Q_file_I_paint_first_line() )
-        {   ret = no;
+    {   ret = E_main_Q_file_I_paint_first_line();
+        if( (S)ret < 0
+        || !ret
+        )
             break;
-        }
+    }
     return ret;
 }
-B ///czy nie zakończono na ostatnim oknie.
+N // Czy nie zakończono na ostatnim oknie.
 E_main_Q_file_I_paint_next_window( void
-){  B ret = yes;
+){  N ret = yes;
     int x_, y_;
     getmaxyx( stdscr, y_, x_ );
     for_n( i, y_ )
-        if( !E_main_Q_file_I_paint_last_line() )
-        {   ret = no;
+    {   ret = E_main_Q_file_I_paint_last_line();
+        if( (S)ret < 0
+        || !ret
+        )
             break;
-        }
+    }
     return ret;
 }
-N ///pozycja w pliku dla znaku w “x”.
+N // Pozycja w pliku dla znaku w “x”.
 E_main_Q_file_I_line_rewind( int x
 , int y
 ){  N u_i = E_lines_Q_lines_S[ E_lines_Q_lines_S_first_on_screen + y ].start;
-    E_mem_Q_file_P_pos( E_main_S_file, u_i );
+    N ret = E_mem_Q_file_P_pos( E_main_S_file, u_i );
+    if(ret)
+        return ret;
     int x_i = 0;
     while( x_i != x )
     {   U u;
         N u_i_ = E_text_Z_getter_Z_c_R_u( &E_main_Q_file_R_c, &u );
-        if( !~u_i_ )
-        {   endwin(); G_(); V();
-        }
-        if( u_i_ == E_mem_Q_file_S_eof )
+        if( u_i_ == S_eof )
             break;
+        if( (S)u_i_ < 0 )
+            return u_i_;
         if( !( u == '\n'
         || u == '\t'
         || iswprint(u)
         ))
-        {   endwin(); G_(); V();
-        }
+            return ~0;
         x_i++;
         u_i += u_i_;
     }
     return u_i;
 }
-N ///bajtów na znak od bieżącej pozycji.
+N // Bajtów na znak od bieżącej pozycji.
 E_main_Q_file_I_u_forward( U *u
 ){  U u_;
     N u_i_ = E_text_Z_getter_Z_c_R_u( &E_main_Q_file_R_c, &u_ );
-    if( !~u_i_ )
-    {   endwin(); G_(); V();
-    }
-    if( u_i_ == E_mem_Q_file_S_eof )
+    if( u_i_ == S_eof )
         return 0;
+    else if( (S)u_i_ < 0 )
+        return u_i_;
     if( !( u_ == '\n'
     || u_ == '\t'
     || iswprint( u_ )
     ))
-    {   endwin(); G_(); V();
-    }
+        return ~0;
     if(u)
         *u = u_;
     return u_i_;
@@ -697,17 +735,15 @@ N
 E_main_Q_file_I_u_backward( U *u
 ){  U u_;
     N u_i_ = E_text_Z_getter_Z_c_R_u_rev( &E_main_Q_file_R_rev_c, &u_ );
-    if( !~u_i_ )
-    {   endwin(); G_(); V();
-    }
-    if( u_i_ == E_mem_Q_file_S_eof )
+    if( u_i_ == S_eof )
         return 0;
+    else if( (S)u_i_ < 0 )
+        return u_i_;
     if( !( u_ == '\n'
     || u_ == '\t'
     || iswprint( u_ )
     ))
-    {   endwin(); G_(); V();
-    }
+        return ~0;
     if(u)
         *u = u_;
     return u_i_;

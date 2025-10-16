@@ -16,27 +16,72 @@ extern void E_flow_Q_process_call_I_func(P);
     #endif
 //------------------------------------------------------------------------------
     #ifndef C_middle_code
-#define _sigaction_M(signum,act)        { V0_( sigaction( (signum), (act), 0 )); }
-#define _sigaction_W(signum,act)        { V0_( sigaction( (signum), (act), 0 )); }
+#define _sigaction_M(signum,act)        V0( sigaction( (signum), (act), 0 ))
+#define _sigaction_W(signum,act)        V0( sigaction( (signum), (act), 0 ))
     #else
 #define _sigaction_S_name(sig)          J_autogen( J_a_b( E_flow_Z_saved_initial_S_sigaction, sig ))
-#define _sigaction_M(signum,act)        { V0_( sigaction( (signum), (act), &E_base_S->_sigaction_S_name(signum) )); }
-#define _sigaction_W(signum,act)        { V0_( sigaction( (signum), &E_base_S->_sigaction_S_name(signum), 0 )); }
+#define _sigaction_M(signum,act)        V0( sigaction( (signum), (act), &E_base_S->_sigaction_S_name(signum) ))
+#define _sigaction_W(signum,act)        V0( sigaction( (signum), &E_base_S->_sigaction_S_name(signum), 0 ))
     #endif
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #ifdef C_pthreads
-#define _sigprocmask(how,set,oldset)    { Vr_( pthread_sigmask( (how), (set), (oldset) )); }
+#define _sigprocmask(how,set,oldset)    Vr( pthread_sigmask( (how), (set), (oldset) ))
     #else
-#define _sigprocmask(how,set,oldset)    { V0_( sigprocmask( (how), (set), (oldset) )); }
+#define _sigprocmask(how,set,oldset)    V0( sigprocmask( (how), (set), (oldset) ))
     #endif
     #ifdef C_pthreads
-#define _Z_tasks_table_S_edit_begin_first Vr_( pthread_mutex_lock( &E_base_S->E_flow_Z_task_table_S_mutex )); _sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, &E_base_S->E_flow_Z_task_table_S_sigset ); struct E_flow_Q_task_Z *task_current = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current ); E_base_S->E_flow_Q_task_S_tmp.stack = task_current->stack; E_base_S->E_flow_Q_task_S_tmp.touched_stack = task_current->touched_stack; U_L( E_base_S->E_flow_S_mode, Z_task_table_S_can_read )
-#define _Z_tasks_table_S_edit_begin     Vr_( pthread_mutex_lock( &E_base_S->E_flow_Z_task_table_S_mutex )); _sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, &E_base_S->E_flow_Z_task_table_S_sigset ); E_base_S->E_flow_Q_task_S_tmp.touched_stack = task_current->touched_stack; U_L( E_base_S->E_flow_S_mode, Z_task_table_S_can_read )
-#define _Z_tasks_table_S_edit_end       task_current = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current ); task_current->touched_stack = E_base_S->E_flow_Q_task_S_tmp.touched_stack; U_F( E_base_S->E_flow_S_mode, Z_task_table_S_can_read ); _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_Z_task_table_S_sigset, 0 ); Vr_( pthread_mutex_unlock( &E_base_S->E_flow_Z_task_table_S_mutex ))
+#define _Z_tasks_table_S_edit_begin_first \
+    int J_autogen_line( e_ ) = pthread_mutex_lock( &E_base_S->E_flow_Z_task_table_S_mutex ); \
+    if( J_autogen_line( e_ )) \
+    {   _errno = J_autogen_line( e_ ); \
+        Ve(); \
+        return ~0; \
+    } \
+    _sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, &E_base_S->E_flow_Z_task_table_S_sigset ) \
+        return ~1; \
+    struct E_flow_Q_task_Z *J_autogen( task_current ) = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current ); \
+    E_base_S->E_flow_Q_task_S_sigsegv_tmp.stack = J_autogen( task_current )->stack; \
+    E_base_S->E_flow_Q_task_S_sigsegv_tmp.touched_stack = J_autogen( task_current )->touched_stack; \
+    U_L( E_base_S->E_flow_S_mode, Z_task_table_S_can_read )
+#define _Z_tasks_table_S_edit_begin     \
+    int J_autogen_line( e_ ) = pthread_mutex_lock( &E_base_S->E_flow_Z_task_table_S_mutex ); \
+    if( J_autogen_line( e_ )) \
+    {   _errno = J_autogen_line( e_ ); \
+        Ve(); \
+        return ~0; \
+    } \
+    _sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, &E_base_S->E_flow_Z_task_table_S_sigset ) \
+        return ~1; \
+    E_base_S->E_flow_Q_task_S_sigsegv_tmp.touched_stack = J_autogen( task_current )->touched_stack; \
+    U_L( E_base_S->E_flow_S_mode, Z_task_table_S_can_read )
+#define _Z_tasks_table_S_edit_end       \
+    J_autogen( task_current ) = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current ); \
+    J_autogen( task_current )->touched_stack = E_base_S->E_flow_Q_task_S_sigsegv_tmp.touched_stack; \
+    U_F( E_base_S->E_flow_S_mode, Z_task_table_S_can_read ); \
+    _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_Z_task_table_S_sigset, 0 ) \
+        return ~0; \
+    int J_autogen_line( e_ ) = pthread_mutex_unlock( &E_base_S->E_flow_Z_task_table_S_mutex ); \
+    if( J_autogen_line( e_ )) \
+    {   _errno = J_autogen_line( e_ ); \
+        Ve(); \
+        return ~1; \
+    }
     #else
-#define _Z_tasks_table_S_edit_begin_first _sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, &E_base_S->E_flow_Z_task_table_S_sigset ); struct E_flow_Q_task_Z *task_current = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current ); E_base_S->E_flow_Q_task_S_tmp.stack = task_current->stack; E_base_S->E_flow_Q_task_S_tmp.touched_stack = task_current->touched_stack; U_L( E_base_S->E_flow_S_mode, Z_task_table_S_can_read )
-#define _Z_tasks_table_S_edit_begin     _sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, &E_base_S->E_flow_Z_task_table_S_sigset ); E_base_S->E_flow_Q_task_S_tmp.touched_stack = task_current->touched_stack; U_L( E_base_S->E_flow_S_mode, Z_task_table_S_can_read )
-#define _Z_tasks_table_S_edit_end       task_current = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current ); task_current->touched_stack = E_base_S->E_flow_Q_task_S_tmp.touched_stack; U_F( E_base_S->E_flow_S_mode, Z_task_table_S_can_read ); _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_Z_task_table_S_sigset, 0 )
+#define _Z_tasks_table_S_edit_begin_first \
+    _sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, &E_base_S->E_flow_Z_task_table_S_sigset ); \
+    struct E_flow_Q_task_Z *J_autogen( task_current ) = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current ); \
+    E_base_S->E_flow_Q_task_S_sigsegv_tmp.stack = J_autogen( task_current )->stack; \
+    E_base_S->E_flow_Q_task_S_sigsegv_tmp.touched_stack = J_autogen( task_current )->touched_stack; \
+    U_L( E_base_S->E_flow_S_mode, Z_task_table_S_can_read )
+#define _Z_tasks_table_S_edit_begin     \
+    _sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_process_call_reply, &E_base_S->E_flow_Z_task_table_S_sigset ); \
+    E_base_S->E_flow_Q_task_S_sigsegv_tmp.touched_stack = J_autogen( task_current )->touched_stack; \
+    U_L( E_base_S->E_flow_S_mode, Z_task_table_S_can_read )
+#define _Z_tasks_table_S_edit_end       \
+    J_autogen( task_current ) = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current ); \
+    J_autogen( task_current )->touched_stack = E_base_S->E_flow_Q_task_S_sigsegv_tmp.touched_stack; \
+    U_F( E_base_S->E_flow_S_mode, Z_task_table_S_can_read ); \
+    _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_Z_task_table_S_sigset, 0 )
     #endif
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #ifndef E_flow_drv_C_clock_monotonic

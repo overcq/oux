@@ -56,7 +56,15 @@ D( x_window, events )
     Xh_A( E_x_window_D_events_I_unblock );
     B U_L( x_window, draw );
     X_A( x_window, close_window );
+    if( _X_var( x_window, close_window ) < 0 )
+    {   U_F( E_base_S->E_flow_S_signal, exit );
+        goto Block;
+    }
     X_A( x_window, flush );
+    if( _X_var( x_window, flush ) < 0 )
+    {   U_F( E_base_S->E_flow_S_signal, exit );
+        goto Block;
+    }
 /*
 Częstotliwość wspomagającej wizualizacji ręcznego skokowego przesuwania lub rozmiarowania obiektu przestrzeni, niezależnie od animowanych w czasie zmian zawartości.
 Męczący w odbiorze test dokonywany przez człowieka: szukać największej częstotliwości przerysowywania obiektów, przy której każde przerysowanie jest już zauważone bez umysłowego błysku pre‐mobilizacji adekwatnego do stanu umysłu podczas zauważenia jakiegoś krótkiego mignięcia ruchu przez rzadkie ale liczebne zarośla w dżungli. Jednak w tym teście szuka się płynności takich mignięć podczas powolnego ciągłego przesuwania lub rozmiarowania obiektu albo ramki okna, nie dopuszczając do zdążenia przerysowania do punktu uchwycenia w rutynie wyćwiczenia, a nie reagując impulsowo. Po przekroczeniu — zmniejszając — częstotliwości szukanej przerysowanie zaczyna sprawiać wrażenie ‚trupiego’. Tym charakteryzują się częstotliwości odległe od szukanej w okresie o mikrosekundy, bardziej odległe częstotliwości zamęczają układ interpretacji bez informacji możliwych do zinterpretowania w czasie odbioru; jakkolwiek te informacje są, tylko niszczą układ interpretacji człowieka. Dobrze znaleziona częstotliwość pozwala widzieć komponentowo (całościowo) przesuwane lub rozmiarowane obiekty. przypuszczalnie jest wiele pochodnych częstotliwości, które wydają się optymalne, ale tylko jedna przechodzi końcowy test widzenia komponentowego podczas wizualizacji.
@@ -82,11 +90,12 @@ Po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
             xcb_generic_event_t *x_event = xcb_poll_for_event( display->x_display );
             int e;
             if( e = xcb_connection_has_error( display->x_display ))
-            {   GV_(NA); Gd(e); V(); //NDFN Tu powinno być ‹zdarzenie›.
+            {   GV_(NA); Gd(e);
+                U_F( E_base_S->E_flow_S_signal, exit );
             }
                 #else
             xcb_connection_t *x_display = display->x_display;
-            Xh_B_();
+Block:      Xh_B_();
             xcb_generic_event_t *x_event = xcb_wait_for_event( x_display );
             Xh_B()
             {   free( x_event );
@@ -95,7 +104,9 @@ Po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
             display = E_mem_Q_tab_R( E_gui_xcb_Q_display_S, display_id );
             if( !x_event )
             {   int e = xcb_connection_has_error( display->x_display );
-                GV_(NA); Gd(e); V(); //NDFN Tu powinno być ‹zdarzenie›.
+                GV_(NA); Gd(e);
+                U_F( E_base_S->E_flow_S_signal, exit );
+                goto Block;
             }
                 #endif
             struct E_gui_xcb_Q_screen_Z *screen = E_mem_Q_tab_R( display->screen, display->drag_S_dnd_window_screen_id );
@@ -110,7 +121,9 @@ Po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
 Loop_0:     do
             {   if( !x_event->response_type )
                 {   xcb_generic_error_t *x_error = (P)x_event;
-                    GV_(NA); Gd( x_error->sequence ); Gd( x_error->major_code ); Gd( x_error->minor_code ); Gd( x_error->error_code ); Gd( x_error->resource_id ); V(); //NDFN Nienaprawialny błąd zbiorczy ‟X.org”.
+                    GV_(NA); Gd( x_error->sequence ); Gd( x_error->major_code ); Gd( x_error->minor_code ); Gd( x_error->error_code ); Gd( x_error->resource_id ); //NDFN Nienaprawialny błąd zbiorczy ‟X.org”.
+                    U_F( E_base_S->E_flow_S_signal, exit );
+                    goto Block;
                 }
                 xcb_window_t x_event_window;
                 // Każde “zdarzenie” ‘x’ mające być dołączone do interpretacji wymaga sprawdzenia osadzenia znaczenia zmiennych dostarczanych z tym “zdarzeniem”; np. “window”. a na końcu usunąć niepotrzebne dla interpretacji “zdarzenia” z obu “switch” i zmienić, by błędne “zdarzenia” były ignorowane.
@@ -300,34 +313,30 @@ Loop_0:     do
                                 if( ~u && iswprint(u) )
                                 {   Pc s = object_data->s;
                                     for_n( i, object_data->cursor_pos )
-                                    {   U u = ~0;
+                                    {   U u;
                                         s = E_text_Z_su_R_u( s, &u );
-                                        if( !~u )
-                                        {   GV_(bad UTF-8 character); V();
-                                        }
                                     }
                                     C s_[6];
                                     N n = E_text_Z_u_R_su( u, &s_[0] );
+                                    if( (S)n < 0 )
+                                    {   GV_(NXP);
+                                        U_F( E_base_S->E_flow_S_signal, exit );
+                                        goto Block;
+                                    }
                                     i = s - object_data->s;
                                     E_mem_Q_blk_I_insert( &object_data->s, i, n );
                                     E_mem_Q_blk_I_copy( object_data->s + i, &s_[0], n );
                                     object_data->cursor_pos++;
                                     s = object_data->s;
                                     for_n_( i, object_data->text_start )
-                                    {   U u = ~0;
+                                    {   U u;
                                         s = E_text_Z_su_R_u( s, &u );
-                                        if( !~u )
-                                        {   GV_(bad UTF-8 character); V();
-                                        }
                                     }
                                     struct E_gui_xcb_Q_font_Z *font = E_mem_Q_tab_R( E_gui_xcb_Q_font_S, object_data->font );
                                     S16 x = 0;
                                     for_n_( i, object_data->cursor_pos - object_data->text_start )
-                                    {   U u = ~0;
+                                    {   U u;
                                         s = E_text_Z_su_R_u( s, &u );
-                                        if( !~u )
-                                        {   GV_(bad UTF-8 character); V();
-                                        }
                                         N min = 0;
                                         N max = font->bitmap_n;
                                         N i = max / 2;
@@ -354,11 +363,8 @@ Loop_0:     do
                                     if( x >= object->width )
                                     {   x = object->width;
                                         object_data->text_start = object_data->cursor_pos;
-                                        O{  U u = ~0;
+                                        O{  U u;
                                             s = E_text_Z_su_R_u_rev( s, &u );
-                                            if( !~u )
-                                            {   GV_(bad UTF-8 character); V();
-                                            }
                                             N min = 0;
                                             N max = font->bitmap_n;
                                             N i = max / 2;
@@ -426,7 +432,9 @@ Loop_0:     do
                                             {   U u = ~0;
                                                 s = E_text_Z_su_R_u( s, &u );
                                                 if( !~u )
-                                                {   GV_(bad UTF-8 character); V();
+                                                {   GV_(NXP);
+                                                    U_F( E_base_S->E_flow_S_signal, exit );
+                                                    goto Block;
                                                 }
                                             }
                                             struct E_gui_xcb_Q_font_Z *font = E_mem_Q_tab_R( E_gui_xcb_Q_font_S, object_data->font );
@@ -435,7 +443,9 @@ Loop_0:     do
                                             {   U u = ~0;
                                                 s = E_text_Z_su_R_u( s, &u );
                                                 if( !~u )
-                                                {   GV_(bad UTF-8 character); V();
+                                                {   GV_(NXP);
+                                                    U_F( E_base_S->E_flow_S_signal, exit );
+                                                    goto Block;
                                                 }
                                                 N min = 0;
                                                 N max = font->bitmap_n;
@@ -466,7 +476,9 @@ Loop_0:     do
                                                 O{  U u = ~0;
                                                     s = E_text_Z_su_R_u_rev( s, &u );
                                                     if( !~u )
-                                                    {   GV_(bad UTF-8 character); V();
+                                                    {   GV_(NXP);
+                                                        U_F( E_base_S->E_flow_S_signal, exit );
+                                                        goto Block;
                                                     }
                                                     N min = 0;
                                                     N max = font->bitmap_n;
@@ -511,7 +523,9 @@ Loop_0:     do
                                             {   U u = ~0;
                                                 s = E_text_Z_su_R_u_rev( s, &u );
                                                 if( !~u )
-                                                {   GV_(bad UTF-8 character); V();
+                                                {   GV_(NXP);
+                                                    U_F( E_base_S->E_flow_S_signal, exit );
+                                                    goto Block;
                                                 }
                                                 N min = 0;
                                                 N max = font->bitmap_n;
@@ -556,13 +570,17 @@ Loop_0:     do
                                             {   U u = ~0;
                                                 s = E_text_Z_su_R_u( s, &u );
                                                 if( !~u )
-                                                {   GV_(bad UTF-8 character); V();
+                                                {   GV_(NXP);
+                                                    U_F( E_base_S->E_flow_S_signal, exit );
+                                                    goto Block;
                                                 }
                                             }
                                             U u = ~0;
                                             Pc s_ = E_text_Z_su_R_u( s, &u );
                                             if( !~u )
-                                            {   GV_(bad UTF-8 character); V();
+                                            {   GV_(NXP);
+                                                U_F( E_base_S->E_flow_S_signal, exit );
+                                                goto Block;
                                             }
                                             E_mem_Q_blk_I_remove( &object_data->s, s - object_data->s, s_ - s );
                                             U_F( req, draw );
@@ -577,13 +595,17 @@ Loop_0:     do
                                             {   U u = ~0;
                                                 s = E_text_Z_su_R_u( s, &u );
                                                 if( !~u )
-                                                {   GV_(bad UTF-8 character); V();
+                                                {   GV_(NXP);
+                                                    U_F( E_base_S->E_flow_S_signal, exit );
+                                                    goto Block;
                                                 }
                                             }
                                             U u = ~0;
                                             Pc s_ = E_text_Z_su_R_u( s, &u );
                                             if( !~u )
-                                            {   GV_(bad UTF-8 character); V();
+                                            {   GV_(NXP);
+                                                U_F( E_base_S->E_flow_S_signal, exit );
+                                                goto Block;
                                             }
                                             E_mem_Q_blk_I_remove( &object_data->s, s - object_data->s, s_ - s );
                                             U_F( req, draw );
@@ -601,13 +623,17 @@ Loop_0:     do
                                             {   U u = ~0;
                                                 s = E_text_Z_su_R_u( s, &u );
                                                 if( !~u )
-                                                {   GV_(bad UTF-8 character); V();
+                                                {   GV_(NXP);
+                                                    U_F( E_base_S->E_flow_S_signal, exit );
+                                                    goto Block;
                                                 }
                                             }
                                             U u = ~0;
                                             s = E_text_Z_su_R_u_rev( s, &u );
                                             if( !~u )
-                                            {   GV_(bad UTF-8 character); V();
+                                            {   GV_(NXP);
+                                                U_F( E_base_S->E_flow_S_signal, exit );
+                                                goto Block;
                                             }
                                             B space = iswspace(u);
                                             object_data->cursor_pos--;
@@ -615,7 +641,9 @@ Loop_0:     do
                                             {   U u = ~0;
                                                 s = E_text_Z_su_R_u_rev( s, &u );
                                                 if( !~u )
-                                                {   GV_(bad UTF-8 character); V();
+                                                {   GV_(NXP);
+                                                    U_F( E_base_S->E_flow_S_signal, exit );
+                                                    goto Block;
                                                 }
                                                 space = iswspace(u);
                                                 object_data->cursor_pos--;
@@ -624,7 +652,9 @@ Loop_0:     do
                                             {   U u = ~0;
                                                 s = E_text_Z_su_R_u_rev( s, &u );
                                                 if( !~u )
-                                                {   GV_(bad UTF-8 character); V();
+                                                {   GV_(NXP);
+                                                    U_F( E_base_S->E_flow_S_signal, exit );
+                                                    goto Block;
                                                 }
                                                 space = iswspace(u);
                                                 if(space)
@@ -649,13 +679,17 @@ Loop_0:     do
                                             {   U u = ~0;
                                                 s = E_text_Z_su_R_u( s, &u );
                                                 if( !~u )
-                                                {   GV_(bad UTF-8 character); V();
+                                                {   GV_(NXP);
+                                                    U_F( E_base_S->E_flow_S_signal, exit );
+                                                    goto Block;
                                                 }
                                             }
                                             U u = ~0;
                                             s = E_text_Z_su_R_u( s, &u );
                                             if( !~u )
-                                            {   GV_(bad UTF-8 character); V();
+                                            {   GV_(NXP);
+                                                U_F( E_base_S->E_flow_S_signal, exit );
+                                                goto Block;
                                             }
                                             B space = iswspace(u);
                                             object_data->cursor_pos++;
@@ -663,7 +697,9 @@ Loop_0:     do
                                             {   U u = ~0;
                                                 s = E_text_Z_su_R_u( s, &u );
                                                 if( !~u )
-                                                {   GV_(bad UTF-8 character); V();
+                                                {   GV_(NXP);
+                                                    U_F( E_base_S->E_flow_S_signal, exit );
+                                                    goto Block;
                                                 }
                                                 space = iswspace(u);
                                                 object_data->cursor_pos++;
@@ -672,7 +708,9 @@ Loop_0:     do
                                             {   U u = ~0;
                                                 s = E_text_Z_su_R_u( s, &u );
                                                 if( !~u )
-                                                {   GV_(bad UTF-8 character); V();
+                                                {   GV_(NXP);
+                                                    U_F( E_base_S->E_flow_S_signal, exit );
+                                                    goto Block;
                                                 }
                                                 space = iswspace(u);
                                                 if(space)
@@ -684,7 +722,9 @@ Loop_0:     do
                                             {   U u = ~0;
                                                 s = E_text_Z_su_R_u( s, &u );
                                                 if( !~u )
-                                                {   GV_(bad UTF-8 character); V();
+                                                {   GV_(NXP);
+                                                    U_F( E_base_S->E_flow_S_signal, exit );
+                                                    goto Block;
                                                 }
                                             }
                                             struct E_gui_xcb_Q_font_Z *font = E_mem_Q_tab_R( E_gui_xcb_Q_font_S, object_data->font );
@@ -693,7 +733,9 @@ Loop_0:     do
                                             {   U u = ~0;
                                                 s = E_text_Z_su_R_u( s, &u );
                                                 if( !~u )
-                                                {   GV_(bad UTF-8 character); V();
+                                                {   GV_(NXP);
+                                                    U_F( E_base_S->E_flow_S_signal, exit );
+                                                    goto Block;
                                                 }
                                                 N min = 0;
                                                 N max = font->bitmap_n;
@@ -724,7 +766,9 @@ Loop_0:     do
                                                 O{  U u = ~0;
                                                     s = E_text_Z_su_R_u_rev( s, &u );
                                                     if( !~u )
-                                                    {   GV_(bad UTF-8 character); V();
+                                                    {   GV_(NXP);
+                                                        U_F( E_base_S->E_flow_S_signal, exit );
+                                                        goto Block;
                                                     }
                                                     N min = 0;
                                                     N max = font->bitmap_n;
@@ -1215,7 +1259,7 @@ Loop_2:;    }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                 #ifdef C_pthreads
             if( E_x_window_D_draw_S_b )
             {   do
-                {   V0_( sched_yield() );
+                {   V1_( sched_yield() );
                     if( x_event = xcb_poll_for_queued_event( display->x_display ))
                         goto Loop_0;
                 }while( E_x_window_D_draw_S_b );
@@ -1286,6 +1330,11 @@ Loop_2:;    }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                             , dnd_object->clear_data, dnd_object->draw, dnd_object->click
                             , yes
                             );
+                            if( ids[ ids_i - 1 ] < 0 )
+                            {   GV_(NA);
+                                U_F( E_base_S->E_flow_S_signal, exit );
+                                goto Block;
+                            }
                         }
                         ids_i = 0;
                         for_each_( dnd_object_id, dnd_window->object, E_mem_Q_tab )
@@ -1295,7 +1344,12 @@ Loop_2:;    }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                             for_n( i, object->child_n )
                                 object->child[i] = ids[ dnd_object->child[i] ];
                         }
-                        W(ids);
+                        N ret = W(ids);
+                        if(ret)
+                        {   GV_(NA);
+                            U_F( E_base_S->E_flow_S_signal, exit );
+                            goto Block;
+                        }
                     }
                 }else
                 {   for_n( i, display->drag_S_object_src_n )
@@ -1307,7 +1361,12 @@ Loop_2:;    }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                         }
                     }
                 }
-                W( display->drag_S_object_src );
+                N ret = W( display->drag_S_object_src );
+                if(ret)
+                {   GV_(NA);
+                    U_F( E_base_S->E_flow_S_signal, exit );
+                    goto Block;
+                }
                 E_mem_Q_tab_W( dnd_window->object );
                     #ifdef C_xcb_shape
                 xcb_free_pixmap( display->x_display, screen->dnd_window_shape_pixmap );
@@ -1322,7 +1381,12 @@ Loop_2:;    }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                   , 1
                   }
                 );
-                W( dnd_window->drawable );
+                ret = W( dnd_window->drawable );
+                if(ret)
+                {   GV_(NA);
+                    U_F( E_base_S->E_flow_S_signal, exit );
+                    goto Block;
+                }
                 U_L( dnd_window->req, draw );
                 U_F( display->req, draw );
                 U_F( display->req, flush );
@@ -1455,8 +1519,16 @@ Loop_2:;    }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                                                 dnd_window->height_new = dnd_window->height = object->height;
                                                 dnd_window->object = E_mem_Q_tab_M( sizeof( struct E_gui_xcb_Q_object_Z ), 0 );
                                                 if( !dnd_window->object )
-                                                    goto Drag_start_error;
+                                                {   GV_(NA);
+                                                    U_F( E_base_S->E_flow_S_signal, exit );
+                                                    goto Block;
+                                                }
                                                 I dnd_object_id = E_gui_xcb_Q_object_M( display, dnd_window, 0, 0, 0, object->width, object->height, object->clear_data, object->draw, object->click, no );
+                                                if( dnd_object_id < 0 )
+                                                {   GV_(NA);
+                                                    U_F( E_base_S->E_flow_S_signal, exit );
+                                                    goto Block;
+                                                }
                                                 struct E_gui_xcb_Q_object_Z *dnd_object = E_mem_Q_tab_R( dnd_window->object, dnd_object_id );
                                                 dnd_object->data = object->data;
                                                 U_R( dnd_object->mode, draggable ) = U_R( object->mode, draggable );
@@ -1467,26 +1539,42 @@ Loop_2:;    }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                                                 N ids_n = 1;
                                                 I *Mt_( ids, ids_n );
                                                 if( !ids )
-                                                {   W( display->drag_S_object_src );
-                                                    goto Drag_start_error;
+                                                {   GV_(NA);
+                                                    U_F( E_base_S->E_flow_S_signal, exit );
+                                                    W( display->drag_S_object_src );
+                                                    goto Block;
                                                 }
                                                 ids[0] = display->pointer_button_S_click_object_id;
                                                 while( ids_n )
                                                 {   struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, ids[0] );
                                                     if( !E_mem_Q_blk_I_remove( &ids, 0, 1 ))
-                                                    {   W( display->drag_S_object_src );
+                                                    {   GV_(NA);
+                                                        U_F( E_base_S->E_flow_S_signal, exit );
+                                                        N ret = W( display->drag_S_object_src );
+                                                        if(ret)
+                                                            goto Block;
                                                         for_each( object_id, dnd_window->object, E_mem_Q_tab )
-                                                            E_gui_xcb_Q_object_W( display, dnd_window, object_id );
-                                                        goto Drag_start_error;
+                                                        {   ret = E_gui_xcb_Q_object_W( display, dnd_window, object_id );
+                                                            if(ret)
+                                                                break;
+                                                        }
+                                                        goto Block;
                                                     }
                                                     ids_n--;
                                                     if( !object->child_n )
                                                         continue;
                                                     if( !E_mem_Q_blk_I_append( &ids, object->child_n ))
-                                                    {   W( display->drag_S_object_src );
+                                                    {   GV_(NA);
+                                                        U_F( E_base_S->E_flow_S_signal, exit );
+                                                        N ret = W( display->drag_S_object_src );
+                                                        if(ret)
+                                                            goto Block;
                                                         for_each( object_id, dnd_window->object, E_mem_Q_tab )
-                                                            E_gui_xcb_Q_object_W( display, dnd_window, object_id );
-                                                        goto Drag_start_error;
+                                                        {   ret = E_gui_xcb_Q_object_W( display, dnd_window, object_id );
+                                                            if(ret)
+                                                                break;
+                                                        }
+                                                        goto Block;
                                                     }
                                                     I parent_id = dnd_window->object->index_n - 1;
                                                     for_n( i, object->child_n )
@@ -1495,10 +1583,17 @@ Loop_2:;    }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                                                         U_F( object_src->state, drag_src );
                                                         I dnd_object_id = E_gui_xcb_Q_object_M( display, dnd_window, 0, object_src->x - object->x, object_src->y - object->y, object_src->width, object_src->height, object_src->clear_data, object_src->draw, object_src->click, no );
                                                         if( !~dnd_object_id )
-                                                        {   W( display->drag_S_object_src );
+                                                        {   GV_(NA);
+                                                            U_F( E_base_S->E_flow_S_signal, exit );
+                                                            N ret = W( display->drag_S_object_src );
+                                                            if(ret)
+                                                                goto Block;
                                                             for_each( object_id, dnd_window->object, E_mem_Q_tab )
-                                                                E_gui_xcb_Q_object_W( display, dnd_window, object_id );
-                                                            goto Drag_start_error;
+                                                            {   ret = E_gui_xcb_Q_object_W( display, dnd_window, object_id );
+                                                                if(ret)
+                                                                    break;
+                                                            }
+                                                            goto Block;
                                                         }
                                                         struct E_gui_xcb_Q_object_Z *dnd_object = E_mem_Q_tab_R( dnd_window->object, dnd_object_id );
                                                         dnd_object->data = object_src->data;
@@ -1506,7 +1601,12 @@ Loop_2:;    }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                                                     }
                                                     ids_n += object->child_n;
                                                 }
-                                                W(ids);
+                                                N ret_ = W(ids);
+                                                if( ret_ )
+                                                {   GV_(NA);
+                                                    U_F( E_base_S->E_flow_S_signal, exit );
+                                                    goto Block;
+                                                }
                                                 U_F( window->req, draw );
                                                 screen = E_mem_Q_tab_R( display->screen, window->screen_id );
                                                 display->drag_S_pointer_button = display->pointer_button;
@@ -1527,7 +1627,9 @@ Loop_2:;    }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                                                 free(ret);
                                                 Mt_( dnd_window->drawable, dnd_window->width * dnd_window->height );
                                                 if( !dnd_window->drawable )
-                                                {   GV_(NA); V();
+                                                {   GV_(NA);
+                                                    U_F( E_base_S->E_flow_S_signal, exit );
+                                                    goto Block;
                                                 }
                                                 xcb_configure_window( display->x_display
                                                 , dnd_window->x_window
@@ -1559,7 +1661,6 @@ Loop_2:;    }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                                                 U_F( display->req, draw );
                                                 U_F( display->req, flush );
                                             }
-Drag_start_error:                           ;
                                         }else if( object->draw == E_gui_xcb_Q_object_Z_entry_I_draw
                                         && display->pointer_button == 1
                                         && display->pointer_button_S_seq_i == 2
@@ -1583,7 +1684,9 @@ Drag_start_error:                           ;
                                             {   U u = ~0;
                                                 s = E_text_Z_su_R_u( s, &u );
                                                 if( !~u )
-                                                {   GV_(bad UTF-8 character); V();
+                                                {   GV_(NXP);
+                                                    U_F( E_base_S->E_flow_S_signal, exit );
+                                                    goto Block;
                                                 }
                                                 N min = 0;
                                                 N max = font->bitmap_n;
@@ -1837,11 +1940,18 @@ Drag_start_error:                           ;
                           , 1
                           }
                         );
-                        W( dnd_window->drawable );
+                        N ret = W( dnd_window->drawable );
+                        if(ret)
+                        {   GV_(NA);
+                            U_F( E_base_S->E_flow_S_signal, exit );
+                            goto Block;
+                        }
                         dnd_window = &screen->dnd_window;
                         Mt_( dnd_window->drawable, dnd_window->width * dnd_window->height );
                         if( !dnd_window->drawable )
-                        {   GV_(NA); V();
+                        {   GV_(NA);
+                            U_F( E_base_S->E_flow_S_signal, exit );
+                            goto Block;
                         }
                         xcb_configure_window( display->x_display
                         , dnd_window->x_window
@@ -1921,7 +2031,9 @@ Drag_start_error:                           ;
                     {   window->width = window->width_new;
                         window->height = window->height_new;
                         if( !E_mem_Q_blk_M_replace( &window->drawable, window->width * window->height * sizeof( *window->drawable )))
-                        {   GV_(NA); V();
+                        {   GV_(NA);
+                            U_F( E_base_S->E_flow_S_signal, exit );
+                            goto Block;
                         }
                         U_F( window->req, draw );
                         U_F( display->req, draw );
@@ -1946,10 +2058,14 @@ Drag_start_error:                           ;
                         {   window->width = window->width_new;
                             window->height = window->height_new;
                             if( !E_mem_Q_blk_M_replace( &window->drawable, window->width * window->height * sizeof( *window->drawable )))
-                            {   GV_(NA); V();
+                            {   GV_(NA);
+                                U_F( E_base_S->E_flow_S_signal, exit );
+                                goto Block;
                             }
                             if( !E_mem_Q_blk_M_replace( &window->object_mask, window->width * window->height * sizeof( *window->object_mask )))
-                            {   GV_(NA); V();
+                            {   GV_(NA);
+                                U_F( E_base_S->E_flow_S_signal, exit );
+                                goto Block;
                             }
                             for_n( i, window->width * window->height )
                                 window->object_mask[i] = ~0;
@@ -2012,7 +2128,7 @@ Drag_start_error:                           ;
         X_U( x_window, close_window );
         X_U( x_window, flush );
             #ifndef E_flow_C_thread_system_unblock_reports
-        Y_B( timer, 0 )
+Block:  Y_B( timer, 0 )
             break;
             #endif
     }
@@ -2043,6 +2159,10 @@ D( x_window, draw )
     I timer = Y_M(50000);
         #endif
     X_A( x_window, flush );
+    if( _X_var( x_window, flush ) < 0 )
+    {   U_F( E_base_S->E_flow_S_signal, exit );
+        goto Block;
+    }
         #ifdef C_pthreads
     Da_B();
         #endif
@@ -2146,9 +2266,9 @@ D( x_window, draw )
         }
             #ifdef C_pthreads
         E_x_window_D_draw_S_b = no;
-        Da_B_()
+Block:  Da_B_()
             #else
-        Y_B( timer, 0 )
+Block:  Y_B( timer, 0 )
             #endif
             break;
         X_U( x_window, flush );
@@ -2162,6 +2282,10 @@ D( x_window, draw )
 }
 D( x_window, flush )
 {   X_M( x_window, flush );
+    if( _X_var( x_window, flush ) < 0 )
+    {   GV_(NA);
+        U_F( E_base_S->E_flow_S_signal, exit );
+    }
     O{  X_B( x_window, flush, 0 )
             break;
         for_each( display_id, E_gui_xcb_Q_display_S, E_mem_Q_tab )

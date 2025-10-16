@@ -23,7 +23,7 @@ E_io_W_stream( void
                 {   int result;
                     V1_( result = aio_cancel( stream->aiocb->aio_fildes, stream->aiocb ));
                     if( result == AIO_NOTCANCELED )
-                    {   VO0_( aio_suspend( &stream->aiocb, 1, 0 ));
+                    {   VO0_( aio_suspend(( const struct aiocb * [] ){ stream->aiocb }, 1, 0 ));
                     }
                 }
                 int errno_;
@@ -55,7 +55,7 @@ E_io_W_stream( void
 }
     #endif
 _internal
-void
+N
 E_mem_W_file( void
 ){  for_each( id, E_base_S->E_mem_Q_file_S, E_mem_Q_tab )
     {   struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, id );
@@ -87,8 +87,7 @@ E_mem_W_file( void
                                 , E_base_S->E_mem_Q_file_S_buffer_l
                                 );
                                 if( l != E_base_S->E_mem_Q_file_S_buffer_l )
-                                {   GV_(NA);
-                                }
+                                    return ~2;
                             }
                         }else
                         {   N pos;
@@ -100,8 +99,7 @@ E_mem_W_file( void
                                 , E_base_S->E_mem_Q_file_S_buffer_l
                                 );
                                 if( l != E_base_S->E_mem_Q_file_S_buffer_l )
-                                {   GV_(NA);
-                                }
+                                    return ~2;
                             }
                             N buffer_l = J_min( E_simple_Z_n_I_align_up_to_v2( range->pos_end, E_base_S->E_mem_Q_file_S_buffer_l ), file->l ) - pos;
                             E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_file_S_buffer, file->blk[ blk_i ].data + pos - file->blk[ blk_i ].pos, buffer_l );
@@ -111,8 +109,7 @@ E_mem_W_file( void
                             , E_base_S->E_mem_Q_file_S_buffer_l
                             );
                             if( l != buffer_l )
-                            {   GV_(NA);
-                            }
+                                return ~2;
                         }
                         range++;
                     }
@@ -130,9 +127,8 @@ E_mem_W_file( void
                         , file->blk[ blk_i ].data + range->pos - file->blk[ blk_i ].pos
                         , range->pos_end - range->pos
                         );
-                        if( !~l )
-                        {   GV_(NA);
-                        }
+                        if( l != range->pos_end - range->pos )
+                            return ~2;
                         range++;
                     }
                 }
@@ -145,6 +141,7 @@ E_mem_W_file( void
         #ifdef C_middle_code
     V0_( munmap( E_base_S->E_mem_Q_file_S_buffer, E_base_S->E_mem_Q_file_S_buffer_l ));
         #endif
+    return 0;
 }
     #ifdef C_middle_code
 _internal
@@ -175,34 +172,43 @@ E_mem_W_blk( void
 //TODO Procedura do ułożenia.
 //DED Jeśli program zapisany w technologii OUX miałby być dopisany na początku “main” innego programu w języku ‟C” lub ‘skompilowanego’— to wtedy usuwa swoje zasoby i próbuje przywrócić stan procesu do domyślnego. Dopisanie programu nie na początku też byłoby możliwe po uzupełnieniu o zapisywanie stanu do przywrócenia (zamiast domyślnego), ale mogłoby być ryzykowne, jeśli program zmieniany używałby jakichkolwiek stanów ulotnych względem czasu wykonania; tak jak ten używa. Pozostało do zrobienia w całości przywracanie stanu zastanego, a nie domyślnego.
 _export
-void
+N
 E_base_W( void
 ){  V0( close( E_net_cli_S_poll_pipe[0] )){}
     V0( close( E_net_cli_S_poll_pipe[1] )){}
         #ifdef __gnu_linux__
-    W( E_net_cli_S_ee_ready );
+    N ret = W( E_net_cli_S_ee_ready );
+    if(ret)
+        return ret;
     V0( close( E_net_cli_S_epoll_fd )){}
         #else
-    W( E_net_cli_S_poll_fd );
+    ret = W( E_net_cli_S_poll_fd );
+    if(ret)
+        return ret;
         #endif
-    D_W( mem, file_save );
-    D_W( flow, call_srv ); // Przedostatnie ‹zadanie›.
-    // Dopóki wypisywanie “G”[…] jest do tego samego “strumienia” jak “G”[…]“_”, to jeśli ‹raporty linii› są włączone, to znak nowej linii jest dorzucany synchronicznie, na końcu tej procedury usuwania ‹modułu›.
-        //#ifdef C_line_report
-    //E_io_Q_stream_out_P_c( 0, '\n' );
-        //#endif
+    ret = D_W( mem, file_save );
+    if(ret)
+        return ret;
+    ret = D_W( flow, call_srv );
+    if(ret)
+        return ret;
+    ret = D_W( io, stream_write );
+    if(ret)
+        return ret;
         #if ( defined( __gnu_linux__ ) || defined( __FreeBSD__ )) && defined( C_pthreads )
     if( E_base_S->cpu_taken )
         E_mem_Q_mask_W( E_base_S->cpu_taken );
         #endif
     struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, 0 );
     task->run_state = E_flow_Z_run_state_S_ready;
-    I_B(); // Może przełączyć do ostatniego ‹zadania›.
         #ifdef E_flow_Q_process_call_C_alt
-    W( E_base_S->E_flow_Q_process_call_S_service_path_guid );
+    ret = W( E_base_S->E_flow_Q_process_call_S_service_path_guid );
+    if(ret)
+        return ret;
         #endif
-    D_W( io, stream_write );
-    E_mem_W_file();
+    ret = E_mem_W_file();
+    if(ret)
+        return ret;
         #ifdef C_middle_code
             #ifdef E_flow_drv_C_timer_monotonic
     V0_( timer_delete( E_base_S->E_flow_S_timer ));
@@ -273,7 +279,8 @@ E_base_W( void
     }
     _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_Z_saved_initial_S_blocked_signals, 0 );
     E_mem_W_blk(); //DFN Pamięć alokowana dynamicznie (‘zmapowana’ przez tego ‹menedżera›) nie potrzebuje być poszczególnie zwalniana.
-        #endif
     feclearexcept( FE_ALL_EXCEPT );
+        #endif
+    return 0;
 }
 /******************************************************************************/

@@ -71,7 +71,7 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
 #define for_each_q(id_var,p,iter,q) \
   I id_var; \
   I J_autogen_line(id_var) = ~0; \
-  while( ~( id_var = J_a_b(q,Q_iter_R_next)( (p), (iter), ++J_autogen_line(id_var) )))
+  while( (S)( id_var = J_a_b(q,Q_iter_R_next)( (p), (iter), ++J_autogen_line(id_var) )) >= 0 )
 //==============================================================================
 #define _F_uid_v(v)                         ( (v) << ( sizeof(int) * 8 / 2 ))
 #define _F_uid(file_identifier)             J_autogen(J_a_b(F,file_identifier))
@@ -99,8 +99,6 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
 #define W(pointer_variable)                 E_mem_Q_blk_W( pointer_variable )
 #define M_(pointer_variable)                pointer_variable = M( sizeof( *( pointer_variable )))
 #define Mt_(pointer_variable,n)             pointer_variable = Mt( sizeof( *( pointer_variable )), (n) )
-#define W_(pointer_variable)                ( W( pointer_variable ), pointer_variable = 0 )
-#define W_tab_(pointer_variable)            ( E_mem_Q_tab_W( pointer_variable ), pointer_variable = 0 )
 //------------------------------------------------------------------------------
 // Instrukcja blokowa definicji ‹zadania›.
 #define D(module,task)                      _internal void _D_proc(module,task)( P thread_proc_arg )
@@ -121,27 +119,27 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
 // Utworzenie i wyrzucenie ‹zadania› lub ‹zadania› “wątkowanego” czekającego na ‹systemowy raport odblokowujący›.
     #ifndef E_flow_C_thread_system_unblock_reports
         #ifdef C_line_report
-#define D_M(module,task)                    if( ~E_flow_Q_task_M( &D_id(module,task), &_D_proc(module,task), J_s( _D_proc(module,task) ))){} else
+#define D_M(module,task)                    E_flow_Q_task_M( &D_id(module,task), &_D_proc(module,task), J_s( _D_proc(module,task) ))
         #else
-#define D_M(module,task)                    if( ~E_flow_Q_task_M( &D_id(module,task), &_D_proc(module,task) )){} else
+#define D_M(module,task)                    E_flow_Q_task_M( &D_id(module,task), &_D_proc(module,task) )
         #endif
     #else
 //TODO Rozdzielić dla “Dh” — na ‹zadania› takie jak “D” (bez “subid”) oraz takie jak obecnie “Dh” (“Dhi”).
         #ifdef C_line_report
-#define D_M(module,task)                    if( ~E_flow_Q_task_M( &D_id(module,task), &_D_proc(module,task), 0, no, J_s( _D_proc(module,task) ))){} else
-#define Dh_M(module,task,subid,arg)         if( ~E_flow_Q_task_M_thread( &D_id(module,task), (subid), &_D_proc(module,task), (arg), J_s( _D_proc(module,task) ))){} else
+#define D_M(module,task)                    E_flow_Q_task_M( &D_id(module,task), &_D_proc(module,task), 0, no, J_s( _D_proc(module,task) ))
+#define Dh_M(module,task,subid,arg)         E_flow_Q_task_M_thread( &D_id(module,task), (subid), &_D_proc(module,task), (arg), J_s( _D_proc(module,task) ))
         #else
-#define D_M(module,task)                    if( ~E_flow_Q_task_M( &D_id(module,task), &_D_proc(module,task), 0, no )){} else
-#define Dh_M(module,task,subid,arg)         if( ~E_flow_Q_task_M_thread( &D_id(module,task), (subid), &_D_proc(module,task), (arg) )){} else
+#define D_M(module,task)                    E_flow_Q_task_M( &D_id(module,task), &_D_proc(module,task), 0, no )
+#define Dh_M(module,task,subid,arg)         E_flow_Q_task_M_thread( &D_id(module,task), (subid), &_D_proc(module,task), (arg) )
         #endif
 #define Dh_W(module,task,subid)             E_flow_Q_task_W_thread( &(D_id(module,task)), (subid) )
     #endif
 #define D_W(module,task)                    E_flow_Q_task_W( &(D_id(module,task)) )
     #ifdef C_pthreads
         #ifdef C_line_report
-#define Da_M(module,task,thread_unblock_proc)   if( ~E_flow_Q_task_async_M( &D_id(module,task), &_D_proc(module,task), &( thread_unblock_proc ), J_s( _D_proc(module,task) ))){} else
+#define Da_M(module,task,thread_unblock_proc)   E_flow_Q_task_async_M( &D_id(module,task), &_D_proc(module,task), &( thread_unblock_proc ), J_s( _D_proc(module,task) ))
         #else
-#define Da_M(module,task,thread_unblock_proc)   if( ~E_flow_Q_task_async_M( &D_id(module,task), &_D_proc(module,task), &( thread_unblock_proc ))){} else
+#define Da_M(module,task,thread_unblock_proc)   E_flow_Q_task_async_M( &D_id(module,task), &_D_proc(module,task), &( thread_unblock_proc ))
         #endif
 #define Da_W(module,task)                   E_flow_Q_task_async_W( &D_id(module,task) )
     #endif
@@ -248,7 +246,7 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
 #define G_()            _unused B _G_var = yes; E_flow_Z_line_report_Z_line_I_sync( &__FILE__[0], __LINE__, 0 )
 // ‹Raport linii›.
 #define G()             _unused B _G_var = no; E_flow_Z_line_report_Z_line_I( &__FILE__[0], __LINE__, 0 )
-// ‹Niepowodzenie zakańczające› (ewentualną instrukcją “V” umieszczoną na końcu linii). zaistniałe przez wejście na tę linię tekstu programu.
+// ‹Niepowodzenie zakańczające› (ewentualną instrukcją “V” umieszczoną na końcu linii). Zaistniałe przez wejście na tę linię tekstu programu.
 #define GV_(s)          _unused B _G_var = yes; E_flow_Z_line_report_Z_line_I_sync( &__FILE__[0], __LINE__, J_s(s) )
 // ‹Niepowodzenie ostrzegające› (bez instrukcji “V”). 〃
 #define GV(s)           _unused B _G_var = no; E_flow_Z_line_report_Z_line_I( &__FILE__[0], __LINE__, J_s(s) )
@@ -401,11 +399,11 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
       {   GV_(NA); V(); \
       } \
       Pc J_autogen_line( p_end ); \
-      O{  int errno_; \
-          J_ab(v,e)( (proc)(( pointer_variable ), J_autogen_line(l) ), errno_ ) \
+      O{  int J_autogen_line( errno_ ); \
+          J_ab(v,e)( (proc)(( pointer_variable ), J_autogen_line(l) ), J_autogen_line( errno_ ) ) \
           {   if( !( max_l ) \
               && too_small_errno \
-              && errno_ == ( too_small_errno ) \
+              && J_autogen_line( errno_ ) == ( too_small_errno ) \
               ) \
               {   if( !E_mem_Q_blk_M_replace( &( pointer_variable ), J_autogen_line(l) += ( J_autogen_line(l) != E_base_S->E_mem_S_page_size ? J_autogen_line(l) : E_base_S->E_mem_S_page_size ))) \
                   {   GV_(NA); V(); \
@@ -429,9 +427,55 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
       } \
       if( (Pc)( pointer_variable ) + J_autogen_line(l) != J_autogen_line( p_end )) \
           if( !E_mem_Q_blk_I_remove( &( pointer_variable ), J_autogen_line( p_end ) - ( pointer_variable ), (Pc)( pointer_variable ) + J_autogen_line(l) - J_autogen_line( p_end ))) \
-          {   GV_(NA); \
+          {   GV_(NA); V(); \
           } \
   }
+#define MVe(pointer_variable,v,proc,too_small_errno,max_l,errno_) \
+  if( \
+  ({  N J_autogen_line(l) = ( max_l ) ? ( max_l ) : 1; \
+      ( pointer_variable ) = M( J_autogen_line(l) ); \
+      errno_ = pointer_variable ? 0 : ~0; \
+      Pc J_autogen_line( p_end ); \
+      if( !errno_ ) \
+          O{  int J_autogen_line( errno_ ); \
+              J_ab(v,e)( (proc)(( pointer_variable ), J_autogen_line(l) ), J_autogen_line( errno_ ) ) \
+              {   if( !( max_l ) \
+                  && too_small_errno \
+                  && J_autogen_line( errno_ ) == ( too_small_errno ) \
+                  ) \
+                  {   if( !E_mem_Q_blk_M_replace( &( pointer_variable ), J_autogen_line(l) += ( J_autogen_line(l) != E_base_S->E_mem_S_page_size ? J_autogen_line(l) : E_base_S->E_mem_S_page_size ))) \
+                      {   errno_ = J_autogen_line( errno_ ); \
+                          break; \
+                      } \
+                      continue; \
+                  } \
+                  errno_ = J_autogen_line( errno_ ); \
+              } \
+              if( !errno_ ) \
+              {   if( too_small_errno ) \
+                  {   J_autogen_line( p_end ) = E_text_Z_s0_R_end_0( pointer_variable ); \
+                      break; \
+                  } \
+                  J_autogen_line( p_end ) = E_text_Z_s_R_search_0(( pointer_variable ), (Pc)( pointer_variable ) + J_autogen_line(l) ); \
+                  if( J_autogen_line( p_end ) != (Pc)( pointer_variable ) + J_autogen_line(l) ) \
+                  {   J_autogen_line( p_end )++; \
+                      break; \
+                  } \
+                  if( !E_mem_Q_blk_M_replace( &( pointer_variable ), J_autogen_line(l) += J_autogen_line(l) < E_base_S->E_mem_S_page_size ? J_autogen_line(l) : E_base_S->E_mem_S_page_size )) \
+                  {   errno_ = ~0; \
+                      break; \
+                  } \
+              } \
+          } \
+      if( !errno_ \
+      && (Pc)( pointer_variable ) + J_autogen_line(l) != J_autogen_line( p_end ) \
+      ) \
+          if( !E_mem_Q_blk_I_remove( &( pointer_variable ), J_autogen_line( p_end ) - ( pointer_variable ), (Pc)( pointer_variable ) + J_autogen_line(l) - J_autogen_line( p_end ))) \
+              errno_ = ~0; \
+  }), !errno_ \
+  ) \
+  { \
+  }else
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #define J_assert(expr)                      assert(expr)
 //==============================================================================
@@ -449,5 +493,5 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
     #endif
 #define _unused                             __attribute__ (( __unused__ ))
 //==============================================================================
-#define S_eof                               ( ~1L )
+#define S_eof                               ( ~4L )
 /******************************************************************************/

@@ -17,7 +17,6 @@
 // • ze statycznymi ‘iteratorami’ ‛dla każdego’
 // • z aktualizowanymi ‘iteratorami’ ‛dla każdego’ (które powinny być wyliczane bez oczekiwania na ‹raporcie›, by ‹zadanie› oddawało nieużywaną pamięć operacyjną, ale nie muszą)
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//TODO Usunąć “GV”, gdy ‘alokacja’ może się nie udać, a powrócić z funkcji.
 // Ze względu na powstające już tablice wielowymiarowe wydawanie wskaźnika do “struct E_mem_Q_tab_Z” zostanie zmienione na wydawanie identyfikatora (do zmiennej globalnej tablic tego ‹menedżera›).
 // Dodatkowe ‘iteratory’ statyczne uwzględniające zwalnianie elementów kolekcji możliwe do zrobienia, ale potrzebują bardziej wymagającego sprawdzania warunków.
 //==============================================================================
@@ -44,13 +43,16 @@ E_mem_Q_tab_M(
         return 0;
     Mt_( tab_->index, n );
     if( !tab_->index )
-    {   W(tab_);
+    {   if( W( tab_ ))
+            return (P)~1;
         return 0;
     }
     tab_->data = Mt( u, n );
     if( !tab_->data )
-    {   W( tab_->index );
-        W(tab_);
+    {   if( W( tab_->index )
+        || W( tab_ )
+        )
+            return (P)~1;
         return 0;
     }
     tab_->index_n = n;
@@ -62,22 +64,28 @@ E_mem_Q_tab_M(
     return tab_;
 }
 _export
-void
+N
 E_mem_Q_tab_W( struct E_mem_Q_tab_Z *tab_
 ){  if( U_R( E_base_S->E_flow_S_signal, exit_all ))
-        return;
+        return 0;
     if( tab_->iterator )
     {   for_each( i, tab_->iterator, E_mem_Q_tab )
         {   struct E_mem_Q_tab_S_iterator_Z *iterator = (P)tab_->iterator->index[i];
-            W( iterator->index );
+            if( W( iterator->index ))
+                return ~1;
         }
-        W( tab_->iterator->data );
-        W( tab_->iterator->index );
-        W( tab_->iterator );
+        if( W( tab_->iterator->data )
+        || W( tab_->iterator->index )
+        || W( tab_->iterator )
+        )
+            return ~1;
     }
-    W( tab_->data );
-    W( tab_->index );
-    W(tab_);
+    if( W( tab_->data )
+    || W( tab_->index )
+    || W( tab_ )
+    )
+        return ~1;
+    return 0;
 }
 //------------------------------------------------------------------------------
 _export
@@ -86,12 +94,11 @@ E_mem_Q_tab_I_add( struct E_mem_Q_tab_Z *tab_
 ){  for_i( id, tab_->index_n )
         if( !tab_->index[id] )
             break;
-    if( !~id )
-        return id;
     Pc data = tab_->data;
     N n_prepended;
     if( !E_mem_Q_blk_I_add( &tab_->data, 1, &n_prepended, 0 ))
         return ~0;
+    tab_->data_n++;
     if( tab_->data != data )
     {   for_i( i, id )
             tab_->index[i] += tab_->data + ( n_prepended ? tab_->u : 0 ) - data;
@@ -102,23 +109,20 @@ E_mem_Q_tab_I_add( struct E_mem_Q_tab_Z *tab_
     }
     if( id == tab_->index_n )
     {   if( !E_mem_Q_blk_I_append( &tab_->index, 1 ))
-        {   if( !E_mem_Q_blk_I_remove( &tab_->data, n_prepended ? 0 : tab_->data_n, 1 ))
-            {   GV_(NA);
-            }
+        {   if( !E_mem_Q_blk_I_remove( &tab_->data, n_prepended ? 0 : tab_->data_n - 1, 1 ))
+                return ~2;
             return ~0;
         }
         tab_->index_n++;
     }
-    tab_->index[id] = tab_->data + ( n_prepended ? 0 : tab_->data_n * tab_->u );
-    tab_->data_n++;
+    tab_->index[id] = tab_->data + ( n_prepended ? 0 : ( tab_->data_n - 1 ) * tab_->u );
     if( tab_->iterator )
     {   for_i( i, tab_->iterator->index_n )
         {   struct E_mem_Q_tab_S_iterator_Z *iterator = (P)tab_->iterator->index[i];
             if(iterator)
             {   I *p = E_mem_Q_blk_I_append( &iterator->index, 1 );
                 if( !p )
-                {   GV_(NA); V();
-                }
+                    return ~2;
                 *p = id;
                 iterator->n++;
             }
@@ -127,7 +131,7 @@ E_mem_Q_tab_I_add( struct E_mem_Q_tab_Z *tab_
     return id;
 }
 _export
-I
+N
 E_mem_Q_tab_I_add_i( struct E_mem_Q_tab_Z *tab_
 , I id
 ){  J_assert( ~id && !E_mem_Q_tab_T( tab_, id ));
@@ -135,6 +139,7 @@ E_mem_Q_tab_I_add_i( struct E_mem_Q_tab_Z *tab_
     N n_prepended;
     if( !E_mem_Q_blk_I_add( &tab_->data, 1, &n_prepended, 0 ))
         return ~0;
+    tab_->data_n++;
     if( tab_->data != data )
     {   if( id < tab_->index_n )
         {   for_i( i, id )
@@ -152,31 +157,28 @@ E_mem_Q_tab_I_add_i( struct E_mem_Q_tab_Z *tab_
     }
     if( id >= tab_->index_n )
     {   if( !E_mem_Q_blk_I_append( &tab_->index, id + 1 - tab_->index_n ))
-        {   if( !E_mem_Q_blk_I_remove( &tab_->data, n_prepended ? 0 : tab_->data_n, id + 1 - tab_->index_n ))
-            {   GV_(NA);
-            }
+        {   if( !E_mem_Q_blk_I_remove( &tab_->data, n_prepended ? 0 : tab_->data_n - 1, id + 1 - tab_->index_n ))
+                return ~2;
             return ~0;
         }
         for( I i = tab_->index_n; (In)i < (In)id; i++ )
             tab_->index[i] = 0;
         tab_->index_n = id + 1;
     }
-    tab_->index[id] = tab_->data + ( n_prepended ? 0 : tab_->data_n * tab_->u );
-    tab_->data_n++;
+    tab_->index[id] = tab_->data + ( n_prepended ? 0 : ( tab_->data_n - 1 ) * tab_->u );
     if( tab_->iterator )
     {   for_i( i, tab_->iterator->index_n )
         {   struct E_mem_Q_tab_S_iterator_Z *iterator = (P)tab_->iterator->index[i];
             if(iterator)
             {   I *p = E_mem_Q_blk_I_append( &iterator->index, 1 );
                 if( !p )
-                {   GV_(NA); V();
-                }
+                    return ~2;
                 *p = id;
                 iterator->n++;
             }
         }
     }
-    return id;
+    return 0;
 }
 _export
 N
@@ -190,8 +192,7 @@ E_mem_Q_tab_I_remove( struct E_mem_Q_tab_Z *tab_
                 for_i( j, iterator->n )
                     if( iterator->index[j] == id )
                     {   if( !E_mem_Q_blk_I_remove( &iterator->index, j, 1 ))
-                        {   GV_(NA);
-                        }
+                            return ~2;
                         iterator->n--;
                         break;
                     }
@@ -212,10 +213,9 @@ E_mem_Q_tab_I_remove( struct E_mem_Q_tab_Z *tab_
     }else
         tab_->index[id] = 0;
     Pc data = tab_->data;
+    if( !E_mem_Q_blk_I_remove( &tab_->data, ( p - data ) / tab_->u, 1 ))
+        return ~2;
     tab_->data_n--;
-    if( !E_mem_Q_blk_I_remove( &tab_->data, ( p - tab_->data ) / tab_->u, 1 ))
-    {   GV_(NA);
-    }
     if( tab_->data != data )
     {   for_i( i, tab_->index_n )
             if( tab_->index[i] )
@@ -305,24 +305,32 @@ E_mem_Q_tab_Q_iter_M( struct E_mem_Q_tab_Z *tab_
     )
         n--;
     I iterator_id;
-    if( tab_->iterator )
+    P tab_iterator = tab_->iterator;
+    if( tab_iterator )
     {   iterator_id = E_mem_Q_tab_I_add( tab_->iterator );
-        if( !~iterator_id )
-            return ~0;
+        if( (S)iterator_id < 0 )
+            return iterator_id;
     }else
-    {   tab_->iterator = E_mem_Q_tab_M( sizeof( struct E_mem_Q_tab_S_iterator_Z ), 1 );
-        if( !tab_->iterator )
+    {   P ret = E_mem_Q_tab_M( sizeof( struct E_mem_Q_tab_S_iterator_Z ), 1 );
+        if( !ret )
             return ~0;
+        if( (S)ret < 0 )
+            return (S)ret;
+        tab_->iterator = ret;
         iterator_id = 0;
     }
     struct E_mem_Q_tab_S_iterator_Z *iterator = (P)tab_->iterator->index[ iterator_id ];
     Mt_( iterator->index, n );
     if( !iterator->index )
-    {   if( iterator_id )
-            E_mem_Q_tab_I_remove( tab_->iterator, iterator_id );
+    {   N ret;
+        if( tab_iterator )
+            ret = E_mem_Q_tab_I_remove( tab_->iterator, iterator_id );
         else
-            W_tab_( tab_->iterator );
-        return ~0;
+        {   ret = E_mem_Q_tab_W( tab_->iterator );
+            if( !ret )
+                tab_->iterator = 0;
+        }
+        return ret;
     }
     iterator->n = n;
     I i = 0;
@@ -339,31 +347,36 @@ E_mem_Q_tab_Q_iter_M( struct E_mem_Q_tab_Z *tab_
 }
 // Do zwalniania ‘iteratora’ tylko wtedy, gdy nie zakończy się wartością “empty” (czyli gdy pętla zostanie przerwana).
 _export
-void
+N
 E_mem_Q_tab_Q_iter_W( struct E_mem_Q_tab_Z *tab_
 , I iterator_id
 ){  struct E_mem_Q_tab_S_iterator_Z *iterator = (P)tab_->iterator->index[ iterator_id ];
-    W( iterator->index );
+    if( W( iterator->index ))
+        return ~0;
+    N ret;
     if( tab_->iterator->data_n != 1 )
-        E_mem_Q_tab_I_remove( tab_->iterator, iterator_id );
+        ret = E_mem_Q_tab_I_remove( tab_->iterator, iterator_id );
     else
-        W_tab_( tab_->iterator );
+    {   ret = E_mem_Q_tab_W( tab_->iterator );
+        if( !ret )
+            tab_->iterator = 0;
+    }
+    return ret ? ~2 : 0;
 }
-    #if 0 //brak koncepcji pętli usuwających.
+    #if 0 //Brak koncepcji pętli usuwających.
 _export
 I
 E_mem_Q_tab_Q_iter_R_shift( struct E_mem_Q_tab_Z *tab_
 , I iterator_id
 ){  struct E_mem_Q_tab_S_iterator_Z *iterator = (P)tab_->iterator->index[ iterator_id ];
     if( !iterator->n )
-    {   E_mem_Q_tab_Q_iter_W( tab_, iterator_id );
-        return ~0;
+    {   N ret = E_mem_Q_tab_Q_iter_W( tab_, iterator_id );
+        return ret ? ret : ~0;
     }
     I id = iterator->index[0];
-    iterator->n--;
     if( !E_mem_Q_blk_I_remove( &iterator->index, 0, 1 ))
-    {   GV_(NA);
-    }
+        return ~1;
+    iterator->n--;
     return id;
 }
     #endif
@@ -375,11 +388,18 @@ E_mem_Q_tab_Q_iter_R_next( struct E_mem_Q_tab_Z *tab_
 ){  struct E_mem_Q_tab_S_iterator_Z *iterator = (P)tab_->iterator->index[ iterator_id ];
     I ret = (In)id < (In)iterator->n ? iterator->index[id] : ~0;
     if( !~ret )
-    {   W( iterator->index );
+    {   if( W( iterator->index ))
+            return ~2;
+        N ret;
         if( tab_->iterator->data_n != 1 )
-            E_mem_Q_tab_I_remove( tab_->iterator, iterator_id );
+            ret = E_mem_Q_tab_I_remove( tab_->iterator, iterator_id );
         else
-            W_tab_( tab_->iterator );
+        {   ret = E_mem_Q_tab_W( tab_->iterator );
+            if( !ret )
+                tab_->iterator = 0;
+        }
+        if(ret)
+            return ~2;
     }
     return ret;
 }

@@ -132,25 +132,35 @@ E_desk_cmd_M( void
     E_desk_cmd_S_func[l] = E_desk_cmd_S_func_[l];
     return 0;
 }
-void
+N
 E_desk_cmd_W( void
-){  if( !E_desk_cmd_S_func )
-        return;
-    for( struct E_desk_cmd_Z_func *p_0 = E_desk_cmd_S_func; p_0->name; p_0++ )
-    {   E_mem_Q_blk_W( p_0->name );
+){  for( struct E_desk_cmd_Z_func *p_0 = E_desk_cmd_S_func; p_0->name; p_0++ )
+    {   N ret = E_mem_Q_blk_W( p_0->name );
+        if(ret)
+            return ret;
         if( p_0->argv != E_desk_cmd_Z_argv_0 )
         {   for( Pc *p_1 = p_0->argv; *p_1; p_1++ )
-                E_mem_Q_blk_W( *p_1 );
-            E_mem_Q_blk_W( p_0->argv );
+            {   ret = E_mem_Q_blk_W( *p_1 );
+                if(ret)
+                    return ret;
+            }
+            ret = E_mem_Q_blk_W( p_0->argv );
+            if(ret)
+                return ret;
         }
         if( ~(N)p_0->argv_no_cmd
         && p_0->argv_no_cmd != p_0->argv
         ){  for( Pc *p_1 = p_0->argv_no_cmd; *p_1; p_1++ )
-                E_mem_Q_blk_W( *p_1 );
-            E_mem_Q_blk_W( p_0->argv_no_cmd );
+            {   ret = E_mem_Q_blk_W( *p_1 );
+                if(ret)
+                    return ret;
+            }
+            ret = E_mem_Q_blk_W( p_0->argv_no_cmd );
+            if(ret)
+                return ret;
         }
     }
-    E_mem_Q_blk_W( E_desk_cmd_S_func );
+    return E_mem_Q_blk_W( E_desk_cmd_S_func );
 }
 //==============================================================================
 N
@@ -167,7 +177,7 @@ E_desk_cmd_I_func(
                 if( argc-- > 1 )
                 {   Pc *Mt_( argv, argc + 1 ); // “null”.
                     if( !argv )
-                    {   G_(); V();
+                    {   GV_(NA); V();
                     }
                     Pc data_c = data;
                     for_n( i, argc )
@@ -189,7 +199,7 @@ E_desk_cmd_I_func(
                 exit( EXIT_FAILURE );
             }
             E_flow_I_fork_I_end(pid);
-            return ~pid ? no : yes;
+            return no;
         }
     return yes;
 }

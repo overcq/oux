@@ -31,16 +31,18 @@ _export
 N E_net_http_S_connect_n;
 //==============================================================================
 _export
-void
+N
 E_net_http_Q_ssl_I_disconnect( N i
 ){  J_assert( i < E_net_http_S_connect_n );
     SSL_shutdown( E_net_http_S_connect[i].ssl );
     SSL_free( E_net_http_S_connect[i].ssl );
-    W( E_net_http_S_connect[i].buf_2 );
+    if( W( E_net_http_S_connect[i].buf_2 ))
+        return ~2;
     if( E_net_http_S_connect[i].buf )
-        W( E_net_http_S_connect[i].buf );
+        if( W( E_net_http_S_connect[i].buf ))
+            return ~2;
     E_net_D_cli_I_unblock(0);
-    V0_( sched_yield() );
+    V1_( sched_yield() );
         #ifdef __gnu_linux__
     struct epoll_event ee;
     ee.events = EPOLLIN;
@@ -53,15 +55,18 @@ E_net_http_Q_ssl_I_disconnect( N i
     E_net_cli_S_poll_fd_n--;
         #endif
     V0( close( E_net_http_S_connect[i].connect_sock )){}
-        if( !E_mem_Q_blk_I_remove( &E_net_http_S_connect, i, 1 ))
-        V();
+    if( !E_mem_Q_blk_I_remove( &E_net_http_S_connect, i, 1 ))
+        return ~2;
     E_net_http_S_connect_n--;
     if( !E_net_http_S_connect_n
     && !E_net_http2_S_connect_n
     )
     {   X_A( net, disconnect );
+        if( _X_var( net, disconnect ) < 0 )
+            return (N)_X_var( net, disconnect );
         X_F( net, disconnect );
     }
+    return 0;
 }
 //------------------------------------------------------------------------------
 _export

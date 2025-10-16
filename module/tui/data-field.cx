@@ -59,13 +59,15 @@ struct E_tui_data_Q_field_Z
 };
 //==============================================================================
 _internal
-void
+N
 E_tui_data_Q_field_M_( struct E_tui_data_Q_field_Z *input
 , Pc label
 , N width
 ){  J_assert( width > 2 );
     J_assert( E_text_Z_su0_R_n(label) <= ~0 >> 1 );
     input->label = M( E_text_Z_s0_R_l_0(label) );
+    if( !input->label )
+        return ~0;
     input->width = width;
     E_text_Z_s_P_copy_s0_0( input->label, label );
     input->s = M(1);
@@ -73,14 +75,17 @@ E_tui_data_Q_field_M_( struct E_tui_data_Q_field_Z *input
     input->s_i = 0;
     input->select = 0;
     input->select_n = 0;
+    return 0;
 }
 _export
-void
+N
 E_tui_data_Q_field_M( struct E_tui_data_Q_field_Z *input
 , enum E_tui_data_Q_field_Z_type type
 , Pc label
 , N width
-){  E_tui_data_Q_field_M_( input, label, width );
+){  N ret = E_tui_data_Q_field_M_( input, label, width );
+    if(ret)
+        return ret;
     input->type = type;
     switch(type)
     { case E_tui_data_Q_field_S_text:
@@ -97,11 +102,14 @@ E_tui_data_Q_field_M( struct E_tui_data_Q_field_Z *input
             input->conf.bignum.min_prec = 0;
             break;
     }
+    return 0;
 }
 _export
-void
+N
 E_tui_data_Q_field_W( struct E_tui_data_Q_field_Z *input
-){  W( input->label );
+){  N ret = W( input->label );
+    if(ret)
+        return ret;
     if( input->type == E_tui_data_Q_field_S_text
     && input->conf.text.regex
     )
@@ -109,14 +117,19 @@ E_tui_data_Q_field_W( struct E_tui_data_Q_field_Z *input
     if( input->type == E_tui_data_Q_field_S_bignum
     && input->conf.bignum.slider
     )
-    {   E_math_Q_bignum_W(input->conf.bignum.min);
-        E_math_Q_bignum_W(input->conf.bignum.max);
+    {   ret = E_math_Q_bignum_W( input->conf.bignum.min );
+        if(ret)
+            return ~1;
+        ret = E_math_Q_bignum_W( input->conf.bignum.max );
+        if(ret)
+            return ~1;
     }
-    W(input->s);
+    ret = W(input->s);
+    return ret ? ret : 0;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 _internal
-B
+N
 E_tui_data_Q_field_R_valid( struct E_tui_data_Q_field_Z *input
 ){  switch(input->type)
     { case E_tui_data_Q_field_S_text:
@@ -180,9 +193,24 @@ E_tui_data_Q_field_R_valid( struct E_tui_data_Q_field_Z *input
             if( input->conf.bignum.slider )
             {   Pc ret_s;
                 struct E_math_Z_bignum *v = E_text_Z_s0_N_bignum( input->s, &ret_s, input->conf.bignum.base, input->conf.bignum.min_prec );
-                if( *ret_s
-                || E_math_Q_bignum_I_compare( v, input->conf.bignum.min ) == -2
-                || E_math_Q_bignum_I_compare( v, input->conf.bignum.max ) == 2
+                if( !v )
+                    return ~0;
+                if( *ret_s )
+                    return no;
+                S ret_min = E_math_Q_bignum_I_compare( v, input->conf.bignum.min );
+                if( ret_min != -5
+                && ret_min != 0
+                && ret_min != -5
+                )
+                    return (N)ret_min;
+                S ret_max = E_math_Q_bignum_I_compare( v, input->conf.bignum.max );
+                if( ret_max != -5
+                && ret_max != 0
+                && ret_max != -5
+                )
+                    return (N)ret_max;
+                if( ret_min == -5
+                || ret_max == 5
                 )
                     return no;
             }
@@ -203,7 +231,7 @@ E_tui_data_Q_field_R_valid( struct E_tui_data_Q_field_Z *input
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 _export
-B
+N
 E_tui_data_Q_field_Z_text_P_regex( struct E_tui_data_Q_field_Z *input
 , Pc regex
 ){  if( input->conf.text.regex )
@@ -212,7 +240,10 @@ E_tui_data_Q_field_Z_text_P_regex( struct E_tui_data_Q_field_Z *input
     {   input->conf.text.regex = M( 2 + E_text_Z_s0_R_l(regex) + 2 + 1 );
         E_text_Z_s_P_copy_s0_0( E_text_Z_s_P_copy_s0( E_text_Z_s_P_copy_s0( input->conf.text.regex, "^(" ), regex ), ")$" );
         if( regcomp( &input->conf.text.regex_comp, input->conf.text.regex, REG_EXTENDED | REG_NOSUB ))
-        {   W_( input->conf.text.regex );
+        {   N ret = W( input->conf.text.regex );
+            if(ret)
+                return ~1;
+            input->conf.text.regex = 0;
             return no;
         }
     }else
@@ -242,20 +273,20 @@ E_tui_data_Q_field_P_right( struct E_tui_data_Q_field_Z *input
     return no;
 }
 _internal
-B
+N
 E_tui_data_Q_field_P_insert( struct E_tui_data_Q_field_Z *input
 , U u
 ){  N l = E_text_Z_u_R_su_G(u);
-    if( !~l
-    || !E_mem_Q_blk_I_insert( &input->s, input->s_i, l )
-    )
-        return no;
+    if( !~l )
+        return l;
+    if( !E_mem_Q_blk_I_insert( &input->s, input->s_i, l ))
+        return ~0;
     E_text_Z_u_R_su( u, input->s + input->s_i );
     input->s_i += l;
-    return yes;
+    return 0;
 }
 _internal
-B
+N
 E_tui_data_Q_field_P_overwrite( struct E_tui_data_Q_field_Z *input
 , U u
 ){  N l_1, l_2 = E_text_Z_u_R_su_G(u);
@@ -263,54 +294,56 @@ E_tui_data_Q_field_P_overwrite( struct E_tui_data_Q_field_Z *input
     {   U u;
         l_1 = E_text_Z_su_R_u( input->s + input->s_i, &u ) - ( input->s + input->s_i );
         if( !~l_2 )
-            return no;
+            return l_2;
         if( l_1 > l_2 )
-            E_mem_Q_blk_I_remove( &input->s, input->s_i, l_1 - l_2 );
-        else if( l_1 < l_2
-        && !E_mem_Q_blk_I_insert( &input->s, input->s_i, l_2 - l_1 )
-        )
-            return no;
+        {   if( !E_mem_Q_blk_I_remove( &input->s, input->s_i, l_1 - l_2 ))
+                return ~0;
+        }else if( l_1 < l_2 )
+            if( !E_mem_Q_blk_I_insert( &input->s, input->s_i, l_2 - l_1 ))
+                return ~0;
     }else if( !E_mem_Q_blk_I_insert( &input->s, input->s_i, l_2 ))
-        return no;
+        return ~0;
     E_text_Z_u_R_su( u, input->s + input->s_i );
     input->s_i += l_2;
-    return yes;
+    return 0;
 }
 _internal
-B
+N
 E_tui_data_Q_field_P_remove_back( struct E_tui_data_Q_field_Z *input
 ){  if( input->s_i )
     {   U u;
         N l = input->s + input->s_i - E_text_Z_su_R_u_rev( input->s + input->s_i, &u );
+        if( !E_mem_Q_blk_I_remove( &input->s, input->s_i - l, l ))
+            return ~0;
         input->s_i -= l;
-        E_mem_Q_blk_I_remove( &input->s, input->s_i, l );
         return yes;
     }
     return no;
 }
 _internal
-B
+N
 E_tui_data_Q_field_P_remove_on( struct E_tui_data_Q_field_Z *input
 ){  if( *( input->s + input->s_i ))
     {   U u;
         N l = E_text_Z_su_R_u( input->s + input->s_i, &u ) - ( input->s + input->s_i );
-        E_mem_Q_blk_I_remove( &input->s, input->s_i, l );
+        if( !E_mem_Q_blk_I_remove( &input->s, input->s_i, l ))
+            return ~0;
         return yes;
     }
     return no;
 }
 _internal
-B
+N
 E_tui_data_Q_field_P_select( struct E_tui_data_Q_field_Z *input
 , N i
 ){  J_assert( i < input->select_n );
     N l = E_text_Z_s0_R_l_0( input->select[i] );
     if( E_text_Z_s0_R_l_0( input->s ) != l )
         if( !E_mem_Q_blk_M_replace( &input->s, l ))
-            return no;
+            return ~0;
     E_text_Z_s_P_copy_s0_0( input->s, input->select[i] );
     input->s_i = 0;
-    return yes;
+    return 0;
 }
 _internal
 N

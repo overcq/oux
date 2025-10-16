@@ -42,7 +42,7 @@ struct E_gui_xcb_Q_object_Z
   , N8
   , N8
   );
-  void
+  N
   (*clear_data)(P);
   N child_n;
   I *child;
@@ -81,7 +81,7 @@ E_gui_xcb_Q_object_M(
 , S16 y
 , N16 width
 , N16 height
-, void
+, N
   (*clear_data)(P)
 , void
   (*draw)(
@@ -109,8 +109,8 @@ E_gui_xcb_Q_object_M(
     object->child_n = child_n;
     Mt_( object->child, child_n );
     if( !object->child )
-    {   E_mem_Q_tab_I_remove( window->object, object_id );
-        return ~0;
+    {   N ret = E_mem_Q_tab_I_remove( window->object, object_id );
+        return !ret ? ~0 : (S)ret < ~2 ? ret : ~2;
     }
     object->data = 0;
     object->x = x;
@@ -129,7 +129,7 @@ E_gui_xcb_Q_object_M(
     return object_id;
 }
 _export
-void
+N
 E_gui_xcb_Q_object_W(
   struct E_gui_xcb_Q_display_Z *display
 , struct E_gui_xcb_Q_window_Z *window
@@ -143,11 +143,19 @@ E_gui_xcb_Q_object_W(
     E_gui_xcb_Q_object_I_set_max_window_dimensions( display, window, object, yes );
     if( object->data )
     {   if( object->clear_data )
-            object->clear_data( object->data );
-        W( object->data );
+        {   N ret = object->clear_data( object->data );
+            if(ret)
+                return ~2;
+        }
+        N ret = W( object->data );
+        if(ret)
+            return ~2;
     }
-    W( object->child );
-    E_mem_Q_tab_I_remove( window->object, id );
+    N ret = W( object->child );
+    if(ret)
+        return ~2;
+    ret = E_mem_Q_tab_I_remove( window->object, id );
+    return ret ? ~2 : 0;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 _export
@@ -262,26 +270,27 @@ E_gui_xcb_Q_object_I_remove_descendants(
     if( !ids )
         return ~0;
     E_mem_Q_blk_I_copy( &ids[0], &object->child[0], object->child_n * sizeof( *object->child ));
-    object->child_n = 0;
-    if( !E_mem_Q_blk_M_replace_tab( &object->child, sizeof( *object->child ), object->child_n ))
-    {   W(ids);
-        return ~0;
+    if( !E_mem_Q_blk_M_replace_tab( &object->child, sizeof( *object->child ), 0 ))
+    {   N ret = W(ids);
+        return ret ? ~1 : ~0;
     }
+    object->child_n = 0;
     for_n( ids_i, ids_n )
     {   object = E_mem_Q_tab_R( window->object, ids[ ids_i ] );
         if( object->child_n )
         {   if( !E_mem_Q_blk_I_append( &ids, object->child_n ))
             {   W(ids);
-                return ~0;
+                return ~2;
             }
             E_mem_Q_blk_I_copy( &ids[ ids_n ], &object->child[0], object->child_n * sizeof( *object->child ));
             ids_n += object->child_n;
         }
     }
     for_n_( ids_i, ids_n )
-         E_gui_xcb_Q_object_W( display, window, ids[ ids_i ] );
-    W(ids);
-    return 0;
+         if( E_gui_xcb_Q_object_W( display, window, ids[ ids_i ] ))
+            return ~2;
+    N ret = W(ids);
+    return ret ? ~1 : 0;
 }
 _export
 N
@@ -294,14 +303,15 @@ E_gui_xcb_Q_object_I_remove(
     {   struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
         for_n( child_i, object->child_n )
         {   if( object->child[ child_i ] == id )
-            {   E_mem_Q_blk_I_remove( &object->child, child_i, 1 );
+            {   if( !E_mem_Q_blk_I_remove( &object->child, child_i, 1 ))
+                    return ~2;
                 object->child_n--;
                 goto End;
             }
         }
     }
-End:E_gui_xcb_Q_object_W( display, window, id );
-    return 0;
+End:N ret = E_gui_xcb_Q_object_W( display, window, id );
+    return ret ? ~2 : 0;
 }
 //------------------------------------------------------------------------------
 _internal
@@ -317,15 +327,15 @@ E_gui_xcb_Q_object_I_remove_drag_src( struct E_gui_xcb_Q_window_Z *window
     E_mem_Q_blk_I_copy( &ids[0], &object->child[0], object->child_n * sizeof( *object->child ));
     object->child_n = 0;
     if( !E_mem_Q_blk_M_replace_tab( &object->child, sizeof( *object->child ), object->child_n ))
-    {   W(ids);
-        return ~0;
+    {   N ret = W(ids);
+        return ret ? ~1 : ~0;
     }
     for_n( ids_i, ids_n )
     {   object = E_mem_Q_tab_R( window->object, ids[ ids_i ] );
         if( object->child_n )
         {   if( !E_mem_Q_blk_I_append( &ids, object->child_n ))
             {   W(ids);
-                return ~0;
+                return ~2;
             }
             E_mem_Q_blk_I_copy( &ids[ ids_n ], &object->child[0], object->child_n * sizeof( *object->child ));
             ids_n += object->child_n;
@@ -335,8 +345,8 @@ E_gui_xcb_Q_object_I_remove_drag_src( struct E_gui_xcb_Q_window_Z *window
     {   object = E_mem_Q_tab_R( window->object, ids[ ids_i ] );
         U_L( object->state, drag_src );
     }
-    W(ids);
-    return 0;
+    N ret = W(ids);
+    return ret ? ~1 : 0;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 _export
@@ -412,12 +422,12 @@ E_gui_xcb_Q_object_Z_button_I_click(
 }
 //------------------------------------------------------------------------------
 _internal
-void
+N
 E_gui_xcb_Q_object_Z_entry_I_clear_data( P data
 ){  if( !data )
-        return;
+        return 0;
     struct E_gui_xcb_Q_object_Z_data_Z_entry *object_data = data;
-    W( object_data->s );
+    return W( object_data->s );
 }
 _export
 I
@@ -438,17 +448,19 @@ E_gui_xcb_Q_object_Z_entry_M(
     , 0
     , ~0
     );
+    if( object_id < 0 )
+        return object_id;
     struct E_gui_xcb_Q_object_Z_data_Z_entry *M_( object_data );
     if( !object_data )
-    {   E_gui_xcb_Q_object_W( display, window, object_id );
-        return ~0;
+    {   N ret = E_gui_xcb_Q_object_W( display, window, object_id );
+        return ret ? ret : ~2;
     }
     object_data->font = font_id;
     object_data->s = M( E_text_Z_s0_R_l_0(s) );
     object_data->text_start = 0;
     if( !object_data->s )
-    {   E_gui_xcb_Q_object_W( display, window, object_id );
-        return ~0;
+    {   N ret = E_gui_xcb_Q_object_W( display, window, object_id );
+        return ret ? ret : ~2;
     }
     E_text_Z_s_P_copy_s0_0( object_data->s, s );
     U_L( object_data->state, cursor_visible_ );
@@ -466,21 +478,15 @@ E_gui_xcb_Q_object_Z_entry_I_draw(
 ){  struct E_gui_xcb_Q_object_Z_data_Z_entry *object_data = object->data;
     Pc s = object_data->s;
     for_n( i, object_data->text_start )
-    {   U u = ~0;
+    {   U u;
         s = E_text_Z_su_R_u( s, &u );
-        if( !~u )
-        {   GV_(bad UTF-8 character); V();
-        }
     }
     Pc s_ = s;
     struct E_gui_xcb_Q_font_Z *font = E_mem_Q_tab_R( E_gui_xcb_Q_font_S, object_data->font );
     S16 x = E_gui_xcb_Q_object_S_layout_dx; //NDFN Dlaczego tutaj nie ma być 0?
     while( *s )
-    {   U u = ~0;
+    {   U u;
         s = E_text_Z_su_R_u( s, &u );
-        if( !~u )
-        {   GV_(bad UTF-8 character); V();
-        }
         N min = 0;
         N max = font->bitmap_n;
         N i = max / 2;
@@ -513,21 +519,15 @@ E_gui_xcb_Q_object_Z_entry_I_draw(
     if( U_R( object_data->state, cursor_visible_ ))
     {   Pc s = object_data->s;
         for_n( i, object_data->text_start )
-        {   U u = ~0;
+        {   U u;
             s = E_text_Z_su_R_u( s, &u );
-            if( !~u )
-            {   GV_(bad UTF-8 character); V();
-            }
         }
         struct E_gui_xcb_Q_font_Z *font = E_mem_Q_tab_R( E_gui_xcb_Q_font_S, object_data->font );
         S16 x = 0;
         N l = object_data->cursor_pos - object_data->text_start;
         while( l && *s )
-        {   U u = ~0;
+        {   U u;
             s = E_text_Z_su_R_u( s, &u );
-            if( !~u )
-            {   GV_(bad UTF-8 character); V();
-            }
             N min = 0;
             N max = font->bitmap_n;
             N i = max / 2;
@@ -565,12 +565,12 @@ E_gui_xcb_Q_object_Z_entry_I_draw(
 }
 //------------------------------------------------------------------------------
 _internal
-void
+N
 E_gui_xcb_Q_object_Z_font_I_clear_data( P data
 ){  if( !data )
-        return;
+        return 0;
     struct E_gui_xcb_Q_object_Z_data_Z_font *object_data = data;
-    W( object_data->label );
+    return W( object_data->label );
 }
 _export
 I
@@ -629,6 +629,8 @@ E_gui_xcb_Q_object_Z_font_M(
     , 0
     , ~0
     );
+    if( object_id < 0 )
+        return object_id;
     struct E_gui_xcb_Q_object_Z_data_Z_font *M_( object_data );
     if( !object_data )
     {   E_gui_xcb_Q_object_W( display, window, object_id );
@@ -705,12 +707,12 @@ E_gui_xcb_Q_object_Z_frame_I_draw(
     );
 }
 _internal
-void
+N
 E_gui_xcb_Q_object_Z_select_I_clear_data( P data
 ){  if( !data )
-        return;
+        return 0;
     struct E_gui_xcb_Q_object_Z_data_Z_select *object_data = data;
-    W( object_data->select );
+    return W( object_data->select );
 }
 _internal
 I
@@ -728,8 +730,8 @@ E_gui_xcb_Q_object_Z_select_M(
     , 0
     , ~0
     );
-    if( !~object_id )
-        return ~0;
+    if( object_id < 0 )
+        return object_id;
     struct E_gui_xcb_Q_object_Z_data_Z_select *M_( object_data );
     if( !object_data )
     {   E_gui_xcb_Q_object_W( display, window, object_id );
@@ -811,8 +813,8 @@ E_gui_xcb_Q_object_Z_select_list_M(
     , 0
     , no
     );
-    if( !~object_id )
-        return ~0;
+    if( object_id < 0 )
+        return object_id;
     struct E_gui_xcb_Q_object_Z_data_Z_select_list *M_( object_data );
     if( !object_data )
     {   E_gui_xcb_Q_object_W( display, window, object_id );

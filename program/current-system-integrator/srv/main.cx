@@ -12,20 +12,32 @@ main(
   int argc
 , char *argv[]
 ){  E_base_M( argc, argv );
-    chdir( E_const_P_home_dir );
-    if( !~E_desk_cmd_M()
-    || !~E_rox_filer_M()
-    )
-        return -1;
+    V0_( chdir( E_const_P_home_dir ));
+    N ret = E_desk_cmd_M();
+    if(ret)
+        return (int)ret;
+    ret = E_rox_filer_M();
+    if(ret)
+        return (int)ret;
     X_M( main, none );
+    if( _X_var( main, none ) < 0 )
+        return (int)_X_var( main, none );
     O{  X_B( main, none, 0 )
             break;
     }
-    X_W( main, none );
-    E_rox_filer_W();
-    E_desk_cmd_W();
-    E_base_W();
-    return 0;
+    ret = X_W( main, none );
+    if(ret)
+        return (int)ret;
+    ret = E_rox_filer_W();
+    if(ret)
+        return (int)ret;
+    ret = E_desk_cmd_W();
+    if(ret)
+        return (int)ret;
+    ret = E_base_W();
+    if(ret)
+        return (int)ret;
+    return EXIT_SUCCESS;
 }
 //==============================================================================
 void
@@ -38,6 +50,8 @@ E_flow_Q_process_call_I_func( P data
     { case 0: // Desktop commands.
             if( argc >= 1 )
             {   *ret = E_desk_cmd_I_func( argc, data_n );
+                if( (S)*ret < 0 )
+                    exit( (int)*ret );
                 E_mem_Q_sys_table_I_reduce();
                 return;
             }
@@ -45,6 +59,8 @@ E_flow_Q_process_call_I_func( P data
       case 1: // ‟Rox filer” “mime” handler.
             if( argc == 2 )
             {   *ret = E_rox_filer_I_func( data_n );
+                if( (S)*ret < 0 )
+                    exit( (int)*ret );
                 E_mem_Q_sys_table_I_reduce();
                 return;
             }

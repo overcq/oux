@@ -51,13 +51,13 @@ struct E_base_Z
   struct
   { Pc stack;
     Pc touched_stack;
-  }E_flow_Q_task_S_tmp;
+  }E_flow_Q_task_S_sigsegv_tmp;
     #ifdef E_flow_C_thread_system_unblock_reports
   struct E_mem_Q_tab_Z *E_flow_Q_task_S_uid_subid;
     #endif
   struct E_mem_Q_tab_Z *E_flow_Q_report_S;
     #ifdef E_flow_C_itimer_system_unblock_report
-  // W danym czasie może być zarejestrowany najwyżej jeden ‹systemowy raport odblokowujący› typu “itimer”; przez ustawienie procedur zastępujących funkcjonalność systemowych “setitimer” i “sigsuspend”, np. “getch” opakowanej dla uzgodnienia ‘intefejsu’. Zmienne nie mogą być ustawiane w procedurze obsługi “sygnału” ‘uniksowego’.
+  // W danym czasie może być zarejestrowany najwyżej jeden ‹systemowy raport odblokowujący› typu “itimer”; przez ustawienie procedur zastępujących funkcjonalność systemowych “setitimer” i “sigsuspend”, np. “getch” opakowanej dla uzgodnienia ‘intefejsu’. Zmienne nie mogą być ustawiane w procedurze obsługi “sygnału” ‘uniksowego’.
   B (* E_flow_Z_itimer_system_unblock_report_I_sigsuspend )( sigset_t * ); // W wyniku jest to, czy wraca z ‹systemowym raportem odblokowującym›.
   void (* E_flow_Z_itimer_system_unblock_report_I_setitimer )( Z_clock_time * ); // Jeśli nie jest ustawiona albo —bezwarunkowo— jeśli użyte są ‹zadania› “wątkowane”, to “SIGALRM” musi odblokowywać (zakańczać) procedurę opakowaną.
     #endif
@@ -136,12 +136,11 @@ struct E_base_Z
 extern char **environ;
 //==============================================================================
 _internal
-void
+N
 E_mem_M_blk( void
 ){  N page_size;
     if( !~( page_size = sysconf( _SC_PAGESIZE )))
-    {   GV_(NA); V();
-    }
+        return ~0;
     N initial_size = E_simple_Z_n_I_align_up_to_v2( sizeof( *E_base_S ) + sizeof( struct E_mem_Q_blk_Z_mapped ) + sizeof( struct E_mem_Q_blk_Z_free ) + 4 * sizeof( struct E_mem_Q_blk_Z_allocated ), page_size );
         #if defined( __gnu_linux__ )
     if( !~(N)( E_base_S = mmap( 0
@@ -164,8 +163,7 @@ E_mem_M_blk( void
         #else
 #error not implemented
         #endif
-    {   GV_(NA); V();
-    }
+        return ~0;
         #ifdef E_mem_Q_blk_C_debug
     E_mem_Q_blk_P_fill_c( E_base_S, initial_size, 0xa5 ); //TODO Procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
         #endif
@@ -226,18 +224,18 @@ E_mem_M_blk( void
         #ifdef C_pthreads
     pthread_mutexattr_t mutexattr;
     Vr( pthread_mutexattr_init( &mutexattr ))
-        V();
+        return ~1;
     Vr( pthread_mutex_init( &E_base_S->E_flow_Z_task_table_S_mutex, &mutexattr ))
-        V();
+        return ~1;
     Vr( pthread_mutex_init( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex, &mutexattr ))
-        V();
+        return ~1;
     Vr( pthread_mutexattr_destroy( &mutexattr ))
-        V();
+        return ~1;
         #endif
         #ifdef C_to_libs_C_replace_c_alloc
             #ifdef C_pthreads
     Vr( pthread_mutex_lock( &E_base_S->E_flow_Z_task_table_S_mutex ))
-        V();
+        return ~1;
             #endif
     E_base_S->E_mem_Q_blk_I_libc_malloc_usable_size = (P)0;
     E_base_S->E_mem_Q_blk_I_libc_aligned_alloc = (P)0;
@@ -249,7 +247,7 @@ E_mem_M_blk( void
     E_base_S->E_mem_Q_blk_I_libc_free = (P)0;
     P libc = dlopen( C_to_libs_C_replace_c_alloc_S_libc_filename, RTLD_LAZY | RTLD_GLOBAL | RTLD_NOLOAD );
     if( !libc )
-        V();
+        return ~1;
     E_base_S->E_mem_Q_blk_I_libc_malloc_usable_size = ( E_mem_Q_blk_I_libc_malloc_usable_size_Z )dlsym( libc, "malloc_usable_size" );
     E_base_S->E_mem_Q_blk_I_libc_aligned_alloc = ( E_mem_Q_blk_I_libc_aligned_alloc_Z )dlsym( libc, "aligned_alloc" );
     E_base_S->E_mem_Q_blk_I_libc_posix_memalign = ( E_mem_Q_blk_I_libc_posix_memalign_Z )dlsym( libc, "posix_memalign" );
@@ -259,62 +257,66 @@ E_mem_M_blk( void
     E_base_S->E_mem_Q_blk_I_libc_reallocarray = ( E_mem_Q_blk_I_libc_reallocarray_Z )dlsym( libc, "reallocarray" );
     E_base_S->E_mem_Q_blk_I_libc_free = ( E_mem_Q_blk_I_libc_free_Z )dlsym( libc, "free" );
     if( dlclose(libc) )
-        V();
+        return ~1;
             #ifdef C_pthreads
     Vr( pthread_mutex_unlock( &E_base_S->E_flow_Z_task_table_S_mutex ))
-        V();
+        return ~1;
             #endif
         #endif
+    return 0;
 }
 _internal
-void
+N
 E_mem_M_file( void
 ){  E_base_S->E_mem_Q_file_S = E_mem_Q_tab_M( sizeof( struct E_mem_Q_file_Z ), 0 );
     if( !E_base_S->E_mem_Q_file_S )
-    {   GV_(NA); V();
-    }
+        return ~0;
     E_base_S->E_mem_Q_file_S_buffer_l = E_base_S->E_mem_S_page_size; //CONF Wartość optymalna, ale może być wymagana większa.
         #if defined( __gnu_linux__ )
-    V1p_( E_base_S->E_mem_Q_file_S_buffer = mmap( 0
+    V1p( E_base_S->E_mem_Q_file_S_buffer = mmap( 0
     , E_base_S->E_mem_Q_file_S_buffer_l
     , PROT_READ | PROT_WRITE
     , MAP_PRIVATE
     | MAP_ANONYMOUS | MAP_UNINITIALIZED
     , -1
     , 0
-    ));
+    ))
         #elif defined( __FreeBSD__ ) || defined( __NetBSD__ ) || defined( __OpenBSD__ )
-    V1p_( E_base_S->E_mem_Q_file_S_buffer = mmap( 0
+    V1p( E_base_S->E_mem_Q_file_S_buffer = mmap( 0
     , E_base_S->E_mem_Q_file_S_buffer_l
     , PROT_READ | PROT_WRITE
     , MAP_PRIVATE
     | MAP_ANON
     , -1
     , 0
-    ));
+    ))
         #else
 #error not implemented
         #endif
+        return ~1;
         #ifdef E_mem_Q_blk_C_debug
     E_mem_Q_blk_P_fill_c( E_base_S->E_mem_Q_file_S_buffer, E_base_S->E_mem_Q_file_S_buffer_l, 0xa5 ); //TODO Procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
         #endif
+    return 0;
 }
 _internal
-void
+N
 E_io_M_stream( void
 ){  E_base_S->E_io_Q_stream_out_S = E_mem_Q_tab_M( sizeof( struct E_io_Q_stream_out_Z ), 0 );
     if( !E_base_S->E_io_Q_stream_out_S )
-    {   GV_(NA); V();
-    }
+        return ~0;
         #if defined( E_io_C_aio ) || defined( E_io_C_sig_has_fd )
-    E_mem_Q_tab_Q_iter_M( E_base_S->E_io_Q_stream_out_S, ~0 );
+    if( E_mem_Q_tab_Q_iter_M( E_base_S->E_io_Q_stream_out_S, ~0 ) < 0 )
+        return ~1;
         #endif
         #ifdef C_line_report
-    E_io_Q_stream_out_M_fd( STDERR_FILENO );
+    if( E_io_Q_stream_out_M_fd( STDERR_FILENO ) < 0 )
+        return ~1;
         #endif
+    return 0;
 }
 _export
-void
+N
 E_base_M(
   int argc
 , Pc *argv
@@ -330,13 +332,16 @@ E_base_M(
 #error not implemented
             #endif
         #endif
-    feclearexcept( FE_ALL_EXCEPT );
-    E_mem_M_blk();
+    if( feclearexcept( FE_ALL_EXCEPT ))
+        return ~0;
+    N ret = E_mem_M_blk();
+    if(ret)
+        return ret;
         #ifdef E_flow_Q_process_call_C_alt
     N l_1 = E_text_Z_n_N_s_G( E_base_S->E_flow_S_exe_pid, sizeof( E_base_S->E_flow_S_exe_pid ), 10 );
     Pc s = M( 6 + l_1 + 1 );
     if( !s )
-        V();
+        return ~0;
     E_text_Z_s_P_copy_s0( s, "/proc/" );
     E_text_Z_n_N_s( s + 6 + l_1, E_base_S->E_flow_S_exe_pid, sizeof( E_base_S->E_flow_S_exe_pid ), 10 );
     *( s + 6 + l_1 ) = '\0';
@@ -344,15 +349,18 @@ E_base_M(
         #endif
     // Włączenie “V”[…]“_”.
     int fd_flags;
-    V1_( fd_flags = fcntl( STDERR_FILENO, F_GETFL ));
+    if( !~( fd_flags = fcntl( STDERR_FILENO, F_GETFL )))
+        return ~0;
     fd_flags |= O_NONBLOCK;
-    V0_( fcntl( STDERR_FILENO, F_SETFL, fd_flags ));
+    if( !~fcntl( STDERR_FILENO, F_SETFL, fd_flags ))
+        return ~0;
     // Procedury wymagane lub zalecane w środowisku uruchamiania programu.
-    Vp_( setlocale( LC_ALL, "" ));
+    if( !setlocale( LC_ALL, "" ))
+        return ~0;
     // Odblokowanie dostępu do tablicy ‹zadań›.
     E_base_S->E_flow_Q_task_S = E_mem_Q_tab_M( sizeof( struct E_flow_Q_task_Z ), 1 );
     if( !E_base_S->E_flow_Q_task_S )
-        V();
+        return ~0;
     U_F( E_base_S->E_flow_S_mode, Z_task_table_S_can_read );
     struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, 0 );
     *task = ( struct E_flow_Q_task_Z )
@@ -371,51 +379,77 @@ E_base_M(
     { .sa_handler = SIG_IGN
     , .sa_flags = 0
     };
-    V0_( sigfillset( &sa.sa_mask ));
-    _sigaction_M( SIGPIPE, &sa );
-    _sigaction_M( SIGTSTP, &sa );
-    _sigaction_M( SIGTTIN, &sa );
-    _sigaction_M( SIGTTOU, &sa );
-    V0_( sigemptyset( &E_base_S->E_flow_Z_sigset_S_empty ));
+    V0( sigfillset( &sa.sa_mask ))
+        return ~1;
+    _sigaction_M( SIGPIPE, &sa )
+        return ~1;
+    _sigaction_M( SIGTSTP, &sa )
+        return ~1;
+    _sigaction_M( SIGTTIN, &sa )
+        return ~1;
+    _sigaction_M( SIGTTOU, &sa )
+        return ~1;
+    V0( sigemptyset( &E_base_S->E_flow_Z_sigset_S_empty ))
+        return ~1;
     sigset_t sigset = E_base_S->E_flow_Z_sigset_S_empty;
-    V0_( sigaddset( &sigset, SIGHUP ));
-    V0_( sigaddset( &sigset, SIGINT ));
-    V0_( sigaddset( &sigset, SIGQUIT ));
-    V0_( sigaddset( &sigset, SIGTERM ));
-    V0_( sigaddset( &sigset, SIGALRM ));
+    V0( sigaddset( &sigset, SIGHUP ))
+        return ~1;
+    V0( sigaddset( &sigset, SIGINT ))
+        return ~1;
+    V0( sigaddset( &sigset, SIGQUIT ))
+        return ~1;
+    V0( sigaddset( &sigset, SIGTERM ))
+        return ~1;
+    V0( sigaddset( &sigset, SIGALRM ))
+        return ~1;
     E_base_S->E_flow_Z_sigset_S_process_call_req = E_base_S->E_flow_Z_sigset_S_empty;
-    V0_( sigaddset( &E_base_S->E_flow_Z_sigset_S_process_call_req, SIGUSR1 ));
-    V0_( sigaddset( &sigset, SIGUSR1 ));
+    V0( sigaddset( &E_base_S->E_flow_Z_sigset_S_process_call_req, SIGUSR1 ))
+        return ~1;
+    V0( sigaddset( &sigset, SIGUSR1 ))
+        return ~1;
     E_base_S->E_flow_Z_sigset_S_process_call_reply = E_base_S->E_flow_Z_sigset_S_empty;
-    V0_( sigaddset( &E_base_S->E_flow_Z_sigset_S_process_call_reply, SIGUSR2 ));
-    V0_( sigaddset( &sigset, SIGUSR2 ));
+    V0( sigaddset( &E_base_S->E_flow_Z_sigset_S_process_call_reply, SIGUSR2 ))
+        return ~1;
+    V0( sigaddset( &sigset, SIGUSR2 ))
+        return ~1;
     E_base_S->E_flow_Z_sigset_S_process_call_reply_pong = E_base_S->E_flow_Z_sigset_S_process_call_reply;
-    V0_( sigaddset( &E_base_S->E_flow_Z_sigset_S_process_call_reply_pong, SIGPROF ));
-    V0_( sigaddset( &sigset, SIGPROF ));
+    V0( sigaddset( &E_base_S->E_flow_Z_sigset_S_process_call_reply_pong, SIGPROF ))
+        return ~1;
+    V0( sigaddset( &sigset, SIGPROF ))
+        return ~1;
         #if defined( E_io_C_aio ) || defined( E_io_Q_stream_out_C_sig )
     E_base_S->E_flow_Z_sigset_S_io_ready = E_base_S->E_flow_Z_sigset_S_empty;
             #ifdef E_io_C_aio
                 #if defined( __gnu_linux__ ) || defined( __OpenBSD__ )
-    V0_( sigaddset( &sigset, SIGPOLL ));
-    V0_( sigaddset( &E_base_S->E_flow_Z_sigset_S_io_ready, SIGPOLL ));
+    V0( sigaddset( &sigset, SIGPOLL ))
+        return ~1;
+    V0( sigaddset( &E_base_S->E_flow_Z_sigset_S_io_ready, SIGPOLL ))
+        return ~1;
                 #elif defined( __FreeBSD__ ) || defined( __NetBSD__ )
-    V0_( sigaddset( &sigset, SIGINFO ));
-    V0_( sigaddset( &E_base_S->E_flow_Z_sigset_S_io_ready, SIGINFO ));
+    V0( sigaddset( &sigset, SIGINFO ))
+        return ~1;
+    V0( sigaddset( &E_base_S->E_flow_Z_sigset_S_io_ready, SIGINFO ))
+        return ~1;
                 #else
 #error not implemented
                 #endif
             #else
-    V0_( sigaddset( &sigset, SIGIO ));
-    V0_( sigaddset( &E_base_S->E_flow_Z_sigset_S_io_ready, SIGIO ));
+    V0( sigaddset( &sigset, SIGIO ))
+        return ~1;
+    V0( sigaddset( &E_base_S->E_flow_Z_sigset_S_io_ready, SIGIO ))
+        return ~1;
             #endif
         #endif
     E_base_S->E_flow_Z_sigset_S_process_volatile = sigset;
-    V0_( sigaddset( &sigset, SIGVTALRM ));
+    V0( sigaddset( &sigset, SIGVTALRM ))
+        return ~1;
     E_base_S->E_flow_Z_sigset_S_process_exec = sigset;
         #ifndef C_middle_code
-    _sigprocmask( SIG_SETMASK, &sigset, 0 );
+    _sigprocmask( SIG_SETMASK, &sigset, 0 )
+        return ~1;
         #else
-    _sigprocmask( SIG_SETMASK, &sigset, &E_base_S->E_flow_Z_saved_initial_S_blocked_signals );
+    _sigprocmask( SIG_SETMASK, &sigset, &E_base_S->E_flow_Z_saved_initial_S_blocked_signals )
+        return ~1;
         #endif
     // Ustawienie podstawowych zmiennych ‹modułu›.
     if(argc) //NDFN Dlaczego to sprawdzenie? Czy standard nie gwarantuje “>= 1”?
@@ -432,37 +466,54 @@ E_base_M(
         #else
 #error not implemented
         #endif
-    MV_( E_base_S->E_flow_S_hostname, V0, gethostname, 0, l );
-    MV_( E_base_S->E_flow_S_cwd, Vp, getcwd, ERANGE, 0 );
+    int errno_;
+    MVe( E_base_S->E_flow_S_hostname, V0, gethostname, 0, l, errno_ )
+        return ~1;
+    MVe( E_base_S->E_flow_S_cwd, Vp, getcwd, ERANGE, 0, errno_ )
+        return ~1;
     if( E_text_Z_s0_T_eq_s0( E_base_S->E_flow_S_cwd, E_mem_Q_file_S_filename_separator_s ))
-    {   W( E_base_S->E_flow_S_cwd );
+    {   ret = W( E_base_S->E_flow_S_cwd );
+        if(ret)
+            return ret;
         E_base_S->E_flow_S_cwd = E_mem_Q_file_S_filename_separator_s;
     }
     // Ustawienie obsługi “sygnałów” ‘uniksowych’.
     sa.sa_handler = E_flow_Z_signal_V_term;
-    _sigaction_M( SIGHUP, &sa );
-    _sigaction_M( SIGINT, &sa );
-    _sigaction_M( SIGQUIT, &sa );
-    _sigaction_M( SIGTERM, &sa );
+    _sigaction_M( SIGHUP, &sa )
+        return ~1;
+    _sigaction_M( SIGINT, &sa )
+        return ~1;
+    _sigaction_M( SIGQUIT, &sa )
+        return ~1;
+    _sigaction_M( SIGTERM, &sa )
+        return ~1;
     sa.sa_handler = E_flow_Z_signal_V_chld;
-    _sigaction_M( SIGCHLD, &sa );
+    _sigaction_M( SIGCHLD, &sa )
+        return ~1;
     sa.sa_flags = SA_SIGINFO;
     sa.sa_sigaction = E_flow_Z_signal_V_alrm;
-    _sigaction_M( SIGALRM, &sa );
+    _sigaction_M( SIGALRM, &sa )
+        return ~1;
     sa.sa_sigaction = E_flow_Z_signal_V_process_call_req;
-    _sigaction_M( SIGUSR1, &sa );
+    _sigaction_M( SIGUSR1, &sa )
+        return ~1;
     sa.sa_sigaction = E_flow_Z_signal_V_process_call_reply;
-    _sigaction_M( SIGUSR2, &sa );
+    _sigaction_M( SIGUSR2, &sa )
+        return ~1;
     sa.sa_sigaction = E_flow_Z_signal_V_process_call_ping;
-    _sigaction_M( SIGVTALRM, &sa );
+    _sigaction_M( SIGVTALRM, &sa )
+        return ~1;
     sa.sa_sigaction = E_flow_Z_signal_V_process_call_pong;
-    _sigaction_M( SIGPROF, &sa );
+    _sigaction_M( SIGPROF, &sa )
+        return ~1;
         #if defined( E_io_C_aio )
     sa.sa_sigaction = E_flow_Z_signal_V_io_ready;
                 #if defined( __gnu_linux__ ) || defined( __OpenBSD__ )
-    _sigaction_M( SIGPOLL, &sa );
+    _sigaction_M( SIGPOLL, &sa )
+        return ~1;
                 #elif defined( __NetBSD__ ) || defined( __FreeBSD__ )
-    _sigaction_M( SIGINFO, &sa );
+    _sigaction_M( SIGINFO, &sa )
+        return ~1;
                 #else
 #error not implemented
                 #endif
@@ -471,7 +522,8 @@ E_base_M(
     sa.sa_flags = 0;
             #endif
     sa.sa_sigaction = E_flow_Z_signal_V_io_ready;
-    _sigaction_M( SIGIO, &sa );
+    _sigaction_M( SIGIO, &sa )
+        return ~1;
         #endif
     // Ustawienie procedury “sygnału” “SEGV”— do obsługi pamięci stosów ‹zadań›.
     stack_t alt_stack =
@@ -485,40 +537,47 @@ E_base_M(
         #endif
     };
         #if defined( __gnu_linux__ )
-    V1p_( alt_stack.ss_sp = mmap( 0
+    V1p( alt_stack.ss_sp = mmap( 0
     , alt_stack.ss_size
     , PROT_READ | PROT_WRITE
     , MAP_PRIVATE
     | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_UNINITIALIZED
     , -1
     , 0
-    ));
+    ))
+        return ~1;
         #elif defined( __FreeBSD__ ) || defined( __NetBSD__ ) || defined( __OpenBSD__ )
-    V1p_( alt_stack.ss_sp = mmap( 0
+    V1p( alt_stack.ss_sp = mmap( 0
     , alt_stack.ss_size
     , PROT_READ | PROT_WRITE
     , MAP_PRIVATE
     | MAP_ANON | MAP_STACK
     , -1
     , 0
-    ));
+    ))
+        return ~1;
         #else
 #error not implemented
         #endif
         #ifdef E_mem_Q_blk_C_debug
     E_mem_Q_blk_P_fill_c( alt_stack.ss_sp, alt_stack.ss_size, 0xa5 ); //TODO Procedura usuwająca zerowanie nowej pamięci na czas usuwania zmiennych globalnych i testów.
         #endif
-    V0_( sigaltstack( &alt_stack, 0 ));
+    V0( sigaltstack( &alt_stack, 0 ))
+        return ~1;
     sa.sa_sigaction = E_flow_Z_signal_V_segv;
     sa.sa_flags = SA_ONSTACK | SA_SIGINFO;
-    _sigaction_M( SIGSEGV, &sa );
+    _sigaction_M( SIGSEGV, &sa )
+        return ~1;
     // Odblokowanie “sygnałów” ‘uniksowych’.
-    _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_Z_sigset_S_empty, 0 );
+    _sigprocmask( SIG_SETMASK, &E_base_S->E_flow_Z_sigset_S_empty, 0 )
+        return ~1;
     // Uruchomienie funkcjonalności ‹modułu›.
         #if defined( __gnu_linux__ ) || defined( __OpenBSD__ )
-    V1_( E_base_S->E_flow_Z_task_stacks_S_n_pages = sysconf( _SC_AVPHYS_PAGES ));
+    V1( E_base_S->E_flow_Z_task_stacks_S_n_pages = sysconf( _SC_AVPHYS_PAGES ))
+        return ~1;
         #elif defined( __NetBSD__ )
-    V1_( E_base_S->E_flow_Z_task_stacks_S_n_pages = sysconf( _SC_PHYS_PAGES ));
+    V1( E_base_S->E_flow_Z_task_stacks_S_n_pages = sysconf( _SC_PHYS_PAGES ))
+        return ~1;
         #elif defined( __FreeBSD__ )
     int mib[2] =
     { CTL_HW
@@ -530,7 +589,8 @@ E_base_M(
     {   GV_(NDFN); V();
     }
     N phys_mem;
-    V1_( sysctl( mib, 2, &phys_mem, &len, 0, 0 ));
+    V1( sysctl( mib, 2, &phys_mem, &len, 0, 0 ))
+        return ~1;
     E_base_S->E_flow_Z_task_stacks_S_n_pages = phys_mem / E_base_S->E_mem_S_page_size;
         #else
 #error not implemented
@@ -538,75 +598,71 @@ E_base_M(
         #ifdef E_flow_C_thread_system_unblock_reports
     E_base_S->E_flow_Q_task_S_uid_subid = E_mem_Q_tab_M( sizeof( struct E_mem_Q_tab_Z * ), 0 );
     if( !E_base_S->E_flow_Q_task_S_uid_subid )
-    {   GV_(NA); V();
-    }
+        return ~1;
         #endif
     E_base_S->E_flow_Q_report_S = E_mem_Q_tab_M( sizeof( struct E_flow_Q_report_Z ), 0 );
     if( !E_base_S->E_flow_Q_report_S )
-    {   GV_(NA); V();
-    }
+        return ~1;
     E_base_S->E_flow_Q_timer_S = E_mem_Q_tab_M( sizeof( struct E_flow_Q_timer_Z ), 0 );
     if( !E_base_S->E_flow_Q_timer_S )
-    {   GV_(NA); V();
-    }
+        return ~1;
     E_base_S->E_flow_Q_process_call_srv_S = E_mem_Q_tab_M( sizeof( struct E_flow_Q_process_call_srv_Z ), 0 );
     if( !E_base_S->E_flow_Q_process_call_srv_S )
-    {   GV_(NA); V();
-    }
+        return ~1;
     E_base_S->E_flow_Q_process_call_cli_S = E_mem_Q_tab_M( sizeof( struct E_flow_Q_process_call_cli_Z ), 0 );
     if( !E_base_S->E_flow_Q_process_call_cli_S )
-    {   GV_(NA); V();
-    }
+        return ~1;
         #ifdef E_flow_Q_process_call_C_alt
     E_base_S->E_flow_Q_process_call_S_shm_key = ftok( E_base_S->E_flow_Q_process_call_S_service_path_guid, E_flow_Q_process_call_S_ftok_id );
         #endif
         #ifdef E_flow_drv_C_timer_monotonic
-    V0_( timer_create( CLOCK_MONOTONIC, 0, &E_base_S->E_flow_S_timer )); //NDFN Funkcjonalność na ‟Linuksach”. “CLOCK_REALTIME” przy stosowanym we “flow_drv” ustawianiu wartości względnych (domyślnych) ma zapisane w dokumentacji (“man”), że “adjtime” nie zmienia jego czasu odliczania, co jest oczekiwane przy “E_flow_drv_C_clock_monotonic”, ale nigdzie nie ma napisane, którego typu zegara można używać dla zgodności z “CLOCK_BOOTTIME” od “clock_gettime”, by był zaliczony czas trwania “suspend”: “CLOCK_REALTIME” czy “CLOCK_MONOTONIC”. Z testu wynika, że oba zegary są natychmiast zakańczane po zakończeniu “suspend” komputera…
+    V0( timer_create( CLOCK_MONOTONIC, 0, &E_base_S->E_flow_S_timer )) //NDFN Funkcjonalność na ‟Linuksach”. “CLOCK_REALTIME” przy stosowanym we “flow_drv” ustawianiu wartości względnych (domyślnych) ma zapisane w dokumentacji (“man”), że “adjtime” nie zmienia jego czasu odliczania, co jest oczekiwane przy “E_flow_drv_C_clock_monotonic”, ale nigdzie nie ma napisane, którego typu zegara można używać dla zgodności z “CLOCK_BOOTTIME” od “clock_gettime”, by był zaliczony czas trwania “suspend”: “CLOCK_REALTIME” czy “CLOCK_MONOTONIC”. Z testu wynika, że oba zegary są natychmiast zakańczane po zakończeniu “suspend” komputera…
+        return ~1;
         #endif
         #if ( defined( __gnu_linux__ ) || defined( __FreeBSD__ )) && defined( C_pthreads )
     V1( E_base_S->cpu_taken_length = sysconf( _SC_NPROCESSORS_ONLN )){}
     E_base_S->cpu_taken = ~E_base_S->cpu_taken_length && --E_base_S->cpu_taken_length ? E_mem_Q_mask_M( E_base_S->cpu_taken_length ) : 0;
         #endif
-    E_mem_M_file();
-    E_io_M_stream();
-    D_M( flow, call_srv )
-    {   GV_(NA); V();
-    }
-    D_M( io, stream_write )
-    {   GV_(NA); V();
-    }
-    D_M( mem, file_save )
-    {   GV_(NA); V();
-    }
+    ret = E_mem_M_file();
+    if(ret)
+        return ret;
+    ret = E_io_M_stream();
+    if(ret)
+        return ret;
+    ret = D_M( flow, call_srv );
+    if( (S)ret < 0 )
+        return ret;
+    ret = D_M( io, stream_write );
+    if( (S)ret < 0 )
+        return ret;
+    ret = D_M( mem, file_save );
+    if( (S)ret < 0 )
+        return ret;
     V0( pipe( &E_net_cli_S_poll_pipe[0] ))
-    {   GV_(NA); V();
-    }
+        return ~1;
         #ifdef __gnu_linux__
     V1( E_net_cli_S_epoll_fd = epoll_create1(0) )
-    {   GV_(NA); V();
-    }
+        return ~1;
     struct epoll_event ee;
     ee.events = EPOLLIN;
     ee.data.fd = E_net_cli_S_poll_pipe[0];
     V0( epoll_ctl( E_net_cli_S_epoll_fd, EPOLL_CTL_ADD, E_net_cli_S_poll_pipe[0], &ee ))
-    {   GV_(NA); V();
-    }
+        return ~1;
     E_net_cli_S_ee_ready_n = 1;
     Mt_( E_net_cli_S_ee_ready, E_net_cli_S_ee_ready_n );
     if( !E_net_cli_S_ee_ready )
-    {   GV_(NA); V();
-    }
+        return ~1;
         #else
     E_net_cli_S_poll_fd_n = 1;
     Mt_( E_net_cli_S_poll_fd, E_net_cli_S_poll_fd_n );
     if( !E_net_cli_S_poll_fd )
-    {   GV_(NA); V();
-    }
+        return ~1;
     E_net_cli_S_poll_fd[ E_net_cli_S_poll_fd_n - 1 ].fd = E_net_cli_S_poll_pipe[0];
     E_net_cli_S_poll_fd[ E_net_cli_S_poll_fd_n - 1 ].events = POLLIN;
         #endif
     V1_( unsetenv( "LD_BIND_NOW" ));
     V1_( unsetenv( "LD_PRELOAD" ));
     E_flow_Z_stat_I_stat();
+    return 0;
 }
 /******************************************************************************/

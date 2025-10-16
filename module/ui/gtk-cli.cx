@@ -3,36 +3,40 @@
 *   ___   public
 *  ¦OUX¦  C+
 *  ¦/C+¦  component
-*   ---   GUI client
+*   ---   user interface
 *         GTK client
 * ©overcq                on ‟Gentoo Linux 23.0” “x86_64”              2025‒9‒8 a
 *******************************************************************************/
-void
-E_gui_cli_Q_gtk_cli_I_quit( I id
-){  struct E_gui_cli_Q_client_Z *client = E_mem_Q_tab_R( E_gui_cli_Q_client_S, id );
-    J_assert( client->type == E_gui_cli_Q_client_Z_type_Z_gtk );
+N
+E_ui_Q_gtk_cli_I_quit( I id
+){  struct E_ui_Q_client_Z *client = E_mem_Q_tab_R( E_ui_Q_client_S, id );
+    J_assert( client->type == E_ui_Q_client_Z_type_Z_gtk );
     N *n;
     I call_id = E_flow_Q_process_call_M( 2 * sizeof(N), (P)&n );
+    if( (S)call_id < 0 )
+        return (N)call_id;
     n[0] = 1;
     n[1] = 0;
     B res;
     E_flow_Q_process_call_I( call_id, client->srv_pid, &res );
-    E_flow_Q_process_call_W( call_id );
+    return E_flow_Q_process_call_W( call_id );
 }
-void
-E_gui_cli_Q_gtk_cli_I_build( I id
+N
+E_ui_Q_gtk_cli_I_build( I id
 , Pc s
-){  struct E_gui_cli_Q_client_Z *client = E_mem_Q_tab_R( E_gui_cli_Q_client_S, id );
-    J_assert( client->type == E_gui_cli_Q_client_Z_type_Z_gtk );
+){  struct E_ui_Q_client_Z *client = E_mem_Q_tab_R( E_ui_Q_client_S, id );
+    J_assert( client->type == E_ui_Q_client_Z_type_Z_gtk );
     N l = E_text_Z_s0_R_l_0(s);
     Pc p;
     I call_id = E_flow_Q_process_call_M( sizeof(N) + l + sizeof(N), (P)&p );
+    if( (S)call_id < 0 )
+        return (N)call_id;
     *( N * )p = 2;
     p += sizeof(N);
     p = E_text_Z_s_P_copy_s0_0( p, s );
     *( N * )p = 0;
     B res;
     E_flow_Q_process_call_I( call_id, client->srv_pid, &res );
-    E_flow_Q_process_call_W( call_id );
+    return E_flow_Q_process_call_W( call_id );
 }
 /******************************************************************************/

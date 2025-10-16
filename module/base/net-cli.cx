@@ -101,10 +101,12 @@ E_net_cli_Q_headers_R_i( Pc *headers
         if( E_text_Z_s0_T_starts_case_s0( headers[i], s )
         && !header_i--
         )
-        {   W(s);
+        {   if( W(s) )
+                return (P)~1;
             return headers[i] + l;
         }
-    W(s);
+    if( W(s) )
+        return (P)~1;
     return 0;
 }
 _export
@@ -142,24 +144,27 @@ E_net_cli_Q_ssl_M( void
     E_net_http_S_connect_n = 0;
     Mt_( E_net_http2_S_connect, 0 );
     if( !E_net_http2_S_connect )
-    {   W( E_net_http_S_connect );
-        SSL_CTX_free( ssl_ctx );
+    {   SSL_CTX_free( ssl_ctx );
+        if( W( E_net_http_S_connect ))
+            return (P)~1;
         return 0;
     }
     E_net_http2_S_connect_n = 0;
         #ifndef E_flow_C_thread_system_unblock_reports
-    D_M( net, cli )
+    I ret = D_M( net, cli );
         #else
-    Dh_M( net, cli, 0, 0 )
+    I ret = Dh_M( net, cli, 0, 0 );
         #endif
-    {   GV_(NA); V();
-    }
+    if( ret < 0 )
+        return (P)(S)ret;
     return ssl_ctx;
 }
 _export
-void
+N
 E_net_cli_Q_ssl_W( SSL_CTX *ssl_ctx
 ){  X_M( net, disconnect );
+    if( _X_var( net, disconnect ) < 0 )
+        return (N)_X_var( net, disconnect );
     for_n_rev( i, E_net_http_S_connect_n )
         E_net_http_Q_ssl_I_disconnect(i);
     for_n_rev_( i, E_net_http2_S_connect_n )
@@ -170,9 +175,12 @@ E_net_cli_Q_ssl_W( SSL_CTX *ssl_ctx
         #else
     Dh_W( net, cli, 0 );
         #endif
-    W( E_net_http_S_connect );
-    W( E_net_http2_S_connect );
     SSL_CTX_free( ssl_ctx );
+    if( W( E_net_http_S_connect )
+    || W( E_net_http2_S_connect )
+    )
+        return ~1;
+    return 0;
 }
 _export
 N
@@ -232,7 +240,7 @@ Cont:   ai_1 = ai_1->ai_next;
     if( e <= 0 )
         return ~0;
     E_net_D_cli_I_unblock(0);
-    V0_( sched_yield() );
+    V1_( sched_yield() );
         #ifdef __gnu_linux__
     struct epoll_event ee;
     ee.events = EPOLLIN;
@@ -270,9 +278,13 @@ Cont:   ai_1 = ai_1->ai_next;
             ee.events = EPOLLIN;
             ee.data.fd = fd;
             V0( epoll_ctl( E_net_cli_S_epoll_fd, EPOLL_CTL_DEL, fd, &ee )){}
-            E_mem_Q_blk_I_remove( &E_net_cli_S_ee_ready, --E_net_cli_S_ee_ready_n, 1 );
+            if( !E_mem_Q_blk_I_remove( &E_net_cli_S_ee_ready, E_net_cli_S_ee_ready_n - 1, 1 ))
+                return ~2;
+            E_net_cli_S_ee_ready_n--;
                 #else
-            E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, --E_net_cli_S_poll_fd_n, 1 );
+            if( !E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, E_net_cli_S_poll_fd_n - 1, 1 ))
+                return ~2;
+            E_net_cli_S_poll_fd_n--;
                 #endif
             return ~0;
         }
@@ -302,16 +314,22 @@ Cont:   ai_1 = ai_1->ai_next;
             )
                 SSL_shutdown(ssl);
             SSL_free(ssl);
-            E_mem_Q_blk_I_remove( &E_net_http2_S_connect, --E_net_http2_S_connect_n, 1 );
+            if( !E_mem_Q_blk_I_remove( &E_net_http_S_connect, E_net_http_S_connect_n - 1, 1 ))
+                return ~2;
+            E_net_http_S_connect_n--;
             V0( close(fd) ){}
                 #ifdef __gnu_linux__
             struct epoll_event ee;
             ee.events = EPOLLIN;
             ee.data.fd = fd;
             V0( epoll_ctl( E_net_cli_S_epoll_fd, EPOLL_CTL_DEL, fd, &ee )){}
-            E_mem_Q_blk_I_remove( &E_net_cli_S_ee_ready, --E_net_cli_S_ee_ready_n, 1 );
+            if( !E_mem_Q_blk_I_remove( &E_net_cli_S_ee_ready, E_net_cli_S_ee_ready_n - 1, 1 ))
+                return ~2;
+            E_net_cli_S_ee_ready_n--;
                 #else
-            E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, --E_net_cli_S_poll_fd_n, 1 );
+            if( !E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, E_net_cli_S_poll_fd_n - 1, 1 ))
+                return ~2;
+            E_net_cli_S_poll_fd_n--;
                 #endif
             return ~0;
         }
@@ -319,16 +337,22 @@ Cont:   ai_1 = ai_1->ai_next;
         if( !E_net_http2_S_connect[ E_net_http2_S_connect_n - 1 ].buf )
         {   SSL_shutdown(ssl);
             SSL_free(ssl);
-            E_mem_Q_blk_I_remove( &E_net_http2_S_connect, --E_net_http2_S_connect_n, 1 );
+            if( !E_mem_Q_blk_I_remove( &E_net_http_S_connect, E_net_http_S_connect_n - 1, 1 ))
+                return ~2;
+            E_net_http_S_connect_n--;
             V0( close(fd) ){}
                 #ifdef __gnu_linux__
             struct epoll_event ee;
             ee.events = EPOLLIN;
             ee.data.fd = fd;
             V0( epoll_ctl( E_net_cli_S_epoll_fd, EPOLL_CTL_DEL, fd, &ee )){}
-            E_mem_Q_blk_I_remove( &E_net_cli_S_ee_ready, --E_net_cli_S_ee_ready_n, 1 );
+            if( !E_mem_Q_blk_I_remove( &E_net_cli_S_ee_ready, E_net_cli_S_ee_ready_n - 1, 1 ))
+                return ~2;
+            E_net_cli_S_ee_ready_n--;
                 #else
-            E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, --E_net_cli_S_poll_fd_n, 1 );
+            if( !E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, E_net_cli_S_poll_fd_n - 1, 1 ))
+                return ~2;
+            E_net_cli_S_poll_fd_n--;
                 #endif
             return ~0;
         }
@@ -345,16 +369,22 @@ Cont:   ai_1 = ai_1->ai_next;
             E_net_cli_I_write_data( ssl, fd, &buf[0], buf_ - (Pc)&buf[0] );
             SSL_shutdown(ssl);
             SSL_free(ssl);
-            E_mem_Q_blk_I_remove( &E_net_http2_S_connect, --E_net_http2_S_connect_n, 1 );
+            if( !E_mem_Q_blk_I_remove( &E_net_http_S_connect, E_net_http_S_connect_n - 1, 1 ))
+                return ~2;
+            E_net_http_S_connect_n--;
             V0( close(fd) ){}
                 #ifdef __gnu_linux__
             struct epoll_event ee;
             ee.events = EPOLLIN;
             ee.data.fd = fd;
             V0( epoll_ctl( E_net_cli_S_epoll_fd, EPOLL_CTL_DEL, fd, &ee )){}
-            E_mem_Q_blk_I_remove( &E_net_cli_S_ee_ready, --E_net_cli_S_ee_ready_n, 1 );
+            if( !E_mem_Q_blk_I_remove( &E_net_cli_S_ee_ready, E_net_cli_S_ee_ready_n - 1, 1 ))
+                return ~2;
+            E_net_cli_S_ee_ready_n--;
                 #else
-            E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, --E_net_cli_S_poll_fd_n, 1 );
+            if( !E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, E_net_cli_S_poll_fd_n - 1, 1 ))
+                return ~2;
+            E_net_cli_S_poll_fd_n--;
                 #endif
             return ~0;
         }
@@ -371,16 +401,22 @@ Cont:   ai_1 = ai_1->ai_next;
             E_net_cli_I_write_data( ssl, fd, &buf[0], buf_ - (Pc)&buf[0] );
             SSL_shutdown(ssl);
             SSL_free(ssl);
-            E_mem_Q_blk_I_remove( &E_net_http2_S_connect, --E_net_http2_S_connect_n, 1 );
+            if( !E_mem_Q_blk_I_remove( &E_net_http_S_connect, E_net_http_S_connect_n - 1, 1 ))
+                return ~2;
+            E_net_http_S_connect_n--;
             V0( close(fd) ){}
                 #ifdef __gnu_linux__
             struct epoll_event ee;
             ee.events = EPOLLIN;
             ee.data.fd = fd;
             V0( epoll_ctl( E_net_cli_S_epoll_fd, EPOLL_CTL_DEL, fd, &ee )){}
-            E_mem_Q_blk_I_remove( &E_net_cli_S_ee_ready, --E_net_cli_S_ee_ready_n, 1 );
+            if( !E_mem_Q_blk_I_remove( &E_net_cli_S_ee_ready, E_net_cli_S_ee_ready_n - 1, 1 ))
+                return ~2;
+            E_net_cli_S_ee_ready_n--;
                 #else
-            E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, --E_net_cli_S_poll_fd_n, 1 );
+            if( !E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, E_net_cli_S_poll_fd_n - 1, 1 ))
+                return ~2;
+            E_net_cli_S_poll_fd_n--;
                 #endif
             return ~0;
         }
@@ -399,16 +435,22 @@ Cont:   ai_1 = ai_1->ai_next;
             E_net_cli_I_write_data( ssl, fd, &buf[0], buf_ - (Pc)&buf[0] );
             SSL_shutdown(ssl);
             SSL_free(ssl);
-            E_mem_Q_blk_I_remove( &E_net_http2_S_connect, --E_net_http2_S_connect_n, 1 );
+            if( !E_mem_Q_blk_I_remove( &E_net_http_S_connect, E_net_http_S_connect_n - 1, 1 ))
+                return ~2;
+            E_net_http_S_connect_n--;
             V0( close(fd) ){}
                 #ifdef __gnu_linux__
             struct epoll_event ee;
             ee.events = EPOLLIN;
             ee.data.fd = fd;
             V0( epoll_ctl( E_net_cli_S_epoll_fd, EPOLL_CTL_DEL, fd, &ee )){}
-            E_mem_Q_blk_I_remove( &E_net_cli_S_ee_ready, --E_net_cli_S_ee_ready_n, 1 );
+            if( !E_mem_Q_blk_I_remove( &E_net_cli_S_ee_ready, E_net_cli_S_ee_ready_n - 1, 1 ))
+                return ~2;
+            E_net_cli_S_ee_ready_n--;
                 #else
-            E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, --E_net_cli_S_poll_fd_n, 1 );
+            if( !E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, E_net_cli_S_poll_fd_n - 1, 1 ))
+                return ~2;
+            E_net_cli_S_poll_fd_n--;
                 #endif
             return ~0;
         }
@@ -428,16 +470,22 @@ Cont:   ai_1 = ai_1->ai_next;
             E_net_cli_I_write_data( ssl, fd, &buf[0], buf_ - (Pc)&buf[0] );
             SSL_shutdown(ssl);
             SSL_free(ssl);
-            E_mem_Q_blk_I_remove( &E_net_http2_S_connect, --E_net_http2_S_connect_n, 1 );
+            if( !E_mem_Q_blk_I_remove( &E_net_http_S_connect, E_net_http_S_connect_n - 1, 1 ))
+                return ~2;
+            E_net_http_S_connect_n--;
             V0( close(fd) ){}
                 #ifdef __gnu_linux__
             struct epoll_event ee;
             ee.events = EPOLLIN;
             ee.data.fd = fd;
             V0( epoll_ctl( E_net_cli_S_epoll_fd, EPOLL_CTL_DEL, fd, &ee )){}
-            E_mem_Q_blk_I_remove( &E_net_cli_S_ee_ready, --E_net_cli_S_ee_ready_n, 1 );
+            if( !E_mem_Q_blk_I_remove( &E_net_cli_S_ee_ready, E_net_cli_S_ee_ready_n - 1, 1 ))
+                return ~2;
+            E_net_cli_S_ee_ready_n--;
                 #else
-            E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, --E_net_cli_S_poll_fd_n, 1 );
+            if( !E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, E_net_cli_S_poll_fd_n - 1, 1 ))
+                return ~2;
+            E_net_cli_S_poll_fd_n--;
                 #endif
             return ~0;
         }
@@ -457,9 +505,13 @@ Cont:   ai_1 = ai_1->ai_next;
         ee.events = EPOLLIN;
         ee.data.fd = fd;
         V0( epoll_ctl( E_net_cli_S_epoll_fd, EPOLL_CTL_DEL, fd, &ee )){}
-        E_mem_Q_blk_I_remove( &E_net_cli_S_ee_ready, --E_net_cli_S_ee_ready_n, 1 );
+        if( !E_mem_Q_blk_I_remove( &E_net_cli_S_ee_ready, E_net_cli_S_ee_ready_n - 1, 1 ))
+            return ~2;
+        E_net_cli_S_ee_ready_n--;
             #else
-        E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, --E_net_cli_S_poll_fd_n, 1 );
+        if( !E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, E_net_cli_S_poll_fd_n - 1, 1 ))
+            return ~2;
+        E_net_cli_S_poll_fd_n--;
             #endif
         return ~0;
     }
@@ -476,16 +528,22 @@ Cont:   ai_1 = ai_1->ai_next;
     if( !E_net_http_S_connect[ E_net_http_S_connect_n - 1 ].buf )
     {   SSL_shutdown(ssl);
         SSL_free(ssl);
-        E_mem_Q_blk_I_remove( &E_net_http_S_connect, --E_net_http_S_connect_n, 1 );
+        if( !E_mem_Q_blk_I_remove( &E_net_http_S_connect, E_net_http_S_connect_n - 1, 1 ))
+            return ~2;
+        E_net_http_S_connect_n--;
         V0( close(fd) ){}
             #ifdef __gnu_linux__
         struct epoll_event ee;
         ee.events = EPOLLIN;
         ee.data.fd = fd;
         V0( epoll_ctl( E_net_cli_S_epoll_fd, EPOLL_CTL_DEL, fd, &ee )){}
-        E_mem_Q_blk_I_remove( &E_net_cli_S_ee_ready, --E_net_cli_S_ee_ready_n, 1 );
+        if( !E_mem_Q_blk_I_remove( &E_net_cli_S_ee_ready, E_net_cli_S_ee_ready_n - 1, 1 ))
+            return ~2;
+        E_net_cli_S_ee_ready_n--;
             #else
-        E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, --E_net_cli_S_poll_fd_n, 1 );
+        if( !E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, E_net_cli_S_poll_fd_n - 1, 1 ))
+            return ~2;
+        E_net_cli_S_poll_fd_n--;
             #endif
         return ~0;
     }
@@ -495,16 +553,22 @@ Cont:   ai_1 = ai_1->ai_next;
     {   W( E_net_http_S_connect[ E_net_http_S_connect_n - 1 ].buf );
         SSL_shutdown(ssl);
         SSL_free(ssl);
-        E_mem_Q_blk_I_remove( &E_net_http_S_connect, --E_net_http_S_connect_n, 1 );
+        if( !E_mem_Q_blk_I_remove( &E_net_http_S_connect, E_net_http_S_connect_n - 1, 1 ))
+            return ~2;
+        E_net_http_S_connect_n--;
         V0( close(fd) ){}
             #ifdef __gnu_linux__
         struct epoll_event ee;
         ee.events = EPOLLIN;
         ee.data.fd = fd;
         V0( epoll_ctl( E_net_cli_S_epoll_fd, EPOLL_CTL_DEL, fd, &ee )){}
-        E_mem_Q_blk_I_remove( &E_net_cli_S_ee_ready, --E_net_cli_S_ee_ready_n, 1 );
+        if( !E_mem_Q_blk_I_remove( &E_net_cli_S_ee_ready, E_net_cli_S_ee_ready_n - 1, 1 ))
+            return ~2;
+        E_net_cli_S_ee_ready_n--;
             #else
-        E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, --E_net_cli_S_poll_fd_n, 1 );
+        if( !E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, E_net_cli_S_poll_fd_n - 1, 1 ))
+            return ~2;
+        E_net_cli_S_poll_fd_n--;
             #endif
         return ~0;
     }
@@ -526,7 +590,15 @@ E_net_D_cli_I_unblock( P p
 D( net, cli )
 {   Xh_A( E_net_D_cli_I_unblock );
     X_A( net, disconnect );
+    if( _X_var( net, disconnect ) < 0 )
+    {   U_F( E_base_S->E_flow_S_signal, exit );
+        goto Block;
+    }
     X_A( net, ret );
+    if( _X_var( net, ret ) < 0 )
+    {   U_F( E_base_S->E_flow_S_signal, exit );
+        goto Block;
+    }
     O{  if( !E_net_http_S_connect_n
         && !E_net_http2_S_connect_n
         )
@@ -541,9 +613,9 @@ D( net, cli )
                 #else
         VO1_( ready_n = poll( E_net_cli_S_poll_fd, E_net_cli_S_poll_fd_n, S_system_idle_time ));
                 #endif
-        I_B()
+Block:  I_B()
             #else
-        Xh_B_();
+Block:  Xh_B_();
                 #ifdef __gnu_linux__
         VO1_( ready_n = epoll_wait( E_net_cli_S_epoll_fd, E_net_cli_S_ee_ready, E_net_cli_S_ee_ready_n, E_net_http_S_connect_n || E_net_http2_S_connect_n ? S_system_idle_time : -1 ));
                 #else
@@ -556,35 +628,51 @@ D( net, cli )
                 {   SSL_shutdown( E_net_http_S_connect[i].ssl );
                     SSL_free( E_net_http_S_connect[i].ssl );
                 }
-                W( E_net_http_S_connect[i].buf_2 );
+                if( W( E_net_http_S_connect[i].buf_2 ))
+                    break;
                 if( E_net_http_S_connect[i].buf )
-                    W( E_net_http_S_connect[i].buf );
+                    if( W( E_net_http_S_connect[i].buf ))
+                        break;
                 V0( close( E_net_http_S_connect[i].connect_sock )){}
             }
+            if( i != E_net_http_S_connect_n )
+                break;
             for_n_( i, E_net_http2_S_connect_n )
             {   if( E_net_http2_S_connect[i].ssl )
                 {   SSL_shutdown( E_net_http2_S_connect[i].ssl );
                     SSL_free( E_net_http2_S_connect[i].ssl );
                 }
-                W( E_net_http2_S_connect[i].dynamic_table_dec );
-                W( E_net_http2_S_connect[i].dynamic_table_enc );
+                if( W( E_net_http2_S_connect[i].dynamic_table_dec )
+                || W( E_net_http2_S_connect[i].dynamic_table_enc )
+                )
+                    break;
                 for_each( stream_id, E_net_http2_S_connect[i].stream, E_mem_Q_tab )
                 {   struct E_net_http2_Z_stream *stream = E_mem_Q_tab_R( E_net_http2_S_connect[i].stream, stream_id );
                     for_n( j, stream->headers_n )
-                        W( stream->headers[j] );
-                    W( stream->headers );
+                        if( W( stream->headers[j] ))
+                            break;
+                    if( W( stream->headers ))
+                        break;
                     if( stream->buf_headers )
-                        W( stream->buf_headers );
+                        if( W( stream->buf_headers ))
+                            break;
                     if( stream->z_stream )
                     {   inflateEnd( stream->z_stream );
-                        W( stream->z_stream );
-                        W( stream->zlib_data );
+                        if( W( stream->z_stream )
+                        || W( stream->zlib_data )
+                        )
+                            break;
                     }
                 }
-                E_mem_Q_tab_W( E_net_http2_S_connect[i].stream );
-                W( E_net_http2_S_connect[i].buf_2 );
+                if( ~stream_id )
+                    break;
+                if( E_mem_Q_tab_W( E_net_http2_S_connect[i].stream )
+                || W( E_net_http2_S_connect[i].buf_2 )
+                )
+                    break;
                 if( E_net_http2_S_connect[i].buf )
-                    W( E_net_http2_S_connect[i].buf );
+                    if( W( E_net_http2_S_connect[i].buf ))
+                        break;
                 V0( close( E_net_http2_S_connect[i].connect_sock )){}
             }
             break;
@@ -667,13 +755,15 @@ D( net, cli )
                         E_net_http_S_connect[i].z_stream->zfree = Z_NULL;
                         int zlib_error = inflateInit2( E_net_http_S_connect[i].z_stream, 15 + 16 );
                         if( zlib_error != Z_OK )
-                        {   W( E_net_http_S_connect[i].z_stream );
+                        {   if( W( E_net_http_S_connect[i].z_stream ))
+                                goto Exit;
                             goto End_1;
                         }
                         E_net_http_S_connect[i].zlib_data = M( S_inflate_buffer_size );
                         if( !E_net_http_S_connect[i].zlib_data )
                         {   inflateEnd( E_net_http_S_connect[i].z_stream );
-                            W( E_net_http_S_connect[i].z_stream );
+                            if( W( E_net_http_S_connect[i].z_stream ))
+                                goto Exit;
                             goto End_1;
                         }
                     }
@@ -681,31 +771,39 @@ D( net, cli )
                 E_net_http_S_connect[i].file_name = M( J_s0_R_l( "/tmp/oux-net-cli-XXXXXX" ) + 1 );
                 if( !E_net_http_S_connect[i].file_name )
                 {   if( E_net_http_S_connect[i].z_stream )
-                    {   W( E_net_http_S_connect[i].zlib_data );
+                    {   if( W( E_net_http_S_connect[i].zlib_data ))
+                            goto Exit;
                         inflateEnd( E_net_http_S_connect[i].z_stream );
-                        W( E_net_http_S_connect[i].z_stream );
+                        if( W( E_net_http_S_connect[i].z_stream ))
+                            goto Exit;
                     }
                     goto End_1;
                 }
                 E_text_Z_s_P_copy_s0_0( E_net_http_S_connect[i].file_name, "/tmp/oux-net-cli-XXXXXX" );
                 int fd;
                 V1( fd = mkstemp( E_net_http_S_connect[i].file_name ))
-                {   W( E_net_http_S_connect[i].file_name );
+                {   if( W( E_net_http_S_connect[i].file_name ))
+                        goto Exit;
                     if( E_net_http_S_connect[i].z_stream )
-                    {   W( E_net_http_S_connect[i].zlib_data );
+                    {   if( W( E_net_http_S_connect[i].zlib_data ))
+                            goto Exit;
                         inflateEnd( E_net_http_S_connect[i].z_stream );
-                        W( E_net_http_S_connect[i].z_stream );
+                        if( W( E_net_http_S_connect[i].z_stream ))
+                            goto Exit;
                     }
                     goto End_1;
                 }
                 E_net_http_S_connect[i].file_id = E_mem_Q_file_M_fd(fd);
                 if( !~E_net_http_S_connect[i].file_id )
                 {   V0( unlink( E_net_http_S_connect[i].file_name ) ){}
-                    W( E_net_http_S_connect[i].file_name );
+                    if( W( E_net_http_S_connect[i].file_name ))
+                        goto Exit;
                     if( E_net_http_S_connect[i].z_stream )
-                    {   W( E_net_http_S_connect[i].zlib_data );
+                    {   if( W( E_net_http_S_connect[i].zlib_data ))
+                            goto Exit;
                         inflateEnd( E_net_http_S_connect[i].z_stream );
-                        W( E_net_http_S_connect[i].z_stream );
+                        if( W( E_net_http_S_connect[i].z_stream ))
+                            goto Exit;
                     }
                     goto End_1;
                 }
@@ -722,12 +820,16 @@ D( net, cli )
             struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, E_net_http_S_connect[i].file_id );
             if( E_net_http_S_connect[i].z_stream )
             {   if( E_net_http_S_connect[i].l < E_net_http_S_connect[i].z_stream->avail_in )
-                {   E_mem_Q_file_W_nosave( E_net_http_S_connect[i].file_id );
+                {   if( E_mem_Q_file_W_nosave( E_net_http_S_connect[i].file_id ))
+                        goto Exit;
                     V0( unlink( E_net_http_S_connect[i].file_name ) ){}
-                    W( E_net_http_S_connect[i].file_name );
-                    W( E_net_http_S_connect[i].zlib_data );
+                    if( W( E_net_http_S_connect[i].file_name )
+                    || W( E_net_http_S_connect[i].zlib_data )
+                    )
+                        goto Exit;
                     inflateEnd( E_net_http_S_connect[i].z_stream );
-                    W( E_net_http_S_connect[i].z_stream );
+                    if( W( E_net_http_S_connect[i].z_stream ))
+                        goto Exit;
                     goto End_1;
                 }
                 E_net_http_S_connect[i].l -= E_net_http_S_connect[i].z_stream->avail_in;
@@ -737,22 +839,30 @@ D( net, cli )
                     if( zlib_error != Z_OK
                     && zlib_error != Z_STREAM_END
                     )
-                    {   E_mem_Q_file_W_nosave( E_net_http_S_connect[i].file_id );
+                    {   if( E_mem_Q_file_W_nosave( E_net_http_S_connect[i].file_id ))
+                            goto Exit;
                         V0( unlink( E_net_http_S_connect[i].file_name ) ){}
-                        W( E_net_http_S_connect[i].file_name );
-                        W( E_net_http_S_connect[i].zlib_data );
+                        if( W( E_net_http_S_connect[i].file_name )
+                        || W( E_net_http_S_connect[i].zlib_data )
+                        )
+                            goto Exit;
                         inflateEnd( E_net_http_S_connect[i].z_stream );
-                        W( E_net_http_S_connect[i].z_stream );
+                        if( W( E_net_http_S_connect[i].z_stream ))
+                            goto Exit;
                         goto End_1;
                     }
                     E_mem_Q_file_P_pos( E_net_http_S_connect[i].file_id, file->l );
                     if( !~E_mem_Q_file_P_insert_s( E_net_http_S_connect[i].file_id, E_net_http_S_connect[i].zlib_data, S_inflate_buffer_size - E_net_http_S_connect[i].z_stream->avail_out ))
-                    {   E_mem_Q_file_W_nosave( E_net_http_S_connect[i].file_id );
+                    {   if( E_mem_Q_file_W_nosave( E_net_http_S_connect[i].file_id ))
+                            goto Exit;
                         V0( unlink( E_net_http_S_connect[i].file_name ) ){}
-                        W( E_net_http_S_connect[i].file_name );
-                        W( E_net_http_S_connect[i].zlib_data );
+                        if( W( E_net_http_S_connect[i].file_name )
+                        || W( E_net_http_S_connect[i].zlib_data )
+                        )
+                            goto Exit;
                         inflateEnd( E_net_http_S_connect[i].z_stream );
-                        W( E_net_http_S_connect[i].z_stream );
+                        if( W( E_net_http_S_connect[i].z_stream ))
+                            goto Exit;
                         goto End_1;
                     }
                     if( zlib_error == Z_STREAM_END
@@ -762,16 +872,20 @@ D( net, cli )
                 }
             }else
             {   if( E_net_http_S_connect[i].l < E_net_http_S_connect[i].buf + E_net_http_S_connect[i].buf_l - E_net_http_S_connect[i].buf_ )
-                {   E_mem_Q_file_W_nosave( E_net_http_S_connect[i].file_id );
+                {   if( E_mem_Q_file_W_nosave( E_net_http_S_connect[i].file_id ))
+                        goto Exit;
                     V0( unlink( E_net_http_S_connect[i].file_name ) ){}
-                    W( E_net_http_S_connect[i].file_name );
+                    if( W( E_net_http_S_connect[i].file_name ))
+                        goto Exit;
                     goto End_1;
                 }
                 E_mem_Q_file_P_pos( E_net_http_S_connect[i].file_id, file->l );
                 if( !~E_mem_Q_file_P_insert_s( E_net_http_S_connect[i].file_id, E_net_http_S_connect[i].buf_, E_net_http_S_connect[i].buf + E_net_http_S_connect[i].buf_l - E_net_http_S_connect[i].buf_ ))
-                {   E_mem_Q_file_W_nosave( E_net_http_S_connect[i].file_id );
+                {   if( E_mem_Q_file_W_nosave( E_net_http_S_connect[i].file_id ))
+                        goto Exit;
                     V0( unlink( E_net_http_S_connect[i].file_name ) ){}
-                    W( E_net_http_S_connect[i].file_name );
+                    if( W( E_net_http_S_connect[i].file_name ))
+                        goto Exit;
                     goto End_1;
                 }
                 E_net_http_S_connect[i].l -= E_net_http_S_connect[i].buf + E_net_http_S_connect[i].buf_l - E_net_http_S_connect[i].buf_;
@@ -798,9 +912,11 @@ End_1:      if( E_net_http_S_connect[i].ssl )
                     SSL_shutdown( E_net_http_S_connect[i].ssl );
                 SSL_free( E_net_http_S_connect[i].ssl );
             }
-            W( E_net_http_S_connect[i].buf_2 );
+            if( W( E_net_http_S_connect[i].buf_2 ))
+                goto Exit;
             if( E_net_http_S_connect[i].buf )
-                W( E_net_http_S_connect[i].buf );
+                if( W( E_net_http_S_connect[i].buf ))
+                    goto Exit;
                 #ifdef __gnu_linux__
             struct epoll_event ee;
             ee.events = EPOLLIN;
@@ -911,7 +1027,8 @@ End_1:      if( E_net_http_S_connect[i].ssl )
                             E_text_Z_s_P_copy_s0_0( stream->file_name, "/tmp/oux-net-cli-XXXXXX" );
                             int fd;
                             V1( fd = mkstemp( stream->file_name ))
-                            {   W( stream->file_name );
+                            {   if( W( stream->file_name ))
+                                    goto Exit;
                                 goaway_error = E_net_http2_Z_error_S_internal_error;
                                 goto End2_2;
                             }
@@ -919,7 +1036,8 @@ End_1:      if( E_net_http_S_connect[i].ssl )
                             if( !~stream->file_id )
                             {   VO0( close(fd)){}
                                 V0( unlink( stream->file_name ) ){}
-                                W( stream->file_name );
+                                if( W( stream->file_name ))
+                                    goto Exit;
                                 goaway_error = E_net_http2_Z_error_S_internal_error;
                                 goto End2_2;
                             }
@@ -929,9 +1047,11 @@ End_1:      if( E_net_http_S_connect[i].ssl )
                             )
                             {   M_( stream->z_stream );
                                 if( !stream->z_stream )
-                                {   E_mem_Q_file_W_nosave( stream->file_id );
+                                {   if( E_mem_Q_file_W_nosave( stream->file_id ))
+                                        goto Exit;
                                     V0( unlink( stream->file_name ) ){}
-                                    W( stream->file_name );
+                                    if( W( stream->file_name ))
+                                        goto Exit;
                                     goaway_error = E_net_http2_Z_error_S_internal_error;
                                     goto End2_2;
                                 }
@@ -942,10 +1062,14 @@ End_1:      if( E_net_http_S_connect[i].ssl )
                                 int zlib_error = inflateInit2( stream->z_stream, 15 + 16 );
                                 if( zlib_error != Z_OK )
                                 {   inflateEnd( stream->z_stream );
-                                    W_( stream->z_stream );
-                                    E_mem_Q_file_W_nosave( stream->file_id );
+                                    if( W( stream->z_stream ))
+                                        goto Exit;
+                                    stream->z_stream = 0;
+                                    if( E_mem_Q_file_W_nosave( stream->file_id ))
+                                        goto Exit;
                                     V0( unlink( stream->file_name ) ){}
-                                    W( stream->file_name );
+                                    if( W( stream->file_name ))
+                                        goto Exit;
                                     goaway_error = E_net_http2_Z_error_S_internal_error;
                                     goto End2_2;
                                 }
@@ -953,10 +1077,14 @@ End_1:      if( E_net_http_S_connect[i].ssl )
                                 stream->z_stream->next_out = M( stream->z_stream->avail_out );
                                 if( !stream->z_stream->next_out )
                                 {   inflateEnd( stream->z_stream );
-                                    W_( stream->z_stream );
-                                    E_mem_Q_file_W_nosave( stream->file_id );
+                                    if( W( stream->z_stream ))
+                                        goto Exit;
+                                    stream->z_stream = 0;
+                                    if( E_mem_Q_file_W_nosave( stream->file_id ))
+                                        goto Exit;
                                     V0( unlink( stream->file_name ) ){}
-                                    W( stream->file_name );
+                                    if( W( stream->file_name ))
+                                        goto Exit;
                                     goaway_error = E_net_http2_Z_error_S_internal_error;
                                     goto End2_2;
                                 }
@@ -971,10 +1099,14 @@ End_1:      if( E_net_http_S_connect[i].ssl )
                                 && zlib_error != Z_STREAM_END
                                 )
                                 {   inflateEnd( stream->z_stream );
-                                    W_( stream->z_stream );
-                                    E_mem_Q_file_W_nosave( stream->file_id );
+                                    if( W( stream->z_stream ))
+                                        goto Exit;
+                                    stream->z_stream = 0;
+                                    if( E_mem_Q_file_W_nosave( stream->file_id ))
+                                        goto Exit;
                                     V0( unlink( stream->file_name ) ){}
-                                    W( stream->file_name );
+                                    if( W( stream->file_name ))
+                                        goto Exit;
                                     goaway_error = E_net_http2_Z_error_S_internal_error;
                                     goto End2_2;
                                 }
@@ -982,10 +1114,14 @@ End_1:      if( E_net_http_S_connect[i].ssl )
                                 E_mem_Q_file_P_pos( stream->file_id, file->l );
                                 if( !~E_mem_Q_file_P_insert_s( stream->file_id, stream->zlib_data, S_inflate_buffer_size - stream->z_stream->avail_out ))
                                 {   inflateEnd( stream->z_stream );
-                                    W_( stream->z_stream );
-                                    E_mem_Q_file_W_nosave( stream->file_id );
+                                    if( W( stream->z_stream ))
+                                        goto Exit;
+                                    stream->z_stream = 0;
+                                    if( E_mem_Q_file_W_nosave( stream->file_id ))
+                                        goto Exit;
                                     V0( unlink( stream->file_name ) ){}
-                                    W( stream->file_name );
+                                    if( W( stream->file_name ))
+                                        goto Exit;
                                     goaway_error = E_net_http2_Z_error_S_internal_error;
                                     goto End2_2;
                                 }
@@ -999,11 +1135,15 @@ End_1:      if( E_net_http_S_connect[i].ssl )
                             E_net_http2_S_connect[i].buf_ += data_length;
                             if( zlib_error == Z_STREAM_END )
                             {   inflateEnd( stream->z_stream );
-                                W_( stream->z_stream );
+                                if( W( stream->z_stream ))
+                                    goto Exit;
+                                stream->z_stream = 0;
                                 if( !( frame_flags & E_net_http2_Z_frame_type_data_Z_flag_S_end_stream ))
-                                {   E_mem_Q_file_W_nosave( stream->file_id );
+                                {   if( E_mem_Q_file_W_nosave( stream->file_id ))
+                                        goto Exit;
                                     V0( unlink( stream->file_name ) ){}
-                                    W( stream->file_name );
+                                    if( W( stream->file_name ))
+                                        goto Exit;
                                     goaway_error = E_net_http2_Z_error_S_internal_error;
                                     goto End2_2;
                                 }
@@ -1017,10 +1157,14 @@ End_1:      if( E_net_http_S_connect[i].ssl )
                             E_mem_Q_file_P_pos( stream->file_id, file->l );
                             if( !~E_mem_Q_file_P_insert_s( stream->file_id, E_net_http2_S_connect[i].buf_, data_length ))
                             {   inflateEnd( stream->z_stream );
-                                W_( stream->z_stream );
-                                E_mem_Q_file_W_nosave( stream->file_id );
+                                if( W( stream->z_stream ))
+                                    goto Exit;
+                                stream->z_stream = 0;
+                                if( E_mem_Q_file_W_nosave( stream->file_id ))
+                                    goto Exit;
                                 V0( unlink( stream->file_name ) ){}
-                                W( stream->file_name );
+                                if( W( stream->file_name ))
+                                    goto Exit;
                                 goaway_error = E_net_http2_Z_error_S_internal_error;
                                 goto End2_2;
                             }
@@ -1118,8 +1262,10 @@ Http2_empty_data:               ;
 Reset_stream:           ;
                         struct E_net_http2_Z_stream *stream = E_mem_Q_tab_R( E_net_http2_S_connect[i].stream, frame_stream - 1 );
                         for_n( k, stream->headers_n )
-                            W( stream->headers[k] );
-                        W( stream->headers );
+                            if( W( stream->headers[k] ))
+                                goto Exit;
+                        if( W( stream->headers ))
+                            goto Exit;
                         if( !~E_mem_Q_tab_I_remove( E_net_http2_S_connect[i].stream, frame_stream - 1 ))
                         {   goaway_error = E_net_http2_Z_error_S_internal_error;
                             goto End2_2;
@@ -1282,7 +1428,9 @@ Reset_stream:           ;
                             {   goaway_error = E_net_http2_Z_error_S_internal_error;
                                 goto End2_2;
                             }
-                            W_( stream->buf_headers );
+                            if( W( stream->buf_headers ))
+                                goto Exit;
+                            stream->buf_headers = 0;
                             for_n( i, stream->headers_n )
                             {   G_(); Gs0( stream->headers[i] );
                             }
@@ -1337,25 +1485,38 @@ End2_1:     ;
             )
                 SSL_shutdown( E_net_http2_S_connect[i].ssl );
             SSL_free( E_net_http2_S_connect[i].ssl );
-            W( E_net_http2_S_connect[i].dynamic_table_dec );
-            W( E_net_http2_S_connect[i].dynamic_table_enc );
+            if( W( E_net_http2_S_connect[i].dynamic_table_dec )
+            || W( E_net_http2_S_connect[i].dynamic_table_enc )
+            )
+                goto Exit;
             for_each( stream_i, E_net_http2_S_connect[i].stream, E_mem_Q_tab )
             {   struct E_net_http2_Z_stream *stream = E_mem_Q_tab_R( E_net_http2_S_connect[i].stream, stream_i );
                 for_n( k, stream->headers_n )
-                    W( stream->headers[k] );
-                W( stream->headers );
+                    if( W( stream->headers[k] ))
+                        goto Exit;
+                if( W( stream->headers ))
+                    goto Exit;
                 if( stream->buf_headers )
-                    W( stream->buf_headers );
+                    if( W( stream->buf_headers ))
+                        goto Exit;
                 if( stream->z_stream )
                 {   inflateEnd( stream->z_stream );
-                    W( stream->z_stream );
-                    W( stream->zlib_data );
+                    if( W( stream->z_stream )
+                    || W( stream->zlib_data )
+                    )
+                        goto Exit;
                 }
             }
-            E_mem_Q_tab_W( E_net_http2_S_connect[i].stream );
-            W( E_net_http2_S_connect[i].buf_2 );
+            if( ~stream_i
+            || E_mem_Q_tab_W( E_net_http2_S_connect[i].stream )
+            || W( E_net_http2_S_connect[i].buf_2 )
+            )
+Exit:       {   U_F( E_base_S->E_flow_S_signal, exit );
+                continue;
+            }
             if( E_net_http2_S_connect[i].buf )
-                W( E_net_http2_S_connect[i].buf );
+                if( W( E_net_http2_S_connect[i].buf ))
+                    goto Exit;
                 #ifdef __gnu_linux__
             struct epoll_event ee;
             ee.events = EPOLLIN;
@@ -1375,7 +1536,7 @@ End2_1:     ;
             i--;
         }
     }
-    X_W( net, ret );
-    X_W( net, disconnect );
+    X_W( net, ret )
+    || X_W( net, disconnect );
 }
 /******************************************************************************/

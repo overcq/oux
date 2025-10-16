@@ -61,13 +61,13 @@ struct E_text_syntax_Z_state
 };
 //==============================================================================
 _internal
-B
+N
 E_text_syntax_I_unescape( Pc *s_
 ){  Pc s = *s_;
     while( *s )
     {   if( *s == '\\' )
         {   if( !*( s + 1 ))
-                return no;
+                return ~0;
             N n;
             Pc ret_s;
             switch( *( s + 1 ))
@@ -121,48 +121,47 @@ E_text_syntax_I_unescape( Pc *s_
                             s_end++;
                     n = E_text_Z_s_N_n( s + 1, s_end, &ret_s, 8 );
                     if( ret_s == s + 1 )
-                        return no;
+                        return ~0;
                     s = ret_s - 1;
                     break;
                 }
               case 'x':
                 {   if( !*( s + 2 ))
-                        return no;
+                        return ~0;
                     Pc s_end = s + 3;
                     if( !*s_end )
                         s_end++;
                     n = E_text_Z_s_N_n( s + 2, s_end, &ret_s, 16 );
                     if( ret_s == s + 2 )
-                        return no;
+                        return ~0;
                     break;
                 }
               case 'u':
                 {   for_n( i, 4 )
                         if( !s[ 2 + i ] )
-                            return no;
+                            return ~0;
                     n = E_text_Z_s0_N_n( s + 2, &ret_s, 16 );
                     if( ret_s != s + 2 + 4 )
-                        return no;
+                        return ~0;
                     break;
                 }
               case 'U':
                 {   for_n( i, 8 )
                         if( !s[ 2 + i ] )
-                            return no;
+                            return ~0;
                     n = E_text_Z_s0_N_n( s + 2, &ret_s, 16 );
                     if( ret_s != s + 2 + 8 )
-                        return no;
+                        return ~0;
                     break;
                 }
               default:
-                    return no;
+                    return ~0;
             }
             switch( *( s + 1 ))
             { case 'x':
                 {   N s_i = s - *s_;
                     if( !E_mem_Q_blk_I_remove( s_, s_i + 1, ret_s - ( s + 1 )))
-                    {   GV_(NA);
-                    }
+                        return ~0;
                     s = *s_ + s_i;
                     *s = n;
                     break;
@@ -173,14 +172,12 @@ E_text_syntax_I_unescape( Pc *s_
                     if( l < ret_s - s )
                     {   N s_i = s - *s_;
                         if( !E_mem_Q_blk_I_remove( s_, ( ret_s - s ) - (( ret_s - s ) - l ), ( ret_s - s ) - l ))
-                        {   GV_(NA);
-                        }
+                            return ~0;
                         s = *s_ + s_i;
                     }else if( l > ret_s - s )
                     {   N s_i = s - *s_;
                         if( !E_mem_Q_blk_I_insert( s_, ret_s - s, l - ( ret_s - s )))
-                        {   GV_(NA);
-                        }
+                            return ~0;
                         s = *s_ + s_i;
                     }
                     E_text_Z_u_R_su( n, s );
@@ -190,8 +187,7 @@ E_text_syntax_I_unescape( Pc *s_
             default:
                 {   N s_i = s - *s_;
                     if( !E_mem_Q_blk_I_remove( s_, s_i + 1, 1 ))
-                    {   GV_(NA);
-                    }
+                        return ~0;
                     s = *s_ + s_i;
                     *s = n;
                     break;
@@ -200,7 +196,7 @@ E_text_syntax_I_unescape( Pc *s_
         }
         s++;
     }
-    return yes;
+    return 0;
 }
 _internal
 int
@@ -258,19 +254,23 @@ E_text_syntax_M( I file
         return ~0;
     Mt_( syntax->entities, 0 );
     if( !syntax->entities )
-    {   W(syntax);
+    {   if( W(syntax) )
+            return ~1;
         return ~0;
     }
     syntax->entities_n = 0;
     O{  Pc s = 0;
         N ret = E_mem_Q_file_R_u_outof( file, E_text_syntax_S_space, &s );
-        if( !~ret )
-        {   W(s);
-            goto End;
-        }
         if( ret == S_eof )
-        {   W(s);
+        {   if( W(s) )
+                return ~1;
             break;
+        }else if(ret)
+        {   if( s
+            && W(s)
+            )
+                return ~1;
+            goto End;
         }
         Pc s_end = E_text_Z_s0_R_end(s);
         U u;
@@ -278,48 +278,60 @@ E_text_syntax_M( I file
         if( E_text_Z_s0_R_l(s) != s_end - s_start
         && *( s_start - 1 ) != '\n'
         )
-        {   W(s);
+        {   if( W(s) )
+                return ~1;
             G_();
             goto End;
         }
         if( !iswalpha(u) )
-        {   W_(s);
+        {   if( W(s) )
+                return ~1;
+            s = 0;
             if( u != '/' )
             {   G_();
                 goto End;
             }
             // Komentarz liniowy w osobnej linii.
             ret = E_mem_Q_file_R_u_outof( file, "/", &s );
-            if( !~ret )
-            {   W(s);
-                goto End;
-            }
             s_end = E_text_Z_s0_R_end(s);
             if( ret == S_eof )
-            {   W(s);
+            {   if( W(s) )
+                    return ~1;
                 if( s_end - s == 0 )
                 {   G_();
                     goto End;
                 }
                 break;
+            }else if(ret)
+            {   if( s
+                && W(s)
+                )
+                    return ~1;
+                goto End;
             }
             s_start = E_text_Z_su_R_u_rev( s_end, &u );
-            W_(s);
+            if( W(s) )
+                return ~1;
+            s = 0;
             if( u != E_mem_Q_file_S_filename_separator )
             {   ret = E_mem_Q_file_R_u_upto( file, "\n", &s );
-                if( !~ret )
-                {   W(s);
-                    goto End;
-                }
                 if( ret == S_eof )
-                {   W(s);
+                {   if( W(s) )
+                        return ~1;
                     break;
+                }else if(ret)
+                {   if( s
+                    && W(s)
+                    )
+                        return ~1;
+                    goto End;
                 }
             }
             continue;
         }
         if( !E_mem_Q_blk_I_append( &syntax->entities, 1 ))
-        {   W(s);
+        {   if( W(s) )
+                return ~1;
             goto End;
         }
         syntax->entities[ syntax->entities_n ].name = M(( s_end - s_start ) + 1 );
@@ -327,7 +339,8 @@ E_text_syntax_M( I file
         {   if( !E_mem_Q_blk_I_remove( &syntax->entities, syntax->entities_n, 1 ))
             {   G_();
             }
-            W(s);
+            if( W(s) )
+                return ~1;
             goto End;
         }
         Mt_( syntax->entities[ syntax->entities_n ].entity, 0 );
@@ -335,20 +348,19 @@ E_text_syntax_M( I file
         {   if( !E_mem_Q_blk_I_remove( &syntax->entities, syntax->entities_n, 1 ))
             {   G_();
             }
-            W(s);
+            if( W(s) )
+                return ~1;
             goto End;
         }
         syntax->entities[ syntax->entities_n ].entity_n = 0;
         E_text_Z_s_P_copy_s_0( syntax->entities[ syntax->entities_n ].name, s_start, s_end );
-        W_(s);
+        if( W(s) )
+            return ~1;
+        s = 0;
         syntax->entities[ syntax->entities_n ].space.s = 0;
         syntax->entities[ syntax->entities_n ].repeat = no;
         syntax->entities_n++;
         ret = E_mem_Q_file_R_u_upto( file, "\n", &s );
-        if( !~ret )
-        {   W(s);
-            goto End;
-        }
         s_end = E_text_Z_s0_R_end(s) - 1;
         if( ret == S_eof )
         {   s_start = s;
@@ -358,18 +370,27 @@ E_text_syntax_M( I file
                 || ( u != ' '
                   && u != '\t'
                 ))
-                {   W(s);
+                {   if( W(s) )
+                        return ~1;
                     G_();
                     goto End;
                 }
             }
             if( *s_end )
-            {   W(s);
+            {   if( W(s) )
+                    return ~1;
                 G_();
                 goto End;
             }
-            W(s);
+            if( W(s) )
+                return ~1;
             break;
+        }else if(ret)
+        {   if( s
+            && W(s)
+            )
+                return ~1;
+            goto End;
         }
         if( s_end != s )
             O{  s_start = E_text_Z_su_R_u_rev( s_end, &u );
@@ -381,30 +402,40 @@ E_text_syntax_M( I file
             }
         N i = E_text_Z_s0_R_l( syntax->entities[ syntax->entities_n - 1 ].name );
         if( s_end - s )
+        {   
             if( !E_mem_Q_blk_I_insert( &syntax->entities[ syntax->entities_n - 1 ].name, i, s_end - s ))
-            {   W(s);
+            {   if( W(s) )
+                    return ~1;
                 goto End;
             }
-        E_text_Z_s_P_copy_s_0( syntax->entities[ syntax->entities_n - 1 ].name + i, s, s_end );
-        W_(s);
+            E_text_Z_s_P_copy_s_0( syntax->entities[ syntax->entities_n - 1 ].name + i, s, s_end );
+        }
+        if( W(s) )
+            return ~1;
+        s = 0;
         if( !E_text_syntax_T_name( syntax->entities[ syntax->entities_n - 1 ].name ))
         {   G_();
             goto End;
         }
         ret = E_mem_Q_file_R_u_outof( file, E_text_syntax_S_line_space, &s );
-        if( !~ret )
-        {   W(s);
-            goto End;
-        }
         s_end = E_text_Z_s0_R_end(s);
         if( ret == S_eof )
-        {   W(s);
+        {   if( W(s) )
+                return ~1;
             G_();
+            goto End;
+        }else if(ret)
+        {   if( s
+            && W(s)
+            )
+                return ~1;
             goto End;
         }
         s_start = E_text_Z_su_R_u_rev( s_end, &u );
         while( s_start == s ) // Brak odstępów na początku linii, to linia deklaracji.
-        {   W_(s);
+        {   if( W(s) )
+                return ~1;
+            s = 0;
             if( u != '/' )
             {   G_();
                 goto End;
@@ -414,30 +445,39 @@ E_text_syntax_M( I file
                 goto End;
             }
             ret = E_mem_Q_file_R_u_outof( file, E_text_syntax_S_line_space, &s );
-            if( !~ret )
-            {   W(s);
-                goto End;
-            }
             if( ret == S_eof )
-            {   W(s);
+            {   if( W(s) )
+                    return ~1;
                 G_();
+                goto End;
+            }else if(ret)
+            {   if( s
+                && W(s)
+                )
+                    return ~1;
                 goto End;
             }
             s_end = E_text_Z_s0_R_end(s);
             s_start = E_text_Z_su_R_u_rev( s_end, &u );
-            W_(s);
+            if( W(s) )
+                return ~1;
+            s = 0;
             ret = E_mem_Q_file_R_u_upto( file, "\n", &s );
-            if( !~ret )
-            {   W(s);
-                goto End;
-            }
             if( ret == S_eof )
-            {   W(s);
+            {   if( W(s) )
+                    return ~1;
                 G_();
+                goto End;
+            }else if(ret)
+            {   if( s
+                && W(s)
+                )
+                    return ~1;
                 goto End;
             }
             if( !E_mem_Q_blk_I_prepend( &s, s_end - s_start ))
-            {   W(s);
+            {   if( W(s) )
+                    return ~1;
                 goto End;
             }
             E_text_Z_u_R_su( u, s );
@@ -452,37 +492,47 @@ E_text_syntax_M( I file
                 }
             }
             if( !E_mem_Q_blk_I_remove( &s, s_end - s, E_text_Z_s0_R_end(s) - s_end ))
-            {   W(s);
+            {   if( W(s) )
+                    return ~1;
                 goto End;
             }
             syntax->entities[ syntax->entities_n - 1 ].space.s = s;
             s = 0;
             ret = E_mem_Q_file_R_u_outof( file, E_text_syntax_S_line_space, &s );
-            if( !~ret )
-            {   W(s);
-                goto End;
-            }
             if( ret == S_eof )
-            {   W(s);
+            {   if( W(s) )
+                    return ~1;
                 G_();
+                goto End;
+            }else if(ret)
+            {   if( s
+                && W(s)
+                )
+                    return ~1;
                 goto End;
             }
             s_end = E_text_Z_s0_R_end(s);
             s_start = E_text_Z_su_R_u_rev( s_end, &u );
         }
-        W_(s);
+        if( W(s) )
+            return ~1;
+        s = 0;
         O{  O{  ret = E_mem_Q_file_R_u_upto( file, ",|\n", &s );
-                if( !~ret )
-                {   W(s);
-                    goto End;
-                }
                 B end_of_entities = no;
                 if( ret == S_eof )
                     end_of_entities = yes;
+                else if(ret)
+                {   if( s
+                    && W(s)
+                    )
+                        return ~1;
+                    goto End;
+                }
                 enum E_text_syntax_Z_entity_Z entity_type;
                 if( u == '@' )
                 {   if( E_text_Z_s0_R_l(s) == ( end_of_entities ? 0 : 1 ))
-                    {   W(s);
+                    {   if( W(s) )
+                            return ~1;
                         G_();
                         goto End;
                     }
@@ -496,20 +546,23 @@ E_text_syntax_M( I file
                     }
                     if( s_start != s )
                         if( !E_mem_Q_blk_I_remove( &s, 0, s_start - s ))
-                        {   W(s);
+                        {   if( W(s) )
+                                return ~1;
                             goto End;
                         }
                     entity_type = E_text_syntax_S_entity_builtin;
                 }else if( u == '/' )
                 {   if( E_text_Z_s0_R_l(s) < ( end_of_entities ? 2 : 3 ))
-                    {   W(s);
+                    {   if( W(s) )
+                            return ~1;
                         G_();
                         goto End;
                     }
                     entity_type = E_text_syntax_S_entity_regex;
                 }else if( u == '!' )
                 {   if( E_text_Z_s0_R_l(s) < ( end_of_entities ? 3 : 4 ))
-                    {   W(s);
+                    {   if( W(s) )
+                            return ~1;
                         G_();
                         goto End;
                     }
@@ -517,27 +570,31 @@ E_text_syntax_M( I file
                     if( u != '/'
                     && u != '\"'
                     )
-                    {   W(s);
+                    {   if( W(s) )
+                            return ~1;
                         G_();
                         goto End;
                     }
                     entity_type = u == '/' ? E_text_syntax_S_entity_negated_regex : E_text_syntax_S_entity_negated_string;
                 }else if( u == '\"' )
                 {   if( E_text_Z_s0_R_l(s) < ( end_of_entities ? 2 : 3 ))
-                    {   W(s);
+                    {   if( W(s) )
+                            return ~1;
                         G_();
                         goto End;
                     }
                     entity_type = E_text_syntax_S_entity_string;
                 }else if( iswalpha(u) )
                 {   if( !E_mem_Q_blk_I_prepend( &s, s_end - s_start ))
-                    {   W(s);
+                    {   if( W(s) )
+                            return ~1;
                         goto End;
                     }
                     E_text_Z_u_R_su( u, s );
                     entity_type = E_text_syntax_S_entity_uid;
                 }else
-                {   W(s);
+                {   if( W(s) )
+                        return ~1;
                     G_();
                     goto End;
                 }
@@ -613,13 +670,15 @@ E_text_syntax_M( I file
                         ))
                         || i != 3
                         )
-                        {   W(s);
+                        {   if( W(s) )
+                                return ~1;
                             G_();
                             goto End;
                         }
                         s_start = E_text_Z_su_R_u_rev( s_end, &u );
                         if( *s_start != ' ' )
-                        {   W(s);
+                        {   if( W(s) )
+                                return ~1;
                             G_();
                             goto End;
                         }
@@ -653,13 +712,15 @@ E_text_syntax_M( I file
                           )
                           && s_end == s + 1
                         ))
-                        {   W(s);
+                        {   if( W(s) )
+                                return ~1;
                             G_();
                             goto End;
                         }
                         s_start = E_text_Z_su_R_u_rev( s_end, &u );
                         if( u != ' ' )
-                        {   W(s);
+                        {   if( W(s) )
+                                return ~1;
                             G_();
                             goto End;
                         }
@@ -670,7 +731,8 @@ E_text_syntax_M( I file
                 B regex_casei = no;
                 if( entity_type == E_text_syntax_S_entity_regex )
                 {   if( s_end == s )
-                    {   W(s);
+                    {   if( W(s) )
+                            return ~1;
                         G_();
                         goto End;
                     }
@@ -682,14 +744,16 @@ E_text_syntax_M( I file
                     if( u != '/'
                     || s_end <= s + 1
                     )
-                    {   W(s);
+                    {   if( W(s) )
+                            return ~1;
                         G_();
                         goto End;
                     }
                     s_end--;
                 }else if( entity_type == E_text_syntax_S_entity_negated_regex )
                 {   if( s_end == s + 1 )
-                    {   W(s);
+                    {   if( W(s) )
+                            return ~1;
                         G_();
                         goto End;
                     }
@@ -697,7 +761,8 @@ E_text_syntax_M( I file
                     if( u == 'i' )
                     {   s_end--;
                         if( s_end == s + 1 )
-                        {   W(s);
+                        {   if( W(s) )
+                                return ~1;
                             G_();
                             goto End;
                         }
@@ -707,14 +772,16 @@ E_text_syntax_M( I file
                     if( u != '/'
                     || s_end <= s + 2
                     )
-                    {   W(s);
+                    {   if( W(s) )
+                            return ~1;
                         G_();
                         goto End;
                     }
                     s_end--;
                 }else if( entity_type == E_text_syntax_S_entity_string )
                 {   if( s_end == s )
-                    {   W(s);
+                    {   if( W(s) )
+                            return ~1;
                         G_();
                         goto End;
                     }
@@ -722,14 +789,16 @@ E_text_syntax_M( I file
                     if( u != '\"'
                     || s_end <= s + 1
                     )
-                    {   W(s);
+                    {   if( W(s) )
+                            return ~1;
                         G_();
                         goto End;
                     }
                     s_end--;
                 }else if( entity_type == E_text_syntax_S_entity_negated_string )
                 {   if( s_end == s + 1 )
-                    {   W(s);
+                    {   if( W(s) )
+                            return ~1;
                         G_();
                         goto End;
                     }
@@ -737,18 +806,21 @@ E_text_syntax_M( I file
                     if( u != '\"'
                     || s_end <= s + 2
                     )
-                    {   W(s);
+                    {   if( W(s) )
+                            return ~1;
                         G_();
                         goto End;
                     }
                     s_end--;
                 }
                 if( !E_mem_Q_blk_I_remove( &s, s_end - s, E_text_Z_s0_R_end(s) - s_end ))
-                {   W(s);
+                {   if( W(s) )
+                        return ~1;
                     goto End;
                 }
                 if( !E_mem_Q_blk_I_append( &syntax->entities[ syntax->entities_n - 1 ].entity, 1 ))
-                {   W(s);
+                {   if( W(s) )
+                        return ~1;
                     goto End;
                 }
                 syntax->entities[ syntax->entities_n - 1 ].entity[ syntax->entities[ syntax->entities_n - 1 ].entity_n ].type = entity_type;
@@ -758,14 +830,17 @@ E_text_syntax_M( I file
                     {   if( !E_mem_Q_blk_I_remove( &syntax->entities[ syntax->entities_n - 1 ].entity, syntax->entities[ syntax->entities_n - 1 ].entity_n, 1 ))
                         {   G_();
                         }
-                        W(s);
+                        if( W(s) )
+                            return ~1;
                         G_();
                         goto End;
                     }
-                    W(s);
+                    if( W(s) )
+                        return ~1;
                 }else if( entity_type == E_text_syntax_S_entity_regex )
-                {   if( !E_text_syntax_I_unescape( &s ))
-                    {   W(s);
+                {   if( E_text_syntax_I_unescape( &s ))
+                    {   if( W(s) )
+                            return ~1;
                         G_();
                         goto End;
                     }
@@ -773,22 +848,26 @@ E_text_syntax_M( I file
                     if( !E_text_Z_s_I_prepend_s0( &s, "^(" )
                     || !E_text_Z_s0_I_append_s0( &s, ")$" )
                     )
-                    {   W(s);
+                    {   if( W(s) )
+                            return ~1;
                         goto End;
                     }
                     if( regcomp( &syntax->entities[ syntax->entities_n - 1 ].entity[ syntax->entities[ syntax->entities_n - 1 ].entity_n ].data.re, s, REG_EXTENDED | REG_NOSUB | ( regex_casei ? REG_ICASE : 0 )))
-                    {   W(s);
+                    {   if( W(s) )
+                            return ~1;
                         G_();
                         goto End;
                     }
                     W(s);
                 }else if( entity_type == E_text_syntax_S_entity_negated_regex )
                 {   if( !E_mem_Q_blk_I_remove( &s, 0, 1 ))
-                    {   W(s);
+                    {   if( W(s) )
+                            return ~1;
                         goto End;
                     }
-                    if( !E_text_syntax_I_unescape( &s ))
-                    {   W(s);
+                    if( E_text_syntax_I_unescape( &s ))
+                    {   if( W(s) )
+                            return ~1;
                         G_();
                         goto End;
                     }
@@ -796,29 +875,35 @@ E_text_syntax_M( I file
                     if( !E_text_Z_s_I_prepend_s0( &s, "^(" )
                     || !E_text_Z_s0_I_append_s0( &s, ")" )
                     )
-                    {   W(s);
+                    {   if( W(s) )
+                            return ~1;
                         goto End;
                     }
                     if( regcomp( &syntax->entities[ syntax->entities_n - 1 ].entity[ syntax->entities[ syntax->entities_n - 1 ].entity_n ].data.re, s, REG_EXTENDED | REG_NOSUB | ( regex_casei ? REG_ICASE : 0 ) ))
-                    {   W(s);
+                    {   if( W(s) )
+                            return ~1;
                         G_();
                         goto End;
                     }
-                    W(s);
+                    if( W(s) )
+                        return ~1;
                 }else if( entity_type == E_text_syntax_S_entity_string )
-                {   if( !E_text_syntax_I_unescape( &s ))
-                    {   W(s);
+                {   if( E_text_syntax_I_unescape( &s ))
+                    {   if( W(s) )
+                            return ~1;
                         G_();
                         goto End;
                     }
                     syntax->entities[ syntax->entities_n - 1 ].entity[ syntax->entities[ syntax->entities_n - 1 ].entity_n ].data.s = s;
                 }else if( entity_type == E_text_syntax_S_entity_negated_string )
                 {   if( !E_mem_Q_blk_I_remove( &s, 0, 1 ))
-                    {   W(s);
+                    {   if( W(s) )
+                            return ~1;
                         goto End;
                     }
-                    if( !E_text_syntax_I_unescape( &s ))
-                    {   W(s);
+                    if( E_text_syntax_I_unescape( &s ))
+                    {   if( W(s) )
+                            return ~1;
                         G_();
                         goto End;
                     }
@@ -832,18 +917,23 @@ E_text_syntax_M( I file
                 if( end_of_entities )
                     break;
                 ret = E_mem_Q_file_R_u_outof( file, E_text_syntax_S_line_space, &s );
-                if( !~ret )
-                {   W(s);
-                    goto End;
-                }
                 if( ret == S_eof )
-                {   W(s);
+                {   if( W(s) )
+                        return ~1;
                     G_();
+                    goto End;
+                }else if(ret)
+                {   if( s
+                    && W(s)
+                    )
+                        return ~1;
                     goto End;
                 }
                 s_end = E_text_Z_s0_R_end(s);
                 s_start = E_text_Z_su_R_u_rev( s_end, &u );
-                W_(s);
+                if( W(s) )
+                    return ~1;
+                s = 0;
             }
             N pos = E_mem_Q_file_R_pos(file);
             ret = E_mem_Q_file_R_u( file, &u );
@@ -864,18 +954,23 @@ E_text_syntax_M( I file
                 break;
             }
             ret = E_mem_Q_file_R_u_outof( file, E_text_syntax_S_line_space, &s );
-            if( !~ret )
-            {   W(s);
-                goto End;
-            }
             if( ret == S_eof )
-            {   W(s);
+            {   if( W(s) )
+                    return ~1;
                 G_();
+                goto End;
+            }else if(ret)
+            {   if( s
+                && W(s)
+                )
+                    return ~1;
                 goto End;
             }
             s_end = E_text_Z_s0_R_end(s);
             s_start = E_text_Z_su_R_u_rev( s_end, &u );
-            W_(s);
+            if( W(s) )
+                return ~1;
+            s = 0;
         }
     }
     for_n( i, syntax->entities_n )
@@ -886,25 +981,32 @@ E_text_syntax_M( I file
             if( !~syntax->entities[i].space.uid )
             {   G_(); Gs0( syntax->entities[i].space.s );
                 for_n( k, syntax->entities_n )
-                {   W( syntax->entities[k].name );
+                {   if( W( syntax->entities[k].name ))
+                        return ~1;
                     if( k > i
                     && syntax->entities[i].space.s
                     )
-                        W( syntax->entities[i].space.s );
+                        if( W( syntax->entities[i].space.s ))
+                            return ~1;
                     for_n( l, syntax->entities[k].entity_n )
                     {   if( syntax->entities[k].entity[l].type == E_text_syntax_S_entity_uid
                         && k > i
                         )
-                            W( syntax->entities[k].entity[l].data.s );
+                            if( W( syntax->entities[k].entity[l].data.s ))
+                                return ~1;
                         if( syntax->entities[k].entity[l].type == E_text_syntax_S_entity_regex )
                             regfree( &syntax->entities[k].entity[l].data.re );
                         if( syntax->entities[k].entity[l].type == E_text_syntax_S_entity_string )
-                            W( syntax->entities[k].entity[l].data.s );
+                            if( W( syntax->entities[k].entity[l].data.s ))
+                                return ~1;
                     }
-                    W( syntax->entities[k].entity );
+                    if( W( syntax->entities[k].entity ))
+                        return ~1;
                 }
-                W( syntax->entities );
-                W(syntax);
+                if( W( syntax->entities )
+                || W(syntax)
+                )
+                    return ~1;
                 return ~0;
             }
         }
@@ -914,23 +1016,29 @@ E_text_syntax_M( I file
                 if( !~uid )
                 {   G_(); Gs0( syntax->entities[i].entity[j].data.s );
                     for_n( k, syntax->entities_n )
-                    {   W( syntax->entities[k].name );
+                    {   if( W( syntax->entities[k].name ))
+                            return ~1;
                         for_n( l, syntax->entities[k].entity_n )
                         {   if( syntax->entities[k].entity[l].type == E_text_syntax_S_entity_uid
                             && ( k > i
                               || ( k == i
                                 && l > j
                             )))
-                                W( syntax->entities[k].entity[l].data.s );
+                                if( W( syntax->entities[k].entity[l].data.s ))
+                                    return ~1;
                             if( syntax->entities[k].entity[l].type == E_text_syntax_S_entity_regex )
                                 regfree( &syntax->entities[k].entity[l].data.re );
                             else if( syntax->entities[k].entity[l].type == E_text_syntax_S_entity_string )
-                                W( syntax->entities[k].entity[l].data.s );
+                                if( W( syntax->entities[k].entity[l].data.s ))
+                                    return ~1;
                         }
-                        W( syntax->entities[k].entity );
+                        if( W( syntax->entities[k].entity ))
+                            return ~1;
                     }
-                    W( syntax->entities );
-                    W(syntax);
+                    if( W( syntax->entities )
+                    || W(syntax)
+                    )
+                        return ~1;
                     return ~0;
                 }
                 W( syntax->entities[i].entity[j].data.s );
@@ -939,23 +1047,30 @@ E_text_syntax_M( I file
     }
     *syntax_ = syntax;
     return 0;
-End:E_text_syntax_W(syntax);
-    return ~0;
+End:;
+    N ret = E_text_syntax_W(syntax);
+    return ret ? ret : ~0;
 }
 _export
-void
+N
 E_text_syntax_W( struct E_text_syntax_Z_body *syntax
 ){  for_n( i, syntax->entities_n )
-    {   W( syntax->entities[i].name );
+    {   if( W( syntax->entities[i].name ))
+            return ~1;
         for_n( j, syntax->entities[i].entity_n )
             if( syntax->entities[i].entity[j].type == E_text_syntax_S_entity_regex )
                 regfree( &syntax->entities[i].entity[j].data.re );
             else if( syntax->entities[i].entity[j].type == E_text_syntax_S_entity_string )
-                W( syntax->entities[i].entity[j].data.s );
-        W( syntax->entities[i].entity );
+                if( W( syntax->entities[i].entity[j].data.s ))
+                    return ~1;
+        if( W( syntax->entities[i].entity ))
+            return ~1;
     }
-    W( syntax->entities );
-    W(syntax);
+    if( W( syntax->entities )
+    || W(syntax)
+    )
+        return ~1;
+    return 0;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 _export
@@ -974,7 +1089,8 @@ E_text_syntax_Q_state_M( struct E_text_syntax_Z_body *syntax
     state->once_matched = no;
     state->s = M(1);
     if( !state->s )
-    {   W(state);
+    {   if( W(state) )
+            return ~1;
         return ~0;
     }
     state->s[0] = '\0';
@@ -982,12 +1098,15 @@ E_text_syntax_Q_state_M( struct E_text_syntax_Z_body *syntax
     return 0;
 }
 _export
-void
+N
 E_text_syntax_Q_state_W( struct E_text_syntax_Z_state *state
 , N state_n
 ){  for_n( i, state_n )
-        W( state[i].s );
-    W(state);
+        if( W( state[i].s ))
+            return ~1;
+    if( W(state) )
+        return ~1;
+    return 0;
 }
 _internal
 N
@@ -1098,7 +1217,10 @@ Cont:
                             O{  N pos = E_mem_Q_file_R_pos(file);
                                 ret = E_mem_Q_file_R_u( file, &u );
                                 if( !~ret )
-                                {   W(s);
+                                {   if( W(s) )
+                                    {   *state_ = state;
+                                        return ~1;
+                                    }
                                     goto End;
                                 }
                                 if( ret == S_eof
@@ -1111,7 +1233,10 @@ Cont:
                                 C t[l];
                                 E_text_Z_u_R_su( u, &t[0] );
                                 if( !E_text_Z_s0_I_append_s( &s, t, t + l ))
-                                {   W(s);
+                                {   if( W(s) )
+                                    {   *state_ = state;
+                                        return ~1;
+                                    }
                                     goto End;
                                 }
                             }
@@ -1121,10 +1246,16 @@ Cont:
                 }
                 if(parsed)
                 {   if( !E_text_Z_s0_I_append_s0( &state[ *state_n - 1 ].s, s ))
-                    {   W(s);
+                    {   if( W(s) )
+                        {   *state_ = state;
+                            return ~1;
+                        }
                         goto End;
                     }
-                    W(s);
+                    if( W(s) )
+                    {   *state_ = state;
+                        return ~1;
+                    }
                     if( state[ *state_n - 1 ].in_space )
                         state[ *state_n - 1 ].in_space = no;
                     else
@@ -1151,9 +1282,15 @@ Cont:
                                     if( *state_n > 1 )
                                         if( !E_text_Z_s0_I_append_s0( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
                                             goto End;
-                                    W( state[ *state_n - 1 ].s );
-                                    if( !E_mem_Q_blk_I_remove( &state, --*state_n, 1 ))
-                                        goto End;
+                                    if( W( state[ *state_n - 1 ].s ))
+                                    {   *state_ = state;
+                                        return ~1;
+                                    }
+                                    if( !E_mem_Q_blk_I_remove( &state, *state_n - 1, 1 ))
+                                    {   *state_ = state;
+                                        return ~2;
+                                    }
+                                    ( *state_n )--;
                                     if( !*state_n )
                                     {   *state_ = state;
                                         return S_eof;
@@ -1215,9 +1352,15 @@ Bi_no:          {   if( state[ *state_n - 1 ].in_space )
                                         goto End;
                             }
                             f_not_only = no;
-                            W( state[ *state_n - 1 ].s );
-                            if( !E_mem_Q_blk_I_remove( &state, --*state_n, 1 ))
-                                goto End;
+                            if( W( state[ *state_n - 1 ].s ))
+                            {   *state_ = state;
+                                return ~1;
+                            }
+                            if( !E_mem_Q_blk_I_remove( &state, *state_n - 1, 1 ))
+                            {   *state_ = state;
+                                return ~2;
+                            }
+                            ( *state_n )--;
                             if( !*state_n )
                             {   *state_ = state;
                                 return builtin_eof ? 0 : S_eof;
@@ -1288,9 +1431,15 @@ Bi_no:          {   if( state[ *state_n - 1 ].in_space )
                                             goto End;
                                 }
                             f_not_only = no;
-                            W( state[ *state_n - 1 ].s );
-                            if( !E_mem_Q_blk_I_remove( &state, --*state_n, 1 ))
-                                goto End;
+                            if( W( state[ *state_n - 1 ].s ))
+                            {   *state_ = state;
+                                return ~1;
+                            }
+                            if( !E_mem_Q_blk_I_remove( &state, *state_n - 1, 1 ))
+                            {   *state_ = state;
+                                return ~2;
+                            }
+                            ( *state_n )--;
                             if( !*state_n )
                             {   *state_ = state;
                                 return builtin_eof ? 0 : S_eof;
@@ -1334,7 +1483,10 @@ Bi_no:          {   if( state[ *state_n - 1 ].in_space )
                 )
                 {   ret = E_mem_Q_file_R_u( file, &u );
                     if( !~ret )
-                    {   W(s);
+                    {   if( W(s) )
+                        {   *state_ = state;
+                            return ~1;
+                        }
                         goto End;
                     }
                     if( ret == S_eof )
@@ -1343,7 +1495,10 @@ Bi_no:          {   if( state[ *state_n - 1 ].in_space )
                     C t[ l_ ];
                     E_text_Z_u_R_su( u, &t[0] );
                     if( !E_text_Z_s0_I_append_s( &s, t, t + l_ ))
-                    {   W(s);
+                    {   if( W(s) )
+                        {   *state_ = state;
+                            return ~1;
+                        }
                         goto End;
                     }
                     n++;
@@ -1353,7 +1508,10 @@ Bi_no:          {   if( state[ *state_n - 1 ].in_space )
                     O{  N pos = E_mem_Q_file_R_pos(file);
                         ret = E_mem_Q_file_R_u( file, &u );
                         if( !~ret )
-                        {   W(s);
+                        {   if( W(s) )
+                            {   *state_ = state;
+                                return ~1;
+                            }
                             goto End;
                         }
                         if( ret == S_eof )
@@ -1364,14 +1522,20 @@ Bi_no:          {   if( state[ *state_n - 1 ].in_space )
                         C t[ l_ ];
                         E_text_Z_u_R_su( u, &t[0] );
                         if( !E_text_Z_s0_I_append_s( &s, t, t + l_ ))
-                        {   W(s);
+                        {   if( W(s) )
+                            {   *state_ = state;
+                                return ~1;
+                            }
                             goto End;
                         }
                         if( regexec( &entity->data.re, s, 0, 0, 0 ))
                         {   Pc s_end = E_text_Z_s0_R_end(s);
                             Pc s_start = E_text_Z_su_R_u_rev( s_end, &u );
                             if( !E_mem_Q_blk_I_remove( &s, s_start - s, s_end - s_start ))
-                            {   W(s);
+                            {   if( W(s) )
+                                {   *state_ = state;
+                                    return ~1;
+                                }
                                 goto End;
                             }
                             E_mem_Q_file_P_pos( file,  pos );
@@ -1379,13 +1543,22 @@ Bi_no:          {   if( state[ *state_n - 1 ].in_space )
                         }
                     }
                 }else
-                    W(s);
+                    if( W(s) )
+                    {   *state_ = state;
+                        return ~1;
+                    }
                 if(parsed)
                 {   if( !E_text_Z_s0_I_append_s0( &state[ *state_n - 1 ].s, s ))
-                    {   W(s);
+                    {   if( W(s) )
+                        {   *state_ = state;
+                            return ~1;
+                        }
                         goto End;
                     }
-                    W(s);
+                    if( W(s) )
+                    {   *state_ = state;
+                        return ~1;
+                    }
                     if( state[ *state_n - 1 ].in_space )
                         state[ *state_n - 1 ].in_space = no;
                     else
@@ -1412,9 +1585,15 @@ Bi_no:          {   if( state[ *state_n - 1 ].in_space )
                                     if( *state_n > 1 )
                                         if( !E_text_Z_s0_I_append_s0( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
                                             goto End;
-                                    W( state[ *state_n - 1 ].s );
-                                    if( !E_mem_Q_blk_I_remove( &state, --*state_n, 1 ))
-                                        goto End;
+                                    if( W( state[ *state_n - 1 ].s ))
+                                    {   *state_ = state;
+                                        return ~2;
+                                    }
+                                    if( !E_mem_Q_blk_I_remove( &state, *state_n - 1, 1 ))
+                                    {   *state_ = state;
+                                        return ~1;
+                                    }
+                                    ( *state_n )--;
                                     if( !*state_n )
                                     {   *state_ = state;
                                         return S_eof;
@@ -1476,9 +1655,15 @@ Re_no:          {   if( state[ *state_n - 1 ].in_space )
                                         goto End;
                             }
                             f_not_only = no;
-                            W( state[ *state_n - 1 ].s );
-                            if( !E_mem_Q_blk_I_remove( &state, --*state_n, 1 ))
-                                goto End;
+                            if( W( state[ *state_n - 1 ].s ))
+                            {   *state_ = state;
+                                return ~2;
+                            }
+                            if( !E_mem_Q_blk_I_remove( &state, *state_n - 1, 1 ))
+                            {   *state_ = state;
+                                return ~1;
+                            }
+                            ( *state_n )--;
                             if( !*state_n )
                             {   *state_ = state;
                                 return S_eof;
@@ -1549,9 +1734,15 @@ Re_no:          {   if( state[ *state_n - 1 ].in_space )
                                             goto End;
                                 }
                             f_not_only = no;
-                            W( state[ *state_n - 1 ].s );
-                            if( !E_mem_Q_blk_I_remove( &state, --*state_n, 1 ))
-                                goto End;
+                            if( W( state[ *state_n - 1 ].s ))
+                            {   *state_ = state;
+                                return ~2;
+                            }
+                            if( !E_mem_Q_blk_I_remove( &state, *state_n - 1, 1 ))
+                            {   *state_ = state;
+                                return ~1;
+                            }
+                            ( *state_n )--;
                             if( !*state_n )
                             {   *state_ = state;
                                 return S_eof;
@@ -1594,7 +1785,10 @@ Re_no:          {   if( state[ *state_n - 1 ].in_space )
                 )
                 {   ret = E_mem_Q_file_R_u( file, &u );
                     if( !~ret )
-                    {   W(s);
+                    {   if( W(s) )
+                        {   *state_ = state;
+                            return ~1;
+                        }
                         goto End;
                     }
                     if( ret == S_eof )
@@ -1603,7 +1797,10 @@ Re_no:          {   if( state[ *state_n - 1 ].in_space )
                     C t[ l_ ];
                     E_text_Z_u_R_su( u, &t[0] );
                     if( !E_text_Z_s0_I_append_s( &s, t, t + l_ ))
-                    {   W(s);
+                    {   if( W(s) )
+                        {   *state_ = state;
+                            return ~1;
+                        }
                         goto End;
                     }
                     n++;
@@ -1616,7 +1813,10 @@ Re_no:          {   if( state[ *state_n - 1 ].in_space )
                     {   if( ret != S_eof )
                         {   ret = E_mem_Q_file_R_u( file, &u );
                             if( !~ret )
-                            {   W(s);
+                            {   if( W(s) )
+                                {   *state_ = state;
+                                    return ~1;
+                                }
                                 goto End;
                             }
                         }
@@ -1626,7 +1826,10 @@ Re_no:          {   if( state[ *state_n - 1 ].in_space )
                             E_text_Z_u_R_su( u, &t[0] );
                             N s_start_i = s_start - s;
                             if( !E_text_Z_s0_I_append_s( &s, t, t + l_ ))
-                            {   W(s);
+                            {   if( W(s) )
+                                {   *state_ = state;
+                                    return ~1;
+                                }
                                 goto End;
                             }
                             s_start = s + s_start_i;
@@ -1642,15 +1845,24 @@ Re_no:          {   if( state[ *state_n - 1 ].in_space )
                     if(n)
                     {   E_mem_Q_file_P_pos( file, pos );
                         if( !E_text_Z_s0_I_append_s( &state[ *state_n - 1 ].s, s, s_start ))
-                        {   W(s);
+                        {   if( W(s) )
+                            {   *state_ = state;
+                                return ~1;
+                            }
                             goto End;
                         }
                     }else if( !E_text_Z_s0_I_append_s0( &state[ *state_n - 1 ].s, s ))
-                    {   W(s);
+                    {   if( W(s) )
+                        {   *state_ = state;
+                            return ~1;
+                        }
                         goto End;
                     }
                 }
-                W(s);
+                if( W(s) )
+                {   *state_ = state;
+                    return ~1;
+                }
 Nre_skip:       if( state[ *state_n - 1 ].in_space )
                     state[ *state_n - 1 ].in_space = no;
                 else
@@ -1677,9 +1889,15 @@ Nre_skip:       if( state[ *state_n - 1 ].in_space )
                                 if( *state_n > 1 )
                                     if( !E_text_Z_s0_I_append_s0( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
                                         goto End;
-                                W( state[ *state_n - 1 ].s );
-                                if( !E_mem_Q_blk_I_remove( &state, --*state_n, 1 ))
-                                    goto End;
+                                if( W( state[ *state_n - 1 ].s ))
+                                {   *state_ = state;
+                                    return ~2;
+                                }
+                                if( !E_mem_Q_blk_I_remove( &state, *state_n - 1, 1 ))
+                                {   *state_ = state;
+                                    return ~1;
+                                }
+                                ( *state_n )--;
                                 if( !*state_n )
                                 {   *state_ = state;
                                     return S_eof;
@@ -1734,14 +1952,20 @@ Nre_skip:       if( state[ *state_n - 1 ].in_space )
                 {   U u;
                     ret = E_mem_Q_file_R_u( file, &u );
                     if( !~ret )
-                    {   W(s);
+                    {   if( W(s) )
+                        {   *state_ = state;
+                            return ~1;
+                        }
                         goto End;
                     }
                     if( ret == S_eof )
                         goto S_skip;
                     N l = E_text_Z_u_R_su_G(u);
                     if( !E_mem_Q_blk_I_insert( &s, s_end_i, l ))
-                    {   W(s);
+                    {   if( W(s) )
+                        {   *state_ = state;
+                            return ~1;
+                        }
                         goto End;
                     }
                     E_text_Z_u_R_su( u, s + s_end_i );
@@ -1749,10 +1973,16 @@ Nre_skip:       if( state[ *state_n - 1 ].in_space )
                 }while( --n );
                 if( E_text_Z_s0_T_eq_s0( s, entity->data.s ))
                 {   if( !E_text_Z_s0_I_append_s0( &state[ *state_n - 1 ].s, s ))
-                    {   W(s);
+                    {   if( W(s) )
+                        {   *state_ = state;
+                            return ~1;
+                        }
                         goto End;
                     }
-                    W(s);
+                    if( W(s) )
+                    {   *state_ = state;
+                        return ~1;
+                    }
                     if( state[ *state_n - 1 ].in_space )
                         state[ *state_n - 1 ].in_space = no;
                     else
@@ -1779,9 +2009,15 @@ Nre_skip:       if( state[ *state_n - 1 ].in_space )
                                     if( *state_n > 1 )
                                         if( !E_text_Z_s0_I_append_s0( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
                                             goto End;
-                                    W( state[ *state_n - 1 ].s );
-                                    if( !E_mem_Q_blk_I_remove( &state, --*state_n, 1 ))
-                                        goto End;
+                                    if( W( state[ *state_n - 1 ].s ))
+                                    {   *state_ = state;
+                                        return ~2;
+                                    }
+                                    if( !E_mem_Q_blk_I_remove( &state, *state_n - 1, 1 ))
+                                    {   *state_ = state;
+                                        return ~1;
+                                    }
+                                    ( *state_n )--;
                                     if( !*state_n )
                                     {   *state_ = state;
                                         return S_eof;
@@ -1822,7 +2058,10 @@ Nre_skip:       if( state[ *state_n - 1 ].in_space )
                         }
                     }
                 }else
-S_skip:         {   W(s);
+S_skip:         {   if( W(s) )
+                    {   *state_ = state;
+                        return ~1;
+                    }
                     if( state[ *state_n - 1 ].in_space )
                     {   state[ *state_n - 1 ].in_space = no;
                         E_mem_Q_file_P_pos( file, pos );
@@ -1844,9 +2083,15 @@ S_skip:         {   W(s);
                                         goto End;
                             }
                             f_not_only = no;
-                            W( state[ *state_n - 1 ].s );
-                            if( !E_mem_Q_blk_I_remove( &state, --*state_n, 1 ))
-                                goto End;
+                            if( W( state[ *state_n - 1 ].s ))
+                            {   *state_ = state;
+                                return ~2;
+                            }
+                            if( !E_mem_Q_blk_I_remove( &state, *state_n - 1, 1 ))
+                            {   *state_ = state;
+                                return ~1;
+                            }
+                            ( *state_n )--;
                             if( !*state_n )
                             {   *state_ = state;
                                 return S_eof;
@@ -1919,9 +2164,15 @@ S_skip:         {   W(s);
                                             goto End;
                                 }
                             f_not_only = no;
-                            W( state[ *state_n - 1 ].s );
-                            if( !E_mem_Q_blk_I_remove( &state, --*state_n, 1 ))
-                                goto End;
+                            if( W( state[ *state_n - 1 ].s ))
+                            {   *state_ = state;
+                                return ~2;
+                            }
+                            if( !E_mem_Q_blk_I_remove( &state, *state_n - 1, 1 ))
+                            {   *state_ = state;
+                                return ~1;
+                            }
+                            ( *state_n )--;
                             if( !*state_n )
                             {   *state_ = state;
                                 return S_eof;
@@ -1954,14 +2205,20 @@ S_skip:         {   W(s);
                 {   U u;
                     ret = E_mem_Q_file_R_u( file, &u );
                     if( !~ret )
-                    {   W(s);
+                    {   if( W(s) )
+                        {   *state_ = state;
+                            return ~1;
+                        }
                         goto End;
                     }
                     if( ret == S_eof )
                         break;
                     N l = E_text_Z_u_R_su_G(u);
                     if( !E_mem_Q_blk_I_insert( &s, s_end_i, l ))
-                    {   W(s);
+                    {   if( W(s) )
+                        {   *state_ = state;
+                            return ~1;
+                        }
                         goto End;
                     }
                     E_text_Z_u_R_su( u, s + s_end_i );
@@ -1973,14 +2230,20 @@ S_skip:         {   W(s);
                 {   U u;
                     ret = E_mem_Q_file_R_u( file, &u );
                     if( !~ret )
-                    {   W(s);
+                    {   if( W(s) )
+                        {   *state_ = state;
+                            return ~1;
+                        }
                         goto End;
                     }
                     if( ret != S_eof )
                     {   U u_;
                         N l_start = E_text_Z_su_R_u( s, &u_ ) - s;
                         if( !E_text_Z_s0_I_append_s( &state[ *state_n - 1 ].s, s, s + l_start ))
-                        {   W(s);
+                        {   if( W(s) )
+                            {   *state_ = state;
+                                return ~1;
+                            }
                             goto End;
                         }
                         pos += l_start;
@@ -1989,14 +2252,20 @@ S_skip:         {   W(s);
                         if( l_start != l_end )
                             if( l_start < l_end )
                             {   if( !E_mem_Q_blk_I_append( &s, l_end - l_start ))
-                                {   W(s);
+                                {   if( W(s) )
+                                    {   *state_ = state;
+                                        return ~1;
+                                    }
                                     goto End;
                                 }
                                 s_end_i += l_end - l_start;
                                 s[ s_end_i ] = '\0';
                             }else
                             {   if( !E_mem_Q_blk_I_remove( &s, s_end_i + 1 - ( l_start - l_end ), l_start - l_end ))
-                                {   W(s);
+                                {   if( W(s) )
+                                    {   *state_ = state;
+                                        return ~1;
+                                    }
                                     goto End;
                                 }
                                 s_end_i -= l_start - l_end;
@@ -2008,10 +2277,16 @@ S_skip:         {   W(s);
                 if( ret != S_eof )
                     E_mem_Q_file_P_pos( file, pos );
                 else if( !E_text_Z_s0_I_append_s0( &state[ *state_n - 1 ].s, s ))
-                {   W(s);
+                {   if( W(s) )
+                    {   *state_ = state;
+                        return ~1;
+                    }
                     goto End;
                 }
-                W(s);
+                if( W(s) )
+                {   *state_ = state;
+                    return ~1;
+                }
                 if( state[ *state_n - 1 ].in_space )
                     state[ *state_n - 1 ].in_space = no;
                 else
@@ -2038,9 +2313,15 @@ S_skip:         {   W(s);
                                 if( *state_n > 1 )
                                     if( !E_text_Z_s0_I_append_s0( &state[ *state_n - 2 ].s, state[ *state_n - 1 ].s ))
                                         goto End;
-                                W( state[ *state_n - 1 ].s );
-                                if( !E_mem_Q_blk_I_remove( &state, --*state_n, 1 ))
-                                    goto End;
+                                if( W( state[ *state_n - 1 ].s ))
+                                {   *state_ = state;
+                                    return ~2;
+                                }
+                                if( !E_mem_Q_blk_I_remove( &state, *state_n - 1, 1 ))
+                                {   *state_ = state;
+                                    return ~1;
+                                }
+                                ( *state_n )--;
                                 if( !*state_n )
                                 {   *state_ = state;
                                     return S_eof;

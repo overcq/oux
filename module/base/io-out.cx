@@ -85,7 +85,8 @@ E_io_Q_stream_out_M_fd( int fd
     if( !found )
     {   V1( fd_flags = fcntl( fd, F_GETFL ))
         {   if(tty)
-                W(tty);
+                if( W(tty) )
+                    return ~1;
             return ~0;
         }
         fd_flags |= O_NONBLOCK;
@@ -94,7 +95,8 @@ E_io_Q_stream_out_M_fd( int fd
             #endif
         V0( fcntl( fd, F_SETFL, fd_flags ))
         {   if(tty)
-                W(tty);
+                if( W(tty) )
+                    return ~1;
             return ~0;
         }
     }
@@ -103,11 +105,14 @@ E_io_Q_stream_out_M_fd( int fd
     _sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_io_ready, 0 );
         #endif
     I id = E_mem_Q_tab_I_add( E_base_S->E_io_Q_stream_out_S );
+    if( (S)id < ~0 )
+        return id;
     if( !~id )
     {
             #ifndef E_io_C_aio
         if(tty)
-            W(tty);
+            if( W(tty) )
+                return ~1;
         if( !found )
         {   fd_flags &= ~O_NONBLOCK;
                 #ifdef E_io_Q_stream_out_C_sig
@@ -124,10 +129,12 @@ E_io_Q_stream_out_M_fd( int fd
     struct E_io_Q_stream_out_Z *stream = E_mem_Q_tab_R( E_base_S->E_io_Q_stream_out_S, id );
     M_( stream->aiocb );
     if( !stream->aiocb )
-    {
+    {   if( E_mem_Q_tab_I_remove( E_base_S->E_io_Q_stream_out_S, id ))
+            return ~2;
             #ifndef E_io_C_aio
         if(tty)
-            W(tty);
+            if( W(tty) )
+                return ~1;
         if( !found )
         {   fd_flags &= ~O_NONBLOCK;
                 #ifdef E_io_Q_stream_out_C_sig
@@ -136,7 +143,6 @@ E_io_Q_stream_out_M_fd( int fd
             V0( fcntl( fd, F_SETFL, fd_flags )){}
         }
             #endif
-        E_mem_Q_tab_I_remove( E_base_S->E_io_Q_stream_out_S, id );
             #if defined( E_io_C_aio ) || defined( E_io_C_sig_has_fd )
         _sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_io_ready, 0 );
             #endif
@@ -157,10 +163,14 @@ E_io_Q_stream_out_M_fd( int fd
         #endif
     stream->data = M( stream->data_l = 0 );
     if( !stream->data )
-    {   W( stream->aiocb );
+    {   if( W( stream->aiocb )
+        || E_mem_Q_tab_I_remove( E_base_S->E_io_Q_stream_out_S, id )
+        )
+            return ~2;
             #ifndef E_io_C_aio
         if(tty)
-            W(tty);
+            if( W(tty))
+                return ~1;
         if( !found )
         {   fd_flags &= ~O_NONBLOCK;
                 #ifdef E_io_Q_stream_out_C_sig
@@ -169,16 +179,19 @@ E_io_Q_stream_out_M_fd( int fd
             V0( fcntl( fd, F_SETFL, fd_flags )){}
         }
             #endif
-        E_mem_Q_tab_I_remove( E_base_S->E_io_Q_stream_out_S, id );
         return ~0;
     }
     stream->aiocb->aio_buf = M( stream->aiocb->aio_nbytes = 0 );
     if( !stream->aiocb->aio_buf )
-    {   W( stream->data );
-        W( stream->aiocb );
+    {   if( W( stream->data )
+        || W( stream->aiocb )
+        || E_mem_Q_tab_I_remove( E_base_S->E_io_Q_stream_out_S, id )
+        )
+            return ~2;
             #ifndef E_io_C_aio
         if(tty)
-            W(tty);
+            if( W(tty) )
+                return ~1;
         if( !found )
         {   fd_flags &= ~O_NONBLOCK;
                 #ifdef E_io_Q_stream_out_C_sig
@@ -187,7 +200,6 @@ E_io_Q_stream_out_M_fd( int fd
             V0( fcntl( fd, F_SETFL, fd_flags )){}
         }
             #endif
-        E_mem_Q_tab_I_remove( E_base_S->E_io_Q_stream_out_S, id );
         return ~0;
     }
         #ifdef E_io_C_aio
@@ -210,7 +222,7 @@ E_io_Q_stream_out_M_fd( int fd
     return id;
 }
 _export
-void
+N
 E_io_Q_stream_out_W_( I id
 ){  struct E_io_Q_stream_out_Z *stream = E_mem_Q_tab_R( E_base_S->E_io_Q_stream_out_S, id );
         #ifdef E_io_C_aio
@@ -219,7 +231,7 @@ E_io_Q_stream_out_W_( I id
         {   int result;
             V1_( result = aio_cancel( stream->aiocb->aio_fildes, stream->aiocb ));
             if( result == AIO_NOTCANCELED )
-            {   VO0_( aio_suspend( &stream->aiocb, 1, 0 ));
+            {   VO0_( aio_suspend(( const struct aiocb * [] ){ stream->aiocb }, 1, 0 ));
             }
         }
         int errno_;
@@ -227,7 +239,8 @@ E_io_Q_stream_out_W_( I id
         V1( aio_return( stream->aiocb )){}
     }
         #endif
-    W( stream->data );
+    if( W( stream->data ))
+        return ~0;
         #ifndef E_io_C_aio
             #ifndef E_io_Q_stream_out_C_sig
     B found = no;
@@ -270,7 +283,7 @@ E_io_Q_stream_out_W_( I id
     Yi_M( io, aiocb_w_before_rem ); //NDFN Niedocelowe zastosowanie ‹impulsatora›, tutaj wymagające tworzenia i usuwania przy każdym użyciu— potrzebuje być rozwiązane projektowo przez utworzenie czegoś w rodzaju 〈opóźnienia〉, które korzystałoby z wpisu bez unikalnej nazwy na cały program.
     Yi_F( io, aiocb_w_before_rem, E_io_Q_stream_out_S_delay );
     Yi_B( io, aiocb_w_before_rem ) //NDFN Obecnie nie może wystąpić druga instrukcja przełączenia, jeśli sygnalizowane jest wyjście: nie przeanalizowane.
-        return;
+        return ~2;
     Yi_W( io, aiocb_w_before_rem );
     stream = E_mem_Q_tab_R( E_base_S->E_io_Q_stream_out_S, id );
         #endif
@@ -359,7 +372,8 @@ E_io_Q_stream_out_W_( I id
         #endif
         #ifndef E_io_C_aio
     if( stream->tty )
-        W( stream->tty );
+        if( W( stream->tty ))
+            return ~2;
         #endif
     if( U_R( stream->type, opened ))
     {   V0( close( stream->aiocb->aio_fildes )){}
@@ -373,24 +387,25 @@ E_io_Q_stream_out_W_( I id
         #if defined( E_io_C_aio ) || defined( E_io_C_sig_has_fd )
     _sigprocmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_io_ready, 0 );
         #endif
+    return 0;
 }
 //------------------------------------------------------------------------------
 //NDFN w przyszłości oprócz statycznych tekstów “s” (jak jest poniżej) będą dla przenoszenia danych wycinane obszary pamięci z “E_mem_Q_blk” i przenoszone funkcją “move” (“stronami” pamięci).
 _export
-B
+N
 E_io_Q_stream_out_P( I id
 , Pc s
 , N l
 ){  struct E_io_Q_stream_out_Z *stream = E_mem_Q_tab_R( E_base_S->E_io_Q_stream_out_S, id );
         #if defined( E_io_C_aio ) || defined( E_io_C_sig_has_fd )
     if( U_R( stream->state, closing ))
-        return yes;
+        return ~0;
         #endif
     if( !l )
         l = E_text_Z_s0_R_l(s);
     P p_ = E_mem_Q_blk_I_append( &stream->data, l );
     if( !p_ )
-        return yes;
+        return ~0;
     E_mem_Q_blk_I_copy( p_, s, l );
     stream->data_l += l;
     if( !stream->aiocb->aio_nbytes )
@@ -401,20 +416,20 @@ E_io_Q_stream_out_P( I id
         U_F( E_base_S->E_flow_S_signal, io_ready );
         U_F( E_base_S->E_flow_S_signal, wake );
     }
-    return no;
+    return 0;
 }
 _export
-B
+N
 E_io_Q_stream_out_P_c( I id
 , C c
 ){  struct E_io_Q_stream_out_Z *stream = E_mem_Q_tab_R( E_base_S->E_io_Q_stream_out_S, id );
         #if defined( E_io_C_aio ) || defined( E_io_C_sig_has_fd )
     if( U_R( stream->state, closing ))
-        return yes;
+        return ~0;
         #endif
     Pc p_ = E_mem_Q_blk_I_append( &stream->data, 1 );
     if( !p_ )
-        return yes;
+        return ~0;
     *p_ = c;
     stream->data_l++;
     if( !stream->aiocb->aio_nbytes )
@@ -425,181 +440,191 @@ E_io_Q_stream_out_P_c( I id
         U_F( E_base_S->E_flow_S_signal, io_ready );
         U_F( E_base_S->E_flow_S_signal, wake );
     }
-    return no;
+    return 0;
 }
 //------------------------------------------------------------------------------
 D( io, stream_write )
 {   X_M_( io, stream_write );
+    if( _X_var( io, stream_write ) < 0 )
+    {   U_F( E_base_S->E_flow_S_signal, exit );
+        goto Block;
+    }
         #if defined( E_io_C_aio ) || defined( E_io_C_sig_has_fd )
     Yi_M( io, aiocb_before_rem );
         #endif
-    B exit = no;
+Block:
     O{  X_B( io, stream_write, 0 )
-            exit = yes;
+            break;
             #if defined( E_io_C_aio ) || defined( E_io_C_sig_has_fd )
         I iter = E_mem_Q_tab_Q_iter_M( E_base_S->E_io_Q_stream_out_S, ~0 );
-        if( !~iter )
-        {   GV_(NA); V();
-        }
-        for_each_q( id, E_base_S->E_io_Q_stream_out_S, iter, E_mem_Q_tab )
+        if( (S)iter < 0 )
+            U_F( E_base_S->E_flow_S_signal, exit );
+        else
+        {   for_each_q( id, E_base_S->E_io_Q_stream_out_S, iter, E_mem_Q_tab )
             #else
-        for_each( id, E_base_S->E_io_Q_stream_out_S, E_mem_Q_tab )
+            for_each( id, E_base_S->E_io_Q_stream_out_S, E_mem_Q_tab )
             #endif
-        {   struct E_io_Q_stream_out_Z *stream = E_mem_Q_tab_R( E_base_S->E_io_Q_stream_out_S, id );
-                #ifdef E_io_C_aio
-            if( U_E( stream->state, io_ready ))
-            {   if( !stream->aiocb->aio_nbytes )
-                {   if( !stream->data_l )
-                        continue;
-                    J_swap( P, stream->aiocb->aio_buf, stream->data );
-                    stream->aiocb->aio_nbytes = stream->data_l;
-                    stream->data_l = 0;
-                }else
-                {   int fd = stream->aiocb->aio_fildes;
-                    Yi_F( io, aiocb_before_rem, E_io_Q_stream_out_S_delay );
-                    Yi_B( io, aiocb_before_rem )
-                    {   E_mem_Q_tab_Q_iter_W( E_base_S->E_io_Q_stream_out_S, iter );
-                        goto End;
-                    }
-                    if( id >= E_mem_Q_tab_R_n( E_base_S->E_io_Q_stream_out_S ))
-                    {   E_mem_Q_tab_Q_iter_W( E_base_S->E_io_Q_stream_out_S, iter );
-                        break;
-                    }
-                    stream = E_mem_Q_tab_R( E_base_S->E_io_Q_stream_out_S, id );
-                    if( stream->aiocb->aio_fildes != fd
-                    || U_R( stream->state, closing )
-                    )
-                        continue;
-                    int errno_;
-                    Vr( errno_ = aio_error( stream->aiocb ))
-                    {   if( errno_ != EAGAIN
-                        && errno_ != EWOULDBLOCK
+            {   struct E_io_Q_stream_out_Z *stream = E_mem_Q_tab_R( E_base_S->E_io_Q_stream_out_S, id );
+                    #ifdef E_io_C_aio
+                if( U_E( stream->state, io_ready ))
+                {   if( !stream->aiocb->aio_nbytes )
+                    {   if( !stream->data_l )
+                            continue;
+                        J_swap( P, stream->aiocb->aio_buf, stream->data );
+                        stream->aiocb->aio_nbytes = stream->data_l;
+                        stream->data_l = 0;
+                    }else
+                    {   int fd = stream->aiocb->aio_fildes;
+                        Yi_F( io, aiocb_before_rem, E_io_Q_stream_out_S_delay );
+                        Yi_B( io, aiocb_before_rem )
+                        {   E_mem_Q_tab_Q_iter_W( E_base_S->E_io_Q_stream_out_S, iter );
+                            goto End;
+                        }
+                        if( !E_mem_Q_tab_T( E_base_S->E_io_Q_stream_out_S, id ))
+                        {   if( E_mem_Q_tab_Q_iter_W( E_base_S->E_io_Q_stream_out_S, iter ))
+                                U_F( E_base_S->E_flow_S_signal, exit );
+                            break;
+                        }
+                        stream = E_mem_Q_tab_R( E_base_S->E_io_Q_stream_out_S, id );
+                        if( stream->aiocb->aio_fildes != fd
+                        || U_R( stream->state, closing )
                         )
-                        {   GV_(NDFN); V(); //NDFN Ma być ‹zdarzenie›.
+                            continue;
+                        int errno_;
+                        Vr( errno_ = aio_error( stream->aiocb ))
+                        {   if( errno_ != EAGAIN
+                            && errno_ != EWOULDBLOCK
+                            )
+                            {   GV_(NDFN); V(); //NDFN Ma być ‹zdarzenie›.
+                            }
+                        }
+                        N l;
+                        V1( l = aio_return( stream->aiocb )){}
+                        if( ~l && l )
+                        {   E_mem_Q_blk_I_remove( &stream->aiocb->aio_buf, 0, l );
+                            if( !( stream->aiocb->aio_nbytes -= l ))
+                            {   if( !stream->data_l )
+                                    continue;
+                                J_swap( P, stream->aiocb->aio_buf, stream->data );
+                                stream->aiocb->aio_nbytes = stream->data_l;
+                                stream->data_l = 0;
+                            }
                         }
                     }
-                    N l;
-                    V1( l = aio_return( stream->aiocb )){}
-                    if( ~l && l )
-                    {   E_mem_Q_blk_I_remove( &stream->aiocb->aio_buf, 0, l );
-                        if( !( stream->aiocb->aio_nbytes -= l ))
-                        {   if( !stream->data_l )
-                                continue;
-                            J_swap( P, stream->aiocb->aio_buf, stream->data );
-                            stream->aiocb->aio_nbytes = stream->data_l;
-                            stream->data_l = 0;
-                        }
+                    V0( aio_write( stream->aiocb ))
+                    {   GV_(NDFN); V(); //NDFN Ma być ‹zdarzenie›.
                     }
                 }
-                V0( aio_write( stream->aiocb ))
-                {   GV_(NDFN); V(); //NDFN Ma być ‹zdarzenie›.
-                }
-            }
-                #else
-                    #ifdef E_io_C_sig_has_fd
-            if( U_E( stream->state, io_ready ))
-                    #endif
-            {   if( !stream->aiocb->aio_nbytes )
-                {   if( !stream->data_l )
-                        continue;
-                    J_swap( P, stream->aiocb->aio_buf, stream->data );
-                }else if( stream->data_l )
-                {   //NDFN Tu musi być “move”; a wtedy nie będzie potrzebna obsługa braku pamięci.
-                    P p = E_mem_Q_blk_I_append( &stream->aiocb->aio_buf, stream->data_l );
-                    if( !p )
-                        continue;
-                    E_mem_Q_blk_I_copy( p, stream->data, stream->data_l );
-                    E_mem_Q_blk_I_remove( &stream->data, 0, stream->data_l );
-                }
-                stream->aiocb->aio_nbytes += stream->data_l;
-                stream->data_l = 0;
-                int errno_;
-                N l;
-                VO1e( l = write( stream->aiocb->aio_fildes, stream->aiocb->aio_buf, stream->aiocb->aio_nbytes ), errno_ )
-                {   if( errno_ == EAGAIN
-                    || errno_ == EWOULDBLOCK
-                    )
-                    {
-                            #ifndef E_io_Q_stream_out_C_sig
-                        //NDFN Rozwiązanie tymczasowe: sprawdzanie po każdym obiegu “schedulera”, czy można pisać.
-                        U_F( E_base_S->E_flow_S_signal, io_ready );
-                        U_F( E_base_S->E_flow_S_signal, wake );
-                            #endif
-                        continue;
-                    }
-                    GV_(NDFN); V(); //NDFN Ma być ‹zdarzenie›.
-                }
-                if(l)
-                {   stream->aiocb->aio_nbytes -= l;
+                    #else
                         #ifdef E_io_C_sig_has_fd
-                    int fd = stream->aiocb->aio_fildes;
-                    Yi_F( io, aiocb_before_rem, E_io_Q_stream_out_S_delay );
-                    Yi_B( io, aiocb_before_rem )
-                    {
-                            #ifdef E_io_C_sig_has_fd
-                        E_mem_Q_tab_Q_iter_W( E_base_S->E_io_Q_stream_out_S, iter );
-                            #endif
-                        goto End;
+                if( U_E( stream->state, io_ready ))
+                        #endif
+                {   if( !stream->aiocb->aio_nbytes )
+                    {   if( !stream->data_l )
+                            continue;
+                        J_swap( P, stream->aiocb->aio_buf, stream->data );
+                    }else if( stream->data_l )
+                    {   //NDFN Tu musi być “move”; a wtedy nie będzie potrzebna obsługa braku pamięci.
+                        P p = E_mem_Q_blk_I_append( &stream->aiocb->aio_buf, stream->data_l );
+                        if( !p )
+                            continue;
+                        E_mem_Q_blk_I_copy( p, stream->data, stream->data_l );
+                        E_mem_Q_blk_I_remove( &stream->data, 0, stream->data_l );
                     }
-                    if( id >= E_mem_Q_tab_R_n( E_base_S->E_io_Q_stream_out_S ))
-                    {
-                            #ifdef E_io_C_sig_has_fd
-                        E_mem_Q_tab_Q_iter_W( E_base_S->E_io_Q_stream_out_S, iter );
-                            #endif
-                        break;
+                    stream->aiocb->aio_nbytes += stream->data_l;
+                    stream->data_l = 0;
+                    int errno_;
+                    N l;
+                    VO1e( l = write( stream->aiocb->aio_fildes, stream->aiocb->aio_buf, stream->aiocb->aio_nbytes ), errno_ )
+                    {   if( errno_ == EAGAIN
+                        || errno_ == EWOULDBLOCK
+                        )
+                        {
+                                #ifndef E_io_Q_stream_out_C_sig
+                            //NDFN Rozwiązanie tymczasowe: sprawdzanie po każdym obiegu “schedulera”, czy można pisać.
+                            U_F( E_base_S->E_flow_S_signal, io_ready );
+                            U_F( E_base_S->E_flow_S_signal, wake );
+                                #endif
+                            continue;
+                        }
+                        GV_(NDFN); V(); //NDFN Ma być ‹zdarzenie›.
                     }
-                    stream = E_mem_Q_tab_R( E_base_S->E_io_Q_stream_out_S, id );
-                    if( stream->aiocb->aio_fildes != fd
-                    || U_R( stream->state, closing )
-                    )
-                        continue;
-                    //B next_ready = no;
-                    //_sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_io_ready, 0 );
-                    //O{  siginfo_t si;
-                        //int errno_ = 0;
-                        //VOp_(( ~sigtimedwait( &E_base_S->E_flow_Z_sigset_S_io_ready, &si, &( struct timespec ){ 0, 0 } ) || !_errno || ( _errno == EAGAIN && ( errno_ = _errno ))));
-                        //if( errno_ )
-                            //break;
-                        //if( si.si_fd != stream->aiocb->aio_fildes )
-                        //{   for_each( id, E_base_S->E_io_Q_stream_out_S, E_mem_Q_tab )
-                            //{   struct E_io_Q_stream_out_Z *stream = E_mem_Q_tab_R( E_base_S->E_io_Q_stream_out_S, id );
-                                //if( stream->aiocb->aio_fildes == si.si_fd )
-                                //{   if( !U_R( stream->state, closing )
-                                    //&& ( stream->aiocb->aio_nbytes
-                                      //|| stream->data_l
-                                    //))
-                                    //{   U_F( stream->state, io_ready );
-                                        //next_ready = yes;
+                    if(l)
+                    {   stream->aiocb->aio_nbytes -= l;
+                            #ifdef E_io_C_sig_has_fd
+                        int fd = stream->aiocb->aio_fildes;
+                        Yi_F( io, aiocb_before_rem, E_io_Q_stream_out_S_delay );
+                        Yi_B( io, aiocb_before_rem )
+                        {
+                                #ifdef E_io_C_sig_has_fd
+                            E_mem_Q_tab_Q_iter_W( E_base_S->E_io_Q_stream_out_S, iter );
+                                #endif
+                            goto End;
+                        }
+                        if( id >= E_mem_Q_tab_R_n( E_base_S->E_io_Q_stream_out_S ))
+                        {
+                                #ifdef E_io_C_sig_has_fd
+                            E_mem_Q_tab_Q_iter_W( E_base_S->E_io_Q_stream_out_S, iter );
+                                #endif
+                            break;
+                        }
+                        stream = E_mem_Q_tab_R( E_base_S->E_io_Q_stream_out_S, id );
+                        if( stream->aiocb->aio_fildes != fd
+                        || U_R( stream->state, closing )
+                        )
+                            continue;
+                        //B next_ready = no;
+                        //_sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_io_ready, 0 );
+                        //O{  siginfo_t si;
+                            //int errno_ = 0;
+                            //VOp_(( ~sigtimedwait( &E_base_S->E_flow_Z_sigset_S_io_ready, &si, &( struct timespec ){ 0, 0 } ) || !_errno || ( _errno == EAGAIN && ( errno_ = _errno ))));
+                            //if( errno_ )
+                                //break;
+                            //if( si.si_fd != stream->aiocb->aio_fildes )
+                            //{   for_each( id, E_base_S->E_io_Q_stream_out_S, E_mem_Q_tab )
+                                //{   struct E_io_Q_stream_out_Z *stream = E_mem_Q_tab_R( E_base_S->E_io_Q_stream_out_S, id );
+                                    //if( stream->aiocb->aio_fildes == si.si_fd )
+                                    //{   if( !U_R( stream->state, closing )
+                                        //&& ( stream->aiocb->aio_nbytes
+                                          //|| stream->data_l
+                                        //))
+                                        //{   U_F( stream->state, io_ready );
+                                            //next_ready = yes;
+                                        //}
+                                        //break;
                                     //}
-                                    //break;
                                 //}
+                            //}else if( stream->aiocb->aio_nbytes
+                            //|| stream->data_l
+                            //)
+                            //{   U_F( stream->state, io_ready );
+                                //next_ready = yes;
                             //}
-                        //}else if( stream->aiocb->aio_nbytes
-                        //|| stream->data_l
-                        //)
-                        //{   U_F( stream->state, io_ready );
-                            //next_ready = yes;
                         //}
-                    //}
-                    //_sigprocmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_io_ready, 0 );
-                    //if( next_ready )
-                    //{   U_F( E_base_S->E_flow_S_signal, io_ready );
-                        //U_F( E_base_S->E_flow_S_signal, wake );
-                    //}
-                        #endif
-                    E_mem_Q_blk_I_remove( &stream->aiocb->aio_buf, 0, l );
-                        #ifndef E_io_Q_stream_out_C_sig
-                    if( stream->aiocb->aio_nbytes )
-                    {   U_F( E_base_S->E_flow_S_signal, io_ready );
-                        U_F( E_base_S->E_flow_S_signal, wake );
+                        //_sigprocmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_io_ready, 0 );
+                        //if( next_ready )
+                        //{   U_F( E_base_S->E_flow_S_signal, io_ready );
+                            //U_F( E_base_S->E_flow_S_signal, wake );
+                        //}
+                            #endif
+                        E_mem_Q_blk_I_remove( &stream->aiocb->aio_buf, 0, l );
+                            #ifndef E_io_Q_stream_out_C_sig
+                        if( stream->aiocb->aio_nbytes )
+                        {   U_F( E_base_S->E_flow_S_signal, io_ready );
+                            U_F( E_base_S->E_flow_S_signal, wake );
+                        }
+                            #endif
                     }
-                        #endif
                 }
+                        #endif
             }
-                    #endif
+                #if defined( E_io_C_aio ) || defined( E_io_C_sig_has_fd )
+            if( (S)id < 0
+            && ~id
+            )
+                U_F( E_base_S->E_flow_S_signal, exit );
         }
-        if(exit)
-            break;
+                #endif
     }
         #if defined( E_io_C_aio ) || defined( E_io_C_sig_has_fd )
 End:Yi_W( io, aiocb_before_rem );

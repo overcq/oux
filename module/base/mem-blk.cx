@@ -774,35 +774,37 @@ E_mem_Q_blk_Q_sys_table_mf_I_unite( N table_i
 ){  //G_(); Gd( table_i ); Gh(p); Gh( (Pc)p + l );
     N i_found = ~0;
     N max = E_mem_Q_blk_Q_sys_table_R_last( table_i, rel_addr_p );
-    if( ~max )
-    {   // Szukanie wolnego bloku przyległego od dołu.
-        N min = 0;
-        N max_0 = max;
-        N i = max / 2;
-        O{  Pc *p_ = (P)( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + i * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u + rel_addr_p );
-            N *l_ = (P)( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + i * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u + rel_addr_l );
-            if( *p_ + *l_ == p )
-            {   p = *p_;
-                l = *l_ += l;
-                i_found = i;
+    // Szukanie wolnego bloku przyległego od dołu.
+    N min = 0;
+    N max_0 = max;
+    N i = max / 2;
+    O{  Pc *p_ = (P)( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + i * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u + rel_addr_p );
+        N *l_ = (P)( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + i * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u + rel_addr_l );
+        if( *p_ + *l_ == p )
+        {   p = *p_;
+            l = *l_ += l;
+            i_found = i;
+            min = i + 1;
+            break;
+        }
+        if( *p_ + *l_ > (Pc)p )
+        {   if( i == min )
+                break;
+            max = i - 1;
+            i = max - ( i - min ) / 2;
+        }else
+        {   if( i == max )
+            {   min = max + 1;
                 break;
             }
-            if( *p_ + *l_ > (Pc)p )
-            {   if( i == min )
-                    break;
-                max = i - 1;
-                i = max - ( i - min ) / 2;
-            }else
-            {   if( i == max )
-                    break;
-                min = i + 1;
-                i = min + ( max - i ) / 2;
-            }
+            min = i + 1;
+            i = min + ( max - i ) / 2;
         }
-        // Szukanie wolnego bloku przyległego od góry.
-        min = 0;
-        max = max_0;
-        i = max / 2;
+    }
+    // Szukanie wolnego bloku przyległego od góry.
+    max = max_0;
+    if( min <= max )
+    {   i = ( max - min ) / 2 + min;
         O{  Pc *p_ = (P)( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + i * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u + rel_addr_p );
             N *l_ = (P)( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + i * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u + rel_addr_l );
             if( (Pc)p + l == *p_ )
@@ -865,8 +867,8 @@ E_mem_Q_blk_Q_sys_table_mf_P_put( N table_i
                 free_p[ E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n ].l = 0;
                 free_p[i].l = l - E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u;
                 free_p[i].p = free_p[i].l
-                  ? (Pc)p + E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u
-                  : 0;
+                ? (Pc)p + E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u
+                : 0;
                 E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n++;
                 if( free_p[i].l )
                     E_mem_Q_blk_Q_sys_table_mf_I_sort_inserted( table_i, rel_addr_p, rel_addr_l, i );
@@ -906,47 +908,49 @@ E_mem_Q_blk_Q_sys_table_M_new_id( N table_i
         N l_ = E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u;
         struct E_mem_Q_blk_Z_free free_p_;
         N max = E_mem_Q_blk_Q_sys_table_R_last( E_base_S->E_mem_Q_blk_S_free_id, (Pc)&free_p_.p - (Pc)&free_p_ );
-        if( ~max )
-        {   // Szukanie wolnego bloku przyległego od dołu.
-            N min = 0;
-            N max_0 = max;
-            N free_i = max / 2;
-            O{  if( free_p[ free_i ].p + free_p[ free_i ].l == p_0 )
-                {   if( free_p[ free_i ].l >= l_ )
-                    {   free_p[ free_i ].l -= l_;
-                        if( !free_p[ free_i ].l )
-                            E_mem_Q_blk_Q_sys_table_f_I_move_empty_entry( free_i );
-                        E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p -= E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u;
-                        E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p
-                        , E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u
-                        , E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u
-                        );
-                        N i = E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n;
-                        *( P * )( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + i * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u + rel_addr_p ) = p;
-                        *( N * )( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + i * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u + rel_addr_l ) = l;
-                        E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n++;
-                        if(p)
-                            i = E_mem_Q_blk_Q_sys_table_mf_I_sort_inserted( table_i, rel_addr_p, rel_addr_l, i );
-                        return i;
-                    }
+        // Szukanie wolnego bloku przyległego od dołu.
+        N min = 0;
+        N max_0 = max;
+        N free_i = max / 2;
+        O{  if( free_p[ free_i ].p + free_p[ free_i ].l == p_0 )
+            {   if( free_p[ free_i ].l >= l_ )
+                {   free_p[ free_i ].l -= l_;
+                    if( !free_p[ free_i ].l )
+                        E_mem_Q_blk_Q_sys_table_f_I_move_empty_entry( free_i );
+                    E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p -= E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u;
+                    E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p
+                    , E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u
+                    , E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u
+                    );
+                    N i = E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n;
+                    *( P * )( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + i * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u + rel_addr_p ) = p;
+                    *( N * )( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + i * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u + rel_addr_l ) = l;
+                    E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n++;
+                    if(p)
+                        i = E_mem_Q_blk_Q_sys_table_mf_I_sort_inserted( table_i, rel_addr_p, rel_addr_l, i );
+                    return i;
+                }
+                min = i + 1;
+                break;
+            }
+            if( free_p[ free_i ].p + free_p[ free_i ].l > p_0 )
+            {   if( free_i == min )
+                    break;
+                max = free_i - 1;
+                free_i = max - ( free_i - min ) / 2;
+            }else
+            {   if( free_i == max )
+                {   min = max + 1;
                     break;
                 }
-                if( free_p[ free_i ].p + free_p[ free_i ].l > p_0 )
-                {   if( free_i == min )
-                        break;
-                    max = free_i - 1;
-                    free_i = max - ( free_i - min ) / 2;
-                }else
-                {   if( free_i == max )
-                        break;
-                    min = free_i + 1;
-                    free_i = min + ( max - free_i ) / 2;
-                }
+                min = free_i + 1;
+                free_i = min + ( max - free_i ) / 2;
             }
-            // Szukanie wolnego bloku przyległego od góry.
-            min = 0;
-            max = max_0;
-            free_i = max / 2;
+        }
+        // Szukanie wolnego bloku przyległego od góry.
+        max = max_0;
+        if( min <= max )
+        {   free_i = ( max - min ) / 2 + min;
             O{  if( p_0 + l_0 == free_p[ free_i ].p )
                 {   if( free_p[ free_i ].l >= E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u )
                     {   if( free_p[ free_i ].l -= E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u )
@@ -986,48 +990,50 @@ E_mem_Q_blk_Q_sys_table_M_new_id( N table_i
         N l_ = E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u;
         struct E_mem_Q_blk_Z_free free_p_;
         N max = E_mem_Q_blk_Q_sys_table_R_last( E_base_S->E_mem_Q_blk_S_free_id, (Pc)&free_p_.p - (Pc)&free_p_ );
-        if( ~max )
-        {   // Szukanie wolnego bloku przyległego od dołu.
-            N min = 0;
-            N max_0 = max;
-            N free_i = max / 2;
-            O{  if( free_p[ free_i ].p + free_p[ free_i ].l == p_0 )
-                {   if( free_p[ free_i ].l >= l_ )
-                    {   free_p[ free_i ].l -= l_;
-                        if( !free_p[ free_i ].l )
-                            E_mem_Q_blk_Q_sys_table_f_I_move_empty_entry( free_i );
-                        E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p -= l_;
-                        E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p
-                        , E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + l_
-                        , E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u
-                        );
-                        E_base_S->E_mem_Q_blk_S_allocated = (P)E_base_S->E_mem_Q_blk_S_allocated[ table_i - 1 ].p;
-                        N i = E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n;
-                        *( P * )( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + i * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u + rel_addr_p ) = p;
-                        *( N * )( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + i * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u + rel_addr_l ) = l;
-                        E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n++;
-                        if(p)
-                            i = E_mem_Q_blk_Q_sys_table_a_I_sort_inserted( i, ~0 );
-                        return i;
-                    }
+        // Szukanie wolnego bloku przyległego od dołu.
+        N min = 0;
+        N max_0 = max;
+        N free_i = max / 2;
+        O{  if( free_p[ free_i ].p + free_p[ free_i ].l == p_0 )
+            {   if( free_p[ free_i ].l >= l_ )
+                {   free_p[ free_i ].l -= l_;
+                    if( !free_p[ free_i ].l )
+                        E_mem_Q_blk_Q_sys_table_f_I_move_empty_entry( free_i );
+                    E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p -= l_;
+                    E_mem_Q_blk_I_copy( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p
+                    , E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + l_
+                    , E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u
+                    );
+                    E_base_S->E_mem_Q_blk_S_allocated = (P)E_base_S->E_mem_Q_blk_S_allocated[ table_i - 1 ].p;
+                    N i = E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n;
+                    *( P * )( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + i * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u + rel_addr_p ) = p;
+                    *( N * )( E_base_S->E_mem_Q_blk_S_allocated[ table_i ].p + i * E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u + rel_addr_l ) = l;
+                    E_base_S->E_mem_Q_blk_S_allocated[ table_i ].n++;
+                    if(p)
+                        i = E_mem_Q_blk_Q_sys_table_a_I_sort_inserted( i, ~0 );
+                    return i;
+                }
+                min = i + 1;
+                break;
+            }
+            if( free_p[ free_i ].p + free_p[ free_i ].l > p_0 )
+            {   if( free_i == min )
+                    break;
+                max = free_i - 1;
+                free_i = max - ( free_i - min ) / 2;
+            }else
+            {   if( free_i == max )
+                {   min = max + 1;
                     break;
                 }
-                if( free_p[ free_i ].p + free_p[ free_i ].l > p_0 )
-                {   if( free_i == min )
-                        break;
-                    max = free_i - 1;
-                    free_i = max - ( free_i - min ) / 2;
-                }else
-                {   if( free_i == max )
-                        break;
-                    min = free_i + 1;
-                    free_i = min + ( max - free_i ) / 2;
-                }
+                min = free_i + 1;
+                free_i = min + ( max - free_i ) / 2;
             }
-            // Szukanie wolnego bloku przyległego od góry.
-            min = free_i;
-            max = max_0;
-            free_i = max / 2;
+        }
+        // Szukanie wolnego bloku przyległego od góry.
+        max = max_0;
+        if( min <= max )
+        {   free_i = ( max - min ) / 2 + min;
             O{  if( p_0 + l_0 == free_p[ free_i ].p )
                 {   if( free_p[ free_i ].l >= E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u )
                     {   free_p[ free_i ].l -= E_base_S->E_mem_Q_blk_S_allocated[ table_i ].u;
@@ -1617,7 +1623,7 @@ E_mem_Q_blk_Q_table_M_from_free_or_map( N *allocated_or_table_i
             }
     }else
     {   N allocated_i_sorted_pos;
-        if( !( p_1 = E_mem_Q_blk_M_new_0( &allocated_i_sorted_pos )))
+        if( !( p_1 = E_mem_Q_blk_M_0( &allocated_i_sorted_pos )))
             return 0;
         E_base_S->E_mem_Q_blk_S_allocated[ *allocated_or_table_i ].p = p_1;
         *allocated_or_table_i = E_mem_Q_blk_Q_sys_table_a_I_sort_inserted( *allocated_or_table_i, allocated_i_sorted_pos );
@@ -1664,9 +1670,9 @@ E_mem_Q_blk_Q_table_M_from_free_or_map( N *allocated_or_table_i
     return p_1;
 }
 _internal
-__attribute__ ((__malloc__))
+__attribute__ (( __malloc__( E_mem_Q_blk_W )))
 P
-E_mem_Q_blk_M_new_0( N *allocated_i_sorted_pos
+E_mem_Q_blk_M_0( N *allocated_i_sorted_pos
 ){  Pc p_end;
     V1p_( p_end = sbrk(0) );
     Pc p = (P)1;
@@ -1761,7 +1767,7 @@ E_mem_Q_blk_M_align( N l
 ){  return E_mem_Q_blk_M_align_tab( 1, l, align );
 }
 _export
-__attribute__ ((__malloc__))
+__attribute__ (( __malloc__( E_mem_Q_blk_W )))
 P
 E_mem_Q_blk_M_align_tab(
   N u
@@ -1800,7 +1806,7 @@ E_mem_Q_blk_M_replace( P p
 ){  return E_mem_Q_blk_M_replace_tab( p, 1, l );
 }
 _export
-__attribute__ ((__malloc__))
+__attribute__ (( __malloc__( E_mem_Q_blk_W )))
 P
 E_mem_Q_blk_M_replace_tab( P p
 , N u
@@ -1868,7 +1874,7 @@ E_mem_Q_blk_M_replace_tab( P p
     GV_(NXP); Gh(p); V();
 }
 _export
-__attribute__ ((__malloc__))
+__attribute__ (( __malloc__( E_mem_Q_blk_W )))
 P
 E_mem_Q_blk_M_split( P p
 , N i
@@ -2021,7 +2027,7 @@ E_mem_Q_blk_I_add_( P p
                     // Szukanie wolnego bloku przyległego od góry.
                     min = free_i;
                     max = max_0;
-                    N free_j = max / 2;
+                    N free_j = ( max - min ) / 2 + min;
                     O{  if( p_0 + l_0 == free_p[ free_j ].p )
                         {   if( free_p[ free_j ].l < l )
                                 break;
@@ -2148,7 +2154,7 @@ E_mem_Q_blk_I_prepend_append_( P p
                     {   // Szukanie wolnego bloku przyległego od góry.
                         min = free_i;
                         max = max_0;
-                        N free_j = max / 2;
+                        N free_j = ( max - min ) / 2 + min;
                         O{  if( p_0 + l_0 == free_p[ free_j ].p )
                             {   if( free_p[ free_j ].l >= l )
                                 {   E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n += n_prepend + n_append;
@@ -2477,7 +2483,7 @@ E_mem_Q_blk_I_prepend_( P p
                     // Szukanie wolnego bloku przyległego od góry.
                     min = free_i;
                     max = max_0;
-                    N free_j = max / 2;
+                    N free_j = ( max - min ) / 2 + min;
                     O{  if( p_0 + l_0 == free_p[ free_j ].p )
                         {   if( free_p[ free_j ].l >= l )
                             {   if( free_p[ free_j ].l -= l )
@@ -2613,7 +2619,7 @@ E_mem_Q_blk_I_insert_( P p
                     // Szukanie wolnego bloku przyległego od góry.
                     min = free_i;
                     max = max_0;
-                    N free_j = max / 2;
+                    N free_j = ( max - min ) / 2 + min;
                     O{  if( p_0 + l_0 == free_p[ free_j ].p )
                         {   if( free_p[ free_j ].l >= l )
                             {   if( free_p[ free_j ].l -= l )
@@ -2710,7 +2716,7 @@ E_mem_Q_blk_I_remove_( P p
             E_mem_Q_blk_Q_table_I_put_begin( &allocated_i );
             if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].n == n ) // Usuwany cały blok.
             {   N allocated_i_sorted_pos;
-                P p_ = E_mem_Q_blk_M_new_0( &allocated_i_sorted_pos );
+                P p_ = E_mem_Q_blk_M_0( &allocated_i_sorted_pos );
                 if( !p_ )
                     return 0;
                 E_mem_Q_blk_Q_table_I_put_before( E_base_S->E_mem_Q_blk_S_free_id );
@@ -2903,15 +2909,15 @@ malloc_usable_size( P p
     if( !p )
         return 0;
         #ifdef C_pthreads
-    int error = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
-    if( error
-    && error != EBUSY
+    int errno_ = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
+    if( errno_
+    && errno_ != EBUSY
     )
-    {   _errno = error;
+    {   _errno = errno_;
         Ve();
         V();
     }
-    if( !error )
+    if( !errno_ )
         #endif
     {   struct E_mem_Q_blk_Z_allocated allocated_p;
         N min = 0;
@@ -2941,6 +2947,7 @@ malloc_usable_size( P p
 }
 //------------------------------------------------------------------------------
 _internal
+__attribute__ (( __malloc__ ))
 P
 E_mem_Q_blk_M_calloc(
   N u
@@ -2968,6 +2975,7 @@ E_mem_Q_blk_M_calloc(
 }
 //------------------------------------------------------------------------------
 _export
+__attribute__ (( __malloc__(free) ))
 P
 aligned_alloc(
   size_t align
@@ -2978,15 +2986,15 @@ aligned_alloc(
         return 0;
     }
         #ifdef C_pthreads
-    int error = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
-    if( error
-    && error != EBUSY
+    int errno_ = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
+    if( errno_
+    && errno_ != EBUSY
     )
-    {   _errno = error;
+    {   _errno = errno_;
         Ve();
         V();
     }
-    if(error)
+    if( errno_ )
         return E_base_S->E_mem_Q_blk_I_libc_aligned_alloc ? ( *E_base_S->E_mem_Q_blk_I_libc_aligned_alloc )( align, size ) : 0;
         #endif
     P p_ = E_mem_Q_blk_M_calloc( 1, size, align );
@@ -3006,15 +3014,15 @@ posix_memalign( P *p
     )
         return EINVAL;
         #ifdef C_pthreads
-    int error = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
-    if( error
-    && error != EBUSY
+    int errno_ = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
+    if( errno_
+    && errno_ != EBUSY
     )
-    {   _errno = error;
+    {   _errno = errno_;
         Ve();
         V();
     }
-    if(error)
+    if( errno_ )
         return E_base_S->E_mem_Q_blk_I_libc_posix_memalign ? ( *E_base_S->E_mem_Q_blk_I_libc_posix_memalign )( p, align, size ) : ( *p = 0, 0 );
         #endif
     P p_ = E_mem_Q_blk_M_calloc( 1, size, align );
@@ -3025,19 +3033,20 @@ posix_memalign( P *p
     return 0;
 }
 _export
+__attribute__ (( __malloc__(free) ))
 P
 malloc( size_t l
 ){  Da_();
         #ifdef C_pthreads
-    int error = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
-    if( error
-    && error != EBUSY
+    int errno_ = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
+    if( errno_
+    && errno_ != EBUSY
     )
-    {   _errno = error;
+    {   _errno = errno_;
         Ve();
         V();
     }
-    if(error)
+    if( errno_ )
         return E_base_S->E_mem_Q_blk_I_libc_malloc ? ( *E_base_S->E_mem_Q_blk_I_libc_malloc )(l) : 0;
         #endif
     if( !l ) // Przydzielenie minimalnego rozmiaru dla rozmiaru zerowego.
@@ -3049,6 +3058,7 @@ malloc( size_t l
     return p;
 }
 _export
+__attribute__ (( __malloc__(free) ))
 P
 calloc( size_t n
 , size_t u
@@ -3058,15 +3068,15 @@ calloc( size_t n
         return 0;
     }
         #ifdef C_pthreads
-    int error = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
-    if( error
-    && error != EBUSY
+    int errno_ = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
+    if( errno_
+    && errno_ != EBUSY
     )
-    {   _errno = error;
+    {   _errno = errno_;
         Ve();
         V();
     }
-    if(error)
+    if( errno_ )
         return E_base_S->E_mem_Q_blk_I_libc_calloc ? ( *E_base_S->E_mem_Q_blk_I_libc_calloc )( n, u ) : 0;
         #endif
     P p = E_mem_Q_blk_M_calloc( 1, n * u, E_mem_Q_blk_S_align_to_all );
@@ -3078,6 +3088,7 @@ calloc( size_t n
     return p;
 }
 _export
+__attribute__ (( __malloc__(free) ))
 P
 realloc( P p
 , size_t l
@@ -3085,15 +3096,15 @@ realloc( P p
     if( !p )
         return malloc(l);
         #ifdef C_pthreads
-    int error = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
-    if( error
-    && error != EBUSY
+    int errno_ = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
+    if( errno_
+    && errno_ != EBUSY
     )
-    {   _errno = error;
+    {   _errno = errno_;
         Ve();
         V();
     }
-    if( !error )
+    if( !errno_ )
         #endif
     {   struct E_mem_Q_blk_Z_allocated allocated_p;
         N min = 0;
@@ -3150,6 +3161,7 @@ realloc( P p
     return 0;
 }
 _export
+__attribute__ (( __malloc__(free) ))
 P
 reallocarray( P p
 , size_t n
@@ -3163,15 +3175,15 @@ reallocarray( P p
     if( !p )
         return malloc(l);
         #ifdef C_pthreads
-    int error = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
-    if( error
-    && error != EBUSY
+    int errno_ = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
+    if( errno_
+    && errno_ != EBUSY
     )
-    {   _errno = error;
+    {   _errno = errno_;
         Ve();
         V();
     }
-    if( !error )
+    if( !errno_ )
         #endif
     {   struct E_mem_Q_blk_Z_allocated allocated_p;
         N min = 0;
@@ -3234,15 +3246,15 @@ free( P p
     if( !p ) // Funkcja zerowego adresu, taka jak w oryginalnym “free”.
         return;
         #ifdef C_pthreads
-    int error = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
-    if( error
-    && error != EBUSY
+    int errno_ = pthread_mutex_trylock( &E_base_S->E_mem_Q_blk_S_threads_sync_mutex );
+    if( errno_
+    && errno_ != EBUSY
     )
-    {   _errno = error;
+    {   _errno = errno_;
         Ve();
         V();
     }
-    if( !error )
+    if( !errno_ )
         #endif
     {   struct E_mem_Q_blk_Z_allocated allocated_p;
         N min = 0;
@@ -3279,3 +3291,26 @@ free( P p
 }
     #endif
 /******************************************************************************/
+_export
+B
+E_mem_Q_blk_T( P p
+){  struct E_mem_Q_blk_Z_allocated allocated_p;
+    N min = 0;
+    N max = E_mem_Q_blk_Q_sys_table_R_last( E_base_S->E_mem_Q_blk_S_allocated_id, (Pc)&allocated_p.p - (Pc)&allocated_p );
+    N allocated_i = max / 2;
+    O{  if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p == p )
+            return yes;
+        if( E_base_S->E_mem_Q_blk_S_allocated[ allocated_i ].p > (Pc)p )
+        {   if( allocated_i == min )
+                break;
+            max = allocated_i - 1;
+            allocated_i = max - ( allocated_i - min ) / 2;
+        }else
+        {   if( allocated_i == max )
+                break;
+            min = allocated_i + 1;
+            allocated_i = min + ( max - allocated_i ) / 2;
+        }
+    }
+    return no;
+}

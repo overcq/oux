@@ -11,8 +11,13 @@ _export
 int
 E_mem_Q_shared_M_key( key_t key
 , N size
-){  int shm_id;
-    V1( shm_id = shmget( key, E_simple_Z_n_I_align_up_to_v2( size, E_base_S->E_mem_S_page_size ), 0600 | IPC_CREAT | IPC_EXCL )){}
+){  int shm_id, errno_;
+    V1e( shm_id = shmget( key, E_simple_Z_n_I_align_up_to_v2( size, E_base_S->E_mem_S_page_size ), 0600 | IPC_CREAT | IPC_EXCL ), errno_ )
+        if( errno_ != ENFILE
+        && errno_ != ENOMEM
+        )
+        {   GV_(NA); V();
+        }
     return shm_id;
 }
 _export
@@ -31,7 +36,11 @@ _export
 P
 E_mem_Q_shared_Q_blk_M( int uid
 ){  P p;
-    V1p_( p = shmat( uid, 0, 0 ));
+    int errno_;
+    V1pe( p = shmat( uid, 0, 0 ), errno_ )
+        if( errno_ != ENOMEM )
+        {   GV_(NA); V();
+        }
     return p;
 }
 _export

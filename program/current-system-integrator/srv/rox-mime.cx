@@ -416,24 +416,43 @@ E_rox_filer_M( void
     E_rox_filer_S_mime_def[l] = E_rox_filer_S_mime_def_[l];
     return 0;
 }
-void
+N
 E_rox_filer_W( void
 ){  for( struct E_rox_filer_Z_mime_def *p_0 = E_rox_filer_S_mime_def; p_0->mime; p_0++ )
     {   for( Pc *p_1 = p_0->mime; *p_1; p_1++ )
-            E_mem_Q_blk_W( *p_1 );
-        E_mem_Q_blk_W( p_0->mime );
-        E_mem_Q_blk_W( p_0->def );
+        {   N ret = E_mem_Q_blk_W( *p_1 );
+            if(ret)
+                return ret;
+        }
+        N ret = E_mem_Q_blk_W( p_0->mime );
+        if(ret)
+            return ret;
+        ret = E_mem_Q_blk_W( p_0->def );
+        if(ret)
+            return ret;
     }
-    E_mem_Q_blk_W( E_rox_filer_S_mime_def );
+    N ret = E_mem_Q_blk_W( E_rox_filer_S_mime_def );
+    if(ret)
+        return ret;
     for( struct E_rox_filer_Z_mime_db *p_0 = E_rox_filer_S_mime_db; p_0->argv; p_0++ )
     {   for( Pc *p_1 = p_0->argv; *p_1; p_1++ )
-            E_mem_Q_blk_W( *p_1 );
-        E_mem_Q_blk_W( p_0->argv );
+        {   N ret = E_mem_Q_blk_W( *p_1 );
+            if(ret)
+                return ret;
+        }
+        N ret = E_mem_Q_blk_W( p_0->argv );
+        if(ret)
+            return ret;
         for( Pc *p_1 = p_0->mime; *p_1; p_1++ )
-            E_mem_Q_blk_W( *p_1 );
-        E_mem_Q_blk_W( p_0->mime );
+        {   ret = E_mem_Q_blk_W( *p_1 );
+            if(ret)
+                return ret;
+        }
+        ret = E_mem_Q_blk_W( p_0->mime );
+        if(ret)
+            return ret;
     }
-    E_mem_Q_blk_W( E_rox_filer_S_mime_db );
+    return E_mem_Q_blk_W( E_rox_filer_S_mime_db );
 }
 //==============================================================================
 N
@@ -474,7 +493,7 @@ E_rox_filer_I_func( P data
                 {   mime_action = p_0->def;
                     goto End_mime_action;
                 }
-        return 1;
+        return yes;
 End_mime_action:;
     }else
     {   mime++;
@@ -483,12 +502,15 @@ End_mime_action:;
     }
     N mime_length = E_text_Z_s0_R_l_0(mime);
     s = M( mime_length + E_text_Z_s0_R_l_0( mime_action ));
+    if( !s )
+        return ~0;
     E_text_Z_s_P_copy_s0( s, mime );
     *( s + mime_length - 1 ) = '/';
     E_text_Z_s_P_copy_s0_0( s + mime_length, mime_action );
     mime = s;
     if( E_text_Z_s0_T_eq_s0( mime, "video_webm/play" ))
-    {   W(mime);
+    {   if( W(mime) )
+            return ~1;
         return yes;
     }
     for( struct E_rox_filer_Z_mime_db *p_0 = E_rox_filer_S_mime_db; p_0->mime; p_0++ )
@@ -504,9 +526,10 @@ End_mime_action:;
                     exit( EXIT_FAILURE );
                 }
                 E_flow_I_fork_I_end(pid);
-                return ~pid ? no : yes;
+                return no;
             }
-    W(mime);
+    if( W(mime) )
+        return ~1;
     return yes;
 }
 /******************************************************************************/
