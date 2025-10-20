@@ -154,11 +154,41 @@ End_4:;
         object->list.select_n = 2;
         object->list.multi = yes;
     }
+    I collection_id_2 = E_ui_Q_collection_M( "Test 2" );
+    if( collection_id_2 < 0 )
+        return (int)collection_id_2;
+    group_id = E_ui_Q_object_M( collection_id_2, ~0 );
+    if( group_id < 0 )
+        return (int)group_id;
+    object_id = E_ui_Q_object_M( collection_id_2, group_id );
+    if( object_id < 0 )
+        return (int)object_id;
+    collection = E_mem_Q_tab_R( E_ui_Q_collection_S, collection_id_2 );
+    group = E_mem_Q_tab_R( collection->object, group_id );
+    group->type = E_ui_Z_ui_Z_type_Z_group;
+    group->title = "Group";
+    object = E_mem_Q_tab_R( collection->object, object_id );
+    object->type = E_ui_Z_ui_Z_type_Z_level;
+    object->level.current = 1;
+    object->level.max = 2;
+    for_n_( i, 100 )
+    {   I object_id_2 = E_ui_Q_object_M( collection_id_2, group_id );
+        if( object_id_2 < 0 )
+            return (int)object_id_2;
+        object = E_mem_Q_tab_R( collection->object, object_id_2 );
+        object->type = E_ui_Z_ui_Z_type_Z_list;
+        object->list.title = "List";
+        object->list.select = ( Pc [] ){ "1", "2" };
+        object->list.select_n = 2;
+        object->list.multi = yes;
+    }
     Pc s;
     r = E_ui_Q_gtk_cli_N( &s );
     if(r)
         return (int)r;
-    G_(); Gs0(s);
+    r = E_ui_Q_collection_W( collection_id_2 );
+    if(r)
+        return (int)r;
     r = E_ui_Q_collection_W( collection_id );
     if(r)
         return (int)r;

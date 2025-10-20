@@ -261,13 +261,17 @@ E_ui_Q_gtk_cli_N_( Pc *s
 }
 N
 E_ui_Q_gtk_cli_N( Pc *s
-){  for_each( collection_id, E_ui_Q_collection_S, E_mem_Q_tab )
+){  N l = J_s0_R_l( "<?xml version=\"1.0\"?><interface>" ) + 1;
+    *s = M(l);
+    if( !*s )
+        return ~0;
+    E_text_Z_s_P_copy_s0_0( *s, "<?xml version=\"1.0\"?><interface>" );
+    for_each( collection_id, E_ui_Q_collection_S, E_mem_Q_tab )
     {   struct E_ui_Q_collection_Z *collection = E_mem_Q_tab_R( E_ui_Q_collection_S, collection_id );
-        N l = J_s0_R_l( "<?xml version=\"1.0\"?><interface><object class=\"GtkApplicationWindow\" id=\"main-window\"><property name=\"title\">" ) + 1;
-        *s = M(l);
-        if( !*s )
-            return ~0;
-        E_text_Z_s_P_copy_s0_0( *s, "<?xml version=\"1.0\"?><interface><object class=\"GtkApplicationWindow\" id=\"main-window\"><property name=\"title\">" );
+        if( !E_text_Z_s0_I_append_s0( s, "<object class=\"GtkApplicationWindow\"><property name=\"title\">" ))
+        {   N r = W( *s );
+            return r ? ~1 : ~0;
+        }
         Pc s_ = E_text_I_serialize_Z_xml_N( collection->title );
         if( !s_ )
         {   N r = W( *s );
@@ -297,11 +301,13 @@ E_ui_Q_gtk_cli_N( Pc *s
             }else if(r)
                 return r;
         }
-        if( !E_text_Z_s0_I_append_s0( s, "</object></child></object></child></object></interface>" ))
+        if( !E_text_Z_s0_I_append_s0( s, "</object></child></object></child></object>" ))
         {   r = W( *s );
             return r ? ~1 : ~0;
         }
     }
+    if( !E_text_Z_s0_I_append_s0( s, "</interface>" ))
+        return ~0;
     return 0;
 }
 /******************************************************************************/
