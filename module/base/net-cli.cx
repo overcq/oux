@@ -41,13 +41,13 @@ E_net_cli_I_read_data( SSL *ssl
     #endif
 ){  N l_;
     if(ssl)
-    {   int ret;
+    {   int r;
             #ifdef __gnu_linux__
-        if(( ret = SSL_read_ex( ssl, s, l, &l_ )) != 1 )
+        if(( r = SSL_read_ex( ssl, s, l, &l_ )) != 1 )
             #else
-        if(( ret = l_ = SSL_read( ssl, s, l )) <= 0 )
+        if(( r = l_ = SSL_read( ssl, s, l )) <= 0 )
             #endif
-            return ret;
+            return r;
     }else
     {   VO1( l_ = read( fd, s, l ))
             return l_;
@@ -67,13 +67,13 @@ E_net_cli_I_write_data( SSL *ssl
 ){  N l_0 = l;
     N l_;
     if(ssl)
-    {   int ret;
+    {   int r;
             #ifdef __gnu_linux__
-        O{  if(( ret = SSL_write_ex( ssl, s + ( l_0 - l ), l, &l_ )) != 1 )
+        O{  if(( r = SSL_write_ex( ssl, s + ( l_0 - l ), l, &l_ )) != 1 )
             #else
-        O{  if(( ret = l_ = SSL_write( ssl, s + ( l_0 - l ), l )) <= 0 )
+        O{  if(( r = l_ = SSL_write( ssl, s + ( l_0 - l ), l )) <= 0 )
             #endif
-                return ret;
+                return r;
             if( !( l -= l_ ))
                 break;
         }
@@ -151,12 +151,12 @@ E_net_cli_Q_ssl_M( void
     }
     E_net_http2_S_connect_n = 0;
         #ifndef E_flow_C_thread_system_unblock_reports
-    I ret = D_M( net, cli );
+    I r = D_M( net, cli );
         #else
-    I ret = Dh_M( net, cli, 0, 0 );
+    I r = Dh_M( net, cli, 0, 0 );
         #endif
-    if( ret < 0 )
-        return (P)(S)ret;
+    if( r < 0 )
+        return (P)(S)r;
     return ssl_ctx;
 }
 _export

@@ -109,8 +109,8 @@ E_gui_xcb_Q_object_M(
     object->child_n = child_n;
     Mt_( object->child, child_n );
     if( !object->child )
-    {   N ret = E_mem_Q_tab_I_remove( window->object, object_id );
-        return !ret ? ~0 : (S)ret < ~2 ? ret : ~2;
+    {   N r = E_mem_Q_tab_I_remove( window->object, object_id );
+        return !r ? ~0 : (S)r < ~2 ? r : ~2;
     }
     object->data = 0;
     object->x = x;
@@ -143,19 +143,19 @@ E_gui_xcb_Q_object_W(
     E_gui_xcb_Q_object_I_set_max_window_dimensions( display, window, object, yes );
     if( object->data )
     {   if( object->clear_data )
-        {   N ret = object->clear_data( object->data );
-            if(ret)
+        {   N r = object->clear_data( object->data );
+            if(r)
                 return ~2;
         }
-        N ret = W( object->data );
-        if(ret)
+        N r = W( object->data );
+        if(r)
             return ~2;
     }
-    N ret = W( object->child );
-    if(ret)
+    N r = W( object->child );
+    if(r)
         return ~2;
-    ret = E_mem_Q_tab_I_remove( window->object, id );
-    return ret ? ~2 : 0;
+    r = E_mem_Q_tab_I_remove( window->object, id );
+    return r ? ~2 : 0;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 _export
@@ -271,8 +271,8 @@ E_gui_xcb_Q_object_I_remove_descendants(
         return ~0;
     E_mem_Q_blk_I_copy( &ids[0], &object->child[0], object->child_n * sizeof( *object->child ));
     if( !E_mem_Q_blk_M_replace_tab( &object->child, sizeof( *object->child ), 0 ))
-    {   N ret = W(ids);
-        return ret ? ~1 : ~0;
+    {   N r = W(ids);
+        return r ? ~1 : ~0;
     }
     object->child_n = 0;
     for_n( ids_i, ids_n )
@@ -289,8 +289,8 @@ E_gui_xcb_Q_object_I_remove_descendants(
     for_n_( ids_i, ids_n )
          if( E_gui_xcb_Q_object_W( display, window, ids[ ids_i ] ))
             return ~2;
-    N ret = W(ids);
-    return ret ? ~1 : 0;
+    N r = W(ids);
+    return r ? ~1 : 0;
 }
 _export
 N
@@ -310,8 +310,8 @@ E_gui_xcb_Q_object_I_remove(
             }
         }
     }
-End:N ret = E_gui_xcb_Q_object_W( display, window, id );
-    return ret ? ~2 : 0;
+End:N r = E_gui_xcb_Q_object_W( display, window, id );
+    return r ? ~2 : 0;
 }
 //------------------------------------------------------------------------------
 _internal
@@ -327,8 +327,8 @@ E_gui_xcb_Q_object_I_remove_drag_src( struct E_gui_xcb_Q_window_Z *window
     E_mem_Q_blk_I_copy( &ids[0], &object->child[0], object->child_n * sizeof( *object->child ));
     object->child_n = 0;
     if( !E_mem_Q_blk_M_replace_tab( &object->child, sizeof( *object->child ), object->child_n ))
-    {   N ret = W(ids);
-        return ret ? ~1 : ~0;
+    {   N r = W(ids);
+        return r ? ~1 : ~0;
     }
     for_n( ids_i, ids_n )
     {   object = E_mem_Q_tab_R( window->object, ids[ ids_i ] );
@@ -345,8 +345,8 @@ E_gui_xcb_Q_object_I_remove_drag_src( struct E_gui_xcb_Q_window_Z *window
     {   object = E_mem_Q_tab_R( window->object, ids[ ids_i ] );
         U_L( object->state, drag_src );
     }
-    N ret = W(ids);
-    return ret ? ~1 : 0;
+    N r = W(ids);
+    return r ? ~1 : 0;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 _export
@@ -452,15 +452,15 @@ E_gui_xcb_Q_object_Z_entry_M(
         return object_id;
     struct E_gui_xcb_Q_object_Z_data_Z_entry *M_( object_data );
     if( !object_data )
-    {   N ret = E_gui_xcb_Q_object_W( display, window, object_id );
-        return ret ? ret : ~2;
+    {   N r = E_gui_xcb_Q_object_W( display, window, object_id );
+        return r ? r : ~2;
     }
     object_data->font = font_id;
     object_data->s = M( E_text_Z_s0_R_l_0(s) );
     object_data->text_start = 0;
     if( !object_data->s )
-    {   N ret = E_gui_xcb_Q_object_W( display, window, object_id );
-        return ret ? ret : ~2;
+    {   N r = E_gui_xcb_Q_object_W( display, window, object_id );
+        return r ? r : ~2;
     }
     E_text_Z_s_P_copy_s0_0( object_data->s, s );
     U_L( object_data->state, cursor_visible_ );
@@ -1001,9 +1001,9 @@ E_gui_xcb_Q_layout_I_restore( struct E_gui_xcb_Q_display_Z *display
         }
     }
     C c;
-    N ret = E_mem_Q_file_R_c( file_id, &c );
+    N r = E_mem_Q_file_R_c( file_id, &c );
     E_mem_Q_file_W( file_id );
-    return ret == S_eof ? 0 : ~0;
+    return r == S_eof ? 0 : ~0;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 _export

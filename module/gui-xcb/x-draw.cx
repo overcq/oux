@@ -201,8 +201,8 @@ E_gui_xcb_Q_window_I_draw_Z_segments(
     {   if( segments[i].x1 == segments[i].x2 )
         {   k = J_abs( segments[i].y2 - segments[i].y1 ) + 1;
             if( !E_mem_Q_blk_I_append( &points, k ))
-            {   N ret = W(points);
-                return ret ? ~1 : ~0;
+            {   N r = W(points);
+                return r ? ~1 : ~0;
             }
             S16 x = segments[i].x1;
             if( x >= 0
@@ -222,8 +222,8 @@ E_gui_xcb_Q_window_I_draw_Z_segments(
         }else if( segments[i].y1 == segments[i].y2 )
         {   k = J_abs( segments[i].x2 - segments[i].x1 ) + 1;
             if( !E_mem_Q_blk_I_append( &points, k ))
-            {   N ret = W(points);
-                return ret ? ~1 : ~0;
+            {   N r = W(points);
+                return r ? ~1 : ~0;
             }
             S16 y = segments[i].y1;
             if( y >= 0
@@ -247,8 +247,8 @@ E_gui_xcb_Q_window_I_draw_Z_segments(
             S16 di = 1;
             if( dy > dx )
             {   if( !E_mem_Q_blk_I_append( &points, dy + 1 ))
-                {   N ret = W(points);
-                    return ret ? ~1 : ~0;
+                {   N r = W(points);
+                    return r ? ~1 : ~0;
                 }
                 if( dy_ < 0 )
                 {   J_swap( S16, y, y_end );
@@ -286,8 +286,8 @@ E_gui_xcb_Q_window_I_draw_Z_segments(
                 }
             }else
             {   if( !E_mem_Q_blk_I_append( &points, dx + 1 ))
-                {   N ret = W(points);
-                    return ret ? ~1 : ~0;
+                {   N r = W(points);
+                    return r ? ~1 : ~0;
                 }
                 if( dx_ < 0 )
                 {   J_swap( S16, x, x_end );
@@ -331,8 +331,8 @@ E_gui_xcb_Q_window_I_draw_Z_segments(
             E_gui_xcb_Q_window_I_draw_aa_Z_points( display, screen, window, points_i, points, brightness );
         else
             E_gui_xcb_Q_window_I_draw_Z_points( display, screen, window, points_i, points );
-    N ret = W(points);
-    return ret ? ~1 : 0;
+    N r = W(points);
+    return r ? ~1 : 0;
 }
 _export
 N
@@ -415,25 +415,25 @@ E_gui_xcb_Q_window_I_draw_Z_lines(
         , segments
         , 0
         ))
-        {   N ret = W(segments);
-            return ret ? ~1 : ~0;
+        {   N r = W(segments);
+            return r ? ~1 : ~0;
         }
         W(segments);
     }
     if(thickness)
-    {   N ret = E_gui_xcb_Q_window_I_draw_Z_segments( display, screen, window
+    {   N r = E_gui_xcb_Q_window_I_draw_Z_segments( display, screen, window
         , ( n - 1 ) * 2
         , segments_aa
         , thickness
         );
-        if( !~ret )
-        {   ret = W( segments_aa );
-            return ret ? ~1 : ~0;
+        if( !~r )
+        {   r = W( segments_aa );
+            return r ? ~1 : ~0;
         }
-        if( (S)ret < 0 )
-            return ret;
-        ret = W( segments_aa );
-        if(ret)
+        if( (S)r < 0 )
+            return r;
+        r = W( segments_aa );
+        if(r)
             return ~1;
     }
     return 0;
@@ -457,9 +457,9 @@ E_gui_xcb_Q_window_I_draw_Z_rectangles(
         , rectangles[i].x, rectangles[i].y + rectangles[i].height - 1
         , rectangles[i].x, rectangles[i].y
         };
-        N ret = E_gui_xcb_Q_window_I_draw_Z_lines( display, screen, window, 5, points, thickness );
-        if(ret)
-            return ret;
+        N r = E_gui_xcb_Q_window_I_draw_Z_lines( display, screen, window, 5, points, thickness );
+        if(r)
+            return r;
     }
     return 0;
 }
@@ -533,8 +533,8 @@ E_gui_xcb_Q_window_I_draw_Z_arcs(
         S c = 2 * ( 1 - J_max( arcs[i].width, arcs[i].height ) / 2 );
         while( x <= y )
         {   if( !E_mem_Q_blk_I_append( points, 8 ))
-            {   N ret = W(points);
-                return ret ? ~1 : ~0;
+            {   N r = W(points);
+                return r ? ~1 : ~0;
             }
             (*I_8points)( arcs[i]
             , ( xcb_point_t ){ x, y }
@@ -551,8 +551,8 @@ E_gui_xcb_Q_window_I_draw_Z_arcs(
         }
     }
     E_gui_xcb_Q_window_I_draw_Z_points( display, screen, window, points_i, points );
-    N ret = W(points);
-    return ret ? ~1 : 0;
+    N r = W(points);
+    return r ? ~1 : 0;
 }
 _export
 N
@@ -593,19 +593,19 @@ E_gui_xcb_Q_window_I_fill_Z_rectangles(
             };
         }
     }
-    N ret = E_gui_xcb_Q_window_I_draw_Z_segments( display, screen, window
+    N r = E_gui_xcb_Q_window_I_draw_Z_segments( display, screen, window
     , segment_n
     , segments
     , 0
     );
-    if( !~ret )
-    {   ret = W(segments);
-        return ret ? ~1 : ~0;
+    if( !~r )
+    {   r = W(segments);
+        return r ? ~1 : ~0;
     }
-    if( (S)ret < 0 )
-        return ret;
-    ret = W(segments);
-    return ret ? ~1 : 0;
+    if( (S)r < 0 )
+        return r;
+    r = W(segments);
+    return r ? ~1 : 0;
 }
 _internal
 void
@@ -675,8 +675,8 @@ E_gui_xcb_Q_window_I_fill_Z_arcs(
         S c = 2 * ( 1 - J_max( arcs[i].width, arcs[i].height ) / 2 );
         while( x <= y )
         {   if( !E_mem_Q_blk_I_append( segments, 4 ))
-            {   N ret = W(segments);
-                return ret ? ~1 : ~0;
+            {   N r = W(segments);
+                return r ? ~1 : ~0;
             }
             (*I_4segments)( arcs[i]
             , ( xcb_point_t ){ x, y }
@@ -692,13 +692,13 @@ E_gui_xcb_Q_window_I_fill_Z_arcs(
             c += 2 * x + 1;
         }
     }
-    N ret = E_gui_xcb_Q_window_I_draw_Z_segments( display, screen, window, segments_i, segments, 0 );
-    if( !~ret )
-    {   ret = W(segments);
-        return ret ? ~1 : ~0;
+    N r = E_gui_xcb_Q_window_I_draw_Z_segments( display, screen, window, segments_i, segments, 0 );
+    if( !~r )
+    {   r = W(segments);
+        return r ? ~1 : ~0;
     }
-    ret = W(segments);
-    return ret ? ~1 : 0;
+    r = W(segments);
+    return r ? ~1 : 0;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 struct E_x_Z_points

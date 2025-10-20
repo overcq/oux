@@ -24,20 +24,20 @@ E_tui_data_Q_layout_I_add( enum E_tui_data_Q_field_Z_type type
         return id;
     struct E_ncurses_Q_field_Z *data = E_mem_Q_tab_R( E_ncurses_Q_layout_S, id );
     data->x = data->y = ~0;
-    I ret = E_mem_Q_tab_I_add( E_tui_data_Q_layout_S );
-    if( !~ret )
-    {   N ret = E_mem_Q_tab_I_remove( E_ncurses_Q_layout_S, id );
-        return ret ? ~2 : ~0;
-    }else if( ret < 0 )
+    I r = E_mem_Q_tab_I_add( E_tui_data_Q_layout_S );
+    if( !~r )
+    {   N r = E_mem_Q_tab_I_remove( E_ncurses_Q_layout_S, id );
+        return r ? ~2 : ~0;
+    }else if( r < 0 )
         return ~2;
     struct E_tui_data_Q_field_Z *input = E_mem_Q_tab_R( E_tui_data_Q_layout_S, id );
     N ret_ = E_tui_data_Q_field_M( input, type, label, width );
     if( !~ret_ )
-    {   N ret = E_mem_Q_tab_I_remove( E_tui_data_Q_layout_S, id );
-        if(ret)
+    {   N r = E_mem_Q_tab_I_remove( E_tui_data_Q_layout_S, id );
+        if(r)
             return ~2;
-        ret = E_mem_Q_tab_I_remove( E_ncurses_Q_layout_S, id );
-        return ret ? ~2 : ~0;
+        r = E_mem_Q_tab_I_remove( E_ncurses_Q_layout_S, id );
+        return r ? ~2 : ~0;
     }else if( ret_ < 0 )
         return ~2;
     return id;
@@ -46,20 +46,20 @@ _export
 N
 E_tui_data_Q_layout_Q_fields_I_store( Pc path
 ){  I file_id = E_mem_Q_file_M( path, no, S_IRUSR | S_IWUSR );
-    N ret = E_mem_Q_file_I_truncate( file_id );
-    if( !~ret )
+    N r = E_mem_Q_file_I_truncate( file_id );
+    if( !~r )
     {   E_mem_Q_file_W_nosave( file_id );
         return ~3;
-    }else if(ret)
-        return ret;
+    }else if(r)
+        return r;
     struct E_mem_Q_file_Z *file = E_mem_Q_tab_R( E_base_S->E_mem_Q_file_S, file_id );
     for_each( input_id, E_tui_data_Q_layout_S, E_mem_Q_tab )
     {   struct E_tui_data_Q_field_Z *input = E_mem_Q_tab_R( E_tui_data_Q_layout_S, input_id );
-        N ret = E_mem_Q_file_P_insert_s( file_id, input->s, E_text_Z_s0_R_l_0( input->s ));
-        if( !~ret )
+        N r = E_mem_Q_file_P_insert_s( file_id, input->s, E_text_Z_s0_R_l_0( input->s ));
+        if( !~r )
         {   E_mem_Q_file_W_nosave( file_id );
             return ~3;
-        }else if(ret)
+        }else if(r)
             return ~3;
         if( E_mem_Q_file_P_pos( file_id, file->l ))
             return ~3;
@@ -74,16 +74,16 @@ E_tui_data_Q_layout_Q_fields_I_restore( Pc path
         return (N)file_id;
     for_each( input_id, E_tui_data_Q_layout_S, E_mem_Q_tab )
     {   struct E_tui_data_Q_field_Z *input = E_mem_Q_tab_R( E_tui_data_Q_layout_S, input_id );
-        N ret = E_mem_Q_file_R_u_upto_0( file_id, &input->s );
-        if( !~ret )
+        N r = E_mem_Q_file_R_u_upto_0( file_id, &input->s );
+        if( !~r )
         {   E_mem_Q_file_W_nosave( file_id );
             return ~3;
-        }else if(ret)
+        }else if(r)
             return ~3;
     }
     C c;
-    N ret = E_mem_Q_file_R_c( file_id, &c );
+    N r = E_mem_Q_file_R_c( file_id, &c );
     E_mem_Q_file_W_nosave( file_id );
-    return ret == S_eof ? 0 : ~3;
+    return r == S_eof ? 0 : ~3;
 }
 /******************************************************************************/

@@ -31,18 +31,18 @@ int
 main(
   int argc
 , Pc argv[]
-){  N ret = E_base_M( argc, argv );
-    if(ret)
-        return (int)ret;
-    ret = E_ui_M();
-    if(ret)
-        return (int)ret;
-    ret = E_gui_xcb_M();
-    if(ret)
-        return (int)ret;
-    ret = E_tui_M();
-    if(ret)
-        return (int)ret;
+){  N r = E_base_M( argc, argv );
+    if(r)
+        return (int)r;
+    r = E_ui_M();
+    if(r)
+        return (int)r;
+    r = E_gui_xcb_M();
+    if(r)
+        return (int)r;
+    r = E_tui_M();
+    if(r)
+        return (int)r;
 #ifndef C_line_report
     I out = E_io_Q_stream_out_M_fd( STDERR_FILENO );
 #else
@@ -67,15 +67,15 @@ main(
     if( !~connection )
         goto Skip;
     if(http2)
-    {   N ret = E_net_http2_I_request( connection, "/", http2_req_ret_func );
-        if(ret)
+    {   N r = E_net_http2_I_request( connection, "/", http2_req_ret_func );
+        if(r)
             goto Skip;
-        ret = E_net_http2_I_request( connection, "/", http2_req_ret_func );
-        if(ret)
+        r = E_net_http2_I_request( connection, "/", http2_req_ret_func );
+        if(r)
             goto Skip;
     }else
-    {   N ret = E_net_http_I_request( connection, "/", http_req_ret_func );
-        if(ret)
+    {   N r = E_net_http_I_request( connection, "/", http_req_ret_func );
+        if(r)
             goto Skip;
     }
     X_M( net, ret );
@@ -129,37 +129,56 @@ End_4:;
     I collection_id = E_ui_Q_collection_M( "Test" );
     if( collection_id < 0 )
         return (int)collection_id;
-    I object_id = E_ui_Q_object_M( collection_id, ~0 );
+    I group_id = E_ui_Q_object_M( collection_id, ~0 );
+    if( group_id < 0 )
+        return (int)group_id;
+    I object_id = E_ui_Q_object_M( collection_id, group_id );
     if( object_id < 0 )
         return (int)object_id;
     struct E_ui_Q_collection_Z *collection = E_mem_Q_tab_R( E_ui_Q_collection_S, collection_id );
+    struct E_ui_Q_object_Z *group = E_mem_Q_tab_R( collection->object, group_id );
+    group->type = E_ui_Z_ui_Z_type_Z_group;
+    group->title = "Group";
     struct E_ui_Q_object_Z *object = E_mem_Q_tab_R( collection->object, object_id );
-    object->type = E_ui_Z_ui_Z_type_Z_action;
-    object->action.label = "Button";
+    object->type = E_ui_Z_ui_Z_type_Z_level;
+    object->level.current = 1;
+    object->level.max = 2;
+    for_n_( i, 100 )
+    {   I object_id_2 = E_ui_Q_object_M( collection_id, group_id );
+        if( object_id_2 < 0 )
+            return (int)object_id_2;
+        object = E_mem_Q_tab_R( collection->object, object_id_2 );
+        object->type = E_ui_Z_ui_Z_type_Z_list;
+        object->list.title = "List";
+        object->list.select = ( Pc [] ){ "1", "2" };
+        object->list.select_n = 2;
+        object->list.multi = yes;
+    }
     Pc s;
-    ret = E_ui_Q_gtk_cli_N( &s );
-    if(ret)
-        return (int)ret;
-    ret = E_ui_Q_collection_W( collection_id );
-    if(ret)
-        return (int)ret;
-    ret = E_ui_Q_gtk_cli_I_build( gtk_cli_id, s );
-    if(ret)
-        return (int)ret;
-    ret = W(s);
-    if(ret)
-        return (int)ret;
+    r = E_ui_Q_gtk_cli_N( &s );
+    if(r)
+        return (int)r;
+    G_(); Gs0(s);
+    r = E_ui_Q_collection_W( collection_id );
+    if(r)
+        return (int)r;
+    r = E_ui_Q_gtk_cli_I_build( gtk_cli_id, s );
+    if(r)
+        return (int)r;
+    r = W(s);
+    if(r)
+        return (int)r;
 
     X_M( x_window, close_window );
     if( _X_var( x_window, close_window ) < 0 )
         return (int)_X_var( x_window, close_window );
     if( U_R( E_base_S->E_gui_xcb, init ))
     {   for_n_( i, 2 )
-        {   ret = D_M( main, timer_draw );
-            if( !~ret )
+        {   r = D_M( main, timer_draw );
+            if( !~r )
                 goto End_2;
-            else if( (S)ret < 0 )
-                return (int)ret;
+            else if( (S)r < 0 )
+                return (int)r;
             I display_id = E_gui_xcb_Q_display_M();
             if( !~display_id )
                 goto End_3;
@@ -190,44 +209,44 @@ End_4:;
                             return (int)id;
                         else if( id < 0 )
                             return (int)id;
-                        ret = E_gui_xcb_Q_object_I_add( display, window, object_id, id );
-                        if( !~ret )
+                        r = E_gui_xcb_Q_object_I_add( display, window, object_id, id );
+                        if( !~r )
                             goto End;
-                        else if( (S)ret < 0 )
-                            return (int)ret;
+                        else if( (S)r < 0 )
+                            return (int)r;
                         for_n( i, 5 )
                         {   I id_2 = E_gui_xcb_Q_object_Z_frame_M( display, window );
                             if( !~id_2 )
                                 goto End;
                             else if( id_2 < 0 )
                                 return (int)id_2;
-                            ret = E_gui_xcb_Q_object_I_add( display, window, id, id_2 );
-                            if( !~ret )
+                            r = E_gui_xcb_Q_object_I_add( display, window, id, id_2 );
+                            if( !~r )
                                 goto End;
-                            else if( (S)ret < 0 )
-                                return (int)ret;
+                            else if( (S)r < 0 )
+                                return (int)r;
                             for_n( i, 2 )
                             {   I id_3 = E_gui_xcb_Q_object_Z_frame_M( display, window );
                                 if( !~id_3 )
                                     goto End;
                                 else if( id_3 < 0 )
                                     return (int)id_3;
-                                ret = E_gui_xcb_Q_object_I_add( display, window, id_2, id_3 );
-                                if( !~ret )
+                                r = E_gui_xcb_Q_object_I_add( display, window, id_2, id_3 );
+                                if( !~r )
                                     goto End;
-                                else if( (S)ret < 0 )
-                                    return (int)ret;
+                                else if( (S)r < 0 )
+                                    return (int)r;
                                 for_n( i, 3 )
                                 {   I id_4 = E_gui_xcb_Q_object_Z_button_font_M( display, window, 0, "abc" );
                                     if( !~id_4 )
                                         goto End;
                                     else if( id_4 < 0 )
                                         return (int)id_4;
-                                    ret = E_gui_xcb_Q_object_I_add( display, window, id_3, id_4 );
-                                    if( !~ret )
+                                    r = E_gui_xcb_Q_object_I_add( display, window, id_3, id_4 );
+                                    if( !~r )
                                         goto End;
-                                    else if( (S)ret < 0 )
-                                        return (int)ret;
+                                    else if( (S)r < 0 )
+                                        return (int)r;
                                 }
                             }
                             for_n_( i, 2 )
@@ -236,11 +255,11 @@ End_4:;
                                     goto End;
                                 else if( id_3 < 0 )
                                     return (int)id_3;
-                                ret = E_gui_xcb_Q_object_I_add( display, window, id_2, id_3 );
-                                if( !~ret )
+                                r = E_gui_xcb_Q_object_I_add( display, window, id_2, id_3 );
+                                if( !~r )
                                     goto End;
-                                else if( (S)ret < 0 )
-                                    return (int)ret;
+                                else if( (S)r < 0 )
+                                    return (int)r;
                             }
                         }
                         for_n_( i, 5 )
@@ -249,11 +268,11 @@ End_4:;
                                 goto End;
                             else if( id_2 < 0 )
                                 return (int)id_2;
-                            ret = E_gui_xcb_Q_object_I_add( display, window, id, id_2 );
-                            if( !~ret )
+                            r = E_gui_xcb_Q_object_I_add( display, window, id, id_2 );
+                            if( !~r )
                                 goto End;
-                            else if( (S)ret < 0 )
-                                return (int)ret;
+                            else if( (S)r < 0 )
+                                return (int)r;
                             struct E_gui_xcb_Q_object_Z *object = E_mem_Q_tab_R( window->object, id_2 );
                             object = E_mem_Q_tab_R( window->object, object->child[0] );
                             struct E_gui_xcb_Q_object_Z_data_Z_select *object_data = object->data;
@@ -331,22 +350,22 @@ End_2:  ;
     }else
         X_B( x_window, close_window, 0 )
             U_F( E_base_S->E_flow_S_signal, exit );
-    ret = X_W( x_window, close_window );
-    if(ret)
-        return (int)ret;
+    r = X_W( x_window, close_window );
+    if(r)
+        return (int)r;
 End_1:
-    ret = X_W( main, gtk_cli_activate );
-    if(ret)
-        return (int)ret;
-End:ret = E_tui_W();
-    if(ret)
-        return (int)ret;
-    ret = E_gui_xcb_W();
-    if(ret)
-        return (int)ret;
-    ret = E_ui_W();
-    if(ret)
-        return (int)ret;
+    r = X_W( main, gtk_cli_activate );
+    if(r)
+        return (int)r;
+End:r = E_tui_W();
+    if(r)
+        return (int)r;
+    r = E_gui_xcb_W();
+    if(r)
+        return (int)r;
+    r = E_ui_W();
+    if(r)
+        return (int)r;
     return (int)E_base_W();
 }
 //D( main, cursor )

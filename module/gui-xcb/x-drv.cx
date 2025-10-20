@@ -255,12 +255,12 @@ Loop_0:     do
                         N modifier = 0;
                             #ifdef __gnu_linux__
                         xcb_xkb_get_state_cookie_t xkb_get_state_req_id = xcb_xkb_get_state_unchecked( display->x_display, display->xkb_keyboard );
-                        xcb_xkb_get_state_reply_t *ret = xcb_xkb_get_state_reply( display->x_display, xkb_get_state_req_id, 0 );
-                        if( ret->group == 1 )
+                        xcb_xkb_get_state_reply_t *r = xcb_xkb_get_state_reply( display->x_display, xkb_get_state_req_id, 0 );
+                        if( r->group == 1 )
                             modifier = 2;
-                        else if( ret->group == 2 )
+                        else if( r->group == 2 )
                             modifier = 6;
-                        free(ret);
+                        free(r);
                             #endif
                         if( x_key->state & 0x80 ) // prawy ‛alt’
                         {   alt_r = yes;
@@ -1218,10 +1218,10 @@ Loop_0:     do
                                 xcb_client_message_event_t *x_client = (P)x_event;
                                 if( x_client->type != E_x_Z_atom_R( display, WM_PROTOCOLS ))
                                 {   xcb_get_atom_name_cookie_t ret_id = xcb_get_atom_name_unchecked( display->x_display, x_client->type );
-                                    xcb_get_atom_name_reply_t *ret = xcb_get_atom_name_reply( display->x_display, ret_id, 0 );
-                                    Pc message_type = xcb_get_atom_name_name(ret);
+                                    xcb_get_atom_name_reply_t *r = xcb_get_atom_name_reply( display->x_display, ret_id, 0 );
+                                    Pc message_type = xcb_get_atom_name_name(r);
                                     GV(NKN); Gs0( message_type ); // Unhandled client message.
-                                    free(ret);
+                                    free(r);
                                     break;
                                 }
                                 xcb_atom_t name = x_client->data.data32[0];
@@ -1244,10 +1244,10 @@ Loop_0:     do
                                     }
                                 }else
                                 {   xcb_get_atom_name_cookie_t ret_id = xcb_get_atom_name_unchecked( display->x_display, x_client->data.data8[0] );
-                                    xcb_get_atom_name_reply_t *ret = xcb_get_atom_name_reply( display->x_display, ret_id, 0 );
-                                    Pc message_type = xcb_get_atom_name_name(ret);
+                                    xcb_get_atom_name_reply_t *r = xcb_get_atom_name_reply( display->x_display, ret_id, 0 );
+                                    Pc message_type = xcb_get_atom_name_name(r);
                                     GV(NKN); Gs0( message_type ); // Unhandled client message subtype.
-                                    free(ret);
+                                    free(r);
                                 }
                                 break;
                             }
@@ -1344,8 +1344,8 @@ Loop_2:;    }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                             for_n( i, object->child_n )
                                 object->child[i] = ids[ dnd_object->child[i] ];
                         }
-                        N ret = W(ids);
-                        if(ret)
+                        N r = W(ids);
+                        if(r)
                         {   GV_(NA);
                             U_F( E_base_S->E_flow_S_signal, exit );
                             goto Block;
@@ -1361,8 +1361,8 @@ Loop_2:;    }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                         }
                     }
                 }
-                N ret = W( display->drag_S_object_src );
-                if(ret)
+                N r = W( display->drag_S_object_src );
+                if(r)
                 {   GV_(NA);
                     U_F( E_base_S->E_flow_S_signal, exit );
                     goto Block;
@@ -1381,8 +1381,8 @@ Loop_2:;    }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                   , 1
                   }
                 );
-                ret = W( dnd_window->drawable );
-                if(ret)
+                r = W( dnd_window->drawable );
+                if(r)
                 {   GV_(NA);
                     U_F( E_base_S->E_flow_S_signal, exit );
                     goto Block;
@@ -1433,9 +1433,9 @@ Loop_2:;    }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                     , cursor
                     , display->pointer_button_S_grab_time
                     );
-                    xcb_grab_pointer_reply_t *ret = xcb_grab_pointer_reply( display->x_display, ret_id, 0 );
-                    if( ret->status == XCB_GRAB_STATUS_SUCCESS ) // Czy aktualny stan od pierwszego kliknięcia serii.
-                    {   free(ret);
+                    xcb_grab_pointer_reply_t *r = xcb_grab_pointer_reply( display->x_display, ret_id, 0 );
+                    if( r->status == XCB_GRAB_STATUS_SUCCESS ) // Czy aktualny stan od pierwszego kliknięcia serii.
+                    {   free(r);
                         U_F( display->req, pointer_S_ungrab );
                         I pointer_object_id;
                         if( !U_R( display->mode, drag ))
@@ -1483,9 +1483,9 @@ Loop_2:;    }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                             , cursor
                             , grab_time
                             );
-                            xcb_grab_pointer_reply_t *ret = xcb_grab_pointer_reply( display->x_display, ret_id, 0 );
-                            if( ret->status == XCB_GRAB_STATUS_SUCCESS ) // Czy upłynął czas akceptacji serii.
-                            {   free(ret);
+                            xcb_grab_pointer_reply_t *r = xcb_grab_pointer_reply( display->x_display, ret_id, 0 );
+                            if( r->status == XCB_GRAB_STATUS_SUCCESS ) // Czy upłynął czas akceptacji serii.
+                            {   free(r);
                                 display->pointer_button_S_grab_time = grab_time;
                                 if( U_R( display->state, pointer_S_click_valid ))
                                 {   G(); Gs0_( "click" ); Gd( display->pointer_button ); Gd( display->pointer_button_S_seq_i );
@@ -1550,12 +1550,12 @@ Loop_2:;    }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                                                     if( !E_mem_Q_blk_I_remove( &ids, 0, 1 ))
                                                     {   GV_(NA);
                                                         U_F( E_base_S->E_flow_S_signal, exit );
-                                                        N ret = W( display->drag_S_object_src );
-                                                        if(ret)
+                                                        N r = W( display->drag_S_object_src );
+                                                        if(r)
                                                             goto Block;
                                                         for_each( object_id, dnd_window->object, E_mem_Q_tab )
-                                                        {   ret = E_gui_xcb_Q_object_W( display, dnd_window, object_id );
-                                                            if(ret)
+                                                        {   r = E_gui_xcb_Q_object_W( display, dnd_window, object_id );
+                                                            if(r)
                                                                 break;
                                                         }
                                                         goto Block;
@@ -1566,12 +1566,12 @@ Loop_2:;    }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                                                     if( !E_mem_Q_blk_I_append( &ids, object->child_n ))
                                                     {   GV_(NA);
                                                         U_F( E_base_S->E_flow_S_signal, exit );
-                                                        N ret = W( display->drag_S_object_src );
-                                                        if(ret)
+                                                        N r = W( display->drag_S_object_src );
+                                                        if(r)
                                                             goto Block;
                                                         for_each( object_id, dnd_window->object, E_mem_Q_tab )
-                                                        {   ret = E_gui_xcb_Q_object_W( display, dnd_window, object_id );
-                                                            if(ret)
+                                                        {   r = E_gui_xcb_Q_object_W( display, dnd_window, object_id );
+                                                            if(r)
                                                                 break;
                                                         }
                                                         goto Block;
@@ -1585,12 +1585,12 @@ Loop_2:;    }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                                                         if( !~dnd_object_id )
                                                         {   GV_(NA);
                                                             U_F( E_base_S->E_flow_S_signal, exit );
-                                                            N ret = W( display->drag_S_object_src );
-                                                            if(ret)
+                                                            N r = W( display->drag_S_object_src );
+                                                            if(r)
                                                                 goto Block;
                                                             for_each( object_id, dnd_window->object, E_mem_Q_tab )
-                                                            {   ret = E_gui_xcb_Q_object_W( display, dnd_window, object_id );
-                                                                if(ret)
+                                                            {   r = E_gui_xcb_Q_object_W( display, dnd_window, object_id );
+                                                                if(r)
                                                                     break;
                                                             }
                                                             goto Block;
@@ -1623,8 +1623,8 @@ Loop_2:;    }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                                                 , display->drag_S_cursor
                                                 , display->pointer_button_S_grab_time
                                                 );
-                                                xcb_grab_pointer_reply_t *ret = xcb_grab_pointer_reply( display->x_display, ret_id, 0 );
-                                                free(ret);
+                                                xcb_grab_pointer_reply_t *r = xcb_grab_pointer_reply( display->x_display, ret_id, 0 );
+                                                free(r);
                                                 Mt_( dnd_window->drawable, dnd_window->width * dnd_window->height );
                                                 if( !dnd_window->drawable )
                                                 {   GV_(NA);
@@ -1872,7 +1872,7 @@ Loop_2:;    }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                                 }
                                 display->pointer_button_S_seq_i = 0;
                             }else
-                            {   free(ret);
+                            {   free(r);
                                     #ifdef E_flow_C_thread_system_unblock_reports
                                 if( display->pointer_button_S_impulser_time != grab_time )
                                 {   display->pointer_button_S_impulser_time = grab_time;
@@ -1888,7 +1888,7 @@ Loop_2:;    }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                             display->pointer_button_S_seq_i = 0;
                         }
                     }else
-                    {   free(ret);
+                    {   free(r);
                             #ifdef E_flow_C_thread_system_unblock_reports
                         Yi_L( x_window, events_pointer_button_check );
                             #endif
@@ -1940,8 +1940,8 @@ Loop_2:;    }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                           , 1
                           }
                         );
-                        N ret = W( dnd_window->drawable );
-                        if(ret)
+                        N r = W( dnd_window->drawable );
+                        if(r)
                         {   GV_(NA);
                             U_F( E_base_S->E_flow_S_signal, exit );
                             goto Block;
