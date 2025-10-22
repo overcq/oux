@@ -43,9 +43,22 @@ E_ui_Q_gtk_cli_I_build( I id
 _internal
 N
 E_ui_Q_gtk_cli_N_( Pc *s
-, struct E_ui_Q_collection_Z *collection
+, I collection_id
 , I object_id
-){  struct E_ui_Q_object_Z *object = E_mem_Q_tab_R( collection->object, object_id );
+){  struct E_ui_Q_collection_Z *collection = E_mem_Q_tab_R( E_ui_Q_collection_S, collection_id );
+    N l = E_text_Z_n_N_s_G( collection_id, sizeof( collection_id ), 16 );
+    Pc s_cid = M( 1 + l + 2 );
+    if( !s_cid )
+        return ~0;
+    s_cid[ 1 + l + 1 ] = '\0';
+    s_cid[ 1 + l ] = '_';
+    E_text_Z_n_N_s( s_cid + 1 + l, collection_id, sizeof( collection_id ), 16 );
+    s_cid[0] = '_';
+    if( !E_text_Z_s0_I_append_s0( s, s_cid ))
+    {   N r = W( s_cid );
+        return r ? ~1 : ~0;
+    }
+    struct E_ui_Q_object_Z *object = E_mem_Q_tab_R( collection->object, object_id );
     switch( object->type )
     { case E_ui_Z_ui_Z_type_Z_group:
         {   for_i( i, object->child_n )
@@ -54,34 +67,9 @@ E_ui_Q_gtk_cli_N_( Pc *s
                     break;
             }
             if( i == object->child_n )
-            {   if( !E_text_Z_s0_I_append_s0( s, "<child><object class=\"GtkMenuButton\" id=\"_" ))
+            {   if( !E_text_Z_s0_I_append_s0( s, "<child><object class=\"GtkMenuButton\"><property name=\"label\">" ))
                     return ~0;
-                N l = E_text_Z_n_N_s_G( object_id, sizeof( object_id ), 16 );
-                Pc s_id = M( l + 1 );
-                if( !s_id )
-                    return ~0;
-                s_id[l] = '\0';
-                E_text_Z_n_N_s( s_id + l, object_id, sizeof( object_id ), 16 );
-                Pc s_ = E_text_I_serialize_Z_xml_N_attribute_value( s_id );
-                if( !s_ )
-                {   N r = W( s_id );
-                    return r ? ~1 : ~0;
-                }
-                else if( (S)s_ < 0 )
-                    return (N)s_;
-                N r = W( s_id );
-                if(r)
-                    return r;
-                if( !E_text_Z_s0_I_append_s0( s, s_ ))
-                {   N r = W( s_ );
-                    return r ? ~1 : ~0;
-                }
-                r = W( s_ );
-                if(r)
-                    return ~1;
-                if( !E_text_Z_s0_I_append_s0( s, "\"><property name=\"label\">" ))
-                    return ~0;
-                s_ = E_text_I_serialize_Z_xml_N( object->title );
+                Pc s_ = E_text_I_serialize_Z_xml_N( object->title );
                 if( !s_ )
                     return ~0;
                 else if( (S)s_ < 0 )
@@ -90,14 +78,31 @@ E_ui_Q_gtk_cli_N_( Pc *s
                 {   N r = W( s_ );
                     return r ? ~1 : ~0;
                 }
-                r = W( s_ );
+                N r = W( s_ );
                 if(r)
                     return ~1;
-                if( !E_text_Z_s0_I_append_s0( s, "</property><property name=\"menu-model\"><menu><section>" ))
+                if( !E_text_Z_s0_I_append_s0( s, "</property><property name=\"menu-model\"><menu>" ))
                     return ~0;
                 for_i( i, object->child_n )
                 {   struct E_ui_Q_object_Z *object_ = E_mem_Q_tab_R( collection->object, object->child[i] );
-                    if( !E_text_Z_s0_I_append_s0( s, "<item><attribute name=\"label\">" ))
+                    if( !E_text_Z_s0_I_append_s0( s, "<item><attribute name=\"action\">app." )
+                    || !E_text_Z_s0_I_append_s0( s, s_cid )
+                    )
+                        return ~0;
+                    l = E_text_Z_n_N_s_G( object->child[i], sizeof( object->child[i] ), 16 );
+                    Pc s_id = M( l + 1 );
+                    if( !s_id )
+                        return ~0;
+                    s_id[l] = '\0';
+                    E_text_Z_n_N_s( s_id + l, object->child[i], sizeof( object->child[i] ), 16 );
+                    if( !E_text_Z_s0_I_append_s0( s, s_id ))
+                    {   N r = W( s_id );
+                        return r ? ~1 : ~0;
+                    }
+                    r = W( s_id );
+                    if(r)
+                        return ~1;
+                    if( !E_text_Z_s0_I_append_s0( s, "</attribute><attribute name=\"label\">" ))
                         return ~0;
                     s_ = E_text_I_serialize_Z_xml_N( object_->action.label );
                     if( !s_ )
@@ -114,7 +119,7 @@ E_ui_Q_gtk_cli_N_( Pc *s
                     if( !E_text_Z_s0_I_append_s0( s, "</attribute></item>" ))
                         return ~0;
                 }
-                if( !E_text_Z_s0_I_append_s0( s, "</section></menu></property></object></child>" ))
+                if( !E_text_Z_s0_I_append_s0( s, "</menu></property></object></child>" ))
                     return ~0;
             }else
             {   if( !E_text_Z_s0_I_append_s0( s, "<child><object class=\"GtkFrame\"><property name=\"label-widget\"><object class=\"GtkLabel\"><property name=\"label\">" ))
@@ -134,7 +139,7 @@ E_ui_Q_gtk_cli_N_( Pc *s
                 if( !E_text_Z_s0_I_append_s0( s, "</property></object></property><child><object class=\"GtkFlowBox\"><property name=\"max-children-per-line\">100</property>" ))
                     return ~0;
                 for_i( i, object->child_n )
-                {   N r = E_ui_Q_gtk_cli_N_( s, collection, object->child[i] );
+                {   N r = E_ui_Q_gtk_cli_N_( s, collection_id, object->child[i] );
                     if( !~r )
                         return ~0;
                     else if(r)
@@ -146,7 +151,24 @@ E_ui_Q_gtk_cli_N_( Pc *s
             break;
         }
       case E_ui_Z_ui_Z_type_Z_text:
-        {   if( !E_text_Z_s0_I_append_s0( s, "<child><object class=\"GtkEntry\"/></child>" ))
+        {   if( !E_text_Z_s0_I_append_s0( s, "<child><object class=\"GtkEntry\" id=\"" )
+            || !E_text_Z_s0_I_append_s0( s, s_cid )
+            )
+                return ~0;
+            l = E_text_Z_n_N_s_G( object_id, sizeof( object_id ), 16 );
+            Pc s_id = M( l + 1 );
+            if( !s_id )
+                return ~0;
+            s_id[l] = '\0';
+            E_text_Z_n_N_s( s_id + l, object_id, sizeof( object_id ), 16 );
+            if( !E_text_Z_s0_I_append_s0( s, s_id ))
+            {   N r = W( s_id );
+                return r ? ~1 : ~0;
+            }
+            N r = W( s_id );
+            if(r)
+                return ~1;
+            if( !E_text_Z_s0_I_append_s0( s, "\"/></child>" ))
                 return ~0;
             break;
         }
@@ -168,26 +190,80 @@ E_ui_Q_gtk_cli_N_( Pc *s
                     return ~1;
                 if( !E_text_Z_s0_I_append_s0( s, "</property></object></property><child><object class=\"GtkFlowBox\"><property name=\"max-children-per-line\">100</property>" ))
                     return ~0;
+                l = E_text_Z_n_N_s_G( object_id, sizeof( object_id ), 16 );
+                Pc s_id = M( l + 2 );
+                if( !s_id )
+                    return ~0;
+                s_id[ l + 1 ] = '\0';
+                s_id[l] = '_';
+                E_text_Z_n_N_s( s_id + l, object_id, sizeof( object_id ), 16 );
                 for_n( i, object->list.select_n )
-                {   if( !E_text_Z_s0_I_append_s0( s, "<child><object class=\"GtkCheckButton\"><property name=\"label\">" ))
+                {   if( !E_text_Z_s0_I_append_s0( s, "<child><object class=\"GtkCheckButton\" id=\"" )
+                    || !E_text_Z_s0_I_append_s0( s, s_cid )
+                    || !E_text_Z_s0_I_append_s0( s, s_id )
+                    )
+                    {   N r = W( s_id );
+                        return r ? ~1 : ~0;
+                    }
+                    l = E_text_Z_n_N_s_G( i, sizeof(i), 16 );
+                    Pc s_i = M( l + 1 );
+                    if( !s_i )
+                    {   N r = W( s_id );
+                        return r ? ~1 : ~0;
+                    }
+                    s_i[l] = '\0';
+                    E_text_Z_n_N_s( s_i + l, i, sizeof(i), 16 );
+                    if( !E_text_Z_s0_I_append_s0( s, s_i ))
+                    {   N r = W( s_i );
+                        if(r)
+                            return ~1;
+                        r = W( s_id );
+                        return r ? ~1 : ~0;
+                    }
+                    r = W( s_i );
+                    if(r)
+                        return ~1;
+                    if( !E_text_Z_s0_I_append_s0( s, "\"><property name=\"label\">" ))
                         return ~0;
-                    Pc s_ = E_text_I_serialize_Z_xml_N( object->list.select[i] );
+                    s_ = E_text_I_serialize_Z_xml_N( object->list.select[i] );
                     if( !s_ )
                         return ~0;
                     else if( (S)s_ < 0 )
                         return (N)s_;
                     if( !E_text_Z_s0_I_append_s0( s, s_ ))
-                        return ~0;
+                    {   N r = W( s_ );
+                        return r ? ~1 : ~0;
+                    }
                     r = W( s_ );
                     if(r)
                         return ~1;
                     if( !E_text_Z_s0_I_append_s0( s, "</property></object></child>" ))
                         return ~0;
                 }
+                r = W( s_id );
+                if(r)
+                    return ~1;
                 if( !E_text_Z_s0_I_append_s0( s, "</object></child></object></child>" ))
                     return ~0;
             }else
-            {   if( !E_text_Z_s0_I_append_s0( s, "<child><object class=\"GtkDropDown\"><property name=\"model\"><object class=\"GtkStringList\"><items>" ))
+            {   if( !E_text_Z_s0_I_append_s0( s, "<child><object class=\"GtkDropDown\" id=\"" )
+                || !E_text_Z_s0_I_append_s0( s, s_cid )
+                )
+                    return ~0;
+                l = E_text_Z_n_N_s_G( object_id, sizeof( object_id ), 16 );
+                Pc s_id = M( l + 1 );
+                if( !s_id )
+                    return ~0;
+                s_id[l] = '\0';
+                E_text_Z_n_N_s( s_id + l, object_id, sizeof( object_id ), 16 );
+                if( !E_text_Z_s0_I_append_s0( s, s_id ))
+                {   N r = W( s_id );
+                    return r ? ~1 : ~0;
+                }
+                N r = W( s_id );
+                if(r)
+                    return ~1;
+                if( !E_text_Z_s0_I_append_s0( s, "\"><property name=\"model\"><object class=\"GtkStringList\"><items>" ))
                     return ~0;
                 for_n( i, object->list.select_n )
                 {   if( !E_text_Z_s0_I_append_s0( s, "<item>" ))
@@ -213,7 +289,24 @@ E_ui_Q_gtk_cli_N_( Pc *s
             break;
         }
       case E_ui_Z_ui_Z_type_Z_action:
-        {   if( !E_text_Z_s0_I_append_s0( s, "<child><object class=\"GtkButton\"><property name=\"label\">" ))
+        {   if( !E_text_Z_s0_I_append_s0( s, "<child><object class=\"GtkButton\" id=\"" )
+            || !E_text_Z_s0_I_append_s0( s, s_cid )
+            )
+                return ~0;
+            l = E_text_Z_n_N_s_G( object_id, sizeof( object_id ), 16 );
+            Pc s_id = M( l + 1 );
+            if( !s_id )
+                return ~0;
+            s_id[l] = '\0';
+            E_text_Z_n_N_s( s_id + l, object_id, sizeof( object_id ), 16 );
+            if( !E_text_Z_s0_I_append_s0( s, s_id ))
+            {   N r = W( s_id );
+                return r ? ~1 : ~0;
+            }
+            N r = W( s_id );
+            if(r)
+                return ~1;
+            if( !E_text_Z_s0_I_append_s0( s, "\"><property name=\"label\">" ))
                 return ~0;
             Pc s_ = E_text_I_serialize_Z_xml_N( object->action.label );
             if( !s_ )
@@ -224,7 +317,7 @@ E_ui_Q_gtk_cli_N_( Pc *s
             {   N r = W( s_ );
                 return r ? ~1 : ~0;
             }
-            N r = W( s_ );
+            r = W( s_ );
             if(r)
                 return ~1;
             if( !E_text_Z_s0_I_append_s0( s, "</property></object></child>" ))
@@ -233,7 +326,24 @@ E_ui_Q_gtk_cli_N_( Pc *s
         }
       case E_ui_Z_ui_Z_type_Z_level:
         {   if( object->level.max )
-            {   if( !E_text_Z_s0_I_append_s0( s, "<child><object class=\"GtkProgressBar\"><property name=\"fraction\">" ))
+            {   if( !E_text_Z_s0_I_append_s0( s, "<child><object class=\"GtkProgressBar\" id=\"" )
+                || !E_text_Z_s0_I_append_s0( s, s_cid )
+                )
+                    return ~0;
+                l = E_text_Z_n_N_s_G( object_id, sizeof( object_id ), 16 );
+                Pc s_id = M( l + 1 );
+                if( !s_id )
+                    return ~0;
+                s_id[l] = '\0';
+                E_text_Z_n_N_s( s_id + l, object_id, sizeof( object_id ), 16 );
+                if( !E_text_Z_s0_I_append_s0( s, s_id ))
+                {   N r = W( s_id );
+                    return r ? ~1 : ~0;
+                }
+                N r = W( s_id );
+                if(r)
+                    return ~1;
+                if( !E_text_Z_s0_I_append_s0( s, "\"><property name=\"fraction\">" ))
                     return ~0;
                 F f = object->level.current / object->level.max;
                 //E_text_Z_f_N_s()
@@ -246,17 +356,38 @@ E_ui_Q_gtk_cli_N_( Pc *s
                 {   N r = W( s_ );
                     return r ? ~1 : ~0;
                 }
-                N r = W( s_ );
+                r = W( s_ );
                 if(r)
                     return ~1;
                 if( !E_text_Z_s0_I_append_s0( s, "</property></object></child>" ))
                     return ~0;
             }else
-                if( !E_text_Z_s0_I_append_s0( s, "<child><object class=\"GtkSpinner\"><property name=\"spinning\">true</property></object></child>" ))
+            {   if( !E_text_Z_s0_I_append_s0( s, "<child><object class=\"GtkSpinner\" id=\"" )
+                || !E_text_Z_s0_I_append_s0( s, s_cid )
+                )
                     return ~0;
+                l = E_text_Z_n_N_s_G( object_id, sizeof( object_id ), 16 );
+                Pc s_id = M( l + 1 );
+                if( !s_id )
+                    return ~0;
+                s_id[l] = '\0';
+                E_text_Z_n_N_s( s_id + l, object_id, sizeof( object_id ), 16 );
+                if( !E_text_Z_s0_I_append_s0( s, s_id ))
+                {   N r = W( s_id );
+                    return r ? ~1 : ~0;
+                }
+                N r = W( s_id );
+                if(r)
+                    return ~1;
+                if( !E_text_Z_s0_I_append_s0( s, "\"><property name=\"spinning\">true</property></object></child>" ))
+                    return ~0;
+            }
             break;
         }
     }
+    N r = W( s_cid );
+    if(r)
+        return ~1;
     return 0;
 }
 N
@@ -294,7 +425,7 @@ E_ui_Q_gtk_cli_N( Pc *s
         {   struct E_ui_Q_object_Z *object = E_mem_Q_tab_R( collection->object, object_id );
             if( ~object->parent )
                 continue;
-            N r = E_ui_Q_gtk_cli_N_( s, collection, object_id );
+            N r = E_ui_Q_gtk_cli_N_( s, collection_id, object_id );
             if( !~r )
             {   r = W( *s );
                 return r ? ~1 : ~0;
