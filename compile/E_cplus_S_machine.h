@@ -63,7 +63,7 @@ typedef __int128            S128;
 //------------------------------------------------------------------------------
 // Podstawowe typy danych:
 typedef _Bool               B; // Musi być: “true == 1”.
-typedef char                C; // Bajt lub znak bajtowy. Nieprzekraczalne reguły konwersji domyślnej w ‟C” z “char” do “int” wymuszają deklarację “char” bez podania “signed” lub “unsigned”, i następnie w pojedynczych przypadkach domyślnej zmiany z wielkości bajtowej– jawną konwersję typów, przez “unsigned char”. Sposób masowej realizacji takiej konwersji nie jest jeszcze ustalony.
+typedef char                C; // Bajt lub znak bajtowy. Nieprzekraczalne reguły konwersji domyślnej w C z “char” do “int” wymuszają deklarację “char” bez podania “signed” lub “unsigned”, i następnie w pojedynczych przypadkach domyślnej zmiany z wielkości bajtowej – jawną konwersję typów, przez “unsigned char”. Sposób masowej realizacji takiej konwersji nie jest jeszcze ustalony.
      #if defined( __i386__ )
 typedef N32                 N;
 typedef S32                 S;

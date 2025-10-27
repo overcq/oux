@@ -9,7 +9,7 @@
 extern I _X_var( flow, call_req );
 extern I _X_var( io, stream_write );
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-extern void E_flow_Q_process_call_I_func(P);
+extern void E_flow_Q_process_call_I_func( pid_t, P );
 //==============================================================================
     #ifdef E_flow_Q_process_call_C_alt
 #define E_flow_Q_process_call_S_ftok_id 1

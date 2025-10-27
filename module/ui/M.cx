@@ -8,7 +8,8 @@
 * ©overcq                on ‟Gentoo Linux 23.0” “x86_64”              2025‒9‒8 W
 *******************************************************************************/
 enum E_ui_Q_client_Z_type
-{ E_ui_Q_client_Z_type_Z_gtk
+{ E_ui_Q_client_Z_type_Z_auto
+, E_ui_Q_client_Z_type_Z_gtk
 };
 struct E_ui_Q_client_Z
 { pid_t srv_pid;
@@ -28,11 +29,11 @@ E_ui_M( void
 }
 N
 E_ui_W( void
-){  for_each( id, E_ui_Q_client_S, E_mem_Q_tab )
-    {   struct E_ui_Q_client_Z *client = E_mem_Q_tab_R( E_ui_Q_client_S, id );
+){  for_each( client_id, E_ui_Q_client_S, E_mem_Q_tab )
+    {   struct E_ui_Q_client_Z *client = E_mem_Q_tab_R( E_ui_Q_client_S, client_id );
         switch( client->type )
         { case E_ui_Q_client_Z_type_Z_gtk:
-                E_ui_Q_gtk_cli_I_quit(id);
+                E_ui_Q_gtk_cli_I_quit( client_id );
                 break;
         }
     }
@@ -44,33 +45,35 @@ E_ui_W( void
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 I
 E_ui_Q_client_M( enum E_ui_Q_client_Z_type type
-){  I id = E_mem_Q_tab_I_add( E_ui_Q_client_S );
-    if( id < 0 )
-        return id;
-    struct E_ui_Q_client_Z *client = E_mem_Q_tab_R( E_ui_Q_client_S, id );
+){  if( type == E_ui_Q_client_Z_type_Z_auto )
+        type = E_ui_Q_client_Z_type_Z_gtk;
+    I client_id = E_mem_Q_tab_I_add( E_ui_Q_client_S );
+    if( client_id < 0 )
+        return client_id;
+    struct E_ui_Q_client_Z *client = E_mem_Q_tab_R( E_ui_Q_client_S, client_id );
     client->type = type;
     pid_t pid = E_flow_I_fork_I_begin();
     if( !pid )
     {   E_flow_I_fork_I_start();
         switch(type)
         { case E_ui_Q_client_Z_type_Z_gtk:
-                E_flow_I_fork_I_exec( "/home/inc/moje/programy/gui-srv/GTK", ( struct E_flow_Z_args [] ){ 1, ( char *[] ){ "./a.out" } }, 1 );
+                E_flow_I_fork_I_exec( 0, ( struct E_flow_Z_args [] ){ 1, ( char *[] ){ "gui-srv-gtk" } }, 1 );
                 break;
         }
         exit( EXIT_FAILURE );
     }
     E_flow_I_fork_I_end(pid);
     client->srv_pid = pid;
-    return id;
+    return 0;
 }
 N
-E_ui_Q_client_W( I id
-){  struct E_ui_Q_client_Z *client = E_mem_Q_tab_R( E_ui_Q_client_S, id );
+E_ui_Q_client_W( I client_id
+){  struct E_ui_Q_client_Z *client = E_mem_Q_tab_R( E_ui_Q_client_S, client_id );
     switch( client->type )
     { case E_ui_Q_client_Z_type_Z_gtk:
-            E_ui_Q_gtk_cli_I_quit(id);
+            E_ui_Q_gtk_cli_I_quit( client_id );
             break;
     }
-    return E_mem_Q_tab_I_remove( E_ui_Q_client_S, id );
+    return E_mem_Q_tab_I_remove( E_ui_Q_client_S, client_id );
 }
 /******************************************************************************/

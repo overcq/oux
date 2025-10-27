@@ -21,20 +21,22 @@ struct E_ui_Q_object_Z
   enum E_ui_Z_ui_Z_type type;
   union
   { Pc title; // “E_ui_Z_ui_Z_type_Z_group”
-    Pc pathname; // “E_ui_Z_ui_Z_type_Z_text”
+    struct // “E_ui_Z_ui_Z_type_Z_text”
+    { Pc s;
+      B pathname;
+    }text;
     struct  // “E_ui_Z_ui_Z_type_Z_list”
     { Pc title;
       Pc *select;
       N select_n;
+      N select_i;
       B multi;
     }list;
     struct // “E_ui_Z_ui_Z_type_Z_action”
     { Pc label;
       void (*action)(void);
     }action;
-    struct // “E_ui_Z_ui_Z_type_Z_level”
-    { N current, max; // Jeśli “max” równe 0, to typu ‘undefined’.
-    }level;
+    N max; // “E_ui_Z_ui_Z_type_Z_level”. Jeśli “max” równe 0, to typu ‘undefined’.
   };
 };
 struct E_ui_Q_collection_Z
@@ -110,5 +112,32 @@ E_ui_Q_object_W( I collection_id
     if(r)
         return ~2;
     return E_mem_Q_tab_I_remove( collection->object, id );
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+N
+E_ui_I_build( I client_id
+){  struct E_ui_Q_client_Z *client = E_mem_Q_tab_R( E_ui_Q_client_S, client_id );
+    N r;
+    switch( client->type )
+    { case E_ui_Q_client_Z_type_Z_gtk:
+            r = E_ui_Q_gtk_cli_I_build( client_id );
+            break;
+    }
+    return r;
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+N
+E_ui_Q_object_Z_level_P( I client_id
+, I collection_id
+, I object_id
+, N level
+){  struct E_ui_Q_client_Z *client = E_mem_Q_tab_R( E_ui_Q_client_S, client_id );
+    N r;
+    switch( client->type )
+    { case E_ui_Q_client_Z_type_Z_gtk:
+            r = E_ui_Q_gtk_cli_Z_level_P( client_id, collection_id, object_id, level );
+            break;
+    }
+    return r;
 }
 /******************************************************************************/

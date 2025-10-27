@@ -118,13 +118,13 @@ End_4:;
     E_tui_data_Q_layout_I_add( E_tui_data_Q_field_S_text, "44. text input ąę", 100 );
     E_ncurses_I_lay();
 
-    I gtk_cli_id = E_ui_Q_client_M( E_ui_Q_client_Z_type_Z_gtk );
-    if( gtk_cli_id < 0 )
+    I client_id = E_ui_Q_client_M( E_ui_Q_client_Z_type_Z_auto );
+    if( client_id < 0 )
         goto End;
-    X_M( main, gtk_cli_activate );
-    if( _X_var( main, gtk_cli_activate ) < 0 )
-        return (int)_X_var( main, gtk_cli_activate );
-    X_B( main, gtk_cli_activate, 0 )
+    X_M( main, cli_activate );
+    if( _X_var( main, cli_activate ) < 0 )
+        return (int)_X_var( main, cli_activate );
+    X_B( main, cli_activate, 0 )
         goto End_1;
     I collection_id = E_ui_Q_collection_M( "Test" );
     if( collection_id < 0 )
@@ -141,8 +141,7 @@ End_4:;
     group->title = "Group";
     struct E_ui_Q_object_Z *object = E_mem_Q_tab_R( collection->object, object_id );
     object->type = E_ui_Z_ui_Z_type_Z_level;
-    object->level.current = 1;
-    object->level.max = 2;
+    object->max = 2;
     for_n_( i, 50 )
     {   I object_id_2 = E_ui_Q_object_M( collection_id, group_id );
         if( object_id_2 < 0 )
@@ -169,8 +168,7 @@ End_4:;
     group->title = "Group";
     object = E_mem_Q_tab_R( collection->object, object_id );
     object->type = E_ui_Z_ui_Z_type_Z_level;
-    object->level.current = 1;
-    object->level.max = 2;
+    object->max = 2;
     for_n_( i, 50 )
     {   I object_id_2 = E_ui_Q_object_M( collection_id_2, group_id );
         if( object_id_2 < 0 )
@@ -179,19 +177,16 @@ End_4:;
         object->type = E_ui_Z_ui_Z_type_Z_text;
     }
     Pc s;
-    r = E_ui_Q_gtk_cli_N( &s );
+    r = E_ui_I_build( client_id );
+    if(r)
+        return (int)r;
+    r = E_ui_Q_object_Z_level_P( client_id, collection_id_2, object_id, 1 );
     if(r)
         return (int)r;
     r = E_ui_Q_collection_W( collection_id_2 );
     if(r)
         return (int)r;
     r = E_ui_Q_collection_W( collection_id );
-    if(r)
-        return (int)r;
-    r = E_ui_Q_gtk_cli_I_build( gtk_cli_id, s );
-    if(r)
-        return (int)r;
-    r = W(s);
     if(r)
         return (int)r;
 
@@ -380,7 +375,7 @@ End_2:  ;
     if(r)
         return (int)r;
 End_1:
-    r = X_W( main, gtk_cli_activate );
+    r = X_W( main, cli_activate );
     if(r)
         return (int)r;
 End:r = E_tui_W();
@@ -543,10 +538,11 @@ E_main_Q_timer_I_draw(
 }
 //==============================================================================
 void
-E_flow_Q_process_call_I_func( P data
-){  X_A( main, gtk_cli_activate );
-    if( _X_var( main, gtk_cli_activate ) < 0 )
-        exit( (int)_X_var( main, gtk_cli_activate ));
+E_flow_Q_process_call_I_func( pid_t pid
+, P data
+){  X_A( main, cli_activate );
+    if( _X_var( main, cli_activate ) < 0 )
+        exit( (int)_X_var( main, cli_activate ));
     Pc p = data;
     N command = *( N * )p;
     while(command)
@@ -554,10 +550,25 @@ E_flow_Q_process_call_I_func( P data
         B U_L( command, invalid );
         switch(command)
         { case 1:
-                U_F( main, gtk_cli_activate );
+                U_F( main, cli_activate );
                 break;
           case 2:
+            {   for_each( client_id, E_ui_Q_client_S, E_mem_Q_tab )
+                {   struct E_ui_Q_client_Z *client = E_mem_Q_tab_R( E_ui_Q_client_S, client_id );
+                    if( client->srv_pid == pid )
+                    {   switch( client->type )
+                        { case E_ui_Q_client_Z_type_Z_gtk:
+                            {   N r = E_ui_Q_gtk_cli_X(p);
+                                if(r)
+                                    U_F( command, invalid );
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
                 break;
+            }
           default:
                 U_F( command, invalid );
                 break;
@@ -566,6 +577,6 @@ E_flow_Q_process_call_I_func( P data
             break;
         command = *( N * )p;
     }
-    X_U( main, gtk_cli_activate );
+    X_U( main, cli_activate );
 }
 /******************************************************************************/

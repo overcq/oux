@@ -8,33 +8,14 @@
 * ©overcq                on ‟Gentoo Linux 23.0” “x86_64”              2025‒9‒8 a
 *******************************************************************************/
 N
-E_ui_Q_gtk_cli_I_quit( I id
-){  struct E_ui_Q_client_Z *client = E_mem_Q_tab_R( E_ui_Q_client_S, id );
-    J_assert( client->type == E_ui_Q_client_Z_type_Z_gtk );
+E_ui_Q_gtk_cli_I_quit( I client_id
+){  struct E_ui_Q_client_Z *client = E_mem_Q_tab_R( E_ui_Q_client_S, client_id );
     N *n;
     I call_id = E_flow_Q_process_call_M( 2 * sizeof(N), (P)&n );
     if( (S)call_id < 0 )
         return (N)call_id;
     n[0] = 1;
     n[1] = 0;
-    B res;
-    E_flow_Q_process_call_I( call_id, client->srv_pid, &res );
-    return E_flow_Q_process_call_W( call_id );
-}
-N
-E_ui_Q_gtk_cli_I_build( I id
-, Pc s
-){  struct E_ui_Q_client_Z *client = E_mem_Q_tab_R( E_ui_Q_client_S, id );
-    J_assert( client->type == E_ui_Q_client_Z_type_Z_gtk );
-    N l = E_text_Z_s0_R_l_0(s);
-    Pc p;
-    I call_id = E_flow_Q_process_call_M( sizeof(N) + l + sizeof(N), (P)&p );
-    if( (S)call_id < 0 )
-        return (N)call_id;
-    *( N * )p = 2;
-    p += sizeof(N);
-    p = E_text_Z_s_P_copy_s0_0( p, s );
-    *( N * )p = 0;
     B res;
     E_flow_Q_process_call_I( call_id, client->srv_pid, &res );
     return E_flow_Q_process_call_W( call_id );
@@ -325,7 +306,7 @@ E_ui_Q_gtk_cli_N_( Pc *s
             break;
         }
       case E_ui_Z_ui_Z_type_Z_level:
-        {   if( object->level.max )
+        {   if( object->max )
             {   if( !E_text_Z_s0_I_append_s0( s, "<child><object class=\"GtkProgressBar\" id=\"" )
                 || !E_text_Z_s0_I_append_s0( s, s_cid )
                 )
@@ -343,23 +324,7 @@ E_ui_Q_gtk_cli_N_( Pc *s
                 N r = W( s_id );
                 if(r)
                     return ~1;
-                if( !E_text_Z_s0_I_append_s0( s, "\"><property name=\"fraction\">" ))
-                    return ~0;
-                F f = object->level.current / object->level.max;
-                //E_text_Z_f_N_s()
-                Pc s_ = E_text_I_serialize_Z_xml_N( "0.5" );
-                if( !s_ )
-                    return ~0;
-                else if( (S)s_ < 0 )
-                    return (N)s_;
-                if( !E_text_Z_s0_I_append_s0( s, s_ ))
-                {   N r = W( s_ );
-                    return r ? ~1 : ~0;
-                }
-                r = W( s_ );
-                if(r)
-                    return ~1;
-                if( !E_text_Z_s0_I_append_s0( s, "</property></object></child>" ))
+                if( !E_text_Z_s0_I_append_s0( s, "\"><property name=\"fraction\">0</property></object></child>" ))
                     return ~0;
             }else
             {   if( !E_text_Z_s0_I_append_s0( s, "<child><object class=\"GtkSpinner\" id=\"" )
@@ -440,5 +405,64 @@ E_ui_Q_gtk_cli_N( Pc *s
     if( !E_text_Z_s0_I_append_s0( s, "</interface>" ))
         return ~0;
     return 0;
+}
+N
+E_ui_Q_gtk_cli_I_build( I client_id
+){  Pc s;
+    N r = E_ui_Q_gtk_cli_N( &s );
+    if(r)
+        return r;
+    N l = E_text_Z_s0_R_l_0(s);
+    Pc p;
+    I call_id = E_flow_Q_process_call_M( sizeof(N) + l + sizeof(N), (P)&p );
+    if( (S)call_id < 0 )
+        return (N)call_id;
+    *( N * )p = 2;
+    p += sizeof(N);
+    p = E_text_Z_s_P_copy_s0_0( p, s );
+    *( N * )p = 0;
+    r = W(s);
+    if(r)
+    {   r = E_flow_Q_process_call_W( call_id );
+        return r ? ~1 : ~0;
+    }
+    B res;
+    struct E_ui_Q_client_Z *client = E_mem_Q_tab_R( E_ui_Q_client_S, client_id );
+    E_flow_Q_process_call_I( call_id, client->srv_pid, &res );
+    r = E_flow_Q_process_call_W( call_id );
+    return r ? ~1 : 0;
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+N
+E_ui_Q_gtk_cli_X( Pc p
+){  
+    return 0;
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+N
+E_ui_Q_gtk_cli_Z_level_P( I client_id
+, I collection_id
+, I object_id
+, F level
+){  struct E_ui_Q_client_Z *client = E_mem_Q_tab_R( E_ui_Q_client_S, client_id );
+    struct E_ui_Q_collection_Z *collection = E_mem_Q_tab_R( E_ui_Q_collection_S, collection_id );
+    struct E_ui_Q_object_Z *object = E_mem_Q_tab_R( collection->object, object_id );
+    N l_1 = E_text_Z_n_N_s_G( collection_id, sizeof( collection_id ), 16 );
+    N l_2 = E_text_Z_n_N_s_G( object_id, sizeof( object_id ), 16 );
+    Pc p;
+    I call_id = E_flow_Q_process_call_M( sizeof(N) + 1 + l_1 + 1 + l_2 + 1 + sizeof(F) + sizeof(N), (P)&p );
+    if( (S)call_id < 0 )
+        return (N)call_id;
+    *( N * )( p + sizeof(N) + 1 + l_1 + 1 + l_2 + 1 + sizeof(F) ) = 0;
+    *( F * )( p + sizeof(N) + 1 + l_1 + 1 + l_2 + 1 ) = level / object->max;
+    p[ sizeof(N) + 1 + l_1 + 1 + l_2 ] = '\0';
+    E_text_Z_n_N_s( p + sizeof(N) + 1 + l_1 + 1 + l_2, object_id, sizeof( object_id ), 16 );
+    p[ sizeof(N) + 1 + l_1 ] = '_';
+    E_text_Z_n_N_s( p + sizeof(N) + 1 + l_1, collection_id, sizeof( collection_id ), 16 );
+    p[ sizeof(N) ] = '_';
+    *( N * )p = 3;
+    B res;
+    E_flow_Q_process_call_I( call_id, client->srv_pid, &res );
+    return E_flow_Q_process_call_W( call_id );
 }
 /******************************************************************************/
