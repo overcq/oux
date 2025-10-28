@@ -141,7 +141,7 @@ End_4:;
     group->title = "Group";
     struct E_ui_Q_object_Z *object = E_mem_Q_tab_R( collection->object, object_id );
     object->type = E_ui_Z_ui_Z_type_Z_level;
-    object->max = 2;
+    object->max = 0;
     for_n_( i, 50 )
     {   I object_id_2 = E_ui_Q_object_M( collection_id, group_id );
         if( object_id_2 < 0 )
@@ -175,18 +175,17 @@ End_4:;
             return (int)object_id_2;
         object = E_mem_Q_tab_R( collection->object, object_id_2 );
         object->type = E_ui_Z_ui_Z_type_Z_text;
+        object->text.pathname = 0;
+        object->text.s = M(1);
+        if( !object->text.s )
+            return EXIT_FAILURE;
+        *object->text.s = '\0';
     }
     Pc s;
     r = E_ui_I_build( client_id );
     if(r)
         return (int)r;
     r = E_ui_Q_object_Z_level_P( client_id, collection_id_2, object_id, 1 );
-    if(r)
-        return (int)r;
-    r = E_ui_Q_collection_W( collection_id_2 );
-    if(r)
-        return (int)r;
-    r = E_ui_Q_collection_W( collection_id );
     if(r)
         return (int)r;
 
@@ -542,7 +541,9 @@ E_flow_Q_process_call_I_func( pid_t pid
 , P data
 ){  X_A( main, cli_activate );
     if( _X_var( main, cli_activate ) < 0 )
-        exit( (int)_X_var( main, cli_activate ));
+    {   U_F( E_base_S->E_flow_S_signal, exit );
+        return;
+    }
     Pc p = data;
     N command = *( N * )p;
     while(command)
@@ -558,7 +559,7 @@ E_flow_Q_process_call_I_func( pid_t pid
                     if( client->srv_pid == pid )
                     {   switch( client->type )
                         { case E_ui_Q_client_Z_type_Z_gtk:
-                            {   N r = E_ui_Q_gtk_cli_X(p);
+                            {   N r = E_ui_Q_gtk_cli_X( &p );
                                 if(r)
                                     U_F( command, invalid );
                                 break;

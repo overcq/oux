@@ -28,8 +28,8 @@ struct E_ui_Q_object_Z
     struct  // “E_ui_Z_ui_Z_type_Z_list”
     { Pc title;
       Pc *select;
-      N select_n;
-      N select_i;
+      N32 select_n;
+      N32 select_i;
       B multi;
     }list;
     struct // “E_ui_Z_ui_Z_type_Z_action”
@@ -48,7 +48,7 @@ struct E_mem_Q_tab_Z *E_ui_Q_collection_S;
 I
 E_ui_Q_collection_M( Pc title
 ){  I id = E_mem_Q_tab_I_add( E_ui_Q_collection_S );
-    if( (S)id < 0 )
+    if( id < 0 )
         return id;
     struct E_ui_Q_collection_Z *collection = E_mem_Q_tab_R( E_ui_Q_collection_S, id );
     collection->object = E_mem_Q_tab_M( sizeof( struct E_ui_Q_object_Z ), 0 );
@@ -73,7 +73,7 @@ E_ui_Q_object_M( I collection_id
 , I parent_id
 ){  struct E_ui_Q_collection_Z *collection = E_mem_Q_tab_R( E_ui_Q_collection_S, collection_id );
     I id = E_mem_Q_tab_I_add( collection->object );
-    if( (S)id < 0 )
+    if( id < 0 )
         return id;
     struct E_ui_Q_object_Z *object = E_mem_Q_tab_R( collection->object, id );
     Mt_( object->child, 0 );
@@ -111,6 +111,15 @@ E_ui_Q_object_W( I collection_id
     N r = W( object->child );
     if(r)
         return ~2;
+    switch( object->type )
+    { case E_ui_Z_ui_Z_type_Z_text:
+            if( object->text.s )
+            {   N r = W( object->text.s );
+                if(r)
+                    return ~2;
+            }
+            break;
+    }
     return E_mem_Q_tab_I_remove( collection->object, id );
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
