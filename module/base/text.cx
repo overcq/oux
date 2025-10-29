@@ -1893,6 +1893,56 @@ E_text_Z_getter_Z_c_R_u_rev( N (*getter)(void)
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Pc
+E_text_I_serialize_Z_quoted_N( Pc t
+){  Pc t_ = t;
+    U u;
+    while( *t_ )
+    {   t_ = E_text_Z_su_R_u( t_, &u );
+        if( (S)u < 0 )
+            return 0;
+        if( u == '\\'
+        || u == '\"'
+        )
+        {   t_--;
+            break;
+        }
+    }
+    Pc s = M( t_ - t + ( u == '\\' ? J_s0_R_l( "\\\\" ) : u == '\"' ? J_s0_R_l( "\\\"" ) : 0 ) + 1 );
+    if( !s )
+        return 0;
+    if( *t_ )
+    {   Pc s_ = E_text_Z_s_P_copy_s( s, t, t_ );
+        E_text_Z_s_P_copy_s0_0( s_, u == '\\' ? "\\\\" : "\\\"" );
+        t = ++t_;
+        while( *t_ )
+        {   t_ = E_text_Z_su_R_u( t_, &u );
+            if( (S)u < 0 )
+            {   N r = W(s);
+                return r ? (P)~1 : 0;
+            }
+            if( u == '&'
+            || u == '<'
+            || u == '>'
+            )
+            {   t_--;
+                if( !( s_ = E_mem_Q_blk_I_append( &s, t_ - t + ( u == '\\' ? J_s0_R_l( "\\\\" ) : J_s0_R_l( "\\\"" )))))
+                {   N r = W(s);
+                    return r ? (P)~1 : 0;
+                }
+                s_ = E_text_Z_s_P_copy_s( s_ - 1, t, t_ );
+                E_text_Z_s_P_copy_s0_0( s_, u == '\\' ? "\\\\" : "\\\"" );
+                t = ++t_;
+            }
+        }
+        if( !E_text_Z_s0_I_append_s( &s, t, t_ ))
+        {   N r = W(s);
+            return r ? (P)~1 : 0;
+        }
+    }else
+        E_text_Z_s_P_copy_s_0( s, t, t_ );
+    return s;
+}
+Pc
 E_text_I_serialize_Z_xml_N( Pc t
 ){  Pc t_ = t;
     U u;
@@ -1904,7 +1954,9 @@ E_text_I_serialize_Z_xml_N( Pc t
         || u == '<'
         || u == '>'
         )
+        {   t_--;
             break;
+        }
     }
     Pc s = M( t_ - t + ( u == '&' ? J_s0_R_l( "&amp;" ) : u == '<' ? J_s0_R_l( "&gt;" ) : u == '>' ? J_s0_R_l( "&lt;" ) : 0 ) + 1 );
     if( !s )
@@ -1912,7 +1964,7 @@ E_text_I_serialize_Z_xml_N( Pc t
     if( *t_ )
     {   Pc s_ = E_text_Z_s_P_copy_s( s, t, t_ );
         E_text_Z_s_P_copy_s0_0( s_, u == '&' ? "&amp;" : u == '<' ? "&lt;" : "&gt;" );
-        t = t_;
+        t = ++t_;
         while( *t_ )
         {   t_ = E_text_Z_su_R_u( t_, &u );
             if( (S)u < 0 )
@@ -1923,13 +1975,14 @@ E_text_I_serialize_Z_xml_N( Pc t
             || u == '<'
             || u == '>'
             )
-            {   if( !( s_ = E_mem_Q_blk_I_append( &s, t_ - t + ( u == '&' ? J_s0_R_l( "&amp;" ) : u == '<' ? J_s0_R_l( "&gt;" ) : J_s0_R_l( "&lt;" )))))
+            {   t_--;
+                if( !( s_ = E_mem_Q_blk_I_append( &s, t_ - t + ( u == '&' ? J_s0_R_l( "&amp;" ) : u == '<' ? J_s0_R_l( "&gt;" ) : J_s0_R_l( "&lt;" )))))
                 {   N r = W(s);
                     return r ? (P)~1 : 0;
                 }
                 s_ = E_text_Z_s_P_copy_s( s_ - 1, t, t_ );
                 E_text_Z_s_P_copy_s0_0( s_, u == '&' ? "&amp;" : u == '<' ? "&lt;" : "&gt;" );
-                t = t_;
+                t = ++t_;
             }
         }
         if( !E_text_Z_s0_I_append_s( &s, t, t_ ))
@@ -1954,7 +2007,9 @@ E_text_I_serialize_Z_xml_N_attribute_value( Pc t
         || u == '\"'
         || u == '\''
         )
+        {   t_--;
             break;
+        }
     }
     Pc s = M( t_ - t + ( u == '&' ? J_s0_R_l( "&amp;" ) : u == '<' ? J_s0_R_l( "&gt;" ) : u == '>' ? J_s0_R_l( "&lt;" ) : u == '\"' ? J_s0_R_l( "&quot;" ) : u == '\'' ? J_s0_R_l( "&apos;" ) : 0 ) + 1 );
     if( !s )
@@ -1962,7 +2017,7 @@ E_text_I_serialize_Z_xml_N_attribute_value( Pc t
     if( *t_ )
     {   Pc s_ = E_text_Z_s_P_copy_s( s, t, t_ );
         E_text_Z_s_P_copy_s0_0( s_, u == '&' ? "&amp;" : u == '<' ? "&lt;" : u == '>' ? "&gt;" : u == '\"' ? "&quot;" : "&apos;" );
-        t = t_;
+        t = ++t_;
         while( *t_ )
         {   t_ = E_text_Z_su_R_u( t_, &u );
             if( (S)u < 0 )
@@ -1973,13 +2028,14 @@ E_text_I_serialize_Z_xml_N_attribute_value( Pc t
             || u == '<'
             || u == '>'
             )
-            {   if( !( s_ = E_mem_Q_blk_I_append( &s, t_ - t + ( u == '&' ? J_s0_R_l( "&amp;" ) : u == '<' ? J_s0_R_l( "&gt;" ) : u == '>' ? J_s0_R_l( "&lt;" ) : u == '\"' ? J_s0_R_l( "&quot;" ) : J_s0_R_l( "&apos;" )))))
+            {   t_--;
+                if( !( s_ = E_mem_Q_blk_I_append( &s, t_ - t + ( u == '&' ? J_s0_R_l( "&amp;" ) : u == '<' ? J_s0_R_l( "&gt;" ) : u == '>' ? J_s0_R_l( "&lt;" ) : u == '\"' ? J_s0_R_l( "&quot;" ) : J_s0_R_l( "&apos;" )))))
                 {   N r = W(s);
                     return r ? (P)~1 : 0;
                 }
                 s_ = E_text_Z_s_P_copy_s( s_ - 1, t, t_ );
                 E_text_Z_s_P_copy_s0_0( s_, u == '&' ? "&amp;" : u == '<' ? "&lt;" : u == '>' ? "&gt;" : u == '\"' ? "&quot;" : "&apos;" );
-                t = t_;
+                t = ++t_;
             }
         }
         if( !E_text_Z_s0_I_append_s( &s, t, t_ ))

@@ -10,6 +10,7 @@
 enum E_ui_Q_client_Z_type
 { E_ui_Q_client_Z_type_Z_auto
 , E_ui_Q_client_Z_type_Z_gtk
+, E_ui_Q_client_Z_type_Z_qt
 };
 struct E_ui_Q_client_Z
 { pid_t srv_pid;
@@ -35,6 +36,9 @@ E_ui_W( void
         { case E_ui_Q_client_Z_type_Z_gtk:
                 E_ui_Q_gtk_cli_I_quit( client_id );
                 break;
+          case E_ui_Q_client_Z_type_Z_qt:
+                E_ui_Q_qt_cli_I_quit( client_id );
+                break;
         }
     }
     N r = E_mem_Q_tab_W( E_ui_Q_client_S );
@@ -46,7 +50,7 @@ E_ui_W( void
 I
 E_ui_Q_client_M( enum E_ui_Q_client_Z_type type
 ){  if( type == E_ui_Q_client_Z_type_Z_auto )
-        type = E_ui_Q_client_Z_type_Z_gtk;
+        type = E_ui_Q_client_Z_type_Z_qt;
     I client_id = E_mem_Q_tab_I_add( E_ui_Q_client_S );
     if( client_id < 0 )
         return client_id;
@@ -58,6 +62,9 @@ E_ui_Q_client_M( enum E_ui_Q_client_Z_type type
         switch(type)
         { case E_ui_Q_client_Z_type_Z_gtk:
                 E_flow_I_fork_I_exec( 0, ( struct E_flow_Z_args [] ){ 1, ( char *[] ){ "gui-srv-gtk" } }, 1 );
+                break;
+          case E_ui_Q_client_Z_type_Z_qt:
+                E_flow_I_fork_I_exec( 0, ( struct E_flow_Z_args [] ){ 1, ( char *[] ){ "gui-srv-qt" } }, 1 );
                 break;
         }
         exit( EXIT_FAILURE );
