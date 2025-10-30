@@ -44,7 +44,7 @@ E_ui_Q_qt_cli_N_( Pc *s
                     break;
             }
             if( i == object->child_n )
-            {   if( !E_text_Z_s0_I_append_s0( s, "Button{title:\"" ))
+            {   if( !E_text_Z_s0_I_append_s0( s, "Button{text:\"" ))
                     return ~0;
                 Pc s_ = E_text_I_serialize_Z_quoted_N( object->title );
                 if( !s_ )
@@ -62,7 +62,7 @@ E_ui_Q_qt_cli_N_( Pc *s
                     return ~0;
                 for_i( i, object->child_n )
                 {   struct E_ui_Q_object_Z *object_ = E_mem_Q_tab_R( collection->object, object->child[i] );
-                    if( !E_text_Z_s0_I_append_s0( s, "Action{\"" )
+                    if( !E_text_Z_s0_I_append_s0( s, "MenuItem{objectName:\"" )
                     || !E_text_Z_s0_I_append_s0( s, s_cid )
                     )
                         return ~0;
@@ -244,7 +244,7 @@ E_ui_Q_qt_cli_N_( Pc *s
                     return ~0;
                 J_assert( object->list.select_n );
                 for_n( i, object->list.select_n )
-                {   if( !E_text_Z_s0_I_append_s0( s, "\"" ))
+                {   if( !E_text_Z_s0_I_append_c( s, '\"' ))
                         return ~0;
                     Pc s_ = E_text_I_serialize_Z_quoted_N( object->list.select[i] );
                     if( !s_ )
@@ -356,11 +356,11 @@ E_ui_Q_qt_cli_N_( Pc *s
 }
 N
 E_ui_Q_qt_cli_N( Pc *s
-){  N l = J_s0_R_l( "import QtQuick.Controls\nimport QtQuick.Layouts\n" ) + 1;
+){  N l = J_s0_R_l( "import QtQuick.Controls\nimport QtQuick.Layouts\nimport QtQuick.Window\n" ) + 1;
     *s = M(l);
     if( !*s )
         return ~0;
-    E_text_Z_s_P_copy_s0_0( *s, "import QtQuick.Controls\nimport QtQuick.Layouts\n" );
+    E_text_Z_s_P_copy_s0_0( *s, "import QtQuick.Controls\nimport QtQuick.Layouts\nimport QtQuick.Window\n" );
     for_each( collection_id, E_ui_Q_collection_S, E_mem_Q_tab )
     {   struct E_ui_Q_collection_Z *collection = E_mem_Q_tab_R( E_ui_Q_collection_S, collection_id );
         if( !E_text_Z_s0_I_append_s0( s, "ApplicationWindow{title:\"" ))
@@ -402,97 +402,5 @@ E_ui_Q_qt_cli_N( Pc *s
         }
     }
     return 0;
-}
-N
-E_ui_Q_qt_cli_I_build( I client_id
-){  Pc s;
-    N r = E_ui_Q_qt_cli_N( &s );
-    if(r)
-        return r;
-    N l = E_text_Z_s0_R_l_0(s);
-    Pc p;
-    I call_id = E_flow_Q_process_call_M( sizeof(N) + l + sizeof(N), (P)&p );
-    if( (S)call_id < 0 )
-        return (N)call_id;
-    *( N * )p = 2;
-    p += sizeof(N);
-    p = E_text_Z_s_P_copy_s0_0( p, s );
-    *( N * )p = 0;
-    r = W(s);
-    if(r)
-    {   r = E_flow_Q_process_call_W( call_id );
-        return r ? ~1 : ~0;
-    }
-    B res;
-    struct E_ui_Q_client_Z *client = E_mem_Q_tab_R( E_ui_Q_client_S, client_id );
-    E_flow_Q_process_call_I( call_id, client->srv_pid, &res );
-    r = E_flow_Q_process_call_W( call_id );
-    return r ? ~1 : 0;
-}
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-N
-E_ui_Q_qt_cli_X( Pc *p
-){  if( **p != '_' )
-        return ~0;
-    I collection_id = E_text_Z_s0_N_n( *p + 1, p, 36 );
-    if( **p != '_'
-    || !E_mem_Q_tab_T( E_ui_Q_collection_S, collection_id )
-    )
-        return ~0;
-    struct E_ui_Q_collection_Z *collection = E_mem_Q_tab_R( E_ui_Q_collection_S, collection_id );
-    I object_id = E_text_Z_s0_N_n( *p + 1, p, 36 );
-    if( **p
-    || !E_mem_Q_tab_T( collection->object, object_id )
-    )
-        return ~0;
-    struct E_ui_Q_object_Z *object = E_mem_Q_tab_R( collection->object, object_id );
-    switch( object->type )
-    { case E_ui_Z_ui_Z_type_Z_text:
-        {   N l = E_text_Z_s0_R_l_0( ++*p );
-            if( !E_mem_Q_blk_M_replace( &object->text.s, l ))
-                return ~0;
-            E_text_Z_s_P_copy_s0_0( object->text.s, *p );
-            *p += l;
-            break;
-        }
-      case E_ui_Z_ui_Z_type_Z_list:
-            if( *( N32 * )p >= object->list.select_n )
-                return ~0;
-            object->list.select_i = *( N32 * )p;
-            p += sizeof(N32);
-            break;
-      case E_ui_Z_ui_Z_type_Z_action:
-            object->action.action();
-            break;
-    }
-    return 0;
-}
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-N
-E_ui_Q_qt_cli_Z_level_P( I client_id
-, I collection_id
-, I object_id
-, F level
-){  struct E_ui_Q_client_Z *client = E_mem_Q_tab_R( E_ui_Q_client_S, client_id );
-    struct E_ui_Q_collection_Z *collection = E_mem_Q_tab_R( E_ui_Q_collection_S, collection_id );
-    struct E_ui_Q_object_Z *object = E_mem_Q_tab_R( collection->object, object_id );
-    N l_1 = E_text_Z_n_N_s_G( collection_id, sizeof( collection_id ), 36 );
-    N l_2 = E_text_Z_n_N_s_G( object_id, sizeof( object_id ), 36 );
-    Pc p;
-    I call_id = E_flow_Q_process_call_M( sizeof(N) + 1 + l_1 + 1 + l_2 + 1 + sizeof(F) + sizeof(N), (P)&p );
-    if( (S)call_id < 0 )
-        return (N)call_id;
-    *( N * )( p + sizeof(N) + 1 + l_1 + 1 + l_2 + 1 + sizeof(F) ) = 0;
-    if( object->max )
-        *( F * )( p + sizeof(N) + 1 + l_1 + 1 + l_2 + 1 ) = level / object->max;
-    p[ sizeof(N) + 1 + l_1 + 1 + l_2 ] = '\0';
-    E_text_Z_n_N_s( p + sizeof(N) + 1 + l_1 + 1 + l_2, object_id, sizeof( object_id ), 36 );
-    p[ sizeof(N) + 1 + l_1 ] = '_';
-    E_text_Z_n_N_s( p + sizeof(N) + 1 + l_1, collection_id, sizeof( collection_id ), 36 );
-    p[ sizeof(N) ] = '_';
-    *( N * )p = 3;
-    B res;
-    E_flow_Q_process_call_I( call_id, client->srv_pid, &res );
-    return E_flow_Q_process_call_W( call_id );
 }
 /******************************************************************************/
