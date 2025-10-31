@@ -37,8 +37,9 @@ Parts inside modules:
 * memory tables: [mem-tab.cx](https://github.com/overcq/oux/tree/main/module/base/mem-tab.cx)
 * big floating-point numbers: [math-bignum.cx](https://github.com/overcq/oux/tree/main/module/base/math-bignum.cx)
 * read and write files: [mem-file.cx](https://github.com/overcq/oux/tree/main/module/base/mem-file.cx)
-* universal text user interface: [“tui” module](https://github.com/overcq/oux/tree/main/module/tui)
-* universal graphical user interface: [“gui-xcb” module](https://github.com/overcq/oux/tree/main/module/gui-xcb)
+* universal user interface: [ui.cx](https://github.com/overcq/oux/blob/main/module/ui/ui.cx)
+* text user interface: [“tui” module](https://github.com/overcq/oux/tree/main/module/tui)
+* graphical user interface: [“gui-xcb” module](https://github.com/overcq/oux/tree/main/module/gui-xcb)
 
 and many more...
 
