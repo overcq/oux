@@ -12,7 +12,7 @@ LANG=C
 exc_man_re=''
 exc_func_re='for|ioctl|main|sizeof|syscall|while'
 #===============================================================================
-for a in a b c d e f g h i j k l m n o p q r s t u v w x y z
+for a in s
 do
     apropos "$a"
 done \
@@ -33,7 +33,7 @@ done \
                 print sect, a[i]
     }
 ' \
-| sort -u \
+#| sort -u \
 | grep -Eve " (${exc_man_re})\$" \
 | xargs -n 2 $SHELL -c 'echo "man $@" >&2; env MANPAGER=/bin/cat PAGER=/bin/cat man "$@"' $SHELL \
 | awk '
