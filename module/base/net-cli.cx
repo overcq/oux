@@ -204,23 +204,23 @@ E_net_cli_Q_ssl_I_connect( SSL_CTX *ssl_ctx
     {   V1( fd = socket( ai_1->ai_family, ai_1->ai_socktype, ai_1->ai_protocol ))
             break;
         V0( connect( fd, ai_1->ai_addr, ai_1->ai_addrlen ))
-        {   V0( close(fd) ){}
+        {   VO0( close(fd) ){}
             goto Cont;
         }
         ssl = SSL_new( ssl_ctx );
         if( !ssl )
-        {   V0( close(fd) ){}
+        {   VO0( close(fd) ){}
             break;
         }
         if( SSL_set_fd( ssl, fd ) != 1 )
         {   SSL_free(ssl);
-            V0( close(fd) ){}
+            VO0( close(fd) ){}
             break;
         }
         e = SSL_connect(ssl);
         if( !e )
         {   SSL_free(ssl);
-            V0( close(fd) ){}
+            VO0( close(fd) ){}
             goto Cont;
         }
         if( e < 0 )
@@ -230,7 +230,7 @@ E_net_cli_Q_ssl_I_connect( SSL_CTX *ssl_ctx
             )
                 SSL_shutdown(ssl);
             SSL_free(ssl);
-            V0( close(fd) ){}
+            VO0( close(fd) ){}
             goto Cont;
         }
         break;
@@ -272,7 +272,7 @@ Cont:   ai_1 = ai_1->ai_next;
             E_net_cli_I_write_data( ssl, fd, &buf[0], buf_ - (Pc)&buf[0] );
             SSL_shutdown(ssl);
             SSL_free(ssl);
-            V0( close(fd) ){}
+            VO0( close(fd) ){}
                 #ifdef __gnu_linux__
             struct epoll_event ee;
             ee.events = EPOLLIN;
@@ -317,7 +317,7 @@ Cont:   ai_1 = ai_1->ai_next;
             if( !E_mem_Q_blk_I_remove( &E_net_http_S_connect, E_net_http_S_connect_n - 1, 1 ))
                 return ~2;
             E_net_http_S_connect_n--;
-            V0( close(fd) ){}
+            VO0( close(fd) ){}
                 #ifdef __gnu_linux__
             struct epoll_event ee;
             ee.events = EPOLLIN;
@@ -340,7 +340,7 @@ Cont:   ai_1 = ai_1->ai_next;
             if( !E_mem_Q_blk_I_remove( &E_net_http_S_connect, E_net_http_S_connect_n - 1, 1 ))
                 return ~2;
             E_net_http_S_connect_n--;
-            V0( close(fd) ){}
+            VO0( close(fd) ){}
                 #ifdef __gnu_linux__
             struct epoll_event ee;
             ee.events = EPOLLIN;
@@ -372,7 +372,7 @@ Cont:   ai_1 = ai_1->ai_next;
             if( !E_mem_Q_blk_I_remove( &E_net_http_S_connect, E_net_http_S_connect_n - 1, 1 ))
                 return ~2;
             E_net_http_S_connect_n--;
-            V0( close(fd) ){}
+            VO0( close(fd) ){}
                 #ifdef __gnu_linux__
             struct epoll_event ee;
             ee.events = EPOLLIN;
@@ -404,7 +404,7 @@ Cont:   ai_1 = ai_1->ai_next;
             if( !E_mem_Q_blk_I_remove( &E_net_http_S_connect, E_net_http_S_connect_n - 1, 1 ))
                 return ~2;
             E_net_http_S_connect_n--;
-            V0( close(fd) ){}
+            VO0( close(fd) ){}
                 #ifdef __gnu_linux__
             struct epoll_event ee;
             ee.events = EPOLLIN;
@@ -438,7 +438,7 @@ Cont:   ai_1 = ai_1->ai_next;
             if( !E_mem_Q_blk_I_remove( &E_net_http_S_connect, E_net_http_S_connect_n - 1, 1 ))
                 return ~2;
             E_net_http_S_connect_n--;
-            V0( close(fd) ){}
+            VO0( close(fd) ){}
                 #ifdef __gnu_linux__
             struct epoll_event ee;
             ee.events = EPOLLIN;
@@ -473,7 +473,7 @@ Cont:   ai_1 = ai_1->ai_next;
             if( !E_mem_Q_blk_I_remove( &E_net_http_S_connect, E_net_http_S_connect_n - 1, 1 ))
                 return ~2;
             E_net_http_S_connect_n--;
-            V0( close(fd) ){}
+            VO0( close(fd) ){}
                 #ifdef __gnu_linux__
             struct epoll_event ee;
             ee.events = EPOLLIN;
@@ -499,7 +499,7 @@ Cont:   ai_1 = ai_1->ai_next;
     if( !E_mem_Q_blk_I_append( &E_net_http_S_connect, 1 ))
     {   SSL_shutdown(ssl);
         SSL_free(ssl);
-        V0( close(fd) ){}
+        VO0( close(fd) ){}
             #ifdef __gnu_linux__
         struct epoll_event ee;
         ee.events = EPOLLIN;
@@ -531,7 +531,7 @@ Cont:   ai_1 = ai_1->ai_next;
         if( !E_mem_Q_blk_I_remove( &E_net_http_S_connect, E_net_http_S_connect_n - 1, 1 ))
             return ~2;
         E_net_http_S_connect_n--;
-        V0( close(fd) ){}
+        VO0( close(fd) ){}
             #ifdef __gnu_linux__
         struct epoll_event ee;
         ee.events = EPOLLIN;
@@ -556,7 +556,7 @@ Cont:   ai_1 = ai_1->ai_next;
         if( !E_mem_Q_blk_I_remove( &E_net_http_S_connect, E_net_http_S_connect_n - 1, 1 ))
             return ~2;
         E_net_http_S_connect_n--;
-        V0( close(fd) ){}
+        VO0( close(fd) ){}
             #ifdef __gnu_linux__
         struct epoll_event ee;
         ee.events = EPOLLIN;
@@ -633,7 +633,7 @@ Block:  Xh_B_();
                 if( E_net_http_S_connect[i].buf )
                     if( W( E_net_http_S_connect[i].buf ))
                         break;
-                V0( close( E_net_http_S_connect[i].connect_sock )){}
+                VO0( close( E_net_http_S_connect[i].connect_sock )){}
             }
             if( i != E_net_http_S_connect_n )
                 break;
@@ -673,7 +673,7 @@ Block:  Xh_B_();
                 if( E_net_http2_S_connect[i].buf )
                     if( W( E_net_http2_S_connect[i].buf ))
                         break;
-                V0( close( E_net_http2_S_connect[i].connect_sock )){}
+                VO0( close( E_net_http2_S_connect[i].connect_sock )){}
             }
             break;
         }
@@ -928,7 +928,7 @@ End_1:      if( E_net_http_S_connect[i].ssl )
             E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, 1 + i, 1 );
             E_net_cli_S_poll_fd_n--;
                 #endif
-            V0( close( E_net_http_S_connect[i].connect_sock )){}
+            VO0( close( E_net_http_S_connect[i].connect_sock )){}
             if( !E_mem_Q_blk_I_remove( &E_net_http_S_connect, i, 1 ))
                 V();
             E_net_http_S_connect_n--;
@@ -1528,7 +1528,7 @@ Exit:       {   U_F( E_base_S->E_flow_S_signal, exit );
             E_mem_Q_blk_I_remove( &E_net_cli_S_poll_fd, 1 + i, 1 );
             E_net_cli_S_poll_fd_n--;
                 #endif
-            V0( close( E_net_http2_S_connect[i].connect_sock )){}
+            VO0( close( E_net_http2_S_connect[i].connect_sock )){}
             if( !E_mem_Q_blk_I_remove( &E_net_http2_S_connect, i, 1 ))
                 V();
             E_net_http2_S_connect_n--;

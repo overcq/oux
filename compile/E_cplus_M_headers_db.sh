@@ -10,11 +10,11 @@
 LANG=C
 #===============================================================================
 exc_man_re=''
-exc_func_re='for|main|sizeof|while'
+exc_func_re='for|ioctl|main|prctl|sizeof|syscall|while'
 #===============================================================================
 for a in a b c d e f g h i j k l m n o p q r s t u v w x y z
 do
-    apropos ${a}
+    apropos "$a"
 done \
 | awk '
     /^[A-Za-z_][0-9A-Za-z_]*( *, *[A-Za-z_][0-9A-Za-z_]*)*?( \[[0-9A-Za-z_-]+\])? *\([23]([A-Za-z][0-9A-Za-z]*)?(\/[0-9A-Za-z]*)?( *, *[23]([A-Za-z][0-9A-Za-z]*)?(\/[0-9A-Za-z]*)?)*?\)/ {
@@ -35,7 +35,7 @@ done \
 ' \
 | sort -u \
 | grep -Eve " (${exc_man_re})\$" \
-| xargs -n 2 env MANPAGER='/bin/cat' PAGER='/bin/cat' man \
+| xargs -n 2 $SHELL -c 'echo "man $@" >&2; env MANPAGER=/bin/cat PAGER=/bin/cat man "$@"' $SHELL \
 | awk '
     {
         gsub( "\033\\[[0-9]+m", "" )

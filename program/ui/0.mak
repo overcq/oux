@@ -6,6 +6,6 @@
 #         program makefile
 # ©overcq                on ‟Gentoo Linux 13.0” “x86_64”              2015‒1‒6 #
 ################################################################################
-S_modules := ui tui gui-xcb
-S_packages := xcb
+S_modules := ui gui-wayland
+#S_packages := xcb
 ################################################################################

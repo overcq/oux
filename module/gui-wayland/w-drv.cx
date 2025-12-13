@@ -1,0 +1,171 @@
+//-*-C-*-
+/*******************************************************************************
+*   ___   publicplace
+*  ¦OUX¦  C+
+*  ¦/C+¦  component
+*   ---   GUI wayland
+*         window driver
+* ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2015‒4‒28 *
+*******************************************************************************/
+_internal
+void
+E_gui_wayland_X_ping( P data
+, struct xdg_wm_base *xdg_wm_base
+, uint32_t serial
+){  xdg_wm_base_pong( xdg_wm_base, serial );
+}
+_internal
+void
+E_qui_wayland_X_toplevel_close( P data
+, struct xdg_toplevel *xdg_toplevel
+){  U_F( E_base_S->E_flow_S_signal, exit );
+}
+_internal
+void
+E_qui_wayland_X_surface_configure( P data
+, struct xdg_surface *xdg_surface
+, uint32_t serial
+){  struct E_gui_wayland_Q_window_Z_callback_data *configure_data = data;
+    G_(); Gd( configure_data->display_id ); Gd( configure_data->window_id );
+    struct E_gui_wayland_Q_display_Z *display = E_mem_Q_tab_R( E_gui_wayland_Q_display_S, configure_data->display_id );
+    struct E_gui_wayland_Q_window_Z *window = E_mem_Q_tab_R( display->window, configure_data->window_id );
+    xdg_surface_ack_configure( xdg_surface, serial );
+    if( !U_R( window->state, configured ))
+    {   size_t size = E_simple_Z_n_I_align_up_to_v2( window->width * window->height * sizeof(N32), E_base_S->E_mem_S_page_size );
+        VO0_( ftruncate( window->shm_fd, size ));
+        V1_( (N)( window->drawable = mmap( 0, size, PROT_READ | PROT_WRITE, MAP_SHARED, window->shm_fd, 0 )));
+        struct wl_shm_pool *pool = wl_shm_create_pool( display->w_shm, window->shm_fd, size );
+        window->w_buffer = wl_shm_pool_create_buffer( pool, 0, window->width, window->height, window->width * sizeof(N32), WL_SHM_FORMAT_ARGB8888 );
+        wl_shm_pool_destroy(pool);
+        if( !window->w_buffer )
+        {   GV_(NA); V();
+        }
+        wl_surface_commit( window->w_surface );
+        U_F( window->state, configured );
+    }
+}
+_internal
+void
+E_qui_wayland_X_toplevel_configure( P data
+, struct xdg_toplevel *xdg_toplevel
+, int32_t width
+, int32_t height
+, struct wl_array *states
+){  if( !width
+    || !height
+    )
+        return;
+    struct E_gui_wayland_Q_window_Z_callback_data *configure_data = data;
+    G_(); Gd( configure_data->display_id ); Gd( configure_data->window_id ); Gd(width); Gd(height);
+    struct E_gui_wayland_Q_display_Z *display = E_mem_Q_tab_R( E_gui_wayland_Q_display_S, configure_data->display_id );
+    struct E_gui_wayland_Q_window_Z *window = E_mem_Q_tab_R( display->window, configure_data->window_id );
+    if( window->width != width
+    || window->height != height
+    )
+    {   V0_( munmap( window->drawable,  E_simple_Z_n_I_align_up_to_v2( window->width * window->height * sizeof(N32), E_base_S->E_mem_S_page_size )));
+        window->width = width;
+        window->height = height;
+        size_t size = E_simple_Z_n_I_align_up_to_v2( window->width * window->height * sizeof(N32), E_base_S->E_mem_S_page_size );
+        VO0_( ftruncate( window->shm_fd, size ));
+        V1_( (N)( window->drawable = mmap( 0, size, PROT_READ | PROT_WRITE, MAP_SHARED, window->shm_fd, 0 )));
+        struct wl_shm_pool *pool = wl_shm_create_pool( display->w_shm, window->shm_fd, size );
+        window->w_buffer = wl_shm_pool_create_buffer( pool, 0, window->width, window->height, window->width * sizeof(N32), WL_SHM_FORMAT_ARGB8888 );
+        wl_shm_pool_destroy(pool);
+        if( !window->w_buffer )
+        {   GV_(NA); V();
+        }
+        wl_surface_commit( window->w_surface );
+    }
+}
+_internal
+void
+E_gui_wayland_X_pointer_axis( P data
+, struct wl_pointer *pointer
+, uint32_t serial
+, uint32_t _uint32
+, wl_fixed_t _fixed
+){  struct wl_seat *seat = data;
+}
+_internal
+void
+E_gui_wayland_X_pointer_button( P data
+, struct wl_pointer *pointer
+, uint32_t serial
+, uint32_t time
+, uint32_t button
+, uint32_t state
+){  struct wl_seat *seat = data;
+}
+_internal
+void
+E_gui_wayland_X_pointer_enter( P data
+, struct wl_pointer *pointer
+, uint32_t serial
+, struct wl_surface *surface
+, wl_fixed_t _fixed_1
+, wl_fixed_t _fixed_2
+){  struct wl_seat *seat = data;
+}
+_internal
+void
+E_gui_wayland_X_pointer_leave( P data
+, struct wl_pointer *pointer
+, uint32_t serial
+, struct wl_surface *surface
+){  struct wl_seat *seat = data;
+}
+_internal
+void
+E_gui_wayland_X_pointer_motion( P data
+, struct wl_pointer *pointer
+, uint32_t serial
+, wl_fixed_t _fixed_1
+, wl_fixed_t _fixed_2
+){  struct wl_seat *seat = data;
+}
+_internal
+void
+E_gui_wayland_X_frame_done( P data
+, struct wl_callback *cb
+, uint32_t time
+){  struct E_gui_wayland_Q_window_Z_callback_data *configure_data = data;
+    G_(); Gd( configure_data->display_id ); Gd( configure_data->window_id );
+    struct E_gui_wayland_Q_display_Z *display = E_mem_Q_tab_R( E_gui_wayland_Q_display_S, configure_data->display_id );
+    struct E_gui_wayland_Q_window_Z *window = E_mem_Q_tab_R( display->window, configure_data->window_id );
+    wl_callback_destroy(cb);
+    for_n( i, window->width * window->height )
+        window->drawable[i] = E_gui_wayland_Q_theme.window_bg;
+    for_n_( i, window->width * window->height )
+        window->object_mask[i] = ~0;
+    for_each( object_id, window->object, E_mem_Q_tab ) //NDFN Zakładana kolejność od na spodzie do na wierzchu.
+    {   display->current_object = object_id;
+        struct E_gui_wayland_Q_object_Z *object = E_mem_Q_tab_R( window->object, object_id );
+        if( U_R( object->state, drag_src ))
+            display->draw_color = E_gui_wayland_Q_theme.current_boundary;
+        object->draw( display, window, object ); //NDFN Nieprzerysowywanie wszystkich obiektów dla każdej klatki animacji.
+    }
+    wl_surface_damage_buffer( window->w_surface, 0, 0, window->width, window->height );
+    wl_surface_commit( window->w_surface );
+    U_L( window->state, frame_callback );
+}
+//==============================================================================
+_internal
+void
+E_gui_wayland_D_events_I_unblock( P display_id
+){  struct E_gui_wayland_Q_display_Z *display = E_mem_Q_tab_R( E_gui_wayland_Q_display_S, *( I * )display_id );
+    struct wl_surface *w_surface = wl_compositor_create_surface( display->w_compositor );
+    wl_surface_commit( w_surface );
+    wl_surface_destroy( w_surface );
+}
+D( gui_wayland, events )
+{   I display_id = *( I * )(( struct E_flow_Q_task_async_Z_proc_args * )thread_proc_arg )->p;
+    Xh_A( E_gui_wayland_D_events_I_unblock );
+    O{  struct E_gui_wayland_Q_display_Z *display = E_mem_Q_tab_R( E_gui_wayland_Q_display_S, display_id );
+        Xh_B_();
+        if( !~wl_display_dispatch( display->w_display ))
+            U_F( E_base_S->E_flow_S_signal, exit );
+        Xh_B()
+            break;
+    }
+}
+/******************************************************************************/

@@ -313,26 +313,26 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
 #define Ve()                                E_flow_Z_line_report_Z_line_I_error( &__FILE__[0], __LINE__ )
 #define Vr(statement) \
   int J_autogen_line(e) = (statement); \
-  if( !J_autogen_line(e) || ( _errno = J_autogen_line(e), Ve(), no )) \
+  if( !J_autogen_line(e) || (( _errno = J_autogen_line(e) ), Ve(), no )) \
   { \
   }else
 #define Vr1(statement) \
   int J_autogen_line(e) = (statement); \
-  if( J_autogen_line(e) <= 0 || ( _errno = J_autogen_line(e), Ve(), no )) \
+  if( J_autogen_line(e) <= 0 || (( _errno = J_autogen_line(e) ), Ve(), no )) \
   { \
   }else
 #define Vr_1(statement) \
   int J_autogen_line(e) = (statement); \
-  if( J_autogen_line(e) >= 0 || ( _errno = -J_autogen_line(e), Ve(), no )) \
+  if( J_autogen_line(e) >= 0 || (( _errno = -J_autogen_line(e) ), Ve(), no )) \
   { \
   }else
 #define _Ve(statement,e) \
-  if( _errno = 0, (statement) || ( e = _errno, Ve(), no )) \
+  if((( _errno = 0 ), (statement) ) || (( e = _errno ), Ve(), no )) \
   { \
   }else
 #define _VOe(statement,e) \
   J_autogen_line(Loop): \
-  if( _errno = 0, (statement) || ( e = _errno, no )) \
+  if((( _errno = 0 ), (statement) ) || (( e = _errno ), no )) \
   { \
   }else if( e == EINTR || ( Ve(), no )) \
       goto J_autogen_line(Loop); \
@@ -352,12 +352,12 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
   { \
   }else
 #define _Ve(statement,e) \
-  if( _errno = 0, (statement) || ( e = _errno, no )) \
+  if((( _errno = 0 ), (statement) ) || (( e = _errno ), no )) \
   { \
   }else
 #define _VOe(statement,e) \
   J_autogen_line(Loop): \
-  if( _errno = 0, (statement) || ( e = _errno, no )) \
+  if((( _errno = 0 ), (statement) ) || (( e = _errno ), no )) \
   { \
   }else if( e == EINTR ) \
       goto J_autogen_line(Loop); \

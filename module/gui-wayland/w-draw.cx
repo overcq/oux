@@ -1,0 +1,881 @@
+//-*-C-*-
+/*******************************************************************************
+*   ___   publicplace
+*  ¦OUX¦  C+
+*  ¦/C+¦  component
+*   ---   GUI wayland
+*         window drawing
+* ©overcq                on ‟Gentoo Linux 13.0” “x86_64”             2015‒4‒28 *
+*******************************************************************************/
+enum E_gui_wayland_Z_aa_pixel
+{ E_gui_wayland_Z_aa_pixel_S_e = 1 << 0,
+  E_gui_wayland_Z_aa_pixel_S_se = 1 << 1,
+  E_gui_wayland_Z_aa_pixel_S_s = 1 << 2,
+  E_gui_wayland_Z_aa_pixel_S_sw = 1 << 3,
+  E_gui_wayland_Z_aa_pixel_S_w = 1 << 4,
+  E_gui_wayland_Z_aa_pixel_S_nw = 1 << 5,
+  E_gui_wayland_Z_aa_pixel_S_n = 1 << 6,
+  E_gui_wayland_Z_aa_pixel_S_ne = 1 << 7
+};
+struct E_gui_wayland_Z_alpha_pixel
+{ F brightness;
+  N32 color;
+};
+struct E_gui_wayland_Z_point
+{ N16 x, y;
+};
+struct E_gui_wayland_Z_segment
+{ N16 x1, y1;
+  N16 x2, y2;
+};
+struct E_gui_wayland_Z_rectangle
+{ N16 x, y;
+  N16 width, height;
+};
+struct E_gui_wayland_Z_arc
+{ N16 x, y;
+  N16 width, height;
+};
+//==============================================================================
+_export
+N32
+E_gui_wayland_Z_color_M_argb(
+  N8 alpha
+, N8 red
+, N8 green
+, N8 blue
+){  return ( alpha << 24 ) | ( red << 16 ) | ( green << 8 ) | blue;
+}
+_export
+N32
+E_gui_wayland_Z_color_M_rgb(
+  N8 red
+, N8 green
+, N8 blue
+){  return E_gui_wayland_Z_color_M_argb( 0xff, red, green, blue );
+}
+_export
+N8
+E_gui_wayland_Z_color_R_alpha( N32 color
+){  return ( color >> 24 ) & 0xff;
+}
+_export
+N8
+E_gui_wayland_Z_color_R_red( N32 color
+){  return ( color >> 16 ) & 0xff;
+}
+_export
+N8
+E_gui_wayland_Z_color_R_green( N32 color
+){  return ( color >> 8 ) & 0xff;
+}
+_export
+N8
+E_gui_wayland_Z_color_R_blue( N32 color
+){  return color & 0xff;
+}
+_export
+N32
+E_gui_wayland_Z_color_M_gray( N8 luminance
+){  return E_gui_wayland_Z_color_M_rgb( luminance, luminance, luminance );
+}
+_export
+N32
+E_gui_wayland_Z_color_P_luminance( struct E_gui_wayland_Q_display_Z *display
+, N32 color
+, F luminance
+){  J_assert( luminance >= 0 && luminance <= 1 );
+    N8 red = E_gui_wayland_Z_color_R_red(color);
+    N8 green = E_gui_wayland_Z_color_R_green(color);
+    N8 blue = E_gui_wayland_Z_color_R_blue(color);
+    F color_luminance = E_gui_wayland_Z_color_R_luminance( display, color );
+    if( luminance < color_luminance )
+    {   red = lround( red * luminance / color_luminance );
+        green = lround( green * luminance / color_luminance );
+        blue = lround( blue * luminance / color_luminance );
+    }else if( luminance > color_luminance )
+    {   red += lround(( 0xff - red ) * ( luminance - color_luminance ) / ( 1 - color_luminance ));
+        green += lround(( 0xff - green ) * ( luminance - color_luminance ) / ( 1 - color_luminance ));
+        blue += lround(( 0xff - blue ) * ( luminance - color_luminance ) / ( 1 - color_luminance ));
+    }else
+        return color;
+    return E_gui_wayland_Z_color_M_rgb( red, green, blue );
+}
+_export
+F
+E_gui_wayland_Z_color_R_luminance( struct E_gui_wayland_Q_display_Z *display
+, N32 color
+){  return ( display->red_luminance_ratio * E_gui_wayland_Z_color_R_red(color) + display->green_luminance_ratio * E_gui_wayland_Z_color_R_green(color) + display->blue_luminance_ratio * E_gui_wayland_Z_color_R_blue(color) ) / 255;
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+_export
+void
+E_gui_wayland_Q_window_I_draw_Z_points(
+  struct E_gui_wayland_Q_display_Z *display
+, struct E_gui_wayland_Q_window_Z *window
+, N n
+, struct E_gui_wayland_Z_point *points
+){  J_assert(n);
+    for_n( i, n )
+        if( points[i].x < window->width && points[i].y < window->height )
+        {   window->drawable[ points[i].y * window->width + points[i].x ] = display->draw_color;
+            if( !U_R( display->state, draw_object_drag_move ))
+                window->object_mask[ points[i].y * window->width + points[i].x ] = display->current_object;
+            //else
+
+                //display->dnd_window_shape_pixmap[ ( points[i].x + points[i].y * window->width ) / 8 ] |= 1 << (( points[i].x + points[i].y * window->width ) % 8 );
+        }
+        #ifdef C_xcb_shape
+    if( U_R( display->state, draw_object_drag_move ))
+        xcb_poly_point( display->x_display
+        , XCB_COORD_MODE_ORIGIN
+        , display->dnd_window_shape_pixmap
+        , display->bitmask_1_gc
+        , n
+        , points
+        );
+        #endif
+}
+_export
+void
+E_gui_wayland_Q_window_I_draw_aa_Z_points(
+  struct E_gui_wayland_Q_display_Z *display
+, struct E_gui_wayland_Q_window_Z *window
+, N n
+, struct E_gui_wayland_Z_point *points
+, F brightness
+){  J_assert(n);
+    J_assert( brightness >= 0 && brightness <= 1 );
+    for_n( i, n )
+    {   N p[8];
+        p[0] = points[i].x + 1 < window->width ? E_gui_wayland_Q_image_R_pixel( window, window->drawable, points[i].x + 1, points[i].y ) : display->draw_color;
+        p[1] = points[i].x + 1 < window->width && points[i].y + 1 < window->height ? E_gui_wayland_Q_image_R_pixel( window, window->drawable, points[i].x + 1, points[i].y + 1 ) : display->draw_color;
+        p[2] = points[i].y + 1 < window->height ? E_gui_wayland_Q_image_R_pixel( window, window->drawable, points[i].x, points[i].y + 1 ) : display->draw_color;
+        p[3] = points[i].x > 0 && points[i].y + 1 < window->height ? E_gui_wayland_Q_image_R_pixel( window, window->drawable, points[i].x - 1, points[i].y + 1 ) : display->draw_color;
+        p[4] = points[i].x > 0 ? E_gui_wayland_Q_image_R_pixel( window, window->drawable, points[i].x - 1, points[i].y ) : display->draw_color;
+        p[5] = points[i].x > 0 && points[i].y > 0 ? E_gui_wayland_Q_image_R_pixel( window, window->drawable, points[i].x - 1, points[i].y - 1 ) : display->draw_color;
+        p[6] = points[i].y > 0 ? E_gui_wayland_Q_image_R_pixel( window, window->drawable, points[i].x, points[i].y - 1 ) : display->draw_color;
+        p[7] = points[i].x + 1 < window->width && points[i].y > 0 ? E_gui_wayland_Q_image_R_pixel( window, window->drawable, points[i].x + 1, points[i].y - 1 ) : display->draw_color;
+        N n_ = 0;
+        N background_alpha = 0, background_red = 0, background_green = 0, background_blue = 0;
+        for_n( j, 8 )
+            if( p[j] != display->draw_color )
+            {   background_alpha += E_gui_wayland_Z_color_R_alpha( p[j] );
+                background_red += E_gui_wayland_Z_color_R_red( p[j] );
+                background_green += E_gui_wayland_Z_color_R_green( p[j] );
+                background_blue += E_gui_wayland_Z_color_R_blue( p[j] );
+                n_++;
+            }
+        if( n_ )
+        {   background_alpha /= n_;
+            background_red /= n_;
+            background_green /= n_;
+            background_blue /= n_;
+        }else
+        {   background_alpha = E_gui_wayland_Z_color_R_alpha( E_gui_wayland_Q_theme.window_bg );
+            background_red = E_gui_wayland_Z_color_R_red( E_gui_wayland_Q_theme.window_bg );
+            background_green = E_gui_wayland_Z_color_R_green( E_gui_wayland_Q_theme.window_bg );
+            background_blue = E_gui_wayland_Z_color_R_blue( E_gui_wayland_Q_theme.window_bg );
+        }
+        N alpha = E_gui_wayland_Z_color_R_alpha( display->draw_color );
+        N red = E_gui_wayland_Z_color_R_red( display->draw_color );
+        N green = E_gui_wayland_Z_color_R_green( display->draw_color );
+        N blue = E_gui_wayland_Z_color_R_blue( display->draw_color );
+        if( alpha > background_alpha )
+            alpha = background_alpha + ( alpha - background_alpha ) * brightness;
+        else
+            alpha = background_alpha - ( background_alpha - alpha ) * brightness;
+        if( red > background_red )
+            red = background_red + ( red - background_red ) * brightness;
+        else
+            red = background_red - ( background_red - red ) * brightness;
+        if( green > background_green )
+            green = background_green + ( green - background_green ) * brightness;
+        else
+            green = background_green - ( background_green - green ) * brightness;
+        if( blue > background_blue )
+            blue = background_blue + ( blue - background_blue ) * brightness;
+        else
+            blue = background_blue - ( background_blue - blue ) * brightness;
+        display->draw_color = E_gui_wayland_Z_color_M_argb( alpha, red, green, blue );
+        E_gui_wayland_Q_window_I_draw_Z_points( display, window, 1, &points[i] );
+    }
+}
+//------------------------------------------------------------------------------
+_export
+N
+E_gui_wayland_Q_window_I_draw_Z_segments(
+  struct E_gui_wayland_Q_display_Z *display
+, struct E_gui_wayland_Q_window_Z *window
+, N n
+, struct E_gui_wayland_Z_segment *segments
+, F brightness
+){  J_assert(n);
+    N points_i = 0;
+    struct E_gui_wayland_Z_point *Mt_( points, points_i );
+    if( !points )
+        return ~0;
+    N k;
+    for_n( i, n )
+    {   if( segments[i].x1 == segments[i].x2 )
+        {   k = J_abs( segments[i].y2 - segments[i].y1 ) + 1;
+            if( !E_mem_Q_blk_I_append( &points, k ))
+            {   N r = W(points);
+                return r ? ~1 : ~0;
+            }
+            S16 x = segments[i].x1;
+            if( x >= 0
+            && x < window->width
+            )
+            {   for_n( j, k )
+                {   S16 y = J_min( segments[i].y1, segments[i].y2 ) + j;
+                    if( y >= 0
+                    && y < window->height
+                    )
+                    {   points[ points_i ].x = x;
+                        points[ points_i ].y = y;
+                        points_i++;
+                    }
+                }
+            }
+        }else if( segments[i].y1 == segments[i].y2 )
+        {   k = J_abs( segments[i].x2 - segments[i].x1 ) + 1;
+            if( !E_mem_Q_blk_I_append( &points, k ))
+            {   N r = W(points);
+                return r ? ~1 : ~0;
+            }
+            S16 y = segments[i].y1;
+            if( y >= 0
+            && y < window->height
+            )
+            {   for_n( j, k )
+                {   S16 x = J_min( segments[i].x1, segments[i].x2 ) + j;
+                    if( x >= 0
+                    && x < window->width
+                    )
+                    {   points[ points_i ].x = x;
+                        points[ points_i ].y = y;
+                        points_i++;
+                    }
+                }
+            }
+        }else
+        {   S16 dx_ = segments[i].x2 - segments[i].x1, dx = J_abs( dx_ );
+            S16 dy_ = segments[i].y2 - segments[i].y1, dy = J_abs( dy_ );
+            S16 x = segments[i].x1, x_end = segments[i].x2, y = segments[i].y1, y_end = segments[i].y2;
+            S16 di = 1;
+            if( dy > dx )
+            {   if( !E_mem_Q_blk_I_append( &points, dy + 1 ))
+                {   N r = W(points);
+                    return r ? ~1 : ~0;
+                }
+                if( dy_ < 0 )
+                {   J_swap( S16, y, y_end );
+                    J_swap( S16, x, x_end );
+                }
+                if( x > x_end )
+                    di = -di;
+                S16 d = dx - dy / 2;
+                if( x >= 0
+                && y >= 0
+                && x < window->width
+                && y < window->height
+                )
+                {   points[ points_i ].x = x;
+                    points[ points_i ].y = y;
+                    points_i++;
+                }
+                while( y != y_end )
+                {   y++;
+                    if( d < 0 )
+                        d += dx;
+                    else
+                    {   d += dx - dy;
+                        x += di;
+                    }
+                    if( x >= 0
+                    && y >= 0
+                    && x < window->width
+                    && y < window->height
+                    )
+                    {   points[ points_i ].x = x;
+                        points[ points_i ].y = y;
+                        points_i++;
+                    }
+                }
+            }else
+            {   if( !E_mem_Q_blk_I_append( &points, dx + 1 ))
+                {   N r = W(points);
+                    return r ? ~1 : ~0;
+                }
+                if( dx_ < 0 )
+                {   J_swap( S16, x, x_end );
+                    J_swap( S16, y, y_end )
+                }
+                if( y > y_end )
+                    di = -di;
+                S16 d = dy - dx / 2;
+                if( x >= 0
+                && y >= 0
+                && x < window->width
+                && y < window->height
+                )
+                {   points[ points_i ].x = x;
+                    points[ points_i ].y = y;
+                    points_i++;
+                }
+                while( x != x_end )
+                {   x++;
+                    if( d < 0 )
+                        d += dy;
+                    else
+                    {   d += dy - dx;
+                        y += di;
+                    }
+                    if( x >= 0
+                    && y >= 0
+                    && x < window->width
+                    && y < window->height
+                    )
+                    {   points[ points_i ].x = x;
+                        points[ points_i ].y = y;
+                        points_i++;
+                    }
+                }
+            }
+        }
+    }
+    if( points_i )
+        if(brightness)
+            E_gui_wayland_Q_window_I_draw_aa_Z_points( display, window, points_i, points, brightness );
+        else
+            E_gui_wayland_Q_window_I_draw_Z_points( display, window, points_i, points );
+    N r = W(points);
+    return r ? ~1 : 0;
+}
+_export
+N
+E_gui_wayland_Q_window_I_draw_Z_lines(
+  struct E_gui_wayland_Q_display_Z *display
+, struct E_gui_wayland_Q_window_Z *window
+, N n
+, struct E_gui_wayland_Z_point *points
+, F thickness
+){  J_assert( n > 1 );
+    J_assert( thickness > 0 );
+    N thickness_int = floor(thickness);
+    thickness -= thickness_int;
+    thickness *= 0.5;
+    struct E_gui_wayland_Z_segment *segments, *segments_aa;
+    if( thickness_int )
+    {   if( thickness_int % 2 == 0 )
+        {   thickness_int--;
+            thickness += 0.5;
+        }
+        Mt_( segments, ( n - 1 ) * thickness_int );
+        if( !segments )
+            return ~0;
+    }
+    if(thickness)
+    {   Mt_( segments_aa, ( n - 1 ) * 2 );
+        if( !segments_aa )
+            return ~0;
+    }
+    N k = 0, l = 0;
+    for_n( i, n - 1 )
+    {   F alpha = atan(( J_abs( points[ i + 1 ].y - points[i].y ) * display->pixel_height ) / ( J_abs( points[ i + 1 ].x - points[i].x ) * display->pixel_width ));
+        N16 dxy = alpha >= M_PI_4 && alpha <= M_PI_2 + M_PI_4 ? 1 : 0;
+        if( thickness_int )
+        {   for_n( j, ( thickness_int - 1 ) / 2 )
+                segments[ k + j ] = ( struct E_gui_wayland_Z_segment )
+                { .x1 = points[i].x + dxy * ( 1 + j )
+                , .y1 = points[i].y + !dxy * ( 1 + j )
+                , .x2 = points[ i + 1 ].x + dxy * ( 1 + j )
+                , .y2 = points[ i + 1 ].y + !dxy * ( 1 + j )
+                };
+            k += ( thickness_int - 1 ) / 2;
+            segments[k] = ( struct E_gui_wayland_Z_segment )
+            { .x1 = points[i].x
+            , .y1 = points[i].y
+            , .x2 = points[ i + 1 ].x
+            , .y2 = points[ i + 1 ].y
+            };
+            k++;
+            for_n_( j, ( thickness_int - 1 ) / 2 )
+                segments[ k + j ] = ( struct E_gui_wayland_Z_segment )
+                { .x1 = points[i].x - dxy * ( 1 + j )
+                , .y1 = points[i].y - !dxy * ( 1 + j )
+                , .x2 = points[ i + 1 ].x - dxy * ( 1 + j )
+                , .y2 = points[ i + 1 ].y - !dxy * ( 1 + j )
+                };
+            k += ( thickness_int - 1 ) / 2;
+        }
+        if(thickness)
+        {   segments_aa[l] = ( struct E_gui_wayland_Z_segment )
+            { .x1 = points[i].x + dxy * ( 1 + ( thickness_int - 1 ) / 2 )
+            , .y1 = points[i].y + !dxy * ( 1 + ( thickness_int - 1 ) / 2 )
+            , .x2 = points[ i + 1 ].x + dxy * ( 1 + ( thickness_int - 1 ) / 2 )
+            , .y2 = points[ i + 1 ].y + !dxy * ( 1 + ( thickness_int - 1 ) / 2 )
+            };
+            l++;
+            segments_aa[l] = ( struct E_gui_wayland_Z_segment )
+            { .x1 = points[i].x - dxy * ( 1 + ( thickness_int - 1 ) / 2 )
+            , .y1 = points[i].y - !dxy * ( 1 + ( thickness_int - 1 ) / 2 )
+            , .x2 = points[ i + 1 ].x - dxy * ( 1 + ( thickness_int - 1 ) / 2 )
+            , .y2 = points[ i + 1 ].y - !dxy * ( 1 + ( thickness_int - 1 ) / 2 )
+            };
+            l++;
+        }
+    }
+    if( thickness_int )
+    {   if( !~E_gui_wayland_Q_window_I_draw_Z_segments( display, window
+        , ( n - 1 ) * thickness_int
+        , segments
+        , 0
+        ))
+        {   N r = W(segments);
+            return r ? ~1 : ~0;
+        }
+        W(segments);
+    }
+    if(thickness)
+    {   N r = E_gui_wayland_Q_window_I_draw_Z_segments( display, window
+        , ( n - 1 ) * 2
+        , segments_aa
+        , thickness
+        );
+        if( !~r )
+        {   r = W( segments_aa );
+            return r ? ~1 : ~0;
+        }
+        if( (S)r < 0 )
+            return r;
+        r = W( segments_aa );
+        if(r)
+            return ~1;
+    }
+    return 0;
+}
+_export
+N
+E_gui_wayland_Q_window_I_draw_Z_rectangles(
+  struct E_gui_wayland_Q_display_Z *display
+, struct E_gui_wayland_Q_window_Z *window
+, N n
+, struct E_gui_wayland_Z_rectangle *rectangles
+, F thickness
+){  J_assert(n);
+    J_assert( thickness > 0 );
+    for_n( i, n )
+    {   struct E_gui_wayland_Z_point points[] =
+        { rectangles[i].x, rectangles[i].y
+        , rectangles[i].x + rectangles[i].width - 1, rectangles[i].y
+        , rectangles[i].x + rectangles[i].width - 1, rectangles[i].y + rectangles[i].height - 1
+        , rectangles[i].x, rectangles[i].y + rectangles[i].height - 1
+        , rectangles[i].x, rectangles[i].y
+        };
+        N r = E_gui_wayland_Q_window_I_draw_Z_lines( display, window, 5, points, thickness );
+        if(r)
+            return r;
+    }
+    return 0;
+}
+_internal
+void
+E_gui_wayland_Q_window_I_draw_Z_arcs_I_8points_a( struct E_gui_wayland_Z_arc arc
+, struct E_gui_wayland_Z_point point
+, N points_i
+, struct E_gui_wayland_Z_point *points
+){  points[ points_i ].x = arc.x + point.x;
+    points[ points_i ].y = arc.y + (N)point.y * arc.height / arc.width;
+    points[ points_i + 1 ].x = arc.x - point.x;
+    points[ points_i + 1 ].y = arc.y + (N)point.y * arc.height / arc.width;
+    points[ points_i + 2 ].x = arc.x - point.x;
+    points[ points_i + 2 ].y = arc.y - (N)point.y * arc.height / arc.width;
+    points[ points_i + 3 ].x = arc.x + point.x;
+    points[ points_i + 3 ].y = arc.y - (N)point.y * arc.height / arc.width;
+    points[ points_i + 4 ].x = arc.x + point.y;
+    points[ points_i + 4 ].y = arc.y + (N)point.x * arc.height / arc.width;
+    points[ points_i + 5 ].x = arc.x - point.y;
+    points[ points_i + 5 ].y = arc.y + (N)point.x * arc.height / arc.width;
+    points[ points_i + 6 ].x = arc.x - point.y;
+    points[ points_i + 6 ].y = arc.y - (N)point.x * arc.height / arc.width;
+    points[ points_i + 7 ].x = arc.x + point.y;
+    points[ points_i + 7 ].y = arc.y - (N)point.x * arc.height / arc.width;
+}
+_internal
+void
+E_gui_wayland_Q_window_I_draw_Z_arcs_I_8points_b( struct E_gui_wayland_Z_arc arc
+, struct E_gui_wayland_Z_point point
+, N points_i
+, struct E_gui_wayland_Z_point *points
+){  points[ points_i ].x = arc.x + (N)point.x * arc.width / arc.height;
+    points[ points_i ].y = arc.y + point.y;
+    points[ points_i + 1 ].x = arc.x - (N)point.x * arc.width / arc.height;
+    points[ points_i + 1 ].y = arc.y + point.y;
+    points[ points_i + 2 ].x = arc.x - (N)point.x * arc.width / arc.height;
+    points[ points_i + 2 ].y = arc.y - point.y;
+    points[ points_i + 3 ].x = arc.x + (N)point.x * arc.width / arc.height;
+    points[ points_i + 3 ].y = arc.y - point.y;
+    points[ points_i + 4 ].x = arc.x + (N)point.y * arc.width / arc.height;
+    points[ points_i + 4 ].y = arc.y + point.x;
+    points[ points_i + 5 ].x = arc.x - (N)point.y * arc.width / arc.height;
+    points[ points_i + 5 ].y = arc.y + point.x;
+    points[ points_i + 6 ].x = arc.x - (N)point.y * arc.width / arc.height;
+    points[ points_i + 6 ].y = arc.y - point.x;
+    points[ points_i + 7 ].x = arc.x + (N)point.y * arc.width / arc.height;
+    points[ points_i + 7 ].y = arc.y - point.x;
+}
+_export
+N
+E_gui_wayland_Q_window_I_draw_Z_arcs(
+  struct E_gui_wayland_Q_display_Z *display
+, struct E_gui_wayland_Q_window_Z *window
+, N n
+, struct E_gui_wayland_Z_arc *arcs
+, F thickness
+){  J_assert(n);
+    J_assert( thickness > 0 );
+    N points_i = 0;
+    struct E_gui_wayland_Z_point *Mt_( points, points_i );
+    if( !points )
+        return ~0;
+    for_n( i, n )
+    {   void (*I_8points)( struct E_gui_wayland_Z_arc, struct E_gui_wayland_Z_point, N, struct E_gui_wayland_Z_point * ) = arcs[i].height > arcs[i].width
+        ? &E_gui_wayland_Q_window_I_draw_Z_arcs_I_8points_b
+        : &E_gui_wayland_Q_window_I_draw_Z_arcs_I_8points_a;
+        S x = 0;
+        S y = J_max( arcs[i].width, arcs[i].height ) / 2;
+        S c = 2 * ( 1 - J_max( arcs[i].width, arcs[i].height ) / 2 );
+        while( x <= y )
+        {   if( !E_mem_Q_blk_I_append( points, 8 ))
+            {   N r = W(points);
+                return r ? ~1 : ~0;
+            }
+            (*I_8points)( arcs[i]
+            , ( struct E_gui_wayland_Z_point ){ x, y }
+            , points_i
+            , points
+            );
+            points_i += 8;
+            if( 2 * c > 1 - 2 * y )
+            {   y--;
+                c -= 2 * y - 1;
+            }
+            x++;
+            c += 2 * x + 1;
+        }
+    }
+    E_gui_wayland_Q_window_I_draw_Z_points( display, window, points_i, points );
+    N r = W(points);
+    return r ? ~1 : 0;
+}
+_export
+N
+E_gui_wayland_Q_window_I_fill_Z_points(
+  struct E_gui_wayland_Q_display_Z *display
+, struct E_gui_wayland_Q_window_Z *window
+, N n
+, struct E_gui_wayland_Z_point *points
+){  J_assert( n > 2 );
+    //TODO
+    return 0;
+}
+_export
+N
+E_gui_wayland_Q_window_I_fill_Z_rectangles(
+  struct E_gui_wayland_Q_display_Z *display
+, struct E_gui_wayland_Q_window_Z *window
+, N n
+, struct E_gui_wayland_Z_rectangle *rectangles
+){  J_assert(n);
+    struct E_gui_wayland_Z_segment *Mt_( segments, 0 );
+    if( !segments )
+        return ~0;
+    N segment_n = 0;
+    for_n( i, n )
+    {   if( !E_mem_Q_blk_I_append( &segments, rectangles[i].height ))
+        {   W(segments);
+            return ~0;
+        }
+        for_n( dy, rectangles[i].height )
+        {   segments[ segment_n++ ] = ( struct E_gui_wayland_Z_segment )
+            { .x1 = rectangles[i].x
+            , .y1 = rectangles[i].y + dy
+            , .x2 = rectangles[i].x + rectangles[i].width - 1
+            , .y2 = rectangles[i].y + dy
+            };
+        }
+    }
+    N r = E_gui_wayland_Q_window_I_draw_Z_segments( display, window
+    , segment_n
+    , segments
+    , 0
+    );
+    if( !~r )
+    {   r = W(segments);
+        return r ? ~1 : ~0;
+    }
+    if( (S)r < 0 )
+        return r;
+    r = W(segments);
+    return r ? ~1 : 0;
+}
+_internal
+void
+E_gui_wayland_Q_window_I_fill_Z_arcs_I_4segments_a( struct E_gui_wayland_Z_arc arc
+, struct E_gui_wayland_Z_point point
+, N segments_i
+, struct E_gui_wayland_Z_segment *segments
+){  segments[ segments_i ].x1 = arc.x + point.x;
+    segments[ segments_i ].y1 = arc.y + (N)point.y * arc.height / arc.width;
+    segments[ segments_i ].x2 = arc.x - point.x;
+    segments[ segments_i ].y2 = arc.y + (N)point.y * arc.height / arc.width;
+    segments[ segments_i + 1 ].x1 = arc.x - point.x;
+    segments[ segments_i + 1 ].y1 = arc.y - (N)point.y * arc.height / arc.width;
+    segments[ segments_i + 1 ].x2 = arc.x + point.x;
+    segments[ segments_i + 1 ].y2 = arc.y - (N)point.y * arc.height / arc.width;
+    segments[ segments_i + 2 ].x1 = arc.x + point.y;
+    segments[ segments_i + 2 ].y1 = arc.y + (N)point.x * arc.height / arc.width;
+    segments[ segments_i + 2 ].x2 = arc.x - point.y;
+    segments[ segments_i + 2 ].y2 = arc.y + (N)point.x * arc.height / arc.width;
+    segments[ segments_i + 3 ].x1 = arc.x - point.y;
+    segments[ segments_i + 3 ].y1 = arc.y - (N)point.x * arc.height / arc.width;
+    segments[ segments_i + 3 ].x2 = arc.x + point.y;
+    segments[ segments_i + 3 ].y2 = arc.y - (N)point.x * arc.height / arc.width;
+}
+_internal
+void
+E_gui_wayland_Q_window_I_fill_Z_arcs_I_4segments_b( struct E_gui_wayland_Z_arc arc
+, struct E_gui_wayland_Z_point point
+, N segments_i
+, struct E_gui_wayland_Z_segment *segments
+){  segments[ segments_i ].x1 = arc.x + (N)point.x * arc.width / arc.height;
+    segments[ segments_i ].y1 = arc.y + point.y;
+    segments[ segments_i ].x2 = arc.x - (N)point.x * arc.width / arc.height;
+    segments[ segments_i ].y2 = arc.y + point.y;
+    segments[ segments_i + 1 ].x1 = arc.x - (N)point.x * arc.width / arc.height;
+    segments[ segments_i + 1 ].y1 = arc.y - point.y;
+    segments[ segments_i + 1 ].x2 = arc.x + (N)point.x * arc.width / arc.height;
+    segments[ segments_i + 1 ].y2 = arc.y - point.y;
+    segments[ segments_i + 2 ].x1 = arc.x + (N)point.y * arc.width / arc.height;
+    segments[ segments_i + 2 ].y1 = arc.y + point.x;
+    segments[ segments_i + 2 ].x2 = arc.x - (N)point.y * arc.width / arc.height;
+    segments[ segments_i + 2 ].y2 = arc.y + point.x;
+    segments[ segments_i + 3 ].x1 = arc.x - (N)point.y * arc.width / arc.height;
+    segments[ segments_i + 3 ].y1 = arc.y - point.x;
+    segments[ segments_i + 3 ].x2 = arc.x + (N)point.y * arc.width / arc.height;
+    segments[ segments_i + 3 ].y2 = arc.y - point.x;
+}
+_export
+N
+E_gui_wayland_Q_window_I_fill_Z_arcs(
+  struct E_gui_wayland_Q_display_Z *display
+, struct E_gui_wayland_Q_window_Z *window
+, N n
+, struct E_gui_wayland_Z_arc *arcs
+){  J_assert(n);
+    N segments_i = 0;
+    struct E_gui_wayland_Z_segment *Mt_( segments, segments_i );
+    if( !segments )
+        return ~0;
+    for_n( i, n )
+    {   void (*I_4segments)( struct E_gui_wayland_Z_arc, struct E_gui_wayland_Z_point, N, struct E_gui_wayland_Z_segment * ) = arcs[i].height > arcs[i].width
+        ? &E_gui_wayland_Q_window_I_fill_Z_arcs_I_4segments_b
+        : &E_gui_wayland_Q_window_I_fill_Z_arcs_I_4segments_a;
+        S x = 0;
+        S y = J_max( arcs[i].width, arcs[i].height ) / 2;
+        S c = 2 * ( 1 - J_max( arcs[i].width, arcs[i].height ) / 2 );
+        while( x <= y )
+        {   if( !E_mem_Q_blk_I_append( segments, 4 ))
+            {   N r = W(segments);
+                return r ? ~1 : ~0;
+            }
+            (*I_4segments)( arcs[i]
+            , ( struct E_gui_wayland_Z_point ){ x, y }
+            , segments_i
+            , segments
+            );
+            segments_i += 4;
+            if( 2 * c > 1 - 2 * y )
+            {   y--;
+                c -= 2 * y - 1;
+            }
+            x++;
+            c += 2 * x + 1;
+        }
+    }
+    N r = E_gui_wayland_Q_window_I_draw_Z_segments( display, window, segments_i, segments, 0 );
+    if( !~r )
+    {   r = W(segments);
+        return r ? ~1 : ~0;
+    }
+    r = W(segments);
+    return r ? ~1 : 0;
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+struct E_gui_wayland_Z_points
+{ F x, y;
+};
+_internal
+F
+E_x_I_polygon_area(
+  N n
+, struct E_gui_wayland_Z_points *points
+){  J_assert( n > 2 );
+    F area = 0;
+    for_n( i, n - 1 )
+        area += points[i].x * points[ i + 1 ].y - points[ i + 1 ].x * points[i].y;
+    area += points[ n - 1 ].x * points[0].y - points[0].x * points[ n - 1 ].y;
+    return 0.5 * fabs(area);
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+_export
+void
+E_gui_wayland_Q_object_I_draw_P_color(
+  struct E_gui_wayland_Q_display_Z *display
+, struct E_gui_wayland_Q_object_Z *object
+, N32 color
+){  if( !U_R( object->state, drag_src ))
+        display->draw_color = color;
+}
+//------------------------------------------------------------------------------
+_export
+void
+E_gui_wayland_Q_object_I_draw_Z_points(
+  struct E_gui_wayland_Q_display_Z *display
+, struct E_gui_wayland_Q_window_Z *window
+, struct E_gui_wayland_Q_object_Z *object
+, N n
+, struct E_gui_wayland_Z_point *points
+){  for_n( i, n )
+    {   points[i].x += object->x;
+        points[i].y += object->y;
+    }
+    E_gui_wayland_Q_window_I_draw_Z_points( display, window, n, points );
+}
+_export
+void
+E_gui_wayland_Q_object_I_draw_aa_Z_points(
+  struct E_gui_wayland_Q_display_Z *display
+, struct E_gui_wayland_Q_window_Z *window
+, struct E_gui_wayland_Q_object_Z *object
+, N n
+, struct E_gui_wayland_Z_point *points
+, F brightness
+){  for_n( i, n )
+    {   points[i].x += object->x;
+        points[i].y += object->y;
+    }
+    E_gui_wayland_Q_window_I_draw_aa_Z_points( display, window
+    , n
+    , points
+    , brightness
+    );
+}
+//------------------------------------------------------------------------------
+_export
+N
+E_gui_wayland_Q_object_I_draw_Z_segments(
+  struct E_gui_wayland_Q_display_Z *display
+, struct E_gui_wayland_Q_window_Z *window
+, struct E_gui_wayland_Q_object_Z *object
+, N32 n
+, struct E_gui_wayland_Z_segment *segments
+, F brightness
+){  for_n( i, n )
+    {   segments[i].x1 += object->x;
+        segments[i].y1 += object->y;
+        segments[i].x2 += object->x;
+        segments[i].y2 += object->y;
+    }
+    return E_gui_wayland_Q_window_I_draw_Z_segments( display, window, n, segments, brightness );
+}
+_export
+N
+E_gui_wayland_Q_object_I_draw_Z_lines(
+  struct E_gui_wayland_Q_display_Z *display
+, struct E_gui_wayland_Q_window_Z *window
+, struct E_gui_wayland_Q_object_Z *object
+, N32 n
+, struct E_gui_wayland_Z_point *points
+, F thickness
+){  for_n( i, n )
+    {   points[i].x += object->x;
+        points[i].y += object->y;
+    }
+    return E_gui_wayland_Q_window_I_draw_Z_lines( display, window, n, points, thickness );
+}
+_export
+N
+E_gui_wayland_Q_object_I_draw_Z_rectangles(
+  struct E_gui_wayland_Q_display_Z *display
+, struct E_gui_wayland_Q_window_Z *window
+, struct E_gui_wayland_Q_object_Z *object
+, N32 n
+, struct E_gui_wayland_Z_rectangle *rectangles
+, F thickness
+){  for_n( i, n )
+    {   rectangles[i].x += object->x;
+        rectangles[i].y += object->y;
+    }
+    return E_gui_wayland_Q_window_I_draw_Z_rectangles( display, window, n, rectangles, thickness );
+}
+_export
+N
+E_gui_wayland_Q_object_I_draw_Z_arcs(
+  struct E_gui_wayland_Q_display_Z *display
+, struct E_gui_wayland_Q_window_Z *window
+, struct E_gui_wayland_Q_object_Z *object
+, N32 n
+, struct E_gui_wayland_Z_arc *arcs
+, F thickness
+){  for_n( i, n )
+    {   arcs[i].x += object->x;
+        arcs[i].y += object->y;
+    }
+    return E_gui_wayland_Q_window_I_draw_Z_arcs( display, window, n, arcs, thickness );
+}
+_export
+N
+E_gui_wayland_Q_object_I_fill_Z_points(
+  struct E_gui_wayland_Q_display_Z *display
+, struct E_gui_wayland_Q_window_Z *window
+, struct E_gui_wayland_Q_object_Z *object
+, N32 n
+, struct E_gui_wayland_Z_point *points
+){  for_n( i, n )
+    {   points[i].x += object->x;
+        points[i].y += object->y;
+    }
+    return E_gui_wayland_Q_window_I_fill_Z_points( display, window, n, points );
+}
+_export
+N
+E_gui_wayland_Q_object_I_fill_Z_rectangles(
+  struct E_gui_wayland_Q_display_Z *display
+, struct E_gui_wayland_Q_window_Z *window
+, struct E_gui_wayland_Q_object_Z *object
+, N32 n
+, struct E_gui_wayland_Z_rectangle *rectangles
+){  for_n( i, n )
+    {   rectangles[i].x += object->x;
+        rectangles[i].y += object->y;
+    }
+    return E_gui_wayland_Q_window_I_fill_Z_rectangles( display, window, n, rectangles );
+}
+_export
+N
+E_gui_wayland_Q_object_I_fill_Z_arcs(
+  struct E_gui_wayland_Q_display_Z *display
+, struct E_gui_wayland_Q_window_Z *window
+, struct E_gui_wayland_Q_object_Z *object
+, N32 n
+, struct E_gui_wayland_Z_arc *arcs
+){  for_n( i, n )
+    {   arcs[i].x += object->x;
+        arcs[i].y += object->y;
+    }
+    return E_gui_wayland_Q_window_I_fill_Z_arcs( display, window, n, arcs );
+}
+/******************************************************************************/
