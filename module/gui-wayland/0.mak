@@ -12,11 +12,11 @@ S_add_headers := xdg-shell-client-protocol.h
 S_add_sources := xdg-shell-protocol.c
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .SECONDARY: $(H_make_S_module_path)/gui-wayland/xdg-shell-protocol.c $(H_make_S_module_path)/gui-wayland/xdg-shell-client-protocol.h
-build-0: $(H_make_S_module_path)/gui-wayland/$(S_add_sources) $(H_make_S_module_path)/gui-wayland/xdg-shell-client-protocol.h
-$(H_make_S_module_path)/gui-wayland/$(S_add_sources): /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml
+build-0: $(H_make_S_module_path)/gui-wayland/xdg-shell-protocol.c $(H_make_S_module_path)/gui-wayland/xdg-shell-client-protocol.h
+$(H_make_S_module_path)/gui-wayland/xdg-shell-protocol.c: /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml
 	wayland-scanner private-code < $< > $(call H_make_Z_shell_cmd_arg_I_quote,$@)
-$(H_make_S_module_path)/gui-wayland/$(S_add_headers): /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml
+$(H_make_S_module_path)/gui-wayland/xdg-shell-client-protocol.h: /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml
 	wayland-scanner client-header < $< > $(call H_make_Z_shell_cmd_arg_I_quote,$@)
 distclean-0:
-	rm -f $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/gui-wayland/$(S_add_sources)) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/gui-wayland/$(S_add_headers))
+	rm -f $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/gui-wayland/xdg-shell-protocol.c) $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)/gui-wayland/xdg-shell-client-protocol.h)
 ################################################################################
