@@ -26,7 +26,7 @@ The product is developed in Debian (inside Windows Subsystem for Linux) and test
 
 ## 4. Purpose
 
-The product is intended for software development in unix-like systems (also inside Windows Substystem for Linux).
+The product is intended for software development in unix-like systems (also inside Windows Subsystem for Linux).
 
 Parts inside modules:
 
