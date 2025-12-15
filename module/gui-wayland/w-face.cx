@@ -272,19 +272,20 @@ E_gui_wayland_Q_display_W( I id
     if( U_R( display->mode, drag ))
     {   N r = W( display->drag_S_object_src );
         if(r)
-            return r;
+            return ~2;
         r = E_mem_Q_tab_W( display->dnd_window.object );
         if(r)
-            return r;
+            return ~2;
     }
+    N r = Dh_W( gui_wayland, events, id );
+    if(r)
+        return ~2;
     for_each_rev( window_id, display->window, E_mem_Q_tab )
         E_gui_wayland_Q_window_W( id, window_id );
-    N r = E_mem_Q_tab_W( display->window );
+    r = E_mem_Q_tab_W( display->window );
     if(r)
-        return r;
-    r = Dh_W( gui_wayland, events, id );
-    if(r)
-        return r;
+        return ~2;
+    display = E_mem_Q_tab_R( E_gui_wayland_Q_display_S, id );
     wl_display_disconnect( display->w_display );
     r = E_mem_Q_tab_I_remove( E_gui_wayland_Q_display_S, id );
     return r;

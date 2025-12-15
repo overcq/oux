@@ -121,8 +121,7 @@ End_4:;
     E_tui_data_Q_layout_I_add( E_tui_data_Q_field_S_text, "44. text input ąę", 100 );
     E_ncurses_I_lay();
 #endif
-#if 0
-    I client_id = E_ui_Q_client_M( E_ui_Q_client_Z_type_Z_qt );
+    I client_id = E_ui_Q_client_M( E_ui_Q_client_Z_type_Z_auto );
     if( client_id < 0 )
         goto End;
     X_M( main, cli_activate );
@@ -185,13 +184,15 @@ End_4:;
             return EXIT_FAILURE;
         *object->text.s = '\0';
     }
-        r = E_ui_I_build( client_id );
+    r = E_ui_I_build( client_id );
     if(r)
         return (int)(S)r;
+    X_B( main, cli_activate, 0 )
+        goto End_1;
     r = E_ui_Q_object_Z_level_P( client_id, collection_id_2, object_id, 1 );
     if(r)
         return (int)(S)r;
-#endif
+
     X_M( gui_wayland, close_window );
     if( _X_var( gui_wayland, close_window ) < 0 )
         return (int)_X_var( gui_wayland, close_window );
@@ -206,7 +207,7 @@ End_4:;
     else if( display_id < 0 )
         return (int)display_id;
     struct E_gui_wayland_Q_display_Z *display = E_mem_Q_tab_R( E_gui_wayland_Q_display_S, display_id );
-    for_n( i, 2 )
+    for_n_( i, 2 )
     {   I window_id = E_gui_wayland_Q_window_M( display_id
         , 490, 480
         );
@@ -356,8 +357,7 @@ End_4:;
         E_gui_wayland_Q_object_I_lay( display, window );
     }
     //D_M( main, cursor );
-    X_B( gui_wayland, close_window, 0 )
-        U_F( E_base_S->E_flow_S_signal, exit );
+    X_B( gui_wayland, close_window, 0 ){}
     //D_W( main, cursor );
     E_gui_wayland_Q_display_W( display_id );
 End_3:
@@ -367,11 +367,9 @@ End_2:;
     if(r)
         return (int)(S)r;
 End_1:
-#if 0
     r = X_W( main, cli_activate );
     if(r)
         return (int)(S)r;
-#endif
 End://r = E_tui_W();
     //if(r)
         //return (int)(S)r;
@@ -550,10 +548,10 @@ E_flow_Q_process_call_I_func( pid_t pid
     {   p += sizeof(N);
         B U_L( command, invalid );
         switch(command)
-        { case 1:
+        { case 1: // ready
                 U_F( main, cli_activate );
                 break;
-          case 2:
+          case 2: // change
             {   N r = E_ui_X( &p );
                 if(r)
                     U_F( command, invalid );

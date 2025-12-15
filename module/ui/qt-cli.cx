@@ -7,6 +7,7 @@
 *         Qt client
 * ©overcq                on ‟Gentoo Linux 23.0” “x86_64”            2025‒10‒29 R
 *******************************************************************************/
+//TODO Po aktualizacji do Qt 6.10 użyć “FlexboxLayout”.
 N
 E_ui_Q_qt_cli_I_quit( I client_id
 ){  struct E_ui_Q_client_Z *client = E_mem_Q_tab_R( E_ui_Q_client_S, client_id );
@@ -18,7 +19,8 @@ E_ui_Q_qt_cli_I_quit( I client_id
     n[1] = 0;
     B res;
     E_flow_Q_process_call_I( call_id, client->srv_pid, &res );
-    return E_flow_Q_process_call_W( call_id );
+    N r = E_flow_Q_process_call_W( call_id );
+    return r ? r : res ? 0 : ~0;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 _internal
@@ -113,7 +115,7 @@ E_ui_Q_qt_cli_N_( Pc *s
                 N r = W( s_ );
                 if(r)
                     return ~1;
-                if( !E_text_Z_s0_I_append_s0( s, "\"\nGridLayout{" ))
+                if( !E_text_Z_s0_I_append_s0( s, "\"\nFlow{anchors.fill:parent\n" ))
                     return ~0;
                 for_i( i, object->child_n )
                 {   N r = E_ui_Q_qt_cli_N_( s, collection_id, object->child[i] );
@@ -165,7 +167,7 @@ E_ui_Q_qt_cli_N_( Pc *s
                 N r = W( s_ );
                 if(r)
                     return ~1;
-                if( !E_text_Z_s0_I_append_s0( s, "\"\nGridLayout{" ))
+                if( !E_text_Z_s0_I_append_s0( s, "\"\nFlow{anchors.fill:parent\n" ))
                     return ~0;
                 l = E_text_Z_n_N_s_G( object_id, sizeof( object_id ), 36 );
                 Pc s_id = M( l + 2 );
@@ -356,11 +358,11 @@ E_ui_Q_qt_cli_N_( Pc *s
 }
 N
 E_ui_Q_qt_cli_N( Pc *s
-){  N l = J_s0_R_l( "import QtQuick.Controls\nimport QtQuick.Layouts\nimport QtQuick.Window\n" ) + 1;
+){  N l = J_s0_R_l( "import QtQuick\nimport QtQuick.Controls\nimport QtQuick.Layouts\nimport QtQuick.Window\n" ) + 1;
     *s = M(l);
     if( !*s )
         return ~0;
-    E_text_Z_s_P_copy_s0_0( *s, "import QtQuick.Controls\nimport QtQuick.Layouts\nimport QtQuick.Window\n" );
+    E_text_Z_s_P_copy_s0_0( *s, "import QtQuick\nimport QtQuick.Controls\nimport QtQuick.Layouts\nimport QtQuick.Window\n" );
     for_each( collection_id, E_ui_Q_collection_S, E_mem_Q_tab )
     {   struct E_ui_Q_collection_Z *collection = E_mem_Q_tab_R( E_ui_Q_collection_S, collection_id );
         if( !E_text_Z_s0_I_append_s0( s, "ApplicationWindow{title:\"" ))
@@ -381,7 +383,7 @@ E_ui_Q_qt_cli_N( Pc *s
         N r = W( s_ );
         if(r)
             return ~1;
-        if( !E_text_Z_s0_I_append_s0( s, "\"\nvisible:true\nGridLayout{" ))
+        if( !E_text_Z_s0_I_append_s0( s, "\"\nvisible:true\nwidth:700\nheight:700\nFlow{anchors.fill:parent\n" ))
         {   r = W( *s );
             return r ? ~1 : ~0;
         }
