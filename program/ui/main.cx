@@ -7,6 +7,8 @@
 *         entry and raw labels
 * ©overcq                on ‟Gentoo Linux 13.0” “x86_64”              2015‒1‒6 *
 *******************************************************************************/
+//#define E_main_C_tui
+//==============================================================================
 N E_main_Q_timer_S_hour;
 N E_main_Q_timer_S_minute;
 N E_main_Q_timer_S_second;
@@ -34,18 +36,18 @@ main(
 ){  N r = E_base_M( argc, argv );
     if(r)
         return (int)(S)r;
+#ifdef E_main_C_tui
+    r = E_tui_M();
+    if(r)
+        return (int)(S)r;
+#else
     r = E_ui_M();
     if(r)
         return (int)(S)r;
     r = E_gui_wayland_M();
     if(r)
         return (int)(S)r;
-    //r = E_gui_xcb_M();
-    //if(r)
-        //return (int)(S)r;
-    //r = E_tui_M();
-    //if(r)
-        //return (int)(S)r;
+#endif
 #ifndef C_line_report
     I out = E_io_Q_stream_out_M_fd( STDERR_FILENO );
 #else
@@ -61,7 +63,7 @@ main(
 #endif
     I_V()
         goto End;
-goto End_4;
+
     SSL_CTX *ssl_ctx = E_net_cli_Q_ssl_M();
     if( !ssl_ctx )
         goto End_4;
@@ -100,7 +102,11 @@ goto End_4;
 Skip:
     E_net_cli_Q_ssl_W( ssl_ctx );
 End_4:;
-#if 0
+
+    X_M( ui, close );
+    if( _X_var( ui, close ) < 0 )
+        return (int)_X_var( ui, close );
+#ifdef E_main_C_tui
     E_tui_data_Q_layout_I_add( E_tui_data_Q_field_S_text, "Text input ąę", 5 );
     for_n( i, 42 )
     {   E_tui_data_Q_layout_I_add( E_tui_data_Q_field_S_text, "Second text input ąę", 100 );
@@ -120,7 +126,7 @@ End_4:;
     }
     E_tui_data_Q_layout_I_add( E_tui_data_Q_field_S_text, "44. text input ąę", 100 );
     E_ncurses_I_lay();
-#endif
+#else
     I client_id = E_ui_Q_client_M( E_ui_Q_client_Z_type_Z_auto );
     if( client_id < 0 )
         goto End;
@@ -193,9 +199,6 @@ End_4:;
     if(r)
         return (int)(S)r;
 
-    X_M( gui_wayland, close_window );
-    if( _X_var( gui_wayland, close_window ) < 0 )
-        return (int)_X_var( gui_wayland, close_window );
     r = D_M( main, timer_draw );
     if( !~r )
         goto End_2;
@@ -356,32 +359,33 @@ End_4:;
         }
         E_gui_wayland_Q_object_I_lay( display, window );
     }
+#endif
     //D_M( main, cursor );
-    X_B( gui_wayland, close_window, 0 ){}
+    X_B( ui, close, 0 ){}
     //D_W( main, cursor );
+#ifndef E_main_C_tui
     E_gui_wayland_Q_display_W( display_id );
 End_3:
     D_W( main, timer_draw );
-End_2:;
-    r = X_W( gui_wayland, close_window );
+End_2:
+    r = X_W( ui, close );
     if(r)
         return (int)(S)r;
 End_1:
     r = X_W( main, cli_activate );
     if(r)
         return (int)(S)r;
-End://r = E_tui_W();
-    //if(r)
-        //return (int)(S)r;
-    //r = E_gui_xcb_W();
-    //if(r)
-        //return (int)(S)r;
-    r = E_gui_wayland_W();
+End:r = E_gui_wayland_W();
     if(r)
         return (int)(S)r;
     r = E_ui_W();
     if(r)
         return (int)(S)r;
+#else
+End:r = E_tui_W();
+    if(r)
+        return (int)(S)r;
+#endif
     return (int)(S)E_base_W();
 }
 //D( main, cursor )

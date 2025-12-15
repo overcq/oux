@@ -8,6 +8,9 @@
 * ©overcq                on ‟Gentoo Linux 17.1” “x86_64”             2022‒5‒29 K
 *******************************************************************************/
 _internal
+B E_tui_S_window_U_available__autogen;
+//==============================================================================
+_internal
 N
 E_tui_M_ncurses( void
 ){  E_ncurses_Q_layout_S = E_mem_Q_tab_M( sizeof( struct E_ncurses_Q_field_Z ), 0 );
@@ -15,7 +18,8 @@ E_tui_M_ncurses( void
         return (N)E_ncurses_Q_layout_S;
     E_ncurses_I_getch_S_meta_key = no;
     int max_x, max_y;
-    if( U_R( E_base_S->E_gui_xcb, init ))
+    U_R( E_tui_S_window, available ) = !!getenv( "DISPLAY" );
+    if( U_R( E_tui_S_window, available ))
     {   setupterm( 0, STDERR_FILENO, 0 );
         max_x = tigetnum( "cols" );
         max_y = tigetnum( "lines" );
@@ -83,7 +87,7 @@ E_tui_M_ncurses( void
     immedok( stdscr, FALSE );
     leaveok( stdscr, FALSE );
     scrollok( stdscr, FALSE );
-    if( U_R( E_base_S->E_gui_xcb, init ))
+    if( U_R( E_tui_S_window, available ))
         resizeterm( max_y, max_x );
     E_ncurses_S_scroll_y = E_ncurses_S_scroll_x = E_ncurses_S_scroll_max_x = E_ncurses_S_scroll_max_y = 0;
     mousemask( BUTTON1_CLICKED, 0 );

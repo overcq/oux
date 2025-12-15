@@ -136,7 +136,7 @@ S_headers :=
             ifeq (,$$(H_make_C_pthreads))
 H_make_C_pthreads := $$(if $$(C_pthreads),1)
             endif
-E_main_S_add_headers := $$(addprefix $$(H_make_S_module_path)/$(1)/,$$(S_add_headers))
+E_main_S_add_headers += $$(addprefix $$(H_make_S_module_path)/$(1)/,$$(S_add_headers))
 S_add_headers :=
 E_main_Q_$(subst -,_,$(1))_S_add_sources := $$(addprefix $$(H_make_S_module_path)/$(1)/,$$(sort $$(S_add_sources)))
 S_add_sources :=
@@ -150,11 +150,11 @@ E_main_S_add_headers := $(sort $(E_main_S_add_headers))
 
     endif
 
-    undefine H_make_I_module
-    undefine S_packages
-    undefine S_libraries
-    undefine S_headers
-    undefine C_pthreads
+undefine H_make_I_module
+undefine S_packages
+undefine S_libraries
+undefine S_headers
+undefine C_pthreads
 #===============================================================================
 H_make_S_lib_prefix := oux-
 #-------------------------------------------------------------------------------
@@ -378,7 +378,7 @@ $(E_main_S_add_headers)
 	{   for include in $(call H_make_Z_shell_cmd_arg_I_quote_for,$(call H_make_Z_headers_I_sort,$(H_make_S_headers) $(E_main_S_headers) $(E_module_S_headers))); do \
             echo "#include <$${include}>" ;\
         done ;\
-        for header in $(E_main_S_add_headers); do \
+        for header in $(call H_make_Z_shell_cmd_arg_I_quote_for,$(E_main_S_add_headers)); do \
             echo "#include \"$${header}\"" ;\
         done ;\
         $(foreach module,$(H_make_S_modules),$(call H_make_Q_main_header_I_module_0,$(module));) \
@@ -418,7 +418,7 @@ $(H_make_S_module_path)/E_cplus_S_cx_sources
         for header in $(call H_make_Z_shell_cmd_arg_I_quote_for,$(call H_make_Z_headers_I_sort,$(H_make_S_headers) $(E_module_S_headers))); do \
             echo "#include <$${header}>" ;\
         done ;\
-        for header in $(E_main_S_add_headers); do \
+        for header in $(call H_make_Z_shell_cmd_arg_I_quote_for,$(E_main_S_add_headers)); do \
             echo "#include \"$${header#*/}\"" ;\
         done ;\
         $(foreach module,$(H_make_S_modules),$(call H_make_Q_main_header_I_module_0,$(module));) \

@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]
     paths-ignore:
-    #- '.github/**'
+    - '.github/**'
     - 'picture/**'
     - 'program/**'
     - '*.md'
@@ -16,8 +16,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - name: Get number of CPU cores
+      uses: SimenB/github-actions-cpu-cores@v2
+      id: cpu-cores
+    - uses: actions/checkout@v5
     - name: packages install
       run: sudo apt-get update; sudo apt-get install libtool-bin libssl-dev libssl-doc libwayland-dev wayland-protocols libcap-dev libncurses-dev manpages-dev ncurses-doc; sudo mandb
     - name: make
-      run: make build
+      run: make -j${{ steps.cpu-cores.outputs.count }} build
