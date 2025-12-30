@@ -42,6 +42,7 @@ E_gui_wayland_X_surface_configure( P data
         {   GV_(NA); V();
         }
         wl_surface_commit( window->w_surface );
+        wl_surface_attach( window->w_surface, window->w_buffer, 0, 0 );
         U_F( window->state, configured );
     }
 }
@@ -63,7 +64,11 @@ E_gui_wayland_X_toplevel_configure( P data
     if( window->width != width
     || window->height != height
     )
-    {   V0_( munmap( window->drawable,  E_simple_Z_n_I_align_up_to_v2( window->width * window->height * sizeof(N32), E_base_S->E_mem_S_page_size )));
+    {   wl_buffer_destroy( window->w_buffer );
+        if( !E_mem_Q_blk_M_replace_tab( &window->object_mask, sizeof( *window->object_mask ), width * height ))
+        {   GV_(NA); V();
+        }
+        V0_( munmap( window->drawable,  E_simple_Z_n_I_align_up_to_v2( window->width * window->height * sizeof(N32), E_base_S->E_mem_S_page_size )));
         window->width = width;
         window->height = height;
         size_t size = E_simple_Z_n_I_align_up_to_v2( window->width * window->height * sizeof(N32), E_base_S->E_mem_S_page_size );
@@ -75,6 +80,11 @@ E_gui_wayland_X_toplevel_configure( P data
         if( !window->w_buffer )
         {   GV_(NA); V();
         }
+        wl_surface_commit( window->w_surface );
+        wl_surface_attach( window->w_surface, window->w_buffer, 0, 0 );
+        U_F( window->state, frame_callback );
+        struct wl_callback *cb = wl_surface_frame( window->w_surface );
+        wl_callback_add_listener( cb, &E_gui_wayland_X_frame_S, window->configure_data );
         wl_surface_commit( window->w_surface );
     }
 }
@@ -164,9 +174,7 @@ D( gui_wayland, events )
     O{  struct E_gui_wayland_Q_display_Z *display = E_mem_Q_tab_R( E_gui_wayland_Q_display_S, display_id );
         Xh_B_();
         if( !~wl_display_dispatch( display->w_display ))
-        {   G_();
             U_F( E_base_S->E_flow_S_signal, exit );
-        }
         Xh_B()
             break;
     }

@@ -130,7 +130,8 @@ static const struct xdg_toplevel_listener E_gui_wayland_X_toplevel_S =
 { .configure = E_gui_wayland_X_toplevel_configure
 , .close = E_gui_wayland_X_toplevel_close
 };
-static const struct wl_callback_listener E_gui_wayland_X_frame_S =
+_internal
+struct wl_callback_listener E_gui_wayland_X_frame_S =
 { .done = E_gui_wayland_X_frame_done
 };
 //==============================================================================
@@ -402,9 +403,9 @@ E_gui_wayland_Q_window_M( I display_id
     xdg_toplevel_add_listener( window->xdg_toplevel, &E_gui_wayland_X_toplevel_S, window->configure_data );
     wl_surface_commit( window->w_surface );
     while( !U_R( window->state, configured ))
-    {   I_B();
+    {   I_B()
+            return ~2;
     }
-    wl_surface_attach( window->w_surface, window->w_buffer, 0, 0 );
     U_F( window->state, frame_callback );
     struct wl_callback *cb = wl_surface_frame( window->w_surface );
     wl_callback_add_listener( cb, &E_gui_wayland_X_frame_S, window->configure_data );
