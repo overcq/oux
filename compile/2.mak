@@ -15,9 +15,7 @@
 #DFN Podstawienie dla “bibliotek” procedur menedżera pamięci (w ‘kompilacji’ do “bibliotek”) zawsze będzie funkcjonalnością opcjonalną, mimo że bardzo stabilizuje, a także przyspiesza działanie programów “bibliotecznych” dołączanych do ‘kompilowanego’ programu oraz ich ‘serverów’ komunikacji, jednak otwiera “menedżera pamięci” na obce oprogramowanie, które nie jest gwarantowane, i w ten sposób eliminuje gwarancje dla całego programu, gdy byłaby realizowana niewłaściwa obsługa “menedżera pamięci” przez te obce programy.
 #===============================================================================
 # Linux fv-az202-994 5.13.0-1022-azure #26~20.04.1-Ubuntu SMP Thu Apr 7 19:42:45 UTC 2022 x86_64 x86_64 x86_64 GNU/Linux
-    ifeq (-azure,$(findstring -azure,$(shell uname -a)))
-H_make_S_reports_consent := 1
-    else ifneq (,$(H_ocq_C_consent))
+    ifneq (,$(H_ocq_C_consent))
 H_make_S_reports_consent := 1
     endif
 H_make_S_compile_path := $(H_make_S_root_path)/compile
@@ -86,8 +84,8 @@ $(foreach module,$(H_make_S_modules),$(if $(wildcard $(H_make_S_module_path)/$(m
 E_main_S_packages := $(sort $(E_main_S_packages))
 E_main_S_libraries := $(sort $(E_main_S_libraries))
 E_main_S_headers := $(sort $(E_main_S_headers))
-E_main_S_add_headers := $(sort $(E_main_S_add_headers)))
-E_main_S_add_sources := $(sort $(E_main_S_add_sources)))
+E_main_S_add_headers := $(sort $(E_main_S_add_headers))
+E_main_S_add_sources := $(sort $(E_main_S_add_sources))
 
     else
 
@@ -521,7 +519,7 @@ $(patsubst %.cx,E_cplus_S_1_%.h,$(H_make_S_cx_sources)) \
 $(patsubst %.cx,E_cplus_S_2_%.h,$(H_make_S_cx_sources)) \
 $(foreach module,$(H_make_S_modules),$(addprefix $(H_make_S_module_path)/$(module)/,0.mak 0.h $(patsubst %.cx,E_cplus_S_0_$(module)__%.h,$(notdir $(wildcard $(H_make_S_root_path)/module/$(module)/*.cx))) $(patsubst %.cx,E_cplus_S_1_$(module)__%.h,$(notdir $(wildcard $(H_make_S_root_path)/module/$(module)/*.cx))) $(patsubst %.cx,E_cplus_S_2_$(module)__%.h,$(notdir $(wildcard $(H_make_S_root_path)/module/$(module)/*.cx))))) \
 $(patsubst %.cx,%.c,$(H_make_S_cx_sources) $(foreach module,$(H_make_S_modules),$(wildcard $(H_make_S_module_path)/$(module)/*.cx))) \
-$$(E_main_S_add_sources)
+$(E_main_S_add_sources)
 	$(H_make_I_block_root)
 	$(call H_make_Q_stat_I_stat,0)
 	$(CC) $(call H_make_Q_packages_R_cflags,$(E_main_S_packages)) $(CFLAGS) $(call H_make_Q_packages_R_ldflags,$(E_main_S_packages)) $(LDFLAGS) $(TARGET_ARCH) -fPIE -pie -s -iquote $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_compile_path)) -iquote $(call H_make_Z_shell_cmd_arg_I_quote,$(H_make_S_module_path)) -include E_cplus_S_not_to_libs.h $(addprefix -include ,$(call H_make_Z_shell_cmd_arg_I_quote_for,$(H_make_S_compiler_cx_sources))) $(call H_make_Z_shell_cmd_arg_I_quote_for,$(filter %.c,$^)) -o $(call H_make_Z_shell_cmd_arg_I_quote,$@) $(addprefix -l,$(call H_make_Z_shell_cmd_arg_I_quote_for,$(E_main_S_libraries))) $(call H_make_Q_packages_R_ldlibs,$(E_main_S_packages))

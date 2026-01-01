@@ -24,7 +24,7 @@ struct E_x_Z_alpha_pixel
 //==============================================================================
 _export
 N32
-E_x_Z_color_M(
+E_gui_xcb_Z_color_M_rgb(
   N8 red
 , N8 green
 , N8 blue
@@ -32,37 +32,37 @@ E_x_Z_color_M(
 }
 _export
 N8
-E_x_Z_color_R_red( N32 color
+E_gui_xcb_Z_color_R_red( N32 color
 ){  J_assert( !( color & ~0xffffff ));
     return ( color >> 16 ) & 0xff;
 }
 _export
 N8
-E_x_Z_color_R_green( N32 color
+E_gui_xcb_Z_color_R_green( N32 color
 ){  J_assert( !( color & ~0xffffff ));
     return ( color >> 8 ) & 0xff;
 }
 _export
 N8
-E_x_Z_color_R_blue( N32 color
+E_gui_xcb_Z_color_R_blue( N32 color
 ){  J_assert( !( color & ~0xffffff ));
     return color & 0xff;
 }
 _export
 N32
-E_x_Z_color_M_gray( N8 luminance
-){  return E_x_Z_color_M( luminance, luminance, luminance );
+E_gui_xcb_Z_color_M_gray( N8 luminance
+){  return E_gui_xcb_Z_color_M_rgb( luminance, luminance, luminance );
 }
 _export
 N32
-E_x_Z_color_P_luminance( struct E_gui_xcb_Q_display_Z *display
+E_gui_xcb_Z_color_P_luminance( struct E_gui_xcb_Q_display_Z *display
 , N32 color
 , F luminance
 ){  J_assert( luminance >= 0 && luminance <= 1 );
-    N8 red = E_x_Z_color_R_red(color);
-    N8 green = E_x_Z_color_R_green(color);
-    N8 blue = E_x_Z_color_R_blue(color);
-    F color_luminance = E_x_Z_color_R_luminance( display, color );
+    N8 red = E_gui_xcb_Z_color_R_red(color);
+    N8 green = E_gui_xcb_Z_color_R_green(color);
+    N8 blue = E_gui_xcb_Z_color_R_blue(color);
+    F color_luminance = E_gui_xcb_Z_color_R_luminance( display, color );
     if( luminance < color_luminance )
     {   red = lround( red * luminance / color_luminance );
         green = lround( green * luminance / color_luminance );
@@ -73,13 +73,13 @@ E_x_Z_color_P_luminance( struct E_gui_xcb_Q_display_Z *display
         blue += lround(( 0xff - blue ) * ( luminance - color_luminance ) / ( 1 - color_luminance ));
     }else
         return color;
-    return E_x_Z_color_M( red, green, blue );
+    return E_gui_xcb_Z_color_M_rgb( red, green, blue );
 }
 _export
 F
-E_x_Z_color_R_luminance( struct E_gui_xcb_Q_display_Z *display
+E_gui_xcb_Z_color_R_luminance( struct E_gui_xcb_Q_display_Z *display
 , N32 color
-){  return ( display->red_luminance_ratio * E_x_Z_color_R_red(color) + display->green_luminance_ratio * E_x_Z_color_R_green(color) + display->blue_luminance_ratio * E_x_Z_color_R_blue(color) ) / 255;
+){  return ( display->red_luminance_ratio * E_gui_xcb_Z_color_R_red(color) + display->green_luminance_ratio * E_gui_xcb_Z_color_R_green(color) + display->blue_luminance_ratio * E_gui_xcb_Z_color_R_blue(color) ) / 255;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 _export
@@ -147,9 +147,9 @@ E_gui_xcb_Q_window_I_draw_aa_Z_points(
             N background_red = 0, background_green = 0, background_blue = 0;
             for_n( j, 8 )
                 if( p[j] != screen->draw_color )
-                {   background_red += E_x_Z_color_R_red( p[j] );
-                    background_green += E_x_Z_color_R_green( p[j] );
-                    background_blue += E_x_Z_color_R_blue( p[j] );
+                {   background_red += E_gui_xcb_Z_color_R_red( p[j] );
+                    background_green += E_gui_xcb_Z_color_R_green( p[j] );
+                    background_blue += E_gui_xcb_Z_color_R_blue( p[j] );
                     n_++;
                 }
             if( n_ )
@@ -157,13 +157,13 @@ E_gui_xcb_Q_window_I_draw_aa_Z_points(
                 background_green /= n_;
                 background_blue /= n_;
             }else
-            {   background_red = E_x_Z_color_R_red( E_gui_xcb_Q_theme.window_bg );
-                background_green = E_x_Z_color_R_green( E_gui_xcb_Q_theme.window_bg );
-                background_blue = E_x_Z_color_R_blue( E_gui_xcb_Q_theme.window_bg );
+            {   background_red = E_gui_xcb_Z_color_R_red( E_gui_xcb_Q_theme.window_bg );
+                background_green = E_gui_xcb_Z_color_R_green( E_gui_xcb_Q_theme.window_bg );
+                background_blue = E_gui_xcb_Z_color_R_blue( E_gui_xcb_Q_theme.window_bg );
             }
-            N red = E_x_Z_color_R_red( screen->draw_color );
-            N green = E_x_Z_color_R_green( screen->draw_color );
-            N blue = E_x_Z_color_R_blue( screen->draw_color );
+            N red = E_gui_xcb_Z_color_R_red( screen->draw_color );
+            N green = E_gui_xcb_Z_color_R_green( screen->draw_color );
+            N blue = E_gui_xcb_Z_color_R_blue( screen->draw_color );
             if( red > background_red )
                 red = background_red + ( red - background_red ) * brightness;
             else
@@ -176,7 +176,7 @@ E_gui_xcb_Q_window_I_draw_aa_Z_points(
                 blue = background_blue + ( blue - background_blue ) * brightness;
             else
                 blue = background_blue - ( background_blue - blue ) * brightness;
-            E_gui_xcb_Q_window_I_draw_P_color( display, screen, E_x_Z_color_M( red, green, blue ));
+            E_gui_xcb_Q_window_I_draw_P_color( display, screen, E_gui_xcb_Z_color_M_rgb( red, green, blue ));
         }
         E_gui_xcb_Q_window_I_draw_Z_points( display, screen, window, 1, &points[i] );
     }

@@ -55,8 +55,8 @@ D( x_window, events )
         #endif
     Xh_A( E_x_window_D_events_I_unblock );
     B U_L( x_window, draw );
-    X_A( x_window, close_window );
-    if( _X_var( x_window, close_window ) < 0 )
+    X_A( ui, close );
+    if( _X_var( ui, close ) < 0 )
     {   U_F( E_base_S->E_flow_S_signal, exit );
         goto Block;
     }
@@ -81,6 +81,7 @@ Po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
         #else
     Yi_A( x_window, events_pointer_button_check );
         #endif
+Block:
     O{  struct E_gui_xcb_Q_display_Z *display;
             #ifndef E_flow_C_thread_system_unblock_reports
         for_each( display_id, E_gui_xcb_Q_display_S, E_mem_Q_tab )
@@ -95,7 +96,7 @@ Po eliminacji opóźniających (serwer ‟X”) “clip-mask” i innych zmianac
             }
                 #else
             xcb_connection_t *x_display = display->x_display;
-Block:      Xh_B_();
+            Xh_B_();
             xcb_generic_event_t *x_event = xcb_wait_for_event( x_display );
             Xh_B()
             {   free( x_event );
@@ -1241,7 +1242,7 @@ Loop_0:     do
                                         U_F( display->mode, drag_stop );
                                     if( window != &screen->dnd_window )
                                     {   U_F( window->req, close );
-                                        U_F( x_window, close_window );
+                                        U_F( ui, close );
                                     }
                                 }else
                                 {   xcb_get_atom_name_cookie_t ret_id = xcb_get_atom_name_unchecked( display->x_display, x_client->data.data8[0] );
@@ -1291,7 +1292,7 @@ Loop_2:;    }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                     {   for_n( i, display->drag_S_object_src_n )
                         {   struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->drag_S_object_src[i].window_id );
                             U_F( window->req, draw );
-                            if( !~E_gui_xcb_Q_object_I_remove_drag_src( window, display->drag_S_object_src[i].object_id ))
+                            if( !~E_gui_xcb_Q_object_I_clear_drag_src( window, display->drag_S_object_src[i].object_id ))
                             {   U_F( display->req, restart );
                                 break;
                             }
@@ -1356,7 +1357,7 @@ Loop_2:;    }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                 {   for_n( i, display->drag_S_object_src_n )
                     {   struct E_gui_xcb_Q_window_Z *window = E_mem_Q_tab_R( display->window, display->drag_S_object_src[i].window_id );
                         U_F( window->req, draw );
-                        if( !~E_gui_xcb_Q_object_I_remove_drag_src( window, display->drag_S_object_src[i].object_id ))
+                        if( !~E_gui_xcb_Q_object_I_clear_drag_src( window, display->drag_S_object_src[i].object_id ))
                         {   U_F( display->req, restart );
                             break;
                         }
@@ -1656,7 +1657,6 @@ Loop_2:;    }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                                                 U_L( dnd_window->req, resize );
                                                 U_F( dnd_window->req, draw );
                                                 U_F( display->mode, drag );
-                                                U_L( display->mode_ex, drag_S_copy );
                                                 U_F( display->mode_ex, drag_stop_S_cancel );
                                                 U_F( window->req, draw );
                                                 U_F( display->req, draw );
@@ -2085,7 +2085,7 @@ Loop_2:;    }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                     }
                 }
             }
-            if( U_R( x_window, close_window )
+            if( U_R( ui, close )
             && U_E( display->req, pointer_S_ungrab )
             )
             {
@@ -2103,7 +2103,7 @@ Loop_2:;    }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
                 U_F( x_window, flush );
         }
             #ifdef C_pthreads
-        if( !U_R( x_window, close_window ))
+        if( !U_R( ui, close ))
         {   U_F( display->state, allow_draw );
             Vr_( pthread_mutex_lock( &E_x_window_D_events_S_mutex ));
             for_each_out( display_id, display_id_, E_gui_xcb_Q_display_S, E_mem_Q_tab )
@@ -2126,7 +2126,7 @@ Loop_2:;    }while( x_event = xcb_poll_for_queued_event( display->x_display )); 
             Vr_( pthread_mutex_unlock( &E_x_window_D_events_S_mutex ));
         }
             #endif
-        X_U( x_window, close_window );
+        X_U( ui, close );
         X_U( x_window, flush );
             #ifndef E_flow_C_thread_system_unblock_reports
 Block:  Y_B( timer, 0 )

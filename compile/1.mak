@@ -41,7 +41,7 @@ H_make_S_distribution := $(shell lsb_release -i | sed -s 's`^[^:]*:\s*``' )
 # Wybór ‘kompilatora’.
 H_make_S_cc := clang gcc
 #-------------------------------------------------------------------------------
-H_make_S_cc := $(firstword $(foreach cc,$(H_make_S_cc),$(wildcard $(addsuffix /$(cc),/usr/bin /usr/local/bin \
+H_make_S_cc := $(firstword $(foreach cc,$(H_make_S_cc),$(wildcard $(addsuffix /$(cc),/usr/bin /usr/local/bin /usr/pkg/bin \
   $(shell clang -print-search-dirs | awk '/^programs:/ { match( $$2, /[=:]\/usr\/lib\/llvm\/[^:]*/ ); print substr( $$2, RSTART + 1, RLENGTH - 1 ); }' ) \
   $(shell gcc-config -B )))))
     ifneq (,$(H_make_S_cc))

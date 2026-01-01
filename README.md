@@ -49,13 +49,6 @@ Developing software using this product requires developer experience. Good progr
 
 ## 6. Component materials
 
-This product uses external libraries (source code available through the operating systemʼs package system):
-
-* “libc” and related libraries
-* “ncurses” unicode
-* [OpenSSL](https://www.openssl.org/source/)
-* “wayland”
-
 This product has been built using unix-like tools, in particular:
 
 * “apropos”
@@ -77,6 +70,19 @@ This product has been built using unix-like tools, in particular:
 * “xargs”
 * “Xdialog”
 * “xterm”
+
+This product uses external libraries (source code available through the operating systemʼs package system):
+
+* “libc” and related libraries
+* “ncurses” unicode
+* [OpenSSL](https://www.openssl.org/source/)
+* “wayland”
+* “xcb”
+
+This product in runtime uses external programs:
+
+* “gui-srv-gtk”
+* “gui-srv-qt”
 
 ## 7. Support
 
