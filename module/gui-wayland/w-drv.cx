@@ -65,10 +65,12 @@ E_gui_wayland_X_toplevel_configure( P data
     || window->height != height
     )
     {   wl_buffer_destroy( window->w_buffer );
+        wl_surface_commit( window->w_surface );
+        wl_display_flush( display->w_display );
         if( !E_mem_Q_blk_M_replace_tab( &window->object_mask, sizeof( *window->object_mask ), width * height ))
         {   GV_(NA); V();
         }
-        V0_( munmap( window->drawable,  E_simple_Z_n_I_align_up_to_v2( window->width * window->height * sizeof(N32), E_base_S->E_mem_S_page_size )));
+        V0_( munmap( window->drawable, E_simple_Z_n_I_align_up_to_v2( window->width * window->height * sizeof(N32), E_base_S->E_mem_S_page_size )));
         window->width = width;
         window->height = height;
         size_t size = E_simple_Z_n_I_align_up_to_v2( window->width * window->height * sizeof(N32), E_base_S->E_mem_S_page_size );
@@ -167,13 +169,15 @@ E_gui_wayland_D_events_I_unblock( P display_id
     struct wl_surface *w_surface = wl_compositor_create_surface( display->w_compositor );
     wl_surface_commit( w_surface );
     wl_surface_destroy( w_surface );
+    wl_display_flush( display->w_display );
 }
 D( gui_wayland, events )
 {   I display_id = *( I * )(( struct E_flow_Q_task_async_Z_proc_args * )thread_proc_arg )->p;
     Xh_A( E_gui_wayland_D_events_I_unblock );
     O{  struct E_gui_wayland_Q_display_Z *display = E_mem_Q_tab_R( E_gui_wayland_Q_display_S, display_id );
+        wl_display_flush( display->w_display );
         Xh_B_();
-        if( !~wl_display_dispatch( display->w_display ))
+        V1( wl_display_dispatch( display->w_display ))
             U_F( E_base_S->E_flow_S_signal, exit );
         Xh_B()
             break;
