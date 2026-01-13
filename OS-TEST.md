@@ -24,6 +24,6 @@ Currently does not compile.
 
 ![OpenBSD](picture/OpenBSD.png)
 
-* Gentoo Linux
+* Gentoo Linux (Fluxbox)
 
 ![Gentoo](picture/Gentoo.png)

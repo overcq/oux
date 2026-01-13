@@ -22,7 +22,7 @@ Report vulnerabilities: https://github.com/overcq/oux/security/advisories or via
 
 OUX/C+ 3. Detailed version in git log.
 
-The product is developed in Debian (inside Windows Subsystem for Linux) and tested in FreeBSD, NetBSD, OpenBSD.
+The product is developed in Debian (inside Windows Subsystem for Linux) and tested in Ubuntu, Fedora, FreeBSD, NetBSD, OpenBSD.
 
 ## 4. Purpose
 
@@ -101,6 +101,66 @@ The user should make regular updates, e.g. with a command `git pull && make`, th
 Before using this commands can be executed as “root”: `make uninstall` and/or as the user: `make clean`, to remove any remaining intermediate files that depend on source files that have been removed in the new product version.
 
 To completely remove the product from the userʼs device, execute, for example, as “root”: `make uninstall`, then as the user: `rm -fr oux`.
+
+### “ui” test program
+
+In order to build and run the test window program, you need to install additional packages on individual operating systems and build and install the “gui-srv-gtk” or “gui-srv-qt” program.
+
+#### Ubuntu 24.04
+
+```shell
+sudo apt install make pkg-config libtool-bin clang zlib1g-dev libncurses-dev ncurses-doc libcap-dev libssl-dev libssl-doc libwayland-dev wayland-protocols
+```
+
+For “gui-srv-gtk”:
+
+```shell
+sudo apt install libgtk-4-dev
+```
+
+For “gui-srv-qt”:
+
+```shell
+sudo apt install g++ qt6-base-dev qt6-declarative-dev
+```
+
+#### Linux Mint 22.2
+
+It doesn't start.
+
+```shell
+sudo apt install manpages-dev libtool-bin clang zlib1g-dev ncurses-doc libcap-dev libssl-dev libssl-doc libwayland-dev wayland-protocols
+```
+
+For “gui-srv-gtk”:
+
+```shell
+sudo apt install libgtk-4-dev
+```
+
+For “gui-srv-qt”:
+
+```shell
+sudo apt install qt6-declarative-dev
+```
+
+#### Fedora 43
+
+```shell
+sudo dnf install make libtool clang zlib-devel ncurses-devel libcap-devel openssl-devel wayland-devel wayland-protocols-devel
+```
+
+For “gui-srv-gtk”:
+
+```shell
+sudo dnf install gtk4-devel
+```
+
+For “gui-srv-qt”:
+
+```shell
+sudo dnf install qt6-qtdeclarative-devel
+```
 
 # Other Licenses
 

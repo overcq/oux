@@ -45,11 +45,11 @@ done \
     /[^ ]/
 ' \
 | awk '
-    /^SYNOPSIS$/,/^DESCRIPTION$/ {
-        if( match( $0, "^SYNOPSIS$" ) != 0 )
+    /SYNOPSIS$/,/DESCRIPTION$/ {
+        if( match( $0, "SYNOPSIS$" ) != 0 )
         {   skip = 0
             headers = ""
-        }else if( skip != 0 || match( $0, "^[A-Z]+$" ) != 0 )
+        }else if( skip != 0 || match( $0, "[A-Z]+$" ) != 0 )
             skip = 1
         else if( match( $0, "#include +<[^>]+>" ) != 0 || match( $0, "#include +\"[^\"]+\"" ) != 0 )
         {   match( $0, "<[^>]+>" ) || match( $0, "\"[^\"]+\"" )
