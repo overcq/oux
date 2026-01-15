@@ -105,7 +105,7 @@ E_io_Q_stream_out_M_fd( int fd
     _sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_io_ready, 0 );
         #endif
     I id = E_mem_Q_tab_I_add( E_base_S->E_io_Q_stream_out_S );
-    if( (S)id < ~0 )
+    if( id < ~0 )
         return id;
     if( !~id )
     {
@@ -239,8 +239,9 @@ E_io_Q_stream_out_W_( I id
         V1( aio_return( stream->aiocb )){}
     }
         #endif
-    if( W( stream->data ))
-        return ~0;
+    N r = W( stream->data );
+    if(r)
+        return ~2;
         #ifndef E_io_C_aio
             #ifndef E_io_Q_stream_out_C_sig
     B found = no;
@@ -378,16 +379,25 @@ E_io_Q_stream_out_W_( I id
     if( U_R( stream->type, opened ))
     {   VO0( close( stream->aiocb->aio_fildes )){}
     }
-    W( stream->aiocb->aio_buf );
+    r = W( stream->aiocb->aio_buf );
+    if(r)
+        return ~2;
         #if defined( E_io_C_aio ) || defined( E_io_C_sig_has_fd )
     _sigprocmask( SIG_BLOCK, &E_base_S->E_flow_Z_sigset_S_io_ready, 0 );
         #endif
-    W( stream->aiocb );
-    E_mem_Q_tab_I_remove( E_base_S->E_io_Q_stream_out_S, id );
+    r = W( stream->aiocb );
+    if(r)
+    {   r = ~2;
+        goto End;
+    }
+    r = E_mem_Q_tab_I_remove( E_base_S->E_io_Q_stream_out_S, id );
+    if(r)
+        r = ~2;
+End:
         #if defined( E_io_C_aio ) || defined( E_io_C_sig_has_fd )
     _sigprocmask( SIG_UNBLOCK, &E_base_S->E_flow_Z_sigset_S_io_ready, 0 );
         #endif
-    return 0;
+    return r;
 }
 //------------------------------------------------------------------------------
 //NDFN w przyszłości oprócz statycznych tekstów “s” (jak jest poniżej) będą dla przenoszenia danych wycinane obszary pamięci z “E_mem_Q_blk” i przenoszone funkcją “move” (“stronami” pamięci).
@@ -457,7 +467,7 @@ Block:
             break;
             #if defined( E_io_C_aio ) || defined( E_io_C_sig_has_fd )
         I iter = E_mem_Q_tab_Q_iter_M( E_base_S->E_io_Q_stream_out_S, ~0 );
-        if( (S)iter < 0 )
+        if( iter < 0 )
             U_F( E_base_S->E_flow_S_signal, exit );
         else
         {   for_each_q( id, E_base_S->E_io_Q_stream_out_S, iter, E_mem_Q_tab )
@@ -501,7 +511,9 @@ Block:
                         N l;
                         V1( l = aio_return( stream->aiocb )){}
                         if( ~l && l )
-                        {   E_mem_Q_blk_I_remove( &stream->aiocb->aio_buf, 0, l );
+                        {   if( !E_mem_Q_blk_I_remove( &stream->aiocb->aio_buf, 0, l ))
+                            {   GV_(NDFN); V();
+                            }
                             if( !( stream->aiocb->aio_nbytes -= l ))
                             {   if( !stream->data_l )
                                     continue;
@@ -619,7 +631,7 @@ Block:
                         #endif
             }
                 #if defined( E_io_C_aio ) || defined( E_io_C_sig_has_fd )
-            if( (S)id < 0
+            if( id < 0
             && ~id
             )
                 U_F( E_base_S->E_flow_S_signal, exit );

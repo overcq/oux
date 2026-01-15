@@ -172,7 +172,7 @@ E_flow_Q_task_I_granulation( void
 _export
 I
 E_flow_Q_task_M( I *uid
-, void (*task_proc)(P)
+, void ( *task_proc )(P)
     #ifdef E_flow_C_thread_system_unblock_reports
 , P task_proc_arg
 , B task_system_unblock_report
@@ -334,7 +334,7 @@ E_flow_Q_task_M( I *uid
     {   volatile B *M_( thread_switch_in );
         if( !thread_switch_in )
         {   _Z_tasks_table_S_edit_begin;
-            S r = E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
+            N r = E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
             _Z_tasks_table_S_edit_end;
             if(r)
                 return r;
@@ -344,7 +344,7 @@ E_flow_Q_task_M( I *uid
         task->thread_switch_in = task_proc_args->task_proc_arg.thread_switch_in = thread_switch_in;
         volatile B *M_( thread_switch_out );
         if( !thread_switch_out )
-        {   S r = W( thread_switch_in );
+        {   N r = W( thread_switch_in );
             if(r)
                 return r;
             _Z_tasks_table_S_edit_begin;
@@ -358,7 +358,7 @@ E_flow_Q_task_M( I *uid
         task->thread_switch_out = task_proc_args->task_proc_arg.thread_switch_out = thread_switch_out;
         pthread_mutex_t *thread_flow_mutex = E_mem_Q_blk_M_align( sizeof( *thread_flow_mutex ), sizeof(N32) );
         if( !thread_flow_mutex )
-        {   S r = W( thread_switch_out );
+        {   N r = W( thread_switch_out );
             if(r)
                 return r;
             r = W( thread_switch_in );
@@ -374,7 +374,7 @@ E_flow_Q_task_M( I *uid
         }
         task->thread_flow_mutex = task_proc_args->task_proc_arg.thread_flow_mutex = thread_flow_mutex;
         Vr( pthread_mutex_init( thread_flow_mutex, 0 ))
-        {   S r = W( thread_flow_mutex );
+        {   N r = W( thread_flow_mutex );
             if(r)
                 return r;
             r = W( thread_switch_out );
@@ -394,7 +394,7 @@ E_flow_Q_task_M( I *uid
         pthread_cond_t *thread_switch = E_mem_Q_blk_M_align( sizeof( *thread_switch ), sizeof(N32) );
         if( !thread_switch )
         {   Vr_( pthread_mutex_destroy( thread_flow_mutex ));
-            S r = W( thread_flow_mutex );
+            N r = W( thread_flow_mutex );
             if(r)
                 return r;
             r = W( thread_switch_out );
@@ -413,7 +413,7 @@ E_flow_Q_task_M( I *uid
         }
         task->thread_switch = task_proc_args->task_proc_arg.thread_switch = thread_switch;
         Vr( pthread_cond_init( thread_switch, 0 ))
-        {   S r = W( thread_switch );
+        {   N r = W( thread_switch );
             if(r)
                 return r;
             Vr_( pthread_mutex_destroy( thread_flow_mutex ));
@@ -459,7 +459,7 @@ E_flow_Q_task_M( I *uid
 #error not implemented
             #endif
         {   Vr_( pthread_cond_destroy( thread_switch ));
-            S r = W( thread_switch );
+            N r = W( thread_switch );
             if(r)
                 return r;
             Vr_( pthread_mutex_destroy( thread_flow_mutex ));
@@ -486,7 +486,7 @@ E_flow_Q_task_M( I *uid
         ))
         {   V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
             Vr_( pthread_cond_destroy( thread_switch ));
-            S r = W( thread_switch );
+            N r = W( thread_switch );
             if(r)
                 return r;
             Vr_( pthread_mutex_destroy( thread_flow_mutex ));
@@ -514,7 +514,7 @@ E_flow_Q_task_M( I *uid
         Vr( pthread_attr_init( &thread_attr ))
         {   V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
             Vr_( pthread_cond_destroy( thread_switch ));
-            S r = W( thread_switch );
+            N r = W( thread_switch );
             if(r)
                 return r;
             Vr_( pthread_mutex_destroy( thread_flow_mutex ));
@@ -539,7 +539,7 @@ E_flow_Q_task_M( I *uid
         {   Vr_( pthread_attr_destroy( &thread_attr ));
             V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
             Vr_( pthread_cond_destroy( thread_switch ));
-            S r = W( thread_switch );
+            N r = W( thread_switch );
             if(r)
                 return r;
             Vr_( pthread_mutex_destroy( thread_flow_mutex ));
@@ -564,7 +564,7 @@ E_flow_Q_task_M( I *uid
         {   Vr_( pthread_attr_destroy( &thread_attr ));
             V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
             Vr_( pthread_cond_destroy( thread_switch ));
-            S r = W( thread_switch );
+            N r = W( thread_switch );
             if(r)
                 return r;
             Vr_( pthread_mutex_destroy( thread_flow_mutex ));
@@ -586,44 +586,40 @@ E_flow_Q_task_M( I *uid
             return ~0;
         }
             #if defined( __gnu_linux__ ) || defined( __FreeBSD__ )
-        N cpu_n;
-        V1( cpu_n = sysconf( _SC_NPROCESSORS_ONLN )){}
-        if( ~cpu_n )
-        {   cpu_set_t cpu_set;
-            CPU_ZERO( &cpu_set );
-            CPU_SET( 0, &cpu_set );
-            Vr( pthread_attr_setaffinity_np( &thread_attr, sizeof( cpu_set ), &cpu_set ))
-            {   Vr_( pthread_attr_destroy( &thread_attr ));
-                V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
-                Vr_( pthread_cond_destroy( thread_switch ));
-                S r = W( thread_switch );
-                if(r)
-                    return r;
-                Vr_( pthread_mutex_destroy( thread_flow_mutex ));
-                r = W( thread_flow_mutex );
-                if(r)
-                    return r;
-                r = W( thread_switch_out );
-                if(r)
-                    return r;
-                r = W( thread_switch_in );
-                if(r)
-                    return r;
-                _Z_tasks_table_S_edit_begin;
-                r = E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
-                _Z_tasks_table_S_edit_end;
-                if(r)
-                    return r;
-                V0_( munmap( stack, stack_size ));
-                return ~0;
-            }
+        cpu_set_t cpu_set;
+        CPU_ZERO( &cpu_set );
+        CPU_SET( 0, &cpu_set );
+        Vr( pthread_attr_setaffinity_np( &thread_attr, sizeof( cpu_set ), &cpu_set ))
+        {   Vr_( pthread_attr_destroy( &thread_attr ));
+            V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
+            Vr_( pthread_cond_destroy( thread_switch ));
+            N r = W( thread_switch );
+            if(r)
+                return r;
+            Vr_( pthread_mutex_destroy( thread_flow_mutex ));
+            r = W( thread_flow_mutex );
+            if(r)
+                return r;
+            r = W( thread_switch_out );
+            if(r)
+                return r;
+            r = W( thread_switch_in );
+            if(r)
+                return r;
+            _Z_tasks_table_S_edit_begin;
+            r = E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
+            _Z_tasks_table_S_edit_end;
+            if(r)
+                return r;
+            V0_( munmap( stack, stack_size ));
+            return ~0;
         }
             #endif
         Vr( pthread_sigmask( SIG_SETMASK, &E_base_S->E_flow_Z_sigset_S_empty, 0 ))
         {   Vr_( pthread_attr_destroy( &thread_attr ));
             V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
             Vr_( pthread_cond_destroy( thread_switch ));
-            S r = W( thread_switch );
+            N r = W( thread_switch );
             if(r)
                 return r;
             Vr_( pthread_mutex_destroy( thread_flow_mutex ));
@@ -651,7 +647,7 @@ E_flow_Q_task_M( I *uid
             Vr_( pthread_attr_destroy( &thread_attr ));
             V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
             Vr_( pthread_cond_destroy( thread_switch ));
-            S r = W( thread_switch );
+            N r = W( thread_switch );
             if(r)
                 return r;
             Vr_( pthread_mutex_destroy( thread_flow_mutex ));
@@ -745,14 +741,14 @@ _export
 I
 E_flow_Q_task_M_thread( I *uid
 , I subid
-, void (*task_proc)(P)
+, void ( *task_proc )(P)
 , P task_proc_arg
         #ifdef C_line_report
 , Pc task_proc_name
         #endif
 ){  I uid_start = *uid;
     I id;
-    if( (S)( id = E_flow_Q_task_M( uid, task_proc, task_proc_arg, yes
+    if(( id = E_flow_Q_task_M( uid, task_proc, task_proc_arg, yes
         #ifdef C_line_report
     , task_proc_name
         #endif
@@ -765,7 +761,7 @@ E_flow_Q_task_M_thread( I *uid
         tab_subid = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S_uid_subid, *uid );
         *tab_subid = E_mem_Q_tab_M( sizeof(I), subid + 1 );
         if( !*tab_subid )
-        {   S r = E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S_uid_subid, *uid );
+        {   N r = E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S_uid_subid, *uid );
             if(r)
                 return r;
             r = E_flow_Q_task_W( &id );
@@ -775,7 +771,7 @@ E_flow_Q_task_M_thread( I *uid
         }
     }else
     {   tab_subid = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S_uid_subid, *uid );
-        S r = E_mem_Q_tab_I_add_i( E_base_S->E_flow_Q_task_S_uid_subid, subid );
+        N r = E_mem_Q_tab_I_add_i( E_base_S->E_flow_Q_task_S_uid_subid, subid );
         if(r)
             return r;
     }
@@ -913,7 +909,7 @@ E_flow_Q_task_I_touch_stack( N page_count
 _export
 I
 E_flow_Q_task_async_M( I *uid
-, void (*task_proc)(P)
+, void ( *task_proc )(P)
 ,  void ( *thread_unblock_proc )(P)
         #ifdef C_line_report
 , Pc task_proc_name
@@ -1045,7 +1041,7 @@ E_flow_Q_task_async_M( I *uid
     volatile B *M_( thread_switch_in );
     if( !thread_switch_in )
     {   _Z_tasks_table_S_edit_begin;
-        S r = E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
+        N r = E_mem_Q_tab_I_remove( E_base_S->E_flow_Q_task_S, task_id );
         _Z_tasks_table_S_edit_end;
         if(r)
             return r;
@@ -1055,7 +1051,7 @@ E_flow_Q_task_async_M( I *uid
     task->thread_switch_in = task_proc_args->task_proc_arg.thread_switch_in = thread_switch_in;
     volatile B *M_( thread_switch_out );
     if( !thread_switch_out )
-    {   S r = W( thread_switch_in );
+    {   N r = W( thread_switch_in );
         if(r)
             return r;
         _Z_tasks_table_S_edit_begin;
@@ -1069,7 +1065,7 @@ E_flow_Q_task_async_M( I *uid
     task->thread_switch_out = task_proc_args->task_proc_arg.thread_switch_out = thread_switch_out;
     pthread_mutex_t *thread_flow_mutex = E_mem_Q_blk_M_align( sizeof( *thread_flow_mutex ), sizeof(N32) );
     if( !thread_flow_mutex )
-    {   S r = W( thread_switch_out );
+    {   N r = W( thread_switch_out );
         if(r)
             return r;
         r = W( thread_switch_in );
@@ -1085,7 +1081,7 @@ E_flow_Q_task_async_M( I *uid
     }
     task->thread_flow_mutex = task_proc_args->task_proc_arg.thread_flow_mutex = thread_flow_mutex;
     Vr( pthread_mutex_init( thread_flow_mutex, 0 ))
-    {   S r = W( thread_flow_mutex );
+    {   N r = W( thread_flow_mutex );
         if(r)
             return r;
         r = W( thread_switch_out );
@@ -1105,7 +1101,7 @@ E_flow_Q_task_async_M( I *uid
     pthread_cond_t *M_( thread_switch );
     if( !thread_switch )
     {   Vr_( pthread_mutex_destroy( thread_flow_mutex ));
-        S r = W( thread_flow_mutex );
+        N r = W( thread_flow_mutex );
         if(r)
             return r;
         r = W( thread_switch_out );
@@ -1124,7 +1120,7 @@ E_flow_Q_task_async_M( I *uid
     }
     task->thread_switch = task_proc_args->task_proc_arg.thread_switch = thread_switch;
     Vr( pthread_cond_init( thread_switch, 0 ))
-    {   S r = W( thread_switch );
+    {   N r = W( thread_switch );
         if(r)
             return r;
         Vr_( pthread_mutex_destroy( thread_flow_mutex ));
@@ -1169,7 +1165,7 @@ E_flow_Q_task_async_M( I *uid
 #error not implemented
         #endif
     {   Vr_( pthread_cond_destroy( thread_switch ));
-        S r = W( thread_switch );
+        N r = W( thread_switch );
         if(r)
             return r;
         Vr_( pthread_mutex_destroy( thread_flow_mutex ));
@@ -1196,7 +1192,7 @@ E_flow_Q_task_async_M( I *uid
     ))
     {   V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
         Vr_( pthread_cond_destroy( thread_switch ));
-        S r = W( thread_switch );
+        N r = W( thread_switch );
         if(r)
             return r;
         Vr_( pthread_mutex_destroy( thread_flow_mutex ));
@@ -1224,7 +1220,7 @@ E_flow_Q_task_async_M( I *uid
     Vr( pthread_attr_init( &thread_attr ))
     {   V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
         Vr_( pthread_cond_destroy( thread_switch ));
-        S r = W( thread_switch );
+        N r = W( thread_switch );
         if(r)
             return r;
         Vr_( pthread_mutex_destroy( thread_flow_mutex ));
@@ -1249,7 +1245,7 @@ E_flow_Q_task_async_M( I *uid
     {   Vr_( pthread_attr_destroy( &thread_attr ));
         V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
         Vr_( pthread_cond_destroy( thread_switch ));
-        S r = W( thread_switch );
+        N r = W( thread_switch );
         Vr_( pthread_mutex_destroy( thread_flow_mutex ));
         r = W( thread_flow_mutex );
         if(r)
@@ -1272,7 +1268,7 @@ E_flow_Q_task_async_M( I *uid
     {   Vr_( pthread_attr_destroy( &thread_attr ));
         V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
         Vr_( pthread_cond_destroy( thread_switch ));
-        S r = W( thread_switch );
+        N r = W( thread_switch );
         Vr_( pthread_mutex_destroy( thread_flow_mutex ));
         r = W( thread_flow_mutex );
         if(r)
@@ -1296,10 +1292,9 @@ E_flow_Q_task_async_M( I *uid
     {   N cpu_n;
         V1( cpu_n = sysconf( _SC_NPROCESSORS_ONLN )){}
         if( ~cpu_n
-        && cpu_n > 1
+        && --cpu_n
         )
-        {   cpu_n--;
-            B fail = no;
+        {   B fail = no;
             if( cpu_n != E_base_S->cpu_taken_length )
                 if( ~E_mem_Q_mask_I_resize( &E_base_S->cpu_taken, E_base_S->cpu_taken_length, cpu_n ))
                     E_base_S->cpu_taken_length = cpu_n;
@@ -1316,7 +1311,7 @@ E_flow_Q_task_async_M( I *uid
                     {   Vr_( pthread_attr_destroy( &thread_attr ));
                         V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
                         Vr_( pthread_cond_destroy( thread_switch ));
-                        S r = W( thread_switch );
+                        N r = W( thread_switch );
                         if(r)
                             return r;
                         Vr_( pthread_mutex_destroy( thread_flow_mutex ));
@@ -1346,7 +1341,7 @@ E_flow_Q_task_async_M( I *uid
     {   Vr_( pthread_attr_destroy( &thread_attr ));
         V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
         Vr_( pthread_cond_destroy( thread_switch ));
-        S r = W( thread_switch );
+        N r = W( thread_switch );
         if(r)
             return r;
         Vr_( pthread_mutex_destroy( thread_flow_mutex ));
@@ -1371,7 +1366,7 @@ E_flow_Q_task_async_M( I *uid
     {   Vr_( pthread_attr_destroy( &thread_attr ));
         V0_( munmap( task_proc_args->alt_stack.ss_sp, task_proc_args->alt_stack.ss_size ));
         Vr_( pthread_cond_destroy( thread_switch ));
-        S r = W( thread_switch );
+        N r = W( thread_switch );
         if(r)
             return r;
         Vr_( pthread_mutex_destroy( thread_flow_mutex ));
@@ -1445,10 +1440,10 @@ E_flow_Q_task_async_W( I *uid
     task->run_state = E_flow_Z_run_state_S_stopping_by_task;
     task->run_state_object = E_base_S->E_flow_Q_task_S_current;
         #if defined( __gnu_linux__ ) || defined( __FreeBSD__ )
-    int ret_;
+    int r_;
     cpu_set_t cpu_set;
-    Vr( ret_ = pthread_getaffinity_np( task->thread, sizeof( cpu_set ), &cpu_set )){}
-    if( !ret_ )
+    Vr( r_ = pthread_getaffinity_np( task->thread, sizeof( cpu_set ), &cpu_set )){}
+    if( !r_ )
     {   N cpu_i;
         for( cpu_i = 1; cpu_i != J_min( CPU_SETSIZE, E_base_S->cpu_taken_length + 1 ); cpu_i++ )
             if( CPU_ISSET( cpu_i, &cpu_set ))
@@ -1502,8 +1497,8 @@ E_flow_Q_report_M( N uid
     }
     if( !~report_id )
     {   report_id = E_mem_Q_tab_I_add( E_base_S->E_flow_Q_report_S );
-        if( (S)report_id < 0 )
-            return (S)report_id;
+        if( report_id < 0 )
+            return report_id;
         report = E_mem_Q_tab_R( E_base_S->E_flow_Q_report_S, report_id );
         report->uid = uid;
         report->reported_count = 0;
@@ -1653,8 +1648,8 @@ E_flow_Q_impulser_M( N uid
     }
     if( !~timer_id )
     {   timer_id = E_mem_Q_tab_I_add( E_base_S->E_flow_Q_timer_S );
-        if( (S)timer_id < 0 )
-            return (S)timer_id;
+        if( timer_id < 0 )
+            return timer_id;
         timer = E_mem_Q_tab_R( E_base_S->E_flow_Q_timer_S, timer_id );
         _timerclear( &timer->left );
         _timerclear( &timer->period );
@@ -1674,8 +1669,8 @@ E_flow_Q_impulser_M_srv( N uid
     }
     if( !~timer_id )
     {   timer_id = E_mem_Q_tab_I_add( E_base_S->E_flow_Q_timer_S );
-        if( (S)timer_id < 0 )
-            return (S)timer_id;
+        if( timer_id < 0 )
+            return timer_id;
         timer = E_mem_Q_tab_R( E_base_S->E_flow_Q_timer_S, timer_id );
         _timerclear( &timer->left );
         _timerclear( &timer->period );
@@ -1743,20 +1738,6 @@ E_flow_Q_impulser_I_wait( I id
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #ifdef E_flow_C_thread_system_unblock_reports
-_export
-void
-E_flow_Q_thread_system_unblock_report_M( void ( *thread_unblock_proc )(P)
-, pthread_mutex_t **thread_flow_mutex
-, pthread_cond_t **thread_switch
-, volatile B **thread_switch_in
-, volatile B **thread_switch_out
-){  struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
-    task->thread_unblock_proc = thread_unblock_proc;
-    *thread_flow_mutex = task->thread_flow_mutex;
-    *thread_switch = task->thread_switch;
-    *thread_switch_in = task->thread_switch_in;
-    *thread_switch_out = task->thread_switch_out;
-}
 _export
 void
 E_flow_Q_thread_system_unblock_report_I_before_async(
@@ -2055,7 +2036,7 @@ Loop:
                     #endif
                 if( task->run_state == E_flow_Z_run_state_S_ready )
                 {
-                        #ifdef E_flow_C_thread_system_unblock_reports
+                        #ifdef C_pthreads
                     if( E_base_S->E_flow_Q_task_S_current != schedule_task_id )
                         E_base_S->E_flow_Q_task_S_current = schedule_task_id;
                     if( task_id != E_base_S->E_flow_Q_task_S_current )
@@ -2119,7 +2100,7 @@ Loop:
                 #endif
             if( task->run_state == E_flow_Z_run_state_S_ready )
             {
-                    #ifdef E_flow_C_thread_system_unblock_reports
+                    #ifdef C_pthreads
                 if( E_base_S->E_flow_Q_task_S_current != schedule_task_id )
                     E_base_S->E_flow_Q_task_S_current = schedule_task_id;
                     #endif

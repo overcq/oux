@@ -177,10 +177,13 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
     #ifdef E_flow_C_thread_system_unblock_reports
 // Deklaracja ‹procedury› generującej ‹systemowy raport odblokowujący› dla ‹zadania›; odblokowującej to ‹zadanie›.
 #define Xh_A( thread_unblock_proc_ ) \
-  volatile B *J_autogen( thread_switch_in ), *J_autogen( thread_switch_out ); \
-  pthread_cond_t *J_autogen( thread_switch ); \
-  pthread_mutex_t *J_autogen( thread_flow_mutex ); \
-  E_flow_Q_thread_system_unblock_report_M(( thread_unblock_proc_ ), &J_autogen( thread_flow_mutex ), &J_autogen( thread_switch ), &J_autogen( thread_switch_in ), &J_autogen( thread_switch_out ))
+  struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current ); \
+  task->thread_unblock_proc = thread_unblock_proc_; \
+  struct E_flow_Q_task_async_Z_proc_args *J_autogen( proc_args ) = thread_proc_arg; \
+  pthread_mutex_t *J_autogen( thread_flow_mutex ) = J_autogen( proc_args )->thread_flow_mutex; \
+  pthread_cond_t *J_autogen( thread_switch ) = J_autogen( proc_args )->thread_switch; \
+  volatile B *J_autogen( thread_switch_in ) = J_autogen( proc_args )->thread_switch_in; \
+  volatile B *J_autogen( thread_switch_out ) = J_autogen( proc_args )->thread_switch_out
 // Tuż przed wywołaniem procedury blokującej w oczekiwaniu na ‹systemowy raport odblokowujący›.
 #define Xh_B_() \
   E_flow_Q_thread_system_unblock_report_I_before_async( J_autogen( thread_switch ), J_autogen( thread_flow_mutex ))
