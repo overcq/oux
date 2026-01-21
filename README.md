@@ -81,8 +81,8 @@ This product uses external libraries (source code available through the operatin
 
 This product in runtime uses external programs:
 
-* “gui-srv-gtk”
-* “gui-srv-qt”
+* [gui-srv-gtk](https://github.com/overcq/gui-srv-gtk)
+* [gui-srv-qt](https://github.com/overcq/gui-srv-qt)
 
 ## 7. Support
 
