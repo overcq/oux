@@ -100,38 +100,38 @@ _inline
 N
 E_mem_Q_file_R_16( I id
 , N *v
-){  return E_mem_Q_file_R_N( id, v, 2 );
+){  return E_mem_Q_file_R_n( id, v, 2 );
 }
 _inline
 N
 E_mem_Q_file_R_32( I id
 , N *v
-){  return E_mem_Q_file_R_N( id, v, 2 );
+){  return E_mem_Q_file_R_n( id, v, 4 );
 }
 _inline
 N
 E_mem_Q_file_R_64( I id
 , N *v
-){  return E_mem_Q_file_R_N( id, v, 2 );
+){  return E_mem_Q_file_R_n( id, v, 8 );
 }
 //------------------------------------------------------------------------------
 _inline
 N
 E_mem_Q_file_P_16( I id
 , N v
-){  return E_mem_Q_file_P_N( id, v, 2 );
+){  return E_mem_Q_file_P_n( id, v, 2 );
 }
 _inline
 N
 E_mem_Q_file_P_32( I id
 , N v
-){  return E_mem_Q_file_P_N( id, v, 4 );
+){  return E_mem_Q_file_P_n( id, v, 4 );
 }
 _inline
 N
 E_mem_Q_file_P_64( I id
 , N v
-){  return E_mem_Q_file_P_N( id, v, 8 );
+){  return E_mem_Q_file_P_n( id, v, 8 );
 }
 //------------------------------------------------------------------------------
 _inline
@@ -144,19 +144,19 @@ _inline
 N
 E_mem_Q_file_P_insert_16( I id
 , N v
-){  return E_mem_Q_file_P_insert_N( id, v, 2 );
+){  return E_mem_Q_file_P_insert_n( id, v, 2 );
 }
 _inline
 N
 E_mem_Q_file_P_insert_32( I id
 , N v
-){  return E_mem_Q_file_P_insert_N( id, v, 4 );
+){  return E_mem_Q_file_P_insert_n( id, v, 4 );
 }
 _inline
 N
 E_mem_Q_file_P_insert_64( I id
 , N v
-){  return E_mem_Q_file_P_insert_N( id, v, 8 );
+){  return E_mem_Q_file_P_insert_n( id, v, 8 );
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 _inline

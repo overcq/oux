@@ -22,7 +22,7 @@ Report vulnerabilities: https://github.com/overcq/oux/security/advisories or via
 
 OUX/C+ 3. Detailed version in git log.
 
-The product is developed in Debian (inside Windows Subsystem for Linux) and tested in Ubuntu, Fedora, FreeBSD, NetBSD, OpenBSD.
+The product is developed in Debian (inside Windows Subsystem for Linux) and tested in Ubuntu, Linux Mint, Fedora, FreeBSD, NetBSD, OpenBSD.
 
 ## 4. Purpose
 
