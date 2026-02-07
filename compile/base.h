@@ -138,7 +138,7 @@ _inline
 N
 E_mem_Q_file_P_insert_c( I id
 , C c
-){  return E_mem_Q_file_P_insert_s( id, &(( C[] ){ c })[0], 1 );
+){  return E_mem_Q_file_P_insert_sl( id, &(( C[] ){ c })[0], 1 );
 }
 _inline
 N
