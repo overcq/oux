@@ -88,7 +88,7 @@ struct E_flow_Q_report_Z
 struct E_flow_Q_timer_Z
 { Z_clock_time left;
   Z_clock_time period;
-  N lost_count;
+  N reported_count;
   N uid;
   I task_to;
 };
@@ -1534,7 +1534,7 @@ E_flow_Q_report_I_signal( I id
 _export
 B
 E_flow_Q_report_I_wait( I id
-, N *lost_count
+, N *reported_count
 ){  B r;
     struct E_flow_Q_report_Z *report = E_mem_Q_tab_R( E_base_S->E_flow_Q_report_S, id );
     if( report->reported_count )
@@ -1557,8 +1557,8 @@ E_flow_Q_report_I_wait( I id
         r = E_flow_Q_task_I_schedule();
         report = E_mem_Q_tab_R( E_base_S->E_flow_Q_report_S, id );
     }
-    if( lost_count )
-        *lost_count = report->reported_count - 1;
+    if( reported_count )
+        *reported_count = report->reported_count;
     report->reported_count = 0;
     return r;
 }
@@ -1583,21 +1583,19 @@ E_flow_Q_timer_M( N period
         #ifdef E_flow_drv_C_clock_monotonic
     timer->period.Z_clock_time_minor_field *= 1000;
         #endif
-    timer->lost_count = 0;
+    timer->reported_count = 0;
     timer->uid = ~0;
     timer->task_to = E_base_S->E_flow_Q_task_S_current;
-    if( E_mem_Q_tab_R_n( E_base_S->E_flow_Q_timer_S ) != 1 )
-    {   for_each_out( timer_id, timer_id_, E_base_S->E_flow_Q_timer_S, E_mem_Q_tab )
-        {   struct E_flow_Q_timer_Z *timer_ = E_mem_Q_tab_R( E_base_S->E_flow_Q_timer_S, timer_id_ );
-            if( _timerisset( &timer_->period ) // Jest co najmniej jeden ‹cykler›
-            || _timerisset( &timer_->left ) // lub co najmniej jeden wzbudzony ‹impulsator›.
-            )
-            {   _timeradd( &tv, &timer->period, &tv );
-                if( _timercmp( &tv, <, &E_base_S->E_flow_Q_timer_S_next_real_time ))
-                    E_base_S->E_flow_Q_timer_S_next_real_time = tv;
-                _timersub( &tv, &E_base_S->E_flow_Q_timer_S_last_real_time, &timer->left );
-                return timer_id;
-            }
+    for_each_out( timer_id, timer_id_, E_base_S->E_flow_Q_timer_S, E_mem_Q_tab )
+    {   struct E_flow_Q_timer_Z *timer_ = E_mem_Q_tab_R( E_base_S->E_flow_Q_timer_S, timer_id_ );
+        if( _timerisset( &timer_->period ) // Jest co najmniej jeden ‹cykler›
+        || _timerisset( &timer_->left ) // lub co najmniej jeden wzbudzony ‹impulsator›.
+        )
+        {   _timeradd( &tv, &timer->period, &tv );
+            if( _timercmp( &tv, <, &E_base_S->E_flow_Q_timer_S_next_real_time ))
+                E_base_S->E_flow_Q_timer_S_next_real_time = tv;
+            _timersub( &tv, &E_base_S->E_flow_Q_timer_S_last_real_time, &timer->left );
+            return timer_id;
         }
     }
     E_base_S->E_flow_Q_timer_S_last_real_time = tv;
@@ -1625,15 +1623,15 @@ E_flow_Q_timer_W( I id
 _export
 B
 E_flow_Q_timer_I_wait( I id
-, N *lost_count
+, N *reported_count
 ){  struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, E_base_S->E_flow_Q_task_S_current );
     task->run_state = E_flow_Z_run_state_S_waiting_for_timer;
     task->run_state_object = id;
     B r = E_flow_Q_task_I_schedule();
     struct E_flow_Q_timer_Z *timer = E_mem_Q_tab_R( E_base_S->E_flow_Q_timer_S, id );
-    if( lost_count )
-        *lost_count = timer->lost_count;
-    timer->lost_count = 0;
+    if( reported_count )
+        *reported_count = timer->reported_count;
+    timer->reported_count = 0;
     return r;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1693,18 +1691,16 @@ E_flow_Q_impulser_I_activate( I id
         #ifdef E_flow_drv_C_clock_monotonic
     timer->left.Z_clock_time_minor_field *= 1000;
         #endif
-    if( E_mem_Q_tab_R_n( E_base_S->E_flow_Q_timer_S ) != 1 )
-    {   for_each_out( id, timer_id_, E_base_S->E_flow_Q_timer_S, E_mem_Q_tab )
-        {   struct E_flow_Q_timer_Z *timer_ = E_mem_Q_tab_R( E_base_S->E_flow_Q_timer_S, timer_id_ );
-            if( _timerisset( &timer_->period )
-            || _timerisset( &timer_->left )
-            )
-            {   _timeradd( &tv, &timer->left, &tv );
-                if( _timercmp( &tv, <, &E_base_S->E_flow_Q_timer_S_next_real_time ))
-                    E_base_S->E_flow_Q_timer_S_next_real_time = tv;
-                _timersub( &tv, &E_base_S->E_flow_Q_timer_S_last_real_time, &timer->left );
-                return;
-            }
+    for_each_out( id, timer_id_, E_base_S->E_flow_Q_timer_S, E_mem_Q_tab )
+    {   struct E_flow_Q_timer_Z *timer_ = E_mem_Q_tab_R( E_base_S->E_flow_Q_timer_S, timer_id_ );
+        if( _timerisset( &timer_->period )
+        || _timerisset( &timer_->left )
+        )
+        {   _timeradd( &tv, &timer->left, &tv );
+            if( _timercmp( &tv, <, &E_base_S->E_flow_Q_timer_S_next_real_time ))
+                E_base_S->E_flow_Q_timer_S_next_real_time = tv;
+            _timersub( &tv, &E_base_S->E_flow_Q_timer_S_last_real_time, &timer->left );
+            return;
         }
     }
     E_base_S->E_flow_Q_timer_S_last_real_time = tv;
@@ -1917,17 +1913,18 @@ Loop:
                 _timerover( &suspend_time );
                 for_each( timer_id, E_base_S->E_flow_Q_timer_S, E_mem_Q_tab )
                 {   struct E_flow_Q_timer_Z *timer = E_mem_Q_tab_R( E_base_S->E_flow_Q_timer_S, timer_id );
-                    if( _timerisset( &timer->period )) // ‹cykler›.
-                    {   if( !_timercmp( &elapsed_time, <, &timer->left )) // ‹cykler› wykonał obieg— ‹zadanie› do wznowienia.
+                    if( _timerisset( &timer->period )) // ‹cykler›
+                    {   if( !_timercmp( &elapsed_time, <, &timer->left )) // ‹Cykler› wykonał obieg— ‹zadanie› do wznowienia.
                         {   Z_clock_time overlate_time;
                             _timersub( &elapsed_time, &timer->left, &overlate_time );
-                            if( !_timercmp( &overlate_time, <, &timer->period )) // ‹cykler› wykonał więcej niż jeden obieg.
+                            if( !_timercmp( &overlate_time, <, &timer->period )) // ‹Cykler› wykonał więcej niż jeden obieg.
                             {   do
-                                {   timer->lost_count++;
+                                {   timer->reported_count++;
                                     _timersub( &overlate_time, &timer->period, &overlate_time );
                                 }while( !_timercmp( &overlate_time, <, &timer->period ));
-                                GV_(NA); Gd( timer->lost_count ); Gd( timer->period.tv_sec ); Gd( timer->period.Z_clock_time_minor_field ); Gd( overlate_time.tv_sec ); Gd( overlate_time.Z_clock_time_minor_field ); // lost time.
-                            }
+                                GV_(NA); Gd( timer->reported_count ); Gd( timer->period.tv_sec ); Gd( timer->period.Z_clock_time_minor_field ); Gd( overlate_time.tv_sec ); Gd( overlate_time.Z_clock_time_minor_field ); // lost time
+                            }else
+                                timer->reported_count++;
                             _timersub( &timer->period, &overlate_time, &timer->left );
                             struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, timer->task_to );
                             if( task->run_state == E_flow_Z_run_state_S_waiting_for_timer
@@ -1935,15 +1932,14 @@ Loop:
                             )
                             {   task->run_state = E_flow_Z_run_state_S_ready;
                                 some_task_got_ready = yes;
-                            }else
-                                timer->lost_count++;
+                            }
                         }else
                             _timersub( &timer->left, &elapsed_time, &timer->left );
                         if( _timercmp( &timer->left, <, &suspend_time ))
                         {   suspend_time = timer->left;
                             some_timer_is_active = yes;
                         }
-                    }else if( _timerisset( &timer->left )) // Aktywowany ‹impulsator›.
+                    }else if( _timerisset( &timer->left )) // aktywowany ‹impulsator›
                     {   if( !_timercmp( &elapsed_time, <, &timer->left ))
                         {   _timerclear( &timer->left );
                             struct E_flow_Q_task_Z *task = E_mem_Q_tab_R( E_base_S->E_flow_Q_task_S, timer->task_to );

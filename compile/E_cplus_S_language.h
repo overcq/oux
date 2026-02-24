@@ -170,7 +170,7 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
 // I warunkowa– gdy jest stan pojedynczego obiektu.
 #define X_U(module,report)                  if( !U_E(module,report) ){} else X_F(module,report)
 // Czekanie na ‹raport› kolekcji.
-#define X_B(module,report,lost_count)       if( !E_flow_Q_report_I_wait( _X_var(module,report), (lost_count) )){} else
+#define X_B(module,report,reported_count)   if( !E_flow_Q_report_I_wait( _X_var(module,report), (reported_count) )){} else
 // Czyszczenie licznika raportów.
 #define X_L(module,report)                  E_flow_Q_report_I_clear( _X_var(module,report) )
 //------------------------------------------------------------------------------
@@ -221,7 +221,7 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
 #define Y_M(period)                         E_flow_Q_timer_M(period)
 #define Y_W(timer)                          E_flow_Q_timer_W(timer)
 // Czekanie na pełny okres ‹cyklera›.
-#define Y_B(timer,lost_count)               if( !E_flow_Q_timer_I_wait( (timer), (lost_count) )){} else
+#define Y_B(timer,reported_count)           if( !E_flow_Q_timer_I_wait( (timer), (reported_count) )){} else
 //------------------------------------------------------------------------------
 // Utworzenie i wyrzucenie ‹impulsatora›.
 #define Yi_M(module,impulser)               I _Yi_var(module,impulser) = E_flow_Q_impulser_M( _Yi_uid(module,impulser) )
