@@ -264,8 +264,8 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
 #define Gsl_(s,l)       if(l) Gs_l_( s, (l) ); else Gs_l_( "", 0 )
 #define Gs_l(t,s,l)     if( _G_var ) E_flow_Z_line_report_Z_text_s_I_sync( J_s(t), (s), (l) ); else E_flow_Z_line_report_Z_text_s_I( J_s(t), (s), (l) )
 #define Gs_l_(s,l)      if( _G_var ) E_flow_Z_line_report_Z_s_I_sync( (s), (l) ); else E_flow_Z_line_report_Z_s_I( (s), (l) )
-#define Gd(n)           if( _G_var ) E_flow_Z_line_report_Z_text_n_I_sync( J_s(n), (N)(n), sizeof(n), 10 ); else E_flow_Z_line_report_Z_text_n_I( J_s(n), (N)(n), sizeof(n), 10 )
-#define Gh(n)           if( _G_var ) E_flow_Z_line_report_Z_text_n_I_sync( J_s(n), (N)(n), sizeof(n), 16 ); else E_flow_Z_line_report_Z_text_n_I( J_s(n), (N)(n), sizeof(n), 16 )
+#define Gd(n)           if( _G_var ) E_flow_Z_line_report_Z_text_n_I_sync( J_s(n), (N)(n), 10 ); else E_flow_Z_line_report_Z_text_n_I( J_s(n), (N)(n), 10 )
+#define Gh(n)           if( _G_var ) E_flow_Z_line_report_Z_text_n_I_sync( J_s(n), (N)(n), 16 ); else E_flow_Z_line_report_Z_text_n_I( J_s(n), (N)(n), 16 )
 #define Gq(q)
     #else
 #define G()
