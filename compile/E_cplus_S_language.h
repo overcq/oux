@@ -164,15 +164,15 @@ typedef P           *Pp; // Wskaźnik do tablic adresów.
 #define X_M(module,report)                  I X_M_(module,report)
 #define X_W(module,report)                  E_flow_Q_report_W( _X_var(module,report) )
 // Deklaracja emisji ‹raportu› przez ‹zadanie›.
-#define X_A(module,report)                  X_M(module,report); _unused B U_L(module,report)
+#define X_A(module,report)                  _unused B U_L(module,report)
 // Sygnalizacja ‹zadania› obsługującego ‹raport› kolekcji.
-#define X_F(module,report)                  E_flow_Q_report_I_signal( _X_var(module,report) )
+#define X_F(module,report)                  E_flow_Q_report_I_signal( E_flow_Q_report_M( _X_uid(module,report) ))
 // I warunkowa– gdy jest stan pojedynczego obiektu.
 #define X_U(module,report)                  if( !U_E(module,report) ){} else X_F(module,report)
 // Czekanie na ‹raport› kolekcji.
 #define X_B(module,report,reported_count)   if( !E_flow_Q_report_I_wait( _X_var(module,report), (reported_count) )){} else
 // Czyszczenie licznika raportów.
-#define X_L(module,report)                  E_flow_Q_report_I_clear( _X_var(module,report) )
+#define X_L(module,report)                  E_flow_Q_report_I_clear( E_flow_Q_report_M( _X_uid(module,report) ))
 //------------------------------------------------------------------------------
     #ifdef E_flow_C_thread_system_unblock_reports
 // Deklaracja ‹procedury› generującej ‹systemowy raport odblokowujący› dla ‹zadania›; odblokowującej to ‹zadanie›.

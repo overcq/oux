@@ -590,15 +590,7 @@ E_net_D_cli_I_unblock( P p
 D( net, cli )
 {   Xh_A( E_net_D_cli_I_unblock );
     X_A( net, disconnect );
-    if( _X_var( net, disconnect ) < 0 )
-    {   U_F( E_base_S->E_flow_S_signal, exit );
-        goto Block;
-    }
     X_A( net, ret );
-    if( _X_var( net, ret ) < 0 )
-    {   U_F( E_base_S->E_flow_S_signal, exit );
-        goto Block;
-    }
     O{  if( !E_net_http_S_connect_n
         && !E_net_http2_S_connect_n
         )
@@ -613,9 +605,9 @@ D( net, cli )
                 #else
         VO1_( ready_n = poll( E_net_cli_S_poll_fd, E_net_cli_S_poll_fd_n, S_system_idle_time ));
                 #endif
-Block:  I_B()
+        I_B()
             #else
-Block:  Xh_B_();
+        Xh_B_();
                 #ifdef __gnu_linux__
         VO1_( ready_n = epoll_wait( E_net_cli_S_epoll_fd, E_net_cli_S_ee_ready, E_net_cli_S_ee_ready_n, E_net_http_S_connect_n || E_net_http2_S_connect_n ? S_system_idle_time : -1 ));
                 #else
@@ -1536,7 +1528,5 @@ Exit:       {   U_F( E_base_S->E_flow_S_signal, exit );
             i--;
         }
     }
-    X_W( net, ret )
-    || X_W( net, disconnect );
 }
 /******************************************************************************/
