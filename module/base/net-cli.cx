@@ -144,27 +144,35 @@ E_net_cli_Q_ssl_M( void
     E_net_http_S_connect_n = 0;
     Mt_( E_net_http2_S_connect, 0 );
     if( !E_net_http2_S_connect )
-    {   SSL_CTX_free( ssl_ctx );
-        if( W( E_net_http_S_connect ))
-            return (P)~1;
+    {   W( E_net_http_S_connect );
+        SSL_CTX_free( ssl_ctx );
         return 0;
     }
     E_net_http2_S_connect_n = 0;
+    X_M( net, disconnect );
+    if( _X_var( net, disconnect ) < 0 )
+    {   W( E_net_http2_S_connect )
+        || W( E_net_http_S_connect );
+        SSL_CTX_free( ssl_ctx );
+        return 0;
+    }
         #ifndef E_flow_C_thread_system_unblock_reports
     I r = D_M( net, cli );
         #else
     I r = Dh_M( net, cli, 0, 0 );
         #endif
     if( r < 0 )
-        return (P)(S)r;
+    {   W( E_net_http2_S_connect )
+        || W( E_net_http_S_connect );
+        SSL_CTX_free( ssl_ctx );
+        return 0;
+    }
     return ssl_ctx;
 }
 _export
 N
 E_net_cli_Q_ssl_W( SSL_CTX *ssl_ctx
 ){  X_M( net, disconnect );
-    if( _X_var( net, disconnect ) < 0 )
-        return (N)_X_var( net, disconnect );
     for_n_rev( i, E_net_http_S_connect_n )
         E_net_http_Q_ssl_I_disconnect(i);
     for_n_rev_( i, E_net_http2_S_connect_n )
